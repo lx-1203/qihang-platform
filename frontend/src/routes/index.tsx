@@ -13,6 +13,12 @@ import Jobs from '../pages/Jobs';
 import Guidance from '../pages/Guidance';
 import Postgrad from '../pages/Postgrad';
 import Entrepreneurship from '../pages/Entrepreneurship';
+import StudyAbroad from '../pages/StudyAbroad';
+import StudyAbroadPrograms from '../pages/StudyAbroadPrograms';
+import StudyAbroadDetail from '../pages/StudyAbroadDetail';
+import StudyAbroadOffers from '../pages/StudyAbroadOffers';
+import StudyAbroadArticles from '../pages/StudyAbroadArticles';
+import BackgroundBoost from '../pages/BackgroundBoost';
 import MentorDashboard from '../pages/MentorDashboard';
 import CompanyDashboard from '../pages/CompanyDashboard';
 import AdminDashboard from '../pages/AdminDashboard';
@@ -53,6 +59,34 @@ export const router = createBrowserRouter([
       {
         path: 'entrepreneurship',
         element: <Entrepreneurship />
+      },
+      {
+        path: 'study-abroad',
+        element: <StudyAbroad />
+      },
+      {
+        path: 'study-abroad/programs',
+        element: <StudyAbroadPrograms />
+      },
+      {
+        path: 'study-abroad/programs/:id',
+        element: <StudyAbroadDetail />
+      },
+      {
+        path: 'study-abroad/offers',
+        element: <StudyAbroadOffers />
+      },
+      {
+        path: 'study-abroad/articles',
+        element: <StudyAbroadArticles />
+      },
+      {
+        path: 'study-abroad/articles/:id',
+        element: <StudyAbroadArticles />
+      },
+      {
+        path: 'study-abroad/background',
+        element: <BackgroundBoost />
       }
     ]
   },

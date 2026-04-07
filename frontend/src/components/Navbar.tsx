@@ -12,6 +12,7 @@ export default function Navbar() {
     { path: '/guidance', label: '就业指导' },
     { path: '/postgrad', label: '考研保研' },
     { path: '/entrepreneurship', label: '创新创业' },
+    { path: '/study-abroad', label: '留学申请' },
   ];
 
   return (
@@ -28,7 +29,7 @@ export default function Navbar() {
             </Link>
             
             {/* Navigation */}
-            <nav className="hidden md:flex space-x-2 text-[15px] whitespace-nowrap">
+            <nav className="hidden md:flex space-x-1 text-[14px] whitespace-nowrap">
               {navItems.map((item) => {
                 const isActive = item.path === '/' 
                   ? location.pathname === '/' 
