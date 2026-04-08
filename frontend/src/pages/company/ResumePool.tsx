@@ -7,9 +7,10 @@ import {
   MessageSquare, ArrowRight, RefreshCw
 } from 'lucide-react';
 import http from '@/api/http';
+import FeatureStatus from '@/components/FeatureStatus';
 
 // ====== 企业端简历筛选池 (Kanban) ======
-// 商业级要求：五列看板、简历卡片、状态变更、视觉拖拽指示
+// 商业级要求：五列看板、简历卡片、状态变更
 
 type ResumeStatus = 'pending' | 'viewed' | 'interview' | 'offered' | 'rejected';
 
@@ -209,7 +210,7 @@ export default function CompanyResumePool() {
                     {/* 拖拽指示 */}
                     <div className="flex items-center gap-1 mb-2 opacity-0 group-hover:opacity-100 transition-opacity">
                       <GripVertical className="w-3.5 h-3.5 text-gray-300" />
-                      <span className="text-[10px] text-gray-400">拖拽移动</span>
+                      <FeatureStatus status="dev" label="拖拽排序" />
                     </div>
 
                     {/* 候选人基本信息 */}

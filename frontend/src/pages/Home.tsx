@@ -1,377 +1,353 @@
-import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
-import { ChevronLeft, ChevronRight, Search, Play, Briefcase, Users, Star, Compass, DollarSign, CloudLightning, BookOpen } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import { useState, useEffect, useRef } from 'react';
+import { Link } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
+import {
+  Search, ChevronLeft, ChevronRight, Play, Star,
+  Briefcase, Users, BookOpen, Globe, GraduationCap,
+  MapPin, DollarSign, Heart, ArrowRight, Sparkles,
+  FileText, Calendar, Compass, Lightbulb, Building2,
+  MessageCircle, Award, TrendingUp, ChevronDown, ChevronUp
+} from 'lucide-react';
+import { useAuthStore } from '@/store/auth';
+import OnboardingGuide from '@/components/OnboardingGuide';
+import FeatureStatus from '@/components/FeatureStatus';
 
-// --- MOCK DATA ---
-const HERO_SLIDES = [
-  {
-    id: 1,
-    image: "https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&q=80&w=2000",
-    link: "#",
-  },
-  {
-    id: 2,
-    image: "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&q=80&w=2000",
-    link: "#",
-  },
-  {
-    id: 3,
-    image: "https://images.unsplash.com/photo-1524178232363-1fb2b075b655?auto=format&fit=crop&q=80&w=2000",
-    link: "#",
-  },
-];
-
-const MENTORS = [
-  {
-    id: 1,
-    name: "陈经理",
-    title: "某头部互联网大厂HRD",
-    avatar: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=400",
-    tags: ["简历精修", "模拟面试"],
-    rating: "4.9",
-  },
-  {
-    id: 2,
-    name: "张工",
-    title: "高级前端架构师",
-    avatar: "https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&q=80&w=400",
-    tags: ["技术面", "职业规划"],
-    rating: "4.8",
-  },
-  {
-    id: 3,
-    name: "王总监",
-    title: "知名快消品牌市场总监",
-    avatar: "https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&q=80&w=400",
-    tags: ["群面技巧", "营销方向"],
-    rating: "5.0",
-  },
-  {
-    id: 4,
-    name: "李行长",
-    title: "国有大行资深面试官",
-    avatar: "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?auto=format&fit=crop&q=80&w=400",
-    tags: ["金融求职", "结构化面试"],
-    rating: "4.9",
-  },
-  {
-    id: 5,
-    name: "赵博士",
-    title: "常青藤海归 / 咨询顾问",
-    avatar: "https://images.unsplash.com/photo-1598550874175-4d0ef436c909?auto=format&fit=crop&q=80&w=400",
-    tags: ["Case Interview", "留学求职"],
-    rating: "4.8",
-  },
-];
-
-const COURSES = [
-  {
-    id: 1,
-    title: "校招简历怎么写才能过海选？（大厂HR视角）",
-    mentor: "陈经理",
-    views: "3.5w",
-    cover: "https://images.unsplash.com/photo-1586281380349-632531db7ed4?auto=format&fit=crop&q=80&w=600",
-    rating: 4.9,
-  },
-  {
-    id: 2,
-    title: "无领导小组讨论：角色定位与高分实战",
-    mentor: "王总监",
-    views: "2.8w",
-    cover: "https://images.unsplash.com/photo-1515169067868-5387ec356754?auto=format&fit=crop&q=80&w=600",
-    rating: 4.7,
-  },
-  {
-    id: 3,
-    title: "Java 后端开发高频面试题精讲",
-    mentor: "周架构",
-    views: "4.1w",
-    cover: "https://images.unsplash.com/photo-1517694712202-14dd9538aa97?auto=format&fit=crop&q=80&w=600",
-    rating: 5.0,
-  },
-  {
-    id: 4,
-    title: "2026考研：计算机专业院校分析库解读",
-    mentor: "李学长",
-    views: "1.2w",
-    cover: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&q=80&w=600",
-    rating: 4.8,
-  },
-];
+// ====== 首页 ======
+// 学生为主的门户首页，登录后展示个性化推荐和引导
 
 export default function Home() {
+  const { isAuthenticated, user } = useAuthStore();
   const [currentSlide, setCurrentSlide] = useState(0);
+  const [showGuide, setShowGuide] = useState(true);
+  const timerRef = useRef<ReturnType<typeof setInterval>>();
+
+  // 轮播
+  const slides = [
+    { title: '你的职业生涯\n从这里启航', sub: '汇聚海量校招/实习岗位，1v1大咖导师指导', bg: 'from-teal-600 via-emerald-700 to-teal-800', cta: '开始探索', link: '/jobs' },
+    { title: '大咖导师\n1对1辅导', sub: '简历精修、模拟面试、职业规划，帮你拿到心仪Offer', bg: 'from-blue-600 via-indigo-700 to-blue-800', cta: '找导师', link: '/mentors' },
+    { title: '留学 · 考研 · 创业\n一站全覆盖', sub: '无论你选择哪条路，我们都为你保驾护航', bg: 'from-purple-600 via-violet-700 to-purple-800', cta: '了解更多', link: '/study-abroad' },
+  ];
 
   useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentSlide((prev) => (prev + 1) % HERO_SLIDES.length);
-    }, 5000);
-    return () => clearInterval(timer);
+    timerRef.current = setInterval(() => setCurrentSlide(p => (p + 1) % slides.length), 5000);
+    return () => clearInterval(timerRef.current);
   }, []);
 
-  const nextSlide = () =>
-    setCurrentSlide((prev) => (prev + 1) % HERO_SLIDES.length);
-  const prevSlide = () =>
-    setCurrentSlide(
-      (prev) => (prev - 1 + HERO_SLIDES.length) % HERO_SLIDES.length,
-    );
+  // 统计数字动画
+  const platformStats = [
+    { label: '注册学生', value: 10000, suffix: '+', icon: Users },
+    { label: '合作企业', value: 500, suffix: '+', icon: Building2 },
+    { label: '认证导师', value: 200, suffix: '+', icon: Award },
+    { label: '成功投递', value: 50000, suffix: '+', icon: FileText },
+  ];
+
+  // 快捷入口
+  const quickEntries = [
+    { label: '校招直通车', desc: '名企实习/校招', icon: Briefcase, link: '/jobs', color: 'text-blue-600', bg: 'bg-blue-50' },
+    { label: '大咖1v1', desc: '导师辅导预约', icon: MessageCircle, link: '/mentors', color: 'text-teal-600', bg: 'bg-teal-50' },
+    { label: '干货资料库', desc: '免费课程学习', icon: BookOpen, link: '/courses', color: 'text-amber-600', bg: 'bg-amber-50' },
+    { label: '留学申请', desc: '院校评估/文书', icon: Globe, link: '/study-abroad', color: 'text-purple-600', bg: 'bg-purple-50', badge: 'new' as const },
+    { label: '考研保研', desc: '择校/备考策略', icon: GraduationCap, link: '/postgrad', color: 'text-rose-600', bg: 'bg-rose-50' },
+  ];
+
+  // 热门岗位推荐
+  const hotJobs = [
+    { title: '前端开发工程师', company: '字节跳动', location: '北京', salary: '15-25K', tags: ['React', '校招'] },
+    { title: '产品经理实习生', company: '腾讯', location: '深圳', salary: '200/天', tags: ['实习', '暑期'] },
+    { title: 'AIGC算法研究员', company: '百度', location: '北京', salary: '30-50K', tags: ['AI', '硕士'] },
+    { title: '市场营销管培生', company: '宝洁', location: '广州', salary: '18-22K', tags: ['快消', '管培'] },
+  ];
+
+  // 推荐导师
+  const hotMentors = [
+    { name: '陈经理', title: '某头部互联网大厂HRD', rating: 4.9, price: 299, tags: ['简历优化', '面试辅导'], avatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=200' },
+    { name: '张工', title: '高级前端架构师', rating: 4.8, price: 399, tags: ['技术面试', '系统设计'], avatar: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&q=80&w=200' },
+    { name: '王总监', title: '知名快消品牌市场总监', rating: 5.0, price: 349, tags: ['群面技巧', '营销方向'], avatar: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&q=80&w=200' },
+    { name: '赵博士', title: '常青藤海归 / 咨询顾问', rating: 4.8, price: 499, tags: ['Case面', '留学'], avatar: 'https://images.unsplash.com/photo-1598550874175-4d0ef436c909?auto=format&fit=crop&q=80&w=200' },
+  ];
+
+  // 精选课程
+  const hotCourses = [
+    { title: '简历撰写实战课：让HR 3秒被吸引', mentor: '陈经理', views: 2345, color: 'from-teal-400 to-emerald-500' },
+    { title: '群面必胜法：结构化表达框架', mentor: '王总监', views: 1890, color: 'from-blue-400 to-indigo-500' },
+    { title: '技术面试通关：算法与系统设计', mentor: '张工', views: 1567, color: 'from-purple-400 to-violet-500' },
+    { title: 'Case Interview 破解指南', mentor: '赵博士', views: 1234, color: 'from-amber-400 to-orange-500' },
+  ];
 
   return (
-    <div className="bg-[#f9fafb] min-h-screen pb-16">
-      {/* 1. Hero Carousel (保持了原有的动画逻辑，更新了尺寸和层级设计) */}
-      <section className="relative w-full h-[520px] overflow-hidden bg-[#111827]">
-        <div className="absolute inset-0 z-10 bg-gradient-to-b from-black/60 via-black/40 to-black/70"></div>
-        <div className="absolute w-full h-full flex items-center justify-center pt-8">
-          {HERO_SLIDES.map((slide, index) => {
-            let position = "hidden";
-            let zIndex = 0;
-            let scale = 0.8;
-            let x = "0%";
-            let opacity = 0;
-            let transitionDuration = 0.5;
+    <div>
+      {/* ====== Hero 轮播 ====== */}
+      <div className="relative h-[400px] md:h-[480px] overflow-hidden">
+        <AnimatePresence mode="wait">
+          <motion.div key={currentSlide}
+            initial={{ opacity: 0, scale: 1.05 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }}
+            transition={{ duration: 0.6 }}
+            className={`absolute inset-0 bg-gradient-to-br ${slides[currentSlide].bg}`}
+          >
+            <div className="absolute inset-0 bg-black/10" />
+            <div className="absolute top-20 right-20 w-96 h-96 bg-white/5 rounded-full blur-3xl" />
+          </motion.div>
+        </AnimatePresence>
 
-            if (index === currentSlide) {
-              position = "active";
-              zIndex = 20;
-              scale = 1;
-              x = "0%";
-              opacity = 1;
-            } else if (index === (currentSlide - 1 + HERO_SLIDES.length) % HERO_SLIDES.length) {
-              position = "prev";
-              zIndex = 10;
-              scale = 0.85;
-              x = "-80%";
-              opacity = 0.4;
-            } else if (index === (currentSlide + 1) % HERO_SLIDES.length) {
-              position = "next";
-              zIndex = 10;
-              scale = 0.85;
-              x = "80%";
-              opacity = 0.4;
-            } else {
-              // 对于既不是当前、前一个或后一个的卡片，将其置于不可见的另一侧
-              // 且不使用过渡动画，以防止出现穿帮镜头
-              x = "100%";
-              opacity = 0;
-              transitionDuration = 0; 
-            }
-
-            return (
-              <motion.div
-                key={slide.id}
-                initial={false}
-                animate={{ opacity, x, scale, zIndex }}
-                transition={{ duration: transitionDuration, ease: "easeInOut" }}
-                className="absolute w-[80%] max-w-[1200px] h-full flex items-center justify-center cursor-pointer"
-                style={{ pointerEvents: position === "hidden" ? "none" : "auto" }}
-                onClick={() => {
-                  if (position === "prev") prevSlide();
-                  if (position === "next") nextSlide();
-                }}
-              >
-                <img
-                  src={slide.image}
-                  alt={`Banner ${index + 1}`}
-                  className={`w-full ${position === "active" ? "h-[85%] shadow-2xl" : "h-[75%] shadow-lg"} object-cover rounded-[20px]`}
-                />
-              </motion.div>
-            );
-          })}
-        </div>
-
-        {/* Hero 内容：标语与搜索栏 */}
-        <div className="absolute inset-0 z-30 flex flex-col items-center justify-center pt-8 pointer-events-none">
-          <div className="mb-10 pointer-events-auto text-center flex flex-col items-center mt-[-40px]">
-            {/* 高端标题设计：发光、渐变、文字阴影和背景模糊的混合 */}
-            <div className="relative inline-block mb-8">
-              <div className="absolute inset-0 bg-black/30 blur-2xl rounded-full scale-150 transform"></div>
-              <h1 className="relative text-transparent bg-clip-text bg-gradient-to-br from-white via-white/95 to-white/70 text-[64px] font-extrabold tracking-tight" style={{ filter: 'drop-shadow(0 8px 16px rgba(0,0,0,0.8)) drop-shadow(0 2px 4px rgba(0,0,0,0.5))' }}>
-                你的职业生涯，从这里启航
+        <div className="relative z-10 max-w-[1200px] mx-auto px-4 sm:px-6 h-full flex flex-col justify-center">
+          <AnimatePresence mode="wait">
+            <motion.div key={currentSlide}
+              initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.4 }}
+            >
+              <h1 className="text-4xl md:text-5xl font-bold text-white leading-tight whitespace-pre-line mb-4">
+                {slides[currentSlide].title}
               </h1>
-            </div>
-            
-            {/* 标签化副标题设计 */}
-            <div className="flex items-center justify-center gap-4 text-[18px] font-medium">
-              <div className="group relative px-6 py-2.5 rounded-full bg-black/40 border border-white/20 backdrop-blur-md text-white shadow-xl hover:bg-black/60 transition-all duration-300 hover:scale-105 hover:border-white/40 cursor-default">
-                <div className="absolute inset-0 rounded-full bg-gradient-to-r from-teal-400/20 to-emerald-400/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                <span className="relative flex items-center gap-2">
-                  <Briefcase size={18} className="text-teal-400" />
-                  汇聚名企岗位
-                </span>
-              </div>
-              
-              <div className="w-1.5 h-1.5 rounded-full bg-white/40 shadow-[0_0_10px_rgba(255,255,255,0.5)]"></div>
-              
-              <div className="group relative px-6 py-2.5 rounded-full bg-black/40 border border-white/20 backdrop-blur-md text-white shadow-xl hover:bg-black/60 transition-all duration-300 hover:scale-105 hover:border-white/40 cursor-default">
-                <div className="absolute inset-0 rounded-full bg-gradient-to-r from-teal-400/20 to-emerald-400/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                <span className="relative flex items-center gap-2">
-                  <Users size={18} className="text-teal-400" />
-                  1v1大咖辅导
-                </span>
-              </div>
-              
-              <div className="w-1.5 h-1.5 rounded-full bg-white/40 shadow-[0_0_10px_rgba(255,255,255,0.5)]"></div>
-              
-              <div className="group relative px-6 py-2.5 rounded-full bg-black/40 border border-white/20 backdrop-blur-md text-white shadow-xl hover:bg-black/60 transition-all duration-300 hover:scale-105 hover:border-white/40 cursor-default">
-                <div className="absolute inset-0 rounded-full bg-gradient-to-r from-teal-400/20 to-emerald-400/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                <span className="relative flex items-center gap-2">
-                  <Compass size={18} className="text-teal-400" />
-                  升学创业全覆盖
-                </span>
-              </div>
+              <p className="text-lg text-white/80 mb-8 max-w-lg">{slides[currentSlide].sub}</p>
+              <Link to={slides[currentSlide].link}
+                className="inline-flex items-center gap-2 bg-white text-gray-900 px-6 py-3 rounded-xl font-bold hover:bg-gray-100 transition-colors shadow-lg"
+              >
+                {slides[currentSlide].cta} <ArrowRight className="w-4 h-4" />
+              </Link>
+            </motion.div>
+          </AnimatePresence>
+
+          {/* 搜索栏 */}
+          <div className="mt-8 max-w-xl">
+            <div className="relative">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <input type="text" placeholder="搜索岗位、课程、导师..."
+                className="w-full pl-12 pr-4 py-3.5 rounded-xl bg-white/95 backdrop-blur-sm text-gray-900 placeholder-gray-400 focus:ring-2 focus:ring-white/50 outline-none shadow-lg text-sm"
+              />
             </div>
           </div>
 
-          {/* 巨型全局搜索栏 */}
-          <div className="w-[800px] h-[56px] bg-white rounded-full flex items-center p-1.5 shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1)] pointer-events-auto relative z-40 transform hover:scale-[1.02] transition-transform duration-300">
-            <div className="flex items-center pl-6 pr-4 border-r border-gray-200 text-gray-700 font-medium cursor-pointer hover:text-[#14b8a6] transition-colors">
-              <Briefcase className="w-5 h-5 mr-2" />
-              <span>找职位</span>
-              <svg className="w-4 h-4 ml-1 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
-            </div>
-            <input 
-              type="text" 
-              className="flex-1 bg-transparent border-none outline-none pl-6 text-[16px] text-gray-900 placeholder-gray-400 h-full"
-              placeholder="搜索 校招、实习、简历辅导、或者保研夏令营..."
-            />
-            <button className="w-[140px] h-[46px] bg-[#14b8a6] hover:bg-[#0f766e] text-white rounded-full text-[16px] font-bold shadow-md transition-colors flex items-center justify-center gap-2">
-              <Search className="w-5 h-5" />
-              一键搜索
-            </button>
+          {/* 轮播指示器 */}
+          <div className="flex gap-2 mt-6">
+            {slides.map((_, i) => (
+              <button key={i} onClick={() => { setCurrentSlide(i); clearInterval(timerRef.current); }}
+                className={`h-1.5 rounded-full transition-all ${i === currentSlide ? 'w-8 bg-white' : 'w-4 bg-white/40'}`}
+              />
+            ))}
           </div>
         </div>
+      </div>
 
-        {/* Carousel Controls */}
-        <button onClick={prevSlide} className="absolute left-6 top-1/2 -translate-y-1/2 z-30 w-12 h-12 flex items-center justify-center rounded-full bg-black/30 hover:bg-black/60 text-white transition-colors backdrop-blur-md border border-white/20">
-          <ChevronLeft size={28} />
-        </button>
-        <button onClick={nextSlide} className="absolute right-6 top-1/2 -translate-y-1/2 z-30 w-12 h-12 flex items-center justify-center rounded-full bg-black/30 hover:bg-black/60 text-white transition-colors backdrop-blur-md border border-white/20">
-          <ChevronRight size={28} />
-        </button>
-        
-        {/* Indicators */}
-        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-30 flex space-x-3">
-          {HERO_SLIDES.map((_, index) => (
-            <button key={index} onClick={() => setCurrentSlide(index)} className={`h-3 rounded-full transition-all duration-300 ${index === currentSlide ? "bg-[#14b8a6] w-10 shadow-lg" : "bg-white/50 w-3 hover:bg-white"}`} />
-    
+      <div className="max-w-[1200px] mx-auto px-4 sm:px-6">
 
-          ))}
-        </div>
-      </section>
-
-      {/* 2. 快捷金刚区 (功能入口) */}
-      <section className="max-w-[1200px] mx-auto -mt-14 relative z-40 px-4 sm:px-6">
-        <div className="bg-white rounded-[16px] shadow-[0_10px_15px_-3px_rgba(0,0,0,0.1)] h-[120px] flex items-center justify-around px-8 divide-x divide-gray-100">
-          {[
-            { title: "校招季直通", desc: "名企最新网申", icon: Briefcase, color: "text-[#14b8a6]", bg: "bg-[#f0fdfa]" },
-            { title: "大咖1v1", desc: "简历精修模拟面试", icon: Users, color: "text-blue-500", bg: "bg-blue-50" },
-            { title: "免费真题库", desc: "行测申论无领导", icon: BookOpen, color: "text-purple-500", bg: "bg-purple-50" },
-            { title: "保研情报站", desc: "夏令营预推免", icon: Compass, color: "text-emerald-500", bg: "bg-emerald-50" },
-            { title: "找项目合伙人", desc: "大学生创业扶持", icon: CloudLightning, color: "text-orange-500", bg: "bg-orange-50" },
-          ].map((item, idx) => (
-            <Link key={idx} to="#" className="flex-1 flex flex-col items-center justify-center group py-2 hover:bg-gray-50 transition-colors rounded-xl mx-2">
-              <div className={`w-12 h-12 ${item.bg} ${item.color} rounded-xl flex items-center justify-center mb-2 group-hover:scale-110 transition-transform duration-300`}>
-                <item.icon size={24} />
-              </div>
-              <span className="text-[16px] font-bold text-gray-900 leading-tight">{item.title}</span>
-              <span className="text-[12px] text-gray-500 mt-1">{item.desc}</span>
-            </Link>
-          ))}
-        </div>
-      </section>
-
-      {/* 3. 大咖导师推荐 (等距横向排版) */}
-      <section className="max-w-[1200px] mx-auto mt-16 px-4 sm:px-6">
-        <div className="flex justify-between items-end mb-6">
-          <div>
-            <h2 className="text-[32px] font-bold text-[#111827]">大咖导师推荐</h2>
-            <p className="text-[16px] text-[#4b5563] mt-2">与行业资深前辈1v1交流，获取第一手职场/升学经验</p>
-          </div>
-          <Link to="/mentors" className="text-[#14b8a6] hover:text-[#0f766e] font-medium flex items-center text-[15px] transition-colors">
-            查看全部导师 <ChevronRight className="w-5 h-5 ml-1" />
-          </Link>
-        </div>
-
-        <div className="flex justify-between gap-[24px]">
-          {MENTORS.slice(0, 4).map((mentor) => (
-            <Link key={mentor.id} to={`/mentors/${mentor.id}`} className="group block flex-1 w-full max-w-[280px]">
-              <div className="bg-white rounded-[16px] overflow-hidden border border-[#e5e7eb] shadow-[0_1px_3px_rgba(0,0,0,0.1)] hover:shadow-[0_10px_15px_-3px_rgba(0,0,0,0.1)] hover:-translate-y-2 transition-all duration-300">
-                {/* 图片区 */}
-                <div className="relative h-[220px] w-full overflow-hidden">
-                  <img src={mentor.avatar} alt={mentor.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
-                  <div className="absolute top-3 right-3 bg-black/40 backdrop-blur-md rounded-full px-2 py-1 flex items-center gap-1">
-                    <Star className="w-3 h-3 text-[#f97316]" fill="currentColor" />
-                    <span className="text-white text-xs font-bold">{mentor.rating}</span>
-                  </div>
+        {/* ====== 登录后个性化区域 ====== */}
+        {isAuthenticated && user && (
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
+            className="bg-gradient-to-r from-primary-50 to-teal-50 rounded-2xl p-6 border border-primary-100 -mt-8 relative z-20 shadow-sm mb-8"
+          >
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 bg-primary-600 rounded-full flex items-center justify-center text-white font-bold text-lg">
+                  {user.nickname?.[0] || '用'}
                 </div>
-                {/* 信息区 */}
-                <div className="p-4 flex flex-col min-h-[160px]">
-                  <h3 className="text-[20px] font-bold text-[#111827] mb-1">{mentor.name}</h3>
-                  <p className="text-[14px] text-[#4b5563] mb-3 line-clamp-2 leading-snug">{mentor.title}</p>
-                  
-                  <div className="flex flex-wrap gap-2 mt-auto mb-4">
-                    {mentor.tags.map((tag, idx) => (
-                      <span key={idx} className="bg-[#f0fdfa] text-[#14b8a6] px-2 py-1 rounded text-[12px] font-medium border border-[#ccfbf1]">
-                        {tag}
-                      </span>
+                <div>
+                  <h2 className="text-lg font-bold text-gray-900">欢迎回来，{user.nickname}！</h2>
+                  <p className="text-sm text-gray-500">继续你的求职之旅</p>
+                </div>
+              </div>
+              <div className="flex gap-2">
+                {[
+                  { label: '我的投递', link: '/student/applications', icon: FileText },
+                  { label: '我的预约', link: '/student/appointments', icon: Calendar },
+                  { label: '我的收藏', link: '/student/favorites', icon: Heart },
+                ].map((a, i) => (
+                  <Link key={i} to={a.link}
+                    className="flex items-center gap-1.5 bg-white px-3 py-2 rounded-lg text-xs font-medium text-gray-700 hover:bg-primary-50 hover:text-primary-700 transition-colors border border-gray-200"
+                  >
+                    <a.icon className="w-3.5 h-3.5" /> {a.label}
+                  </Link>
+                ))}
+              </div>
+            </div>
+
+            {/* 可折叠新手引导 */}
+            <div className="border-t border-primary-100 pt-4 mt-2">
+              <button onClick={() => setShowGuide(!showGuide)}
+                className="flex items-center gap-2 text-sm font-medium text-primary-700 hover:text-primary-800 mb-3 transition-colors"
+              >
+                <Sparkles className="w-4 h-4" />
+                快速上手指南
+                {showGuide ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+              </button>
+              {showGuide && <OnboardingGuide role="student" inline />}
+            </div>
+          </motion.div>
+        )}
+
+        {/* ====== 平台数据 ====== */}
+        <div className={`grid grid-cols-2 md:grid-cols-4 gap-4 ${isAuthenticated ? '' : '-mt-8 relative z-20 mb-8'}`}>
+          {platformStats.map((s, i) => (
+            <motion.div key={i} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }}
+              className="bg-white rounded-xl p-5 text-center shadow-sm border border-gray-100"
+            >
+              <s.icon className="w-6 h-6 text-primary-600 mx-auto mb-2" />
+              <div className="text-2xl font-bold text-gray-900">{s.value.toLocaleString()}{s.suffix}</div>
+              <div className="text-xs text-gray-500 mt-0.5">{s.label}</div>
+            </motion.div>
+          ))}
+        </div>
+
+        {/* ====== 快捷金刚区 ====== */}
+        <div className="py-8">
+          <div className="flex items-center gap-4 overflow-x-auto pb-2">
+            {quickEntries.map((e, i) => (
+              <Link key={i} to={e.link} className="flex-shrink-0">
+                <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: i * 0.08 }}
+                  className={`${e.bg} w-[140px] rounded-2xl p-5 text-center hover:shadow-md hover:scale-105 transition-all border border-transparent hover:border-gray-200 relative`}
+                >
+                  {e.badge && (
+                    <div className="absolute top-2 right-2">
+                      <FeatureStatus status={e.badge} />
+                    </div>
+                  )}
+                  <e.icon className={`w-8 h-8 ${e.color} mx-auto mb-2`} />
+                  <h4 className="text-sm font-bold text-gray-900">{e.label}</h4>
+                  <p className="text-[11px] text-gray-500 mt-0.5">{e.desc}</p>
+                </motion.div>
+              </Link>
+            ))}
+          </div>
+        </div>
+
+        {/* ====== 为你推荐 — 热门岗位 ====== */}
+        <section className="pb-10">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+              <Briefcase className="w-5 h-5 text-primary-600" />
+              {isAuthenticated ? '为你推荐 — 热门岗位' : '热门校招岗位'}
+            </h2>
+            <Link to="/jobs" className="text-sm text-primary-600 font-medium hover:underline flex items-center gap-1">
+              查看更多 <ArrowRight className="w-4 h-4" />
+            </Link>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {hotJobs.map((job, i) => (
+              <motion.div key={i} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.08 }}>
+                <Link to="/jobs" className="block bg-white rounded-xl p-5 border border-gray-100 hover:shadow-md hover:border-primary-200 transition-all group">
+                  <div className="w-10 h-10 bg-gray-100 rounded-xl flex items-center justify-center mb-3 text-sm font-bold text-gray-600">
+                    {job.company[0]}
+                  </div>
+                  <h4 className="text-sm font-bold text-gray-900 group-hover:text-primary-600 transition-colors">{job.title}</h4>
+                  <p className="text-xs text-gray-500 mt-1">{job.company}</p>
+                  <div className="flex items-center gap-2 mt-2 text-xs text-gray-400">
+                    <MapPin className="w-3 h-3" />{job.location}
+                    <DollarSign className="w-3 h-3 ml-2" />{job.salary}
+                  </div>
+                  <div className="flex gap-1.5 mt-3">
+                    {job.tags.map(t => (
+                      <span key={t} className="text-[10px] px-2 py-0.5 bg-primary-50 text-primary-700 rounded-md font-medium">{t}</span>
                     ))}
                   </div>
-                  
-                  <div className="w-full h-[36px] flex items-center justify-center border border-[#14b8a6] text-[#14b8a6] rounded-lg text-[14px] font-medium group-hover:bg-[#14b8a6] group-hover:text-white transition-colors">
-                    查看主页
-                  </div>
-                </div>
-              </div>
-            </Link>
-          ))}
-        </div>
-      </section>
-
-      {/* 4. 免费公开课精选 (网格排版) */}
-      <section className="max-w-[1200px] mx-auto mt-16 px-4 sm:px-6">
-        <div className="flex justify-between items-end mb-6">
-          <div>
-            <h2 className="text-[32px] font-bold text-[#111827]">免费公开课精选</h2>
-            <p className="text-[16px] text-[#4b5563] mt-2">海量免费干货视频，系统性提升你的求职硬实力</p>
+                </Link>
+              </motion.div>
+            ))}
           </div>
-          <Link to="/courses" className="text-[#14b8a6] hover:text-[#0f766e] font-medium flex items-center text-[15px] transition-colors">
-            前往干货资料库 <ChevronRight className="w-5 h-5 ml-1" />
-          </Link>
-        </div>
+        </section>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {COURSES.map((course) => (
-            <Link key={course.id} to={`/courses/${course.id}`} className="group block">
-              <div className="bg-white rounded-[16px] overflow-hidden border border-[#e5e7eb] shadow-[0_1px_3px_rgba(0,0,0,0.1)] hover:shadow-[0_10px_15px_-3px_rgba(0,0,0,0.1)] hover:-translate-y-1.5 transition-all duration-300 flex flex-col h-full">
-                <div className="relative aspect-video overflow-hidden">
-                  <img src={course.cover} alt={course.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                  <div className="absolute inset-0 bg-black/20 group-hover:bg-black/40 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
-                    <div className="w-12 h-12 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center text-[#14b8a6] shadow-lg pl-1">
-                      <Play size={24} fill="currentColor" />
-                    </div>
-                  </div>
-                </div>
-                <div className="p-5 flex-grow flex flex-col">
-                  <h3 className="text-[18px] font-bold text-[#111827] line-clamp-2 leading-snug group-hover:text-[#14b8a6] transition-colors">
-                    {course.title}
-                  </h3>
-                  <div className="mt-auto pt-4 flex items-center justify-between text-[14px] text-[#9ca3af]">
-                    <div className="flex items-center">
-                      <span className="font-medium text-[#4b5563]">主讲：{course.mentor}</span>
-                    </div>
-                    <div className="flex items-center gap-1 bg-gray-50 px-2 py-0.5 rounded text-[12px]">
-                      <Users size={14} className="text-gray-400" />
-                      <span>{course.views}</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
+        {/* ====== 大咖导师推荐 ====== */}
+        <section className="pb-10">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+              <Users className="w-5 h-5 text-primary-600" /> 大咖导师推荐
+            </h2>
+            <Link to="/mentors" className="text-sm text-primary-600 font-medium hover:underline flex items-center gap-1">
+              查看更多 <ArrowRight className="w-4 h-4" />
             </Link>
-          ))}
-        </div>
-      </section>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {hotMentors.map((m, i) => (
+              <motion.div key={i} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.08 }}>
+                <Link to="/mentors" className="block bg-white rounded-xl p-5 border border-gray-100 hover:shadow-md hover:border-primary-200 transition-all group">
+                  <div className="flex items-center gap-3 mb-3">
+                    <img src={m.avatar} alt={m.name} className="w-12 h-12 rounded-xl object-cover border border-gray-100" />
+                    <div>
+                      <h4 className="text-sm font-bold text-gray-900 group-hover:text-primary-600 transition-colors">{m.name}</h4>
+                      <p className="text-[11px] text-gray-500 truncate max-w-[120px]">{m.title}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 mb-3">
+                    <Star className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />
+                    <span className="text-sm font-bold text-gray-900">{m.rating}</span>
+                    <span className="text-xs text-primary-600 font-medium ml-auto">{m.price}元/次</span>
+                  </div>
+                  <div className="flex gap-1.5">
+                    {m.tags.map(t => (
+                      <span key={t} className="text-[10px] px-2 py-0.5 bg-gray-50 text-gray-600 rounded-md">{t}</span>
+                    ))}
+                  </div>
+                </Link>
+              </motion.div>
+            ))}
+          </div>
+        </section>
+
+        {/* ====== 免费课程精选 ====== */}
+        <section className="pb-10">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+              <BookOpen className="w-5 h-5 text-primary-600" /> 免费课程精选
+            </h2>
+            <Link to="/courses" className="text-sm text-primary-600 font-medium hover:underline flex items-center gap-1">
+              查看更多 <ArrowRight className="w-4 h-4" />
+            </Link>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {hotCourses.map((c, i) => (
+              <motion.div key={i} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.08 }}>
+                <Link to="/courses" className="block bg-white rounded-xl overflow-hidden border border-gray-100 hover:shadow-md hover:border-primary-200 transition-all group">
+                  <div className={`h-32 bg-gradient-to-br ${c.color} relative flex items-center justify-center`}>
+                    <Play className="w-10 h-10 text-white/80 group-hover:text-white group-hover:scale-110 transition-all" />
+                  </div>
+                  <div className="p-4">
+                    <h4 className="text-sm font-bold text-gray-900 group-hover:text-primary-600 transition-colors line-clamp-2">{c.title}</h4>
+                    <div className="flex items-center justify-between mt-2 text-xs text-gray-500">
+                      <span>{c.mentor}</span>
+                      <span>{c.views.toLocaleString()} 次播放</span>
+                    </div>
+                  </div>
+                </Link>
+              </motion.div>
+            ))}
+          </div>
+        </section>
+
+        {/* ====== 平台价值说明 ====== */}
+        <section className="pb-16">
+          <h2 className="text-xl font-bold text-gray-900 text-center mb-2">一个平台，三方受益</h2>
+          <p className="text-sm text-gray-500 text-center mb-8">启航平台连接学生、企业、导师，让每一方都获得价值</p>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {[
+              {
+                role: '对学生', icon: GraduationCap, color: 'text-purple-600', bg: 'bg-purple-50', border: 'border-purple-100',
+                points: ['一站搜索校招/实习/社招岗位', '1v1预约行业大咖导师辅导', '免费学习简历、面试、职业规划课程', '获取考研/留学/创业全方位资讯'],
+              },
+              {
+                role: '对企业', icon: Building2, color: 'text-blue-600', bg: 'bg-blue-50', border: 'border-blue-100',
+                points: ['零门槛发布招聘岗位', 'Kanban式简历筛选管理', '精准人才搜索与推荐', '数据化招聘效果分析'],
+              },
+              {
+                role: '对导师', icon: Award, color: 'text-emerald-600', bg: 'bg-emerald-50', border: 'border-emerald-100',
+                points: ['自主管理课程与辅导档期', '获取学生真实评价反馈', '平台推广增加个人影响力', '数据化运营提升辅导质量'],
+              },
+            ].map((item, i) => (
+              <motion.div key={i} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 + i * 0.1 }}
+                className={`${item.bg} rounded-2xl p-6 border ${item.border}`}
+              >
+                <item.icon className={`w-8 h-8 ${item.color} mb-4`} />
+                <h3 className="text-lg font-bold text-gray-900 mb-3">{item.role}</h3>
+                <ul className="space-y-2">
+                  {item.points.map((p, pi) => (
+                    <li key={pi} className="text-sm text-gray-600 flex items-start gap-2">
+                      <TrendingUp className={`w-4 h-4 ${item.color} shrink-0 mt-0.5`} />
+                      {p}
+                    </li>
+                  ))}
+                </ul>
+              </motion.div>
+            ))}
+          </div>
+        </section>
+      </div>
     </div>
   );
 }

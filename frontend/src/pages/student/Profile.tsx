@@ -6,6 +6,7 @@ import {
   Pencil, X, Check, Link, Briefcase
 } from 'lucide-react';
 import http from '@/api/http';
+import FeatureStatus from '@/components/FeatureStatus';
 
 // ====== 学生个人资料页 ======
 // 支持查看/编辑模式切换，个人信息编辑、技能标签管理、简历上传
@@ -424,8 +425,8 @@ export default function Profile() {
                 {/* 上传区域（预留） */}
                 <div className="border-2 border-dashed border-gray-200 rounded-xl p-8 text-center hover:border-primary-300 transition-colors">
                   <Upload className="w-10 h-10 text-gray-300 mx-auto mb-3" />
-                  <p className="text-sm text-gray-500 mb-1">文件上传功能即将上线</p>
-                  <p className="text-xs text-gray-400">目前请使用简历链接方式</p>
+                  <div className="flex justify-center mb-2"><FeatureStatus status="coming" label="文件上传即将上线" size="md" /></div>
+                  <p className="text-xs text-gray-400">目前请使用简历链接方式，文件直传功能开发中</p>
                 </div>
               </div>
             ) : (
