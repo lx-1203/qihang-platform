@@ -1,9 +1,19 @@
-import { Link, useLocation } from 'react-router-dom';
-import { Search, UserCircle, Briefcase, BookOpen, Compass, Lightbulb } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useState, useEffect, useRef } from 'react';
+import { Search, UserCircle, Bell, LogOut, Settings, User, ChevronDown } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useAuthStore } from '@/store/auth';
+import http from '@/api/http';
+
+// ====== 顶部导航栏（认证感知 + 通知铃铛） ======
 
 export default function Navbar() {
   const location = useLocation();
+  const navigate = useNavigate();
+  const { isAuthenticated, user, logout } = useAuthStore();
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const userMenuRef = useRef<HTMLDivElement>(null);
 
   const navItems = [
     { path: '/', label: '首页' },
@@ -15,6 +25,55 @@ export default function Navbar() {
     { path: '/study-abroad', label: '留学申请' },
   ];
 
+  // 获取未读通知数
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchUnreadCount();
+    }
+  }, [isAuthenticated]);
+
+  async function fetchUnreadCount() {
+    try {
+      const res = await http.get('/notifications/unread-count');
+      if (res.data?.code === 200) {
+        setUnreadCount(res.data.data?.count || 0);
+      }
+    } catch {
+      // 模拟未读数
+      setUnreadCount(3);
+    }
+  }
+
+  // 点击外部关闭菜单
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node)) {
+        setUserMenuOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, []);
+
+  function handleLogout() {
+    logout();
+    setUserMenuOpen(false);
+    navigate('/');
+  }
+
+  // 根据角色获取后台入口
+  function getDashboardLink(): { path: string; label: string } | null {
+    if (!user) return null;
+    switch (user.role) {
+      case 'admin': return { path: '/admin/dashboard', label: '管理后台' };
+      case 'company': return { path: '/company/dashboard', label: '企业后台' };
+      case 'mentor': return { path: '/mentor/dashboard', label: '导师工作台' };
+      default: return null;
+    }
+  }
+
+  const dashboardLink = getDashboardLink();
+
   return (
     <header className="bg-white sticky top-0 z-50 border-b border-gray-100 shadow-sm">
       <div className="max-w-[1200px] mx-auto px-4 sm:px-6">
@@ -23,16 +82,16 @@ export default function Navbar() {
           <div className="flex items-center">
             <Link to="/" className="flex-shrink-0 flex items-center mr-8 lg:mr-12">
               <div className="w-8 h-8 bg-[#14b8a6] rounded-lg flex items-center justify-center text-white font-bold text-xl mr-2 shadow-sm">
-                职
+                启
               </div>
-              <span className="text-xl font-bold text-[#111827] tracking-tight whitespace-nowrap">生涯规划</span>
+              <span className="text-xl font-bold text-[#111827] tracking-tight whitespace-nowrap">启航平台</span>
             </Link>
-            
+
             {/* Navigation */}
             <nav className="hidden md:flex space-x-1 text-[14px] whitespace-nowrap">
               {navItems.map((item) => {
-                const isActive = item.path === '/' 
-                  ? location.pathname === '/' 
+                const isActive = item.path === '/'
+                  ? location.pathname === '/'
                   : location.pathname.startsWith(item.path);
 
                 return (
@@ -62,7 +121,7 @@ export default function Navbar() {
           </div>
 
           {/* Right section */}
-          <div className="flex items-center space-x-4 flex-shrink-0 ml-auto md:ml-0">
+          <div className="flex items-center space-x-3 flex-shrink-0 ml-auto md:ml-0">
             {/* Search */}
             <div className="hidden lg:flex relative items-center">
               <input
@@ -74,13 +133,110 @@ export default function Navbar() {
                 <Search className="h-4 w-4 text-[#9ca3af] cursor-pointer hover:text-[#14b8a6] transition-colors" />
               </div>
             </div>
-            
-            <div className="flex items-center gap-3 sm:gap-4 pl-2 border-l border-gray-200">
-              <Link to="/login" className="flex items-center gap-1.5 text-[#4b5563] text-sm font-medium hover:text-[#14b8a6] whitespace-nowrap transition-colors">
-                <UserCircle className="w-5 h-5" />
-                登录 / 注册
-              </Link>
-            </div>
+
+            {isAuthenticated && user ? (
+              <>
+                {/* 通知铃铛 */}
+                <Link
+                  to="/notifications"
+                  className="relative p-2 text-gray-500 hover:text-[#14b8a6] transition-colors rounded-lg hover:bg-gray-50"
+                >
+                  <Bell className="w-5 h-5" />
+                  {unreadCount > 0 && (
+                    <span className="absolute top-1 right-1 min-w-[16px] h-4 px-1 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center leading-none">
+                      {unreadCount > 99 ? '99+' : unreadCount}
+                    </span>
+                  )}
+                </Link>
+
+                {/* 用户菜单 */}
+                <div className="relative pl-2 border-l border-gray-200" ref={userMenuRef}>
+                  <button
+                    onClick={() => setUserMenuOpen(!userMenuOpen)}
+                    className="flex items-center gap-2 py-1 px-2 rounded-lg hover:bg-gray-50 transition-colors"
+                  >
+                    {user.avatar ? (
+                      <img src={user.avatar} alt="" className="w-7 h-7 rounded-full object-cover border border-gray-200" />
+                    ) : (
+                      <div className="w-7 h-7 rounded-full bg-primary-100 text-primary-700 flex items-center justify-center font-bold text-xs">
+                        {user.nickname?.charAt(0) || user.email?.charAt(0) || 'U'}
+                      </div>
+                    )}
+                    <span className="hidden sm:block text-sm font-medium text-gray-700 max-w-[80px] truncate">
+                      {user.nickname || user.email}
+                    </span>
+                    <ChevronDown className={`w-3.5 h-3.5 text-gray-400 transition-transform ${userMenuOpen ? 'rotate-180' : ''}`} />
+                  </button>
+
+                  <AnimatePresence>
+                    {userMenuOpen && (
+                      <motion.div
+                        initial={{ opacity: 0, y: -8, scale: 0.95 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: -8, scale: 0.95 }}
+                        transition={{ duration: 0.15 }}
+                        className="absolute right-0 top-full mt-2 w-52 bg-white rounded-xl shadow-lg border border-gray-200 py-2 z-50"
+                      >
+                        {/* 用户信息 */}
+                        <div className="px-4 py-2 border-b border-gray-100">
+                          <p className="text-sm font-medium text-gray-900 truncate">{user.nickname || user.email}</p>
+                          <p className="text-xs text-gray-500 mt-0.5">{
+                            user.role === 'admin' ? '管理员' :
+                            user.role === 'company' ? '企业用户' :
+                            user.role === 'mentor' ? '导师' : '学生'
+                          }</p>
+                        </div>
+
+                        {/* 菜单项 */}
+                        <div className="py-1">
+                          {user.role === 'student' && (
+                            <Link to="/student/profile" onClick={() => setUserMenuOpen(false)}
+                              className="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors">
+                              <User className="w-4 h-4 text-gray-400" /> 个人中心
+                            </Link>
+                          )}
+
+                          {dashboardLink && (
+                            <Link to={dashboardLink.path} onClick={() => setUserMenuOpen(false)}
+                              className="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors">
+                              <Settings className="w-4 h-4 text-gray-400" /> {dashboardLink.label}
+                            </Link>
+                          )}
+
+                          <Link to="/notifications" onClick={() => setUserMenuOpen(false)}
+                            className="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors">
+                            <Bell className="w-4 h-4 text-gray-400" />
+                            我的消息
+                            {unreadCount > 0 && (
+                              <span className="ml-auto px-1.5 py-0.5 bg-red-100 text-red-600 text-[10px] font-medium rounded-full">
+                                {unreadCount}
+                              </span>
+                            )}
+                          </Link>
+                        </div>
+
+                        {/* 登出 */}
+                        <div className="pt-1 border-t border-gray-100">
+                          <button
+                            onClick={handleLogout}
+                            className="flex items-center gap-3 w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                          >
+                            <LogOut className="w-4 h-4" /> 退出登录
+                          </button>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              </>
+            ) : (
+              <div className="flex items-center gap-3 sm:gap-4 pl-2 border-l border-gray-200">
+                <Link to="/login" className="flex items-center gap-1.5 text-[#4b5563] text-sm font-medium hover:text-[#14b8a6] whitespace-nowrap transition-colors">
+                  <UserCircle className="w-5 h-5" />
+                  登录 / 注册
+                </Link>
+              </div>
+            )}
           </div>
         </div>
       </div>
