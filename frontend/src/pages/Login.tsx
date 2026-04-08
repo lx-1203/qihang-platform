@@ -10,6 +10,7 @@ import {
   ArrowRight,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import DevFloatButton from "../components/DevFloatButton";
 
 export default function Login() {
   const [isLogin, setIsLogin] = useState(true);
@@ -22,6 +23,7 @@ export default function Login() {
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col md:flex-row">
+      <DevFloatButton />
       {/* 左侧：品牌展示/插画区域 */}
       <div className="hidden md:flex md:w-1/2 bg-[#111827] relative overflow-hidden flex-col justify-between p-12 lg:p-24 text-white">
         {/* 背景装饰图案 */}

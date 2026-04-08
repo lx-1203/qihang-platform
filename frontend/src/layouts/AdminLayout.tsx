@@ -1,14 +1,15 @@
 import { Link, Outlet, useLocation } from 'react-router-dom';
-import { 
-  ShieldCheck, 
-  Users, 
-  Building2, 
-  
-  Settings, 
+import {
+  ShieldCheck,
+  Users,
+  Building2,
+
+  Settings,
   LogOut,
   BarChart,
   Video
 } from 'lucide-react';
+import DevFloatButton from '../components/DevFloatButton';
 
 const SIDEBAR_NAV = [
   { name: '数据总览', href: '/admin/dashboard', icon: BarChart },
@@ -89,6 +90,7 @@ export default function AdminLayout() {
           <Outlet />
         </div>
       </main>
+      <DevFloatButton />
     </div>
   );
 }

@@ -8,6 +8,7 @@ import ProtectedRoute from '../components/ProtectedRoute';
 import Home from '../pages/Home';
 import Login from '../pages/Login';
 import Mentors from '../pages/Mentors';
+import DevNav from '../pages/DevNav';
 import MentorDetail from '../pages/MentorDetail';
 import CourseDetail from '../pages/CourseDetail';
 import Courses from '../pages/Courses';
@@ -254,5 +255,10 @@ export const router = createBrowserRouter([
   {
     path: '/register',
     element: <Login />
+  },
+  // ====== 开发调试页 (上线前移除) ======
+  {
+    path: '/dev',
+    element: <DevNav />
   }
 ]);

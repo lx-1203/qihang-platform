@@ -109,7 +109,7 @@ const PROGRAM_DETAIL = {
     { id: 7, background: '985', university: '清华大学 自动化', gpa: '3.9/4.0', ielts: '7.5', gre: '330', internship: 'Google 实习', research: '3段科研+顶会', result: 'admitted', date: '2026-02-20', scholarship: 'Bursary £5,000' },
     { id: 8, background: '211', university: '武汉大学 计算机', gpa: '3.4/4.0', ielts: '6.5', gre: '', internship: '美团 后端', research: '无', result: 'rejected', date: '2026-03-18', scholarship: '' },
   ],
-  scholarship: '该项目提供以下奖学金机会：\n\n1. **Departmental Bursary**（£2,000-5,000）：需在申请时勾选奖学金选项，根据学术成绩和综合背景评定\n2. **President\'s Scholarship**：仅限博士生，硕士不适用\n3. **CSC-Imperial Scholarship**（全奖）：需先获得Imperial的Offer，再向CSC申请，名额极少\n4. **外部奖学金**：Chevening Scholarship（英国政府奖学金）、志奋领奖学金等',
+  scholarship: '该项目提供以下奖学金机会：\n\n1. Departmental Bursary（£2,000-5,000）：需在申请时勾选奖学金选项，根据学术成绩和综合背景评定\n2. President\'s Scholarship：仅限博士生，硕士不适用\n3. CSC-Imperial Scholarship（全奖）：需先获得Imperial的Offer，再向CSC申请，名额极少\n4. 外部奖学金：Chevening Scholarship（英国政府奖学金）、志奋领奖学金等',
   website: 'https://www.imperial.ac.uk/computing/prospective-students/courses/msc-computing/',
   relatedPrograms: [
     { id: 2, school: '帝国理工学院', program: '人工智能 MSc', ranking: 2 },

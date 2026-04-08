@@ -1,16 +1,17 @@
 
 import { Link, Outlet, useLocation } from 'react-router-dom';
-import { 
-  LayoutDashboard, 
-   
-  Users, 
-  Calendar, 
-  Settings, 
-  Bell, 
+import {
+  LayoutDashboard,
+
+  Users,
+  Calendar,
+  Settings,
+  Bell,
   LogOut,
   Video,
-  
+
 } from 'lucide-react';
+import DevFloatButton from '../components/DevFloatButton';
 
 const SIDEBAR_NAV = [
   { name: '工作台总览', href: '/mentor/dashboard', icon: LayoutDashboard },
@@ -89,6 +90,7 @@ export default function MentorLayout() {
           <Outlet />
         </div>
       </main>
+      <DevFloatButton />
     </div>
   );
 }

@@ -4,6 +4,10 @@ import type { UserRole } from '../types';
 
 // ====== 路由守卫组件 ======
 // 基于 RBAC 四角色权限模型，严格控制页面访问
+// DEV_MODE: 开发环境下跳过权限校验，方便调试
+
+// 开发模式开关（上线前改为 false 或删除此行）
+const DEV_MODE = true;
 
 interface ProtectedRouteProps {
   /** 允许访问的角色列表 */
@@ -23,10 +27,17 @@ interface ProtectedRouteProps {
  *
  * 未登录 → 重定向到 /login（携带 returnUrl）
  * 角色不匹配 → 重定向到对应角色首页
+ *
+ * 开发模式(DEV_MODE=true)：跳过所有权限校验，直接放行
  */
 export default function ProtectedRoute({ allowedRoles, children }: ProtectedRouteProps) {
   const { isAuthenticated, user } = useAuthStore();
   const location = useLocation();
+
+  // 🔧 开发模式：跳过权限校验，直接放行
+  if (DEV_MODE) {
+    return <>{children}</>;
+  }
 
   // 未登录 → 跳转登录页，保存当前路径用于登录后回跳
   if (!isAuthenticated || !user) {

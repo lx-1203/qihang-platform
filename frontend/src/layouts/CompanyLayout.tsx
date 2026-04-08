@@ -1,14 +1,15 @@
 import { Link, Outlet, useLocation } from 'react-router-dom';
-import { 
-  Building2, 
-  Briefcase, 
-  Users, 
-  FileText, 
-  Settings, 
-  Bell, 
+import {
+  Building2,
+  Briefcase,
+  Users,
+  FileText,
+  Settings,
+  Bell,
   LogOut,
   Mail
 } from 'lucide-react';
+import DevFloatButton from '../components/DevFloatButton';
 
 const SIDEBAR_NAV = [
   { name: '企业总览', href: '/company/dashboard', icon: Building2 },
@@ -93,6 +94,7 @@ export default function CompanyLayout() {
           <Outlet />
         </div>
       </main>
+      <DevFloatButton />
     </div>
   );
 }
