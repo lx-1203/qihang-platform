@@ -36,7 +36,7 @@ router.get('/', async (req, res) => {
     const offset = (pageNum - 1) * size;
 
     // 构建查询条件
-    let whereClauses = ['user_id = ?'];
+    let whereClauses = ['user_id = ?', 'deleted_at IS NULL'];
     let params = [userId];
 
     if (is_read !== undefined && is_read !== '') {
@@ -70,7 +70,7 @@ router.get('/', async (req, res) => {
 
     // 查询未读总数
     const [unreadResult] = await pool.query(
-      'SELECT COUNT(*) AS unread FROM notifications WHERE user_id = ? AND is_read = 0',
+      'SELECT COUNT(*) AS unread FROM notifications WHERE user_id = ? AND is_read = 0 AND deleted_at IS NULL',
       [userId]
     );
 
@@ -97,7 +97,7 @@ router.get('/', async (req, res) => {
 router.get('/unread-count', async (req, res) => {
   try {
     const [result] = await pool.query(
-      'SELECT COUNT(*) AS unread FROM notifications WHERE user_id = ? AND is_read = 0',
+      'SELECT COUNT(*) AS unread FROM notifications WHERE user_id = ? AND is_read = 0 AND deleted_at IS NULL',
       [req.user.id]
     );
 
@@ -177,7 +177,7 @@ router.delete('/:id', async (req, res) => {
     }
 
     const [result] = await pool.query(
-      'DELETE FROM notifications WHERE id = ? AND user_id = ?',
+      'UPDATE notifications SET deleted_at = NOW() WHERE id = ? AND user_id = ? AND deleted_at IS NULL',
       [notificationId, req.user.id]
     );
 

@@ -79,17 +79,22 @@ export interface Job {
   id: number;
   title: string;
   company_name: string;
-  company_logo?: string;
+  company_id: number;
+  logo?: string;
   location: string;
   salary: string;
-  type: string;
+  type: '校招' | '实习' | '社招';
   category: string;
+  tags: string[];
   description: string;
   requirements: string;
-  benefits?: string;
-  company_id: number;
-  status: 'active' | 'closed' | 'draft';
+  urgent: number;
+  status: 'active' | 'inactive';
+  view_count: number;
+  /** 后端计算的相对时间，如 "2小时前" */
+  time?: string;
   created_at: string;
+  updated_at?: string;
 }
 
 // ====== 课程类型 ======
@@ -241,14 +246,18 @@ export interface Resume {
   id: number;
   student_id: number;
   job_id: number;
+  /** JOIN 字段 — 来自 jobs 表 */
   job_title?: string;
   company_name?: string;
-  resume_url: string;
-  cover_letter: string;
-  status: 'pending' | 'viewed' | 'shortlisted' | 'interview' | 'rejected' | 'accepted';
-  feedback: string;
+  company_logo?: string;
+  job_salary?: string;
+  job_location?: string;
+  job_type?: string;
+  resume_url?: string;
+  company_remark?: string;
+  status: 'pending' | 'viewed' | 'interview' | 'offered' | 'rejected';
   created_at: string;
-  updated_at: string;
+  updated_at?: string;
 }
 
 // ====== 收藏类型 ======

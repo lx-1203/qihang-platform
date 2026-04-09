@@ -7,6 +7,7 @@ import {
   Search, LayoutGrid, List, ExternalLink
 } from 'lucide-react';
 import http from '@/api/http';
+import ConfirmDialog from '@/components/ui/ConfirmDialog';
 
 // ====== 我的收藏 ======
 // 分 Tab 查看收藏的职位/课程/导师，支持取消收藏
@@ -126,6 +127,8 @@ export default function Favorites() {
   const [loading, setLoading] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [searchKeyword, setSearchKeyword] = useState('');
+  const [deleteTarget, setDeleteTarget] = useState<{id: number; name: string; type: FavoriteTab} | null>(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
   useEffect(() => {
     fetchFavorites();
@@ -158,6 +161,17 @@ export default function Favorites() {
     if (type === 'jobs') setJobs(prev => prev.filter(j => j.favoriteId !== favoriteId));
     if (type === 'courses') setCourses(prev => prev.filter(c => c.favoriteId !== favoriteId));
     if (type === 'mentors') setMentors(prev => prev.filter(m => m.favoriteId !== favoriteId));
+  }
+
+  async function handleConfirmDelete() {
+    if (!deleteTarget) return;
+    try {
+      setDeleteLoading(true);
+      await removeFavorite(deleteTarget.id, deleteTarget.type);
+    } finally {
+      setDeleteLoading(false);
+      setDeleteTarget(null);
+    }
   }
 
   // 各 Tab 的数据量
@@ -319,7 +333,7 @@ export default function Favorites() {
                       </div>
                       {/* 取消收藏 */}
                       <button
-                        onClick={() => removeFavorite(job.favoriteId, 'jobs')}
+                        onClick={() => setDeleteTarget({ id: job.favoriteId, name: job.title, type: 'jobs' })}
                         className="p-2 text-red-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors flex-shrink-0"
                         title="取消收藏"
                       >
@@ -364,7 +378,7 @@ export default function Favorites() {
                       </span>
                       {/* 取消收藏按钮 */}
                       <button
-                        onClick={() => removeFavorite(course.favoriteId, 'courses')}
+                        onClick={() => setDeleteTarget({ id: course.favoriteId, name: course.title, type: 'courses' })}
                         className="absolute top-3 right-3 p-1.5 bg-white/20 backdrop-blur-sm text-white rounded-full hover:bg-red-500 transition-colors"
                         title="取消收藏"
                       >
@@ -430,7 +444,7 @@ export default function Favorites() {
                             </h3>
                           </a>
                           <button
-                            onClick={() => removeFavorite(mentor.favoriteId, 'mentors')}
+                            onClick={() => setDeleteTarget({ id: mentor.favoriteId, name: mentor.name, type: 'mentors' })}
                             className="p-1.5 text-red-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors flex-shrink-0"
                             title="取消收藏"
                           >
@@ -469,6 +483,17 @@ export default function Favorites() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* 取消收藏确认弹窗 */}
+      <ConfirmDialog
+        open={!!deleteTarget}
+        variant="warning"
+        title="确认取消收藏"
+        description="取消收藏后可重新收藏"
+        loading={deleteLoading}
+        onConfirm={handleConfirmDelete}
+        onCancel={() => setDeleteTarget(null)}
+      />
     </div>
   );
 }

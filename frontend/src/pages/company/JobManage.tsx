@@ -7,6 +7,7 @@ import {
   DollarSign, Building2, Clock, FileText
 } from 'lucide-react';
 import http from '@/api/http';
+import ConfirmDialog from '@/components/ui/ConfirmDialog';
 
 // ====== 企业端职位管理 ======
 // 商业级要求：CRUD 操作、状态切换、模态表单、搜索筛选
@@ -51,6 +52,8 @@ export default function CompanyJobManage() {
   const [total, setTotal] = useState(0);
   const pageSize = 10;
   const [actionMenu, setActionMenu] = useState<number | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<{id: number; name: string} | null>(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
   // 模态框状态
   const [showModal, setShowModal] = useState(false);
@@ -119,6 +122,17 @@ export default function CompanyJobManage() {
     setTotal(prev => prev - 1);
     setActionMenu(null);
     http.delete(`/company/jobs/${id}`).catch(() => {});
+  }
+
+  async function handleConfirmDelete() {
+    if (!deleteTarget) return;
+    try {
+      setDeleteLoading(true);
+      deleteJob(deleteTarget.id);
+    } finally {
+      setDeleteLoading(false);
+      setDeleteTarget(null);
+    }
   }
 
   function openCreateModal() {
@@ -341,7 +355,7 @@ export default function CompanyJobManage() {
                           {job.status === 'active' ? '下架' : '上架'}
                         </button>
                         <button
-                          onClick={() => deleteJob(job.id)}
+                          onClick={() => { setDeleteTarget({ id: job.id, name: job.title }); setActionMenu(null); }}
                           className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-gray-50 flex items-center gap-2"
                         >
                           <Trash2 className="w-4 h-4" /> 删除
@@ -540,6 +554,17 @@ export default function CompanyJobManage() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* 删除确认弹窗 */}
+      <ConfirmDialog
+        open={!!deleteTarget}
+        variant="danger"
+        title="确认删除职位"
+        description={`确定要删除职位「${deleteTarget?.name}」吗？删除后无法恢复。`}
+        loading={deleteLoading}
+        onConfirm={handleConfirmDelete}
+        onCancel={() => setDeleteTarget(null)}
+      />
     </div>
   );
 }

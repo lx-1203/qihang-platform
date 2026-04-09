@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Search, ChevronLeft, ChevronRight, Play, Star,
@@ -14,15 +14,18 @@ import { useConfigStore } from '@/store/config';
 import http from '@/api/http';
 import OnboardingGuide from '@/components/OnboardingGuide';
 import FeatureStatus from '@/components/FeatureStatus';
+import { addSearchHistory } from '@/utils/searchHistory';
 
 // ====== 首页 ======
 // 学生为主的门户首页，登录后展示个性化推荐和引导
 
 export default function Home() {
   const { isAuthenticated, user } = useAuthStore();
+  const navigate = useNavigate();
   const [currentSlide, setCurrentSlide] = useState(0);
   const [showGuide, setShowGuide] = useState(true);
   const timerRef = useRef<ReturnType<typeof setInterval>>();
+  const [homeSearch, setHomeSearch] = useState('');
 
   // API 数据状态
   const [hotJobs, setHotJobs] = useState<any[]>([]);
@@ -134,6 +137,14 @@ export default function Home() {
             <div className="relative">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
               <input type="text" placeholder="搜索岗位、课程、导师..."
+                value={homeSearch}
+                onChange={e => setHomeSearch(e.target.value)}
+                onKeyDown={e => {
+                  if (e.key === 'Enter' && homeSearch.trim()) {
+                    addSearchHistory(homeSearch.trim());
+                    navigate(`/jobs?keyword=${encodeURIComponent(homeSearch.trim())}`);
+                  }
+                }}
                 className="w-full pl-12 pr-4 py-3.5 rounded-xl bg-white/95 backdrop-blur-sm text-gray-900 placeholder-gray-400 focus:ring-2 focus:ring-white/50 outline-none shadow-lg text-sm"
               />
             </div>

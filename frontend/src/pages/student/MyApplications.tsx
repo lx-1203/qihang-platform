@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import {
   Briefcase, Building2, Calendar, MapPin,
@@ -93,13 +93,9 @@ export default function MyApplications() {
   const [searchKeyword, setSearchKeyword] = useState('');
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    fetchApplications();
-  }, []);
-
-  async function fetchApplications() {
+  const fetchApplications = useCallback(async (showLoading = true) => {
     try {
-      setLoading(true);
+      if (showLoading) setLoading(true);
       const res = await http.get('/student/applications');
       if (res.data?.code === 200 && res.data.data) {
         setApplications(res.data.data.list || res.data.data);
@@ -107,9 +103,33 @@ export default function MyApplications() {
     } catch {
       // 使用默认 Mock 数据
     } finally {
-      setLoading(false);
+      if (showLoading) setLoading(false);
     }
-  }
+  }, []);
+
+  // 初始加载
+  useEffect(() => {
+    fetchApplications();
+  }, [fetchApplications]);
+
+  // 页面可见性变化时自动刷新（用户切换 Tab 回来时）
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        fetchApplications(false);
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [fetchApplications]);
+
+  // 定时轮询刷新（每60秒静默更新）
+  useEffect(() => {
+    const timer = setInterval(() => {
+      fetchApplications(false);
+    }, 60000);
+    return () => clearInterval(timer);
+  }, [fetchApplications]);
 
   // 按状态 + 关键词筛选
   const filtered = applications.filter(app => {

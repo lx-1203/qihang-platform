@@ -206,7 +206,7 @@ router.post('/jobs', idempotency(), async (req, res) => {
         .json({ code: 400, message: '职位描述不能为空' });
     }
 
-    // 获取企业信息
+    // 企业每日发布频次限制（每日最多10个岗位）
     const [companies] = await pool.query(
       'SELECT id, company_name, logo FROM companies WHERE user_id = ?',
       [req.user.id]
@@ -215,6 +215,14 @@ router.post('/jobs', idempotency(), async (req, res) => {
       return res.status(400).json({ code: 400, message: '请先完善企业资料' });
     }
     const company = companies[0];
+
+    const [todayCount] = await pool.query(
+      'SELECT COUNT(*) as count FROM jobs WHERE company_id = ? AND DATE(created_at) = CURDATE()',
+      [company.id]
+    );
+    if (todayCount[0].count >= 10) {
+      return res.status(429).json({ code: 429, message: '今日发布岗位数已达上限（每日最多10个），请明天再试' });
+    }
 
     const tagsJson = tags ? (typeof tags === 'string' ? tags : JSON.stringify(tags)) : '[]';
 
@@ -329,7 +337,7 @@ router.delete('/jobs/:id', async (req, res) => {
         .json({ code: 404, message: '职位不存在或无权操作' });
     }
 
-    await pool.query('DELETE FROM jobs WHERE id = ? AND company_id = ?', [
+    await pool.query('UPDATE jobs SET deleted_at = NOW() WHERE id = ? AND company_id = ?', [
       id,
       companyId,
     ]);

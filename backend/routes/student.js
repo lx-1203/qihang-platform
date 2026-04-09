@@ -104,6 +104,15 @@ router.post('/resumes', idempotency(), async (req, res) => {
       return res.status(400).json({ code: 400, message: '请指定要投递的职位' });
     }
 
+    // 学生每日投递频次限制（每日最多20次）
+    const [todayApplyCount] = await pool.query(
+      'SELECT COUNT(*) as count FROM resumes WHERE student_id = ? AND DATE(created_at) = CURDATE()',
+      [userId]
+    );
+    if (todayApplyCount[0].count >= 20) {
+      return res.status(429).json({ code: 429, message: '今日投递次数已达上限（每日最多20次），请明天再试' });
+    }
+
     // 检查职位是否存在
     const [jobs] = await pool.query('SELECT id, title, company_name FROM jobs WHERE id = ? AND status = ?', [job_id, 'active']);
     if (jobs.length === 0) {

@@ -226,7 +226,7 @@ router.delete('/courses/:id', async (req, res) => {
       return res.status(404).json({ code: 404, message: '课程不存在或无权删除' });
     }
 
-    await pool.query('DELETE FROM courses WHERE id = ? AND mentor_id = ?', [courseId, mentorProfileId]);
+    await pool.query('UPDATE courses SET deleted_at = NOW() WHERE id = ? AND mentor_id = ?', [courseId, mentorProfileId]);
     res.json({ code: 200, message: '课程删除成功' });
   } catch (err) {
     console.error('删除课程失败:', err);

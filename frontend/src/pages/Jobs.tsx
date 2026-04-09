@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback } from "react";
-import { Link } from "react-router-dom";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { Link, useSearchParams } from "react-router-dom";
 import {
   Search,
   MapPin,
@@ -12,11 +12,13 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import http from "@/api/http";
+import { addSearchHistory } from "@/utils/searchHistory";
 
 // ====== 岗位列表页 ======
 // 数据全部从 /api/jobs 获取，筛选项由接口返回
 
 export default function Jobs() {
+  const [searchParams] = useSearchParams();
   const [activeCategory, setActiveCategory] = useState("全部");
   const [activeType, setActiveType] = useState("全部");
   const [activeLocation, setActiveLocation] = useState("全国");
@@ -36,6 +38,60 @@ export default function Jobs() {
   const [categories, setCategories] = useState<string[]>(["全部"]);
   const [types, setTypes] = useState<string[]>(["全部"]);
   const [locations, setLocations] = useState<string[]>(["全国"]);
+
+  // 搜索联想
+  const [suggestions, setSuggestions] = useState<{ type: string; text: string; company?: string }[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const suggestTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const searchContainerRef = useRef<HTMLDivElement>(null);
+
+  // 从 URL 参数读取 keyword（由 Navbar / Home 搜索跳转而来）
+  useEffect(() => {
+    const urlKeyword = searchParams.get('keyword');
+    if (urlKeyword) {
+      setKeyword(urlKeyword);
+      setSearchInput(urlKeyword);
+      setPage(1);
+    }
+  }, [searchParams]);
+
+  // 搜索联想防抖（300ms）
+  useEffect(() => {
+    if (suggestTimer.current) clearTimeout(suggestTimer.current);
+
+    if (!searchInput.trim()) {
+      setSuggestions([]);
+      setShowSuggestions(false);
+      return;
+    }
+
+    suggestTimer.current = setTimeout(async () => {
+      try {
+        const res = await http.get('/jobs/suggest', { params: { keyword: searchInput.trim() } });
+        if (res.data?.code === 200 && Array.isArray(res.data.data)) {
+          setSuggestions(res.data.data);
+          setShowSuggestions(res.data.data.length > 0);
+        }
+      } catch {
+        setSuggestions([]);
+      }
+    }, 300);
+
+    return () => {
+      if (suggestTimer.current) clearTimeout(suggestTimer.current);
+    };
+  }, [searchInput]);
+
+  // 点击外部关闭联想下拉
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (searchContainerRef.current && !searchContainerRef.current.contains(e.target as Node)) {
+        setShowSuggestions(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   // 获取岗位列表
   const fetchJobs = useCallback(async () => {
@@ -74,6 +130,9 @@ export default function Jobs() {
   const handleSearch = () => {
     setPage(1);
     setKeyword(searchInput);
+    if (searchInput.trim()) {
+      addSearchHistory(searchInput.trim());
+    }
     if (locationInput) {
       // 尝试匹配已有地点选项
       const match = locations.find(l => locationInput.includes(l) || l.includes(locationInput));
@@ -115,17 +174,54 @@ export default function Jobs() {
             </p>
           </div>
 
-          <div className="max-w-4xl mx-auto bg-white rounded-2xl p-2 sm:p-3 shadow-2xl flex flex-col sm:flex-row gap-2">
-            <div className="flex-1 flex items-center bg-gray-50 rounded-xl px-4 py-3 sm:py-0 border border-transparent focus-within:border-primary-500 focus-within:bg-white transition-colors">
+          <div ref={searchContainerRef} className="max-w-4xl mx-auto bg-white rounded-2xl p-2 sm:p-3 shadow-2xl flex flex-col sm:flex-row gap-2 relative">
+            <div className="flex-1 flex items-center bg-gray-50 rounded-xl px-4 py-3 sm:py-0 border border-transparent focus-within:border-primary-500 focus-within:bg-white transition-colors relative">
               <Search className="text-gray-400 w-5 h-5 shrink-0" />
               <input
                 type="text"
                 placeholder="搜索职位、公司或关键词 (例如：前端、字节跳动)"
                 value={searchInput}
-                onChange={e => setSearchInput(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && handleSearch()}
+                onChange={e => { setSearchInput(e.target.value); setShowSuggestions(true); }}
+                onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
+                onKeyDown={e => { if (e.key === 'Enter') { handleSearch(); setShowSuggestions(false); } }}
                 className="w-full bg-transparent border-none focus:ring-0 text-gray-900 placeholder:text-gray-400 ml-3 text-base"
               />
+              {/* 搜索联想下拉 */}
+              <AnimatePresence>
+                {showSuggestions && suggestions.length > 0 && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -4 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -4 }}
+                    transition={{ duration: 0.15 }}
+                    className="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl shadow-lg border border-gray-200 z-50 overflow-hidden"
+                  >
+                    {suggestions.map((item, index) => (
+                      <button
+                        key={`${item.type}-${item.text}-${index}`}
+                        onClick={() => {
+                          setSearchInput(item.text);
+                          setKeyword(item.text);
+                          setPage(1);
+                          setShowSuggestions(false);
+                        }}
+                        className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-gray-50 transition-colors border-b border-gray-50 last:border-b-0"
+                      >
+                        <Search className="w-4 h-4 text-gray-300 flex-shrink-0" />
+                        <div className="flex-1 min-w-0">
+                          <span className="text-gray-900 text-sm">{item.text}</span>
+                          {item.company && (
+                            <span className="text-gray-400 text-xs ml-2">· {item.company}</span>
+                          )}
+                        </div>
+                        {item.type === 'company' && (
+                          <span className="text-xs text-primary-500 bg-primary-50 px-2 py-0.5 rounded-full">企业</span>
+                        )}
+                      </button>
+                    ))}
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
             <div className="sm:w-48 flex items-center bg-gray-50 rounded-xl px-4 py-3 sm:py-0 border border-transparent focus-within:border-primary-500 focus-within:bg-white transition-colors border-t sm:border-t-0 sm:border-l border-gray-200">
               <MapPin className="text-gray-400 w-5 h-5 shrink-0" />

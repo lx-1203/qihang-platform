@@ -13,7 +13,7 @@ router.get('/', async (req, res) => {
   try {
     const { type, location, category, keyword, page = 1, pageSize = 20 } = req.query;
 
-    let sql = 'SELECT * FROM jobs WHERE status = "active"';
+    let sql = 'SELECT * FROM jobs WHERE status = "active" AND deleted_at IS NULL';
     const params = [];
 
     if (type && type !== '全部') {
@@ -56,24 +56,67 @@ router.get('/', async (req, res) => {
     }));
 
     res.json({
-      jobs: parsedJobs,
-      filters: { categories: JOB_CATEGORIES, types: JOB_TYPES, locations: LOCATIONS },
-      total,
-      page: Number(page),
-      pageSize: Number(pageSize),
+      code: 200,
+      data: {
+        jobs: parsedJobs,
+        filters: { categories: JOB_CATEGORIES, types: JOB_TYPES, locations: LOCATIONS },
+        total,
+        page: Number(page),
+        pageSize: Number(pageSize),
+      }
     });
   } catch (err) {
     console.error('获取职位列表失败:', err);
-    res.status(500).json({ error: '服务器内部错误' });
+    res.status(500).json({ code: 500, message: '服务器内部错误' });
+  }
+});
+
+// GET /api/jobs/suggest - 搜索联想（返回匹配的岗位标题 + 公司名）
+router.get('/suggest', async (req, res) => {
+  try {
+    const { keyword } = req.query;
+    if (!keyword || String(keyword).trim().length === 0) {
+      return res.json({ code: 200, data: [] });
+    }
+
+    const kw = `%${String(keyword).trim()}%`;
+    const [rows] = await pool.query(
+      `SELECT DISTINCT title, company_name FROM jobs
+       WHERE status = 'active' AND deleted_at IS NULL AND (title LIKE ? OR company_name LIKE ?)
+       ORDER BY urgent DESC, view_count DESC
+       LIMIT 8`,
+      [kw, kw]
+    );
+
+    // 将结果转为联想项：优先匹配标题，去重
+    const suggestions = [];
+    const seen = new Set();
+    for (const row of rows) {
+      if (row.title.includes(String(keyword).trim()) && !seen.has(row.title)) {
+        seen.add(row.title);
+        suggestions.push({ type: 'job', text: row.title, company: row.company_name });
+      }
+    }
+    for (const row of rows) {
+      if (!seen.has(row.company_name)) {
+        seen.add(row.company_name);
+        suggestions.push({ type: 'company', text: row.company_name });
+      }
+    }
+
+    res.json({ code: 200, data: suggestions.slice(0, 5) });
+  } catch (err) {
+    console.error('搜索联想失败:', err);
+    res.json({ code: 200, data: [] });
   }
 });
 
 // GET /api/jobs/:id - 获取单个职位详情
 router.get('/:id', async (req, res) => {
   try {
-    const [rows] = await pool.query('SELECT * FROM jobs WHERE id = ?', [req.params.id]);
+    const [rows] = await pool.query('SELECT * FROM jobs WHERE id = ? AND deleted_at IS NULL', [req.params.id]);
     if (rows.length === 0) {
-      return res.status(404).json({ error: '职位不存在' });
+      return res.status(404).json({ code: 404, message: '职位不存在' });
     }
 
     const job = rows[0];
@@ -83,10 +126,10 @@ router.get('/:id', async (req, res) => {
     // 增加浏览量
     await pool.query('UPDATE jobs SET view_count = view_count + 1 WHERE id = ?', [req.params.id]);
 
-    res.json(job);
+    res.json({ code: 200, data: job });
   } catch (err) {
     console.error('获取职位详情失败:', err);
-    res.status(500).json({ error: '服务器内部错误' });
+    res.status(500).json({ code: 500, message: '服务器内部错误' });
   }
 });
 

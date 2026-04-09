@@ -1,10 +1,11 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { useState, useEffect, useRef } from 'react';
-import { Search, UserCircle, Bell, LogOut, Settings, User, ChevronDown } from 'lucide-react';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { Search, UserCircle, Bell, LogOut, Settings, User, ChevronDown, Clock, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuthStore } from '@/store/auth';
 import { useConfigStore } from '@/store/config';
 import http from '@/api/http';
+import { getSearchHistory, addSearchHistory, clearSearchHistory } from '@/utils/searchHistory';
 
 // ====== 顶部导航栏（认证感知 + 通知铃铛 + 配置驱动品牌） ======
 
@@ -18,6 +19,12 @@ export default function Navbar() {
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const userMenuRef = useRef<HTMLDivElement>(null);
+
+  // 搜索相关状态
+  const [navSearch, setNavSearch] = useState('');
+  const [showSearchHistory, setShowSearchHistory] = useState(false);
+  const [searchHistory, setSearchHistory] = useState<string[]>([]);
+  const searchBoxRef = useRef<HTMLDivElement>(null);
 
   const navItems = [
     { path: '/', label: '首页' },
@@ -63,6 +70,52 @@ export default function Navbar() {
     setUserMenuOpen(false);
     navigate('/');
   }
+
+  // 搜索功能
+  const handleNavSearch = useCallback(() => {
+    const q = navSearch.trim();
+    if (!q) return;
+    addSearchHistory(q);
+    setShowSearchHistory(false);
+    navigate(`/jobs?keyword=${encodeURIComponent(q)}`);
+    setNavSearch('');
+  }, [navSearch, navigate]);
+
+  const handleSearchKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') handleNavSearch();
+    if (e.key === 'Escape') setShowSearchHistory(false);
+  };
+
+  const handleSearchFocus = () => {
+    const history = getSearchHistory();
+    setSearchHistory(history);
+    if (history.length > 0) setShowSearchHistory(true);
+  };
+
+  const handleClickHistory = (text: string) => {
+    addSearchHistory(text);
+    setShowSearchHistory(false);
+    navigate(`/jobs?keyword=${encodeURIComponent(text)}`);
+    setNavSearch('');
+  };
+
+  const handleClearHistory = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    clearSearchHistory();
+    setSearchHistory([]);
+    setShowSearchHistory(false);
+  };
+
+  // 点击外部关闭搜索历史
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (searchBoxRef.current && !searchBoxRef.current.contains(e.target as Node)) {
+        setShowSearchHistory(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, []);
 
   // 根据角色获取后台入口
   function getDashboardLink(): { path: string; label: string } | null {
@@ -136,15 +189,56 @@ export default function Navbar() {
           {/* Right section */}
           <div className="flex items-center space-x-3 flex-shrink-0 ml-auto md:ml-0">
             {/* Search */}
-            <div className="hidden lg:flex relative items-center">
+            <div className="hidden lg:flex relative items-center" ref={searchBoxRef}>
               <input
                 type="text"
                 placeholder="搜索岗位、导师、面经..."
+                value={navSearch}
+                onChange={e => setNavSearch(e.target.value)}
+                onKeyDown={handleSearchKeyDown}
+                onFocus={handleSearchFocus}
                 className="w-[200px] pl-4 pr-10 py-1.5 bg-[#f3f4f6] border border-transparent rounded-full text-sm text-[#111827] focus:outline-none focus:ring-2 focus:ring-[#14b8a6] focus:bg-white placeholder-[#9ca3af] transition-all"
               />
-              <div className="absolute right-3 top-1/2 -translate-y-1/2">
+              <div
+                className="absolute right-3 top-1/2 -translate-y-1/2"
+                onClick={handleNavSearch}
+              >
                 <Search className="h-4 w-4 text-[#9ca3af] cursor-pointer hover:text-[#14b8a6] transition-colors" />
               </div>
+
+              {/* 搜索历史下拉 */}
+              <AnimatePresence>
+                {showSearchHistory && searchHistory.length > 0 && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -4 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -4 }}
+                    transition={{ duration: 0.15 }}
+                    className="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl shadow-lg border border-gray-200 z-50 overflow-hidden min-w-[240px]"
+                  >
+                    <div className="flex items-center justify-between px-4 py-2.5 border-b border-gray-100">
+                      <span className="text-xs font-medium text-gray-400">搜索历史</span>
+                      <button
+                        onClick={handleClearHistory}
+                        className="text-xs text-gray-400 hover:text-red-500 transition-colors flex items-center gap-1"
+                      >
+                        <X className="w-3 h-3" />
+                        清空
+                      </button>
+                    </div>
+                    {searchHistory.map((item, index) => (
+                      <button
+                        key={`history-${index}`}
+                        onClick={() => handleClickHistory(item)}
+                        className="w-full flex items-center gap-3 px-4 py-2.5 text-left hover:bg-gray-50 transition-colors"
+                      >
+                        <Clock className="w-3.5 h-3.5 text-gray-300 flex-shrink-0" />
+                        <span className="text-sm text-gray-700 truncate">{item}</span>
+                      </button>
+                    ))}
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
 
             {isAuthenticated && user ? (

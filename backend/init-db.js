@@ -347,6 +347,26 @@ const CREATE_SITE_CONFIGS_TABLE = `
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='站点配置表（前端内容100%后台可配置）'
 `;
 
+// ====== 就业指导文章表 ======
+const CREATE_ARTICLES_TABLE = `
+  CREATE TABLE IF NOT EXISTS articles (
+    id              INT AUTO_INCREMENT PRIMARY KEY,
+    title           VARCHAR(300) NOT NULL COMMENT '文章标题',
+    summary         VARCHAR(500) DEFAULT '' COMMENT '文章摘要',
+    content         TEXT COMMENT '文章正文（HTML/Markdown）',
+    category        VARCHAR(50) NOT NULL DEFAULT '校招指南' COMMENT '分类: 简历技巧/面试经验/政策解读/校招指南',
+    cover           VARCHAR(500) DEFAULT '' COMMENT '封面图URL',
+    author          VARCHAR(100) DEFAULT '' COMMENT '作者',
+    view_count      INT NOT NULL DEFAULT 0 COMMENT '浏览量',
+    status          ENUM('draft', 'published') NOT NULL DEFAULT 'published' COMMENT '状态',
+    created_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_category (category),
+    INDEX idx_status (status),
+    INDEX idx_created_at (created_at)
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='就业指导文章表'
+`;
+
 // ========== 按依赖关系排列的建表顺序 ==========
 const TABLE_DEFINITIONS = [
   { name: 'users',           sql: CREATE_USERS_TABLE },
@@ -363,6 +383,7 @@ const TABLE_DEFINITIONS = [
   { name: 'programs',        sql: CREATE_PROGRAMS_TABLE },
   { name: 'audit_logs',      sql: CREATE_AUDIT_LOGS_TABLE },
   { name: 'site_configs',    sql: CREATE_SITE_CONFIGS_TABLE },
+  { name: 'articles',        sql: CREATE_ARTICLES_TABLE },
 ];
 
 // ========== 种子数据 ==========
@@ -1155,6 +1176,88 @@ async function seedSiteConfigs(conn) {
   }
 }
 
+/**
+ * 插入就业指导文章种子数据
+ */
+async function seedArticles(conn) {
+  const [existing] = await conn.query('SELECT COUNT(*) as count FROM articles');
+  if (existing[0].count > 0) return;
+
+  const articles = [
+    {
+      title: '2026届校招时间线全攻略：从暑期实习到秋招签约',
+      summary: '详细梳理2026届校招各阶段时间节点和准备策略，帮你精准把握每一个求职黄金窗口。',
+      content: `## 校招时间线总览\n\n### 3-5月：春招实习黄金期\n- 各大厂春招实习启动，重点关注字节、腾讯、阿里等头部企业\n- 准备好简历、刷好算法题，保持投递节奏\n\n### 6-8月：暑期实习 & 提前批\n- 暑期实习期间争取转正机会\n- 7月开始，部分企业开启秋招提前批，务必关注官方公告\n\n### 8-10月：秋招正式批\n- 这是最核心的校招阶段，岗位最多、机会最多\n- 建议每天保持3-5个岗位的投递频率\n- 准备好各类面试：技术面、群面、HR面\n\n### 11-12月：秋招补录\n- 部分企业开启补录，适合前期错过的同学\n- 关注企业官方招聘公众号获取最新信息\n\n### 次年3-5月：春招\n- 最后的校招机会，岗位相对较少但竞争也小\n- 适合考研/考公失利后的同学\n\n## 核心建议\n1. **尽早准备**：大三上学期就应该开始准备\n2. **多线并行**：实习、秋招、考研不冲突，合理规划\n3. **复盘迭代**：每次面试后及时复盘，持续改进`,
+      category: '校招指南',
+      cover: 'https://images.unsplash.com/photo-1523050854058-8df90110c476?w=600&q=80',
+      author: '启航就业研究院',
+    },
+    {
+      title: '简历STAR法则实战指南：让HR30秒看到你的价值',
+      summary: '用STAR法则重新构建简历中的项目经验和实习描述，大幅提升面试邀约率。',
+      content: `## 什么是STAR法则？\n\nSTAR是Situation（情境）、Task（任务）、Action（行动）、Result（结果）的缩写。\n\n## 实战案例\n\n### 错误示范\n> 负责公司小程序的前端开发工作\n\n### STAR改写\n> **[S]** 在日活10万+的电商小程序项目中，**[T]** 负责购物车模块的性能优化和功能迭代，**[A]** 通过虚拟列表、懒加载和接口合并等手段重构渲染逻辑，**[R]** 将页面加载时间从3.2s降至0.8s，用户留存率提升15%。\n\n## 关键要点\n\n1. **量化结果**：尽量用数字说话（提升XX%、降低XX%、服务XX用户）\n2. **突出行动**：重点写"你做了什么"而不是"团队做了什么"\n3. **匹配岗位**：根据目标岗位JD调整描述重点\n4. **简洁有力**：每条经历控制在2-3行\n\n## 常见误区\n- 罗列工作内容而非成果\n- 使用模糊表述（"参与了"、"协助了"）\n- 简历超过一页（应届生建议控制在一页）`,
+      category: '简历技巧',
+      cover: 'https://images.unsplash.com/photo-1586281380349-632531db7ed4?w=600&q=80',
+      author: '陈经理（资深HR）',
+    },
+    {
+      title: '技术面试高频问题解析：从自我介绍到系统设计',
+      summary: '系统梳理技术面试各环节的高频问题，提供回答框架和避坑指南。',
+      content: `## 一、自我介绍（1-2分钟）\n\n### 推荐模板\n"面试官您好，我是XXX，就读于XX大学XX专业，预计XX年毕业。我有两段比较相关的经历：第一段是在XX公司实习，主要负责XX；第二段是XX项目，我在其中负责XX。这些经历让我在XX和XX方面积累了一定的经验。我对贵司的XX岗位很感兴趣，希望能有机会加入。"\n\n## 二、项目深挖\n\n面试官常问的问题：\n1. 你在项目中遇到的最大挑战是什么？\n2. 如果重新做，你会怎么改进？\n3. 你是如何与团队协作的？\n\n## 三、算法与编程\n\n- **LeetCode高频题型**：数组、链表、二叉树、动态规划、回溯\n- **建议刷题量**：200-300题\n- **重点关注**：Hot100、剑指Offer\n\n## 四、系统设计（高级岗位）\n\n- 设计一个短链系统\n- 设计一个秒杀系统\n- 设计一个即时通讯系统\n\n## 面试礼仪\n- 准时参加，提前5分钟进入\n- 认真听题，不确定时可以确认\n- 面试结束主动感谢`,
+      category: '面试经验',
+      cover: 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=600&q=80',
+      author: '张工（前端架构师）',
+    },
+    {
+      title: '2026年就业形势分析与应对策略',
+      summary: '解读最新就业政策和市场趋势，帮助应届生做出更明智的职业选择。',
+      content: `## 2026年就业市场概况\n\n### 热门行业\n1. **人工智能**：大模型和AIGC持续火热，算法岗需求旺盛\n2. **新能源**：电动汽车、储能、光伏等行业快速扩张\n3. **半导体**：国产替代加速，芯片设计/验证岗位大增\n4. **生物医药**：创新药研发投入增加\n\n### 薪资趋势\n- 互联网大厂校招：22-40k/月\n- 新能源行业：15-25k/月\n- 金融行业：12-20k/月\n- 体制内：8-12k/月（含公积金等隐性福利）\n\n## 政策利好\n\n1. **就业补贴**：应届生就业补贴政策延续\n2. **创业支持**：大学生创业可申请低息贷款和场地补贴\n3. **基层就业**：西部计划、三支一扶等项目持续招募\n4. **灵活就业**：自由职业者社保补贴政策覆盖面扩大\n\n## 应对建议\n\n1. 提升硬技能，考取含金量高的证书\n2. 多元化投递，不要只盯着一个行业\n3. 善用学校资源：就业中心、校友网络\n4. 保持心态平和，求职是长期过程`,
+      category: '政策解读',
+      cover: 'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=600&q=80',
+      author: '启航就业研究院',
+    },
+    {
+      title: '群面必杀技：无领导小组讨论如何脱颖而出',
+      summary: '解析无领导小组讨论的评分维度和角色策略，助你在群面中稳定发挥。',
+      content: `## 什么是无领导小组讨论？\n\n无领导小组讨论（LGD）是一种多人面试形式，6-10名候选人围绕一个话题进行自由讨论，面试官观察并评分。\n\n## 核心评分维度\n\n1. **领导力** - 能否推动讨论进程\n2. **逻辑性** - 发言是否条理清晰\n3. **协作性** - 是否倾听他人、整合意见\n4. **影响力** - 能否说服他人接受你的观点\n\n## 角色选择策略\n\n### Leader（领导者）\n- 适合性格外向、善于统筹的同学\n- 风险：如果控场不好容易扣分\n\n### Timer（计时员）\n- 适合稳重型选手\n- 注意不要只顾计时不发表观点\n\n### Summarizer（总结者）\n- 需要很强的归纳能力\n- 建议提前练习快速笔记技巧\n\n## 实用技巧\n\n1. **开局框架**：先提出讨论框架，建立结构化思考\n2. **数据支撑**：用数据和案例支撑观点\n3. **倾听回应**：引用他人观点并补充\n4. **及时纠偏**：讨论偏题时礼貌拉回\n5. **注意仪态**：保持微笑、眼神交流`,
+      category: '面试经验',
+      cover: 'https://images.unsplash.com/photo-1542744173-8e7e53415bb0?w=600&q=80',
+      author: '王总监（快消品牌总监）',
+    },
+    {
+      title: '应届生简历模板选择指南：不同行业要不同风格',
+      summary: '针对互联网、金融、快消、体制内等不同行业，推荐最合适的简历模板和格式。',
+      content: `## 通用原则\n\n- 一页纸原则（应届生简历不超过一页）\n- PDF格式投递（避免排版错乱）\n- 文件命名规范：姓名-学校-应聘岗位.pdf\n\n## 互联网行业\n\n### 风格：简洁+技术\n- 重点突出项目经历和技术栈\n- 可以附上GitHub链接或个人博客\n- 避免花哨的设计，内容为王\n\n## 金融行业\n\n### 风格：专业+严谨\n- 使用传统的黑白排版\n- 突出学校背景、证书和实习经历\n- 注意中英文格式一致\n\n## 快消行业\n\n### 风格：活力+成果\n- 可以适当使用品牌色作为点缀\n- 强调领导力和校园活动经历\n- 用STAR法则描述活动和实习成果\n\n## 体制内\n\n### 风格：规范+朴素\n- 使用标准的简历模板\n- 突出政治面貌、党员身份\n- 强调基层经历和志愿服务\n\n## 简历自检清单\n\n- [ ] 无错别字和语法错误\n- [ ] 手机号和邮箱正确无误\n- [ ] 照片为正装证件照（如需要）\n- [ ] 时间线从近到远排列\n- [ ] 每段经历有量化成果`,
+      category: '简历技巧',
+      cover: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=600&q=80',
+      author: '赵HR（资深HRBP）',
+    },
+    {
+      title: '三方协议、劳动合同、五险一金：应届生必知的法律常识',
+      summary: '解答应届生签约过程中最常见的法律疑问，帮你避开求职陷阱。',
+      content: `## 三方协议\n\n### 什么是三方协议？\n三方协议是学生、用人单位和学校之间签订的就业协议，是确认就业意向的法律文件。\n\n### 注意事项\n1. 签订前确认岗位、薪资、工作地点\n2. 了解违约金条款（通常3000-5000元）\n3. 一人一份，丢失需补办\n\n## 劳动合同\n\n### 签订时机\n- 入职当天或入职后一个月内签订\n- 超过一个月未签，可主张双倍工资\n\n### 重点关注\n1. 合同期限（一般1-3年）\n2. 试用期时长（最长不超过6个月）\n3. 试用期薪资（不低于正式工资的80%）\n4. 工作内容和工作地点\n\n## 五险一金\n\n### 五险\n- 养老保险、医疗保险、失业保险、工伤保险、生育保险\n- 个人缴费比例约10.5%\n\n### 一金\n- 住房公积金，个人缴费5-12%\n- 缴费基数很重要，影响公积金账户余额\n\n## 求职陷阱识别\n\n1. 入职前收取培训费/押金 → 违法\n2. 只签实习协议不签劳动合同 → 不合规\n3. 口头承诺不写进合同 → 无法律效力\n4. 试用期不缴社保 → 违法`,
+      category: '政策解读',
+      cover: 'https://images.unsplash.com/photo-1450101499163-c8848c66ca85?w=600&q=80',
+      author: '启航就业研究院',
+    },
+    {
+      title: '互联网大厂校招薪资盘点：2026届最新数据',
+      summary: '汇总2026届互联网大厂校招薪资水平，包括base、股票、签字费等完整package对比。',
+      content: `## 头部大厂校招薪资\n\n### 字节跳动\n- 技术岗（开发/算法）：25-40k × 15-18个月\n- 产品岗：20-30k × 15个月\n- 运营岗：15-22k × 15个月\n- 特殊offer：SSP/SP有额外股票和签字费\n\n### 腾讯\n- 技术岗：22-35k × 16-18个月\n- 产品岗：18-28k × 16个月\n- 设计岗：18-25k × 16个月\n- 鹅厂特色：股票给的多，长期收益好\n\n### 阿里巴巴\n- 技术岗：25-38k × 15-16个月\n- 产品/运营：18-28k × 15个月\n- P5起步，优秀者P6\n\n### 美团\n- 技术岗：22-35k × 15个月\n- 产品岗：18-25k × 15个月\n- 签字费：部分岗位有3-5万签字费\n\n## 新兴高薪行业\n\n### AI公司\n- 大模型算法：30-60k/月\n- AI应用开发：25-40k/月\n\n### 量化金融\n- 量化研究员：40-80k/月（含奖金）\n- 量化开发：30-50k/月\n\n## 谈薪技巧\n\n1. 拿到多个offer后再谈薪\n2. 了解岗位对应的薪资band\n3. 重点关注总包（TC）而非月薪\n4. 考虑城市生活成本差异`,
+      category: '校招指南',
+      cover: 'https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=600&q=80',
+      author: '启航就业研究院',
+    },
+  ];
+
+  for (const a of articles) {
+    await conn.query(
+      `INSERT INTO articles (title, summary, content, category, cover, author) VALUES (?, ?, ?, ?, ?, ?)`,
+      [a.title, a.summary, a.content, a.category, a.cover, a.author]
+    );
+  }
+}
+
 // ========== 主流程 ==========
 
 async function initDatabase() {
@@ -1251,6 +1354,9 @@ async function initDatabase() {
 
     await seedSiteConfigs(conn);
     console.log('        ✔ 站点配置数据');
+
+    await seedArticles(conn);
+    console.log('        ✔ 就业指导文章数据');
   } catch (err) {
     console.error('  ❌ 插入种子数据失败:', err.message);
     console.error(err.stack);
@@ -1260,7 +1366,7 @@ async function initDatabase() {
   await conn.end();
 
   console.log('\n  ✅ 数据库初始化完成！');
-  console.log('  📊 已创建 14 张表 + 种子数据');
+  console.log('  📊 已创建 15 张表 + 种子数据');
   console.log('  🔑 种子用户密码统一为: password123 (管理员为 admin123)\n');
 }
 

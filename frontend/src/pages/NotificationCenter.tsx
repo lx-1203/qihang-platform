@@ -6,6 +6,7 @@ import {
   ChevronLeft, ChevronRight, Filter
 } from 'lucide-react';
 import http from '@/api/http';
+import ConfirmDialog from '@/components/ui/ConfirmDialog';
 
 // ====== 通知中心 ======
 // 商业级要求：统一通知管理、已读/未读状态、分类筛选
@@ -35,6 +36,8 @@ export default function NotificationCenter() {
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
   const pageSize = 15;
+  const [deleteTarget, setDeleteTarget] = useState<{id: number; name: string} | null>(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
   const mockNotifications: NotificationItem[] = [
     { id: 1, type: 'resume', title: '简历投递成功', content: '您已成功投递「前端开发工程师」职位（字节跳动），请等待企业查看。', related_id: 1, is_read: 0, created_at: '2026-04-08 09:30:00' },
@@ -106,6 +109,17 @@ export default function NotificationCenter() {
     }
     setNotifications(prev => prev.filter(n => n.id !== id));
     setTotal(prev => prev - 1);
+  }
+
+  async function handleConfirmDelete() {
+    if (!deleteTarget) return;
+    try {
+      setDeleteLoading(true);
+      await deleteNotification(deleteTarget.id);
+    } finally {
+      setDeleteLoading(false);
+      setDeleteTarget(null);
+    }
   }
 
   const unreadCount = notifications.filter(n => n.is_read === 0).length;
@@ -245,7 +259,7 @@ export default function NotificationCenter() {
                         </button>
                       )}
                       <button
-                        onClick={() => deleteNotification(notif.id)}
+                        onClick={() => setDeleteTarget({ id: notif.id, name: notif.title })}
                         className="p-2 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors"
                         title="删除"
                       >
@@ -283,6 +297,17 @@ export default function NotificationCenter() {
           </div>
         )}
       </div>
+
+      {/* 删除确认弹窗 */}
+      <ConfirmDialog
+        open={!!deleteTarget}
+        variant="warning"
+        title="确认删除通知"
+        description="删除后无法恢复"
+        loading={deleteLoading}
+        onConfirm={handleConfirmDelete}
+        onCancel={() => setDeleteTarget(null)}
+      />
     </div>
   );
 }

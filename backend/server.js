@@ -16,6 +16,7 @@ import uploadRouter from './routes/upload.js';
 import universitiesRouter from './routes/universities.js';
 import programsRouter from './routes/programs.js';
 import configRouter from './routes/config.js';
+import articlesRouter from './routes/articles.js';
 import { testConnection } from './db.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -104,6 +105,7 @@ app.use('/api/upload', uploadRouter);
 app.use('/api/universities', universitiesRouter);
 app.use('/api/programs', programsRouter);
 app.use('/api/config', configRouter);
+app.use('/api/articles', articlesRouter);
 
 // ====== 健康检查 ======
 app.get('/api/health', (_req, res) => {

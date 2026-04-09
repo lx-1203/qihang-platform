@@ -8,7 +8,7 @@ router.get('/', async (req, res) => {
   try {
     const { category, keyword, difficulty, page = 1, pageSize = 20 } = req.query;
 
-    let sql = 'SELECT * FROM courses WHERE status = "active"';
+    let sql = 'SELECT * FROM courses WHERE status = "active" AND (deleted_at IS NULL)';
     const params = [];
 
     if (category) {
@@ -64,7 +64,7 @@ router.get('/', async (req, res) => {
 // GET /api/courses/:id - 获取单个课程详情
 router.get('/:id', async (req, res) => {
   try {
-    const [rows] = await pool.query('SELECT * FROM courses WHERE id = ?', [req.params.id]);
+    const [rows] = await pool.query('SELECT * FROM courses WHERE id = ? AND deleted_at IS NULL', [req.params.id]);
     if (rows.length === 0) {
       return res.status(404).json({ error: '课程不存在' });
     }

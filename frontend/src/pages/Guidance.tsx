@@ -1,5 +1,7 @@
-import { Briefcase, Target, FileText, Users, ChevronRight, CheckCircle2 } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Briefcase, Target, FileText, Users, ChevronRight, CheckCircle2, ArrowRight, Eye, Clock, Loader2 } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import http from '@/api/http';
 
 const SERVICES = [
   {
@@ -9,7 +11,8 @@ const SERVICES = [
     icon: FileText,
     color: 'text-blue-500',
     bgColor: 'bg-blue-50',
-    features: ['逐字逐句精修', '匹配目标岗位', '突出核心竞争力', '不限次修改直至满意']
+    features: ['逐字逐句精修', '匹配目标岗位', '突出核心竞争力', '不限次修改直至满意'],
+    link: '/mentors',
   },
   {
     id: 2,
@@ -18,7 +21,8 @@ const SERVICES = [
     icon: Users,
     color: 'text-purple-500',
     bgColor: 'bg-purple-50',
-    features: ['真实题库抽取', '现场录像复盘', '深入点评弱项', '面试礼仪指导']
+    features: ['真实题库抽取', '现场录像复盘', '深入点评弱项', '面试礼仪指导'],
+    link: '/mentors',
   },
   {
     id: 3,
@@ -27,11 +31,33 @@ const SERVICES = [
     icon: Target,
     color: 'text-[#14b8a6]',
     bgColor: 'bg-[#f0fdfa]',
-    features: ['MBTI/霍兰德测评', '行业前景分析', '个人优劣势挖掘', '制定3-5年发展路径']
+    features: ['MBTI/霍兰德测评', '行业前景分析', '个人优劣势挖掘', '制定3-5年发展路径'],
+    link: '/courses',
   }
 ];
 
 export default function Guidance() {
+  const navigate = useNavigate();
+  const [articles, setArticles] = useState<any[]>([]);
+  const [articlesLoading, setArticlesLoading] = useState(true);
+
+  // 加载最新4篇文章
+  useEffect(() => {
+    http.get('/articles', { params: { pageSize: 4 } })
+      .then(res => {
+        if (res.data?.code === 200) {
+          setArticles(res.data.data.articles || []);
+        }
+      })
+      .catch(() => {})
+      .finally(() => setArticlesLoading(false));
+  }, []);
+
+  const formatDate = (dateStr: string) => {
+    const d = new Date(dateStr);
+    return `${d.getMonth() + 1}月${d.getDate()}日`;
+  };
+
   return (
     <div className="min-h-screen bg-[#f9fafb] pt-8 pb-16">
       <div className="max-w-[1200px] mx-auto px-4 sm:px-6">
@@ -72,12 +98,78 @@ export default function Guidance() {
                   ))}
                 </ul>
                 
-                <button className="w-full py-3.5 rounded-xl border-2 border-[#14b8a6] text-[#14b8a6] font-semibold text-[15px] group-hover:bg-[#14b8a6] group-hover:text-white transition-colors">
+                <button
+                  onClick={() => navigate(service.link)}
+                  className="w-full py-3.5 rounded-xl border-2 border-[#14b8a6] text-[#14b8a6] font-semibold text-[15px] group-hover:bg-[#14b8a6] group-hover:text-white transition-colors"
+                >
                   立即预约
                 </button>
               </div>
             );
           })}
+        </div>
+
+        {/* 精选就业文章 */}
+        <div className="mb-16">
+          <div className="flex items-center justify-between mb-8">
+            <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+              <FileText className="w-6 h-6 text-primary-600" />
+              精选就业文章
+            </h2>
+            <Link
+              to="/guidance/articles"
+              className="text-sm text-primary-600 font-medium hover:underline flex items-center gap-1"
+            >
+              查看更多 <ArrowRight className="w-4 h-4" />
+            </Link>
+          </div>
+
+          {articlesLoading ? (
+            <div className="flex justify-center py-12">
+              <Loader2 className="w-6 h-6 text-primary-600 animate-spin" />
+            </div>
+          ) : articles.length === 0 ? (
+            <p className="text-center text-gray-400 py-8">暂无文章</p>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+              {articles.map((article) => (
+                <Link
+                  key={article.id}
+                  to={`/guidance/articles/${article.id}`}
+                  className="block bg-white rounded-xl overflow-hidden border border-gray-100 shadow-sm hover:shadow-md hover:border-primary-200 transition-all group"
+                >
+                  {article.cover ? (
+                    <div className="h-36 overflow-hidden">
+                      <img
+                        src={article.cover}
+                        alt={article.title}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      />
+                    </div>
+                  ) : (
+                    <div className="h-36 bg-gradient-to-br from-primary-100 to-primary-50 flex items-center justify-center">
+                      <FileText className="w-10 h-10 text-primary-300" />
+                    </div>
+                  )}
+                  <div className="p-4">
+                    <h4 className="text-sm font-bold text-gray-900 group-hover:text-primary-600 transition-colors line-clamp-2 mb-2">
+                      {article.title}
+                    </h4>
+                    <div className="flex items-center justify-between text-xs text-gray-400">
+                      <span className="flex items-center gap-1">
+                        <Clock className="w-3 h-3" />
+                        {formatDate(article.created_at)}
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <Eye className="w-3 h-3" />
+                        {article.view_count}
+                      </span>
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Banner */}
@@ -90,7 +182,10 @@ export default function Guidance() {
                 完成专业的职业性格测试，只需 15 分钟，获取专属你的职业发展建议报告。
               </p>
             </div>
-            <button className="shrink-0 bg-[#14b8a6] hover:bg-[#0f766e] text-white px-8 py-4 rounded-full font-bold text-[16px] transition-colors flex items-center gap-2">
+            <button
+              onClick={() => navigate('/courses')}
+              className="shrink-0 bg-[#14b8a6] hover:bg-[#0f766e] text-white px-8 py-4 rounded-full font-bold text-[16px] transition-colors flex items-center gap-2"
+            >
               开始免费测试 <ChevronRight className="w-5 h-5" />
             </button>
           </div>

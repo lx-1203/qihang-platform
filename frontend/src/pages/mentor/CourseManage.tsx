@@ -6,6 +6,7 @@ import {
   FileText, BarChart3, Users, Loader2
 } from 'lucide-react';
 import http from '@/api/http';
+import ConfirmDialog from '@/components/ui/ConfirmDialog';
 
 // ====== 导师课程管理页 ======
 // 课程列表、状态切换、创建/编辑课程
@@ -80,6 +81,8 @@ export default function CourseManage() {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [form, setForm] = useState<CourseForm>(emptyForm);
   const [submitting, setSubmitting] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<{id: number; name: string} | null>(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
   useEffect(() => {
     fetchCourses();
@@ -189,6 +192,17 @@ export default function CourseManage() {
       await http.delete(`/mentor/courses/${id}`);
     } catch {
       // 忽略错误
+    }
+  }
+
+  async function handleConfirmDelete() {
+    if (!deleteTarget) return;
+    try {
+      setDeleteLoading(true);
+      await handleDelete(deleteTarget.id);
+    } finally {
+      setDeleteLoading(false);
+      setDeleteTarget(null);
     }
   }
 
@@ -360,7 +374,7 @@ export default function CourseManage() {
                         <Edit3 className="w-4 h-4 text-blue-600" />
                       </button>
                       <button
-                        onClick={() => handleDelete(course.id)}
+                        onClick={() => setDeleteTarget({ id: course.id, name: course.title })}
                         title="删除"
                         className="p-1.5 rounded-lg hover:bg-red-50 transition-colors"
                       >
@@ -509,6 +523,17 @@ export default function CourseManage() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* 删除确认弹窗 */}
+      <ConfirmDialog
+        open={!!deleteTarget}
+        variant="danger"
+        title="确认删除课程"
+        description={`确定要删除课程「${deleteTarget?.name}」吗？删除后无法恢复。`}
+        loading={deleteLoading}
+        onConfirm={handleConfirmDelete}
+        onCancel={() => setDeleteTarget(null)}
+      />
     </div>
   );
 }

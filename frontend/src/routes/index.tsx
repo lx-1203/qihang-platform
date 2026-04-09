@@ -16,7 +16,10 @@ import MentorDetail from '../pages/MentorDetail';
 import CourseDetail from '../pages/CourseDetail';
 import Courses from '../pages/Courses';
 import Jobs from '../pages/Jobs';
+import JobDetail from '../pages/JobDetail';
 import Guidance from '../pages/Guidance';
+import GuidanceArticles from '../pages/GuidanceArticles';
+import GuidanceArticleDetail from '../pages/GuidanceArticleDetail';
 import Postgrad from '../pages/Postgrad';
 import Entrepreneurship from '../pages/Entrepreneurship';
 import StudyAbroad from '../pages/StudyAbroad';
@@ -85,8 +88,20 @@ export const router = createBrowserRouter([
         element: <Jobs />
       },
       {
+        path: 'jobs/:id',
+        element: <JobDetail />
+      },
+      {
         path: 'guidance',
         element: <Guidance />
+      },
+      {
+        path: 'guidance/articles',
+        element: <GuidanceArticles />
+      },
+      {
+        path: 'guidance/articles/:id',
+        element: <GuidanceArticleDetail />
       },
       {
         path: 'postgrad',
@@ -128,22 +143,22 @@ export const router = createBrowserRouter([
         path: 'notifications',
         element: <NotificationCenter />
       },
-      // ====== 学生个人中心（MainLayout下） ======
+      // ====== 学生个人中心（MainLayout下，需登录且为学生角色） ======
       {
         path: 'student/profile',
-        element: <StudentProfile />
+        element: <ProtectedRoute allowedRoles={['student']}><StudentProfile /></ProtectedRoute>
       },
       {
         path: 'student/applications',
-        element: <StudentMyApplications />
+        element: <ProtectedRoute allowedRoles={['student']}><StudentMyApplications /></ProtectedRoute>
       },
       {
         path: 'student/appointments',
-        element: <StudentMyAppointments />
+        element: <ProtectedRoute allowedRoles={['student']}><StudentMyAppointments /></ProtectedRoute>
       },
       {
         path: 'student/favorites',
-        element: <StudentFavorites />
+        element: <ProtectedRoute allowedRoles={['student']}><StudentFavorites /></ProtectedRoute>
       },
     ]
   },
