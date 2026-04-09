@@ -4,7 +4,7 @@ import {
   Save, RefreshCw, Palette, Globe, Mail,
   Search as SearchIcon, Shield, Clock,
   ChevronDown, ChevronUp, Edit3, Check, X,
-  AlertTriangle, FileText, Image
+  AlertTriangle, FileText, Image, AlertCircle
 } from 'lucide-react';
 import http from '@/api/http';
 
@@ -61,36 +61,9 @@ export default function AdminSettings() {
   const [editValue, setEditValue] = useState('');
   const [saving, setSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState<string | null>(null);
-
-  // 模拟配置数据
-  const mockConfigs: SiteConfig[] = [
-    { id: 1, config_key: 'brand_name', config_value: '启航平台', config_type: 'string', config_group: 'brand', label: '平台名称', description: '网站主标题', is_public: 1, is_editable: 1, sort_order: 1 },
-    { id: 2, config_key: 'brand_slogan', config_value: '大学生综合发展与就业指导平台', config_type: 'string', config_group: 'brand', label: '平台标语', description: '首页副标题', is_public: 1, is_editable: 1, sort_order: 2 },
-    { id: 3, config_key: 'brand_color', config_value: '#14b8a6', config_type: 'color', config_group: 'brand', label: '主品牌色', description: '全站主色调', is_public: 1, is_editable: 1, sort_order: 3 },
-    { id: 4, config_key: 'brand_logo', config_value: '', config_type: 'image', config_group: 'brand', label: '平台Logo', description: '顶部导航Logo图片URL', is_public: 1, is_editable: 1, sort_order: 4 },
-    { id: 10, config_key: 'home_hero_title', config_value: '你的职业发展，从启航开始', config_type: 'string', config_group: 'homepage', label: '首页主标题', description: 'Hero区域大标题', is_public: 1, is_editable: 1, sort_order: 10 },
-    { id: 11, config_key: 'home_hero_subtitle', config_value: '连接梦想与机遇，助力每一位大学生迈向理想职业', config_type: 'string', config_group: 'homepage', label: '首页副标题', description: 'Hero区域副标题', is_public: 1, is_editable: 1, sort_order: 11 },
-    { id: 13, config_key: 'home_stats_jobs', config_value: '10000+', config_type: 'string', config_group: 'homepage', label: '职位总数展示', description: '首页统计-职位数', is_public: 1, is_editable: 1, sort_order: 13 },
-    { id: 14, config_key: 'home_stats_companies', config_value: '500+', config_type: 'string', config_group: 'homepage', label: '合作企业展示', description: '首页统计-企业数', is_public: 1, is_editable: 1, sort_order: 14 },
-    { id: 20, config_key: 'contact_email', config_value: 'support@qihang.com', config_type: 'string', config_group: 'contact', label: '客服邮箱', description: '页脚和联系页面展示', is_public: 1, is_editable: 1, sort_order: 20 },
-    { id: 21, config_key: 'contact_phone', config_value: '400-888-9999', config_type: 'string', config_group: 'contact', label: '客服电话', description: '页脚和联系页面展示', is_public: 1, is_editable: 1, sort_order: 21 },
-    { id: 24, config_key: 'work_hours', config_value: '周一至周五 9:00-18:00 (北京时间)', config_type: 'string', config_group: 'contact', label: '工作时间', description: '所有咨询入口展示', is_public: 1, is_editable: 1, sort_order: 24 },
-    { id: 30, config_key: 'seo_title', config_value: '启航平台 - 大学生综合发展与就业指导', config_type: 'string', config_group: 'seo', label: '网页标题', description: '浏览器标签页标题', is_public: 1, is_editable: 1, sort_order: 30 },
-    { id: 40, config_key: 'studyabroad_hero_title', config_value: '海外名校，触手可及', config_type: 'string', config_group: 'studyabroad', label: '留学首页标题', description: '留学板块Hero标题', is_public: 1, is_editable: 1, sort_order: 40 },
-    { id: 50, config_key: 'footer_icp', config_value: '苏ICP备XXXXXXXX号', config_type: 'string', config_group: 'general', label: 'ICP备案号', description: '页脚备案号展示', is_public: 1, is_editable: 1, sort_order: 50 },
-    { id: 51, config_key: 'footer_copyright', config_value: '© 2026 江苏初晓云网络科技有限公司', config_type: 'string', config_group: 'general', label: '版权信息', description: '页脚版权声明', is_public: 1, is_editable: 1, sort_order: 51 },
-    { id: 52, config_key: 'maintenance_mode', config_value: 'false', config_type: 'boolean', config_group: 'general', label: '维护模式', description: '开启后前端显示维护页面', is_public: 1, is_editable: 1, sort_order: 52 },
-    { id: 53, config_key: 'announcement', config_value: '', config_type: 'string', config_group: 'general', label: '全站公告', description: '顶部公告条内容（为空则不显示）', is_public: 1, is_editable: 1, sort_order: 53 },
-  ];
-
-  const mockAuditLogs: AuditLog[] = [
-    { id: 1, operator_name: '超级管理员', operator_role: 'admin', action: 'update', target_type: 'config', target_id: null, before_data: '{"key":"brand_name","oldValue":"启航"}', after_data: '{"value":"启航平台"}', ip_address: '127.0.0.1', created_at: '2026-04-08 10:30:00' },
-    { id: 2, operator_name: '超级管理员', operator_role: 'admin', action: 'update', target_type: 'user', target_id: 7, before_data: '{"status":1}', after_data: '{"status":0}', ip_address: '127.0.0.1', created_at: '2026-04-08 10:15:00' },
-    { id: 3, operator_name: '超级管理员', operator_role: 'admin', action: 'update', target_type: 'company', target_id: 1, before_data: '{"verify_status":"pending"}', after_data: '{"verify_status":"approved"}', ip_address: '127.0.0.1', created_at: '2026-04-08 09:45:00' },
-    { id: 4, operator_name: '超级管理员', operator_role: 'admin', action: 'update', target_type: 'mentor', target_id: 5, before_data: '{"verify_status":"pending"}', after_data: '{"verify_status":"rejected","remark":"资质证明缺失"}', ip_address: '127.0.0.1', created_at: '2026-04-08 09:20:00' },
-    { id: 5, operator_name: '超级管理员', operator_role: 'admin', action: 'create', target_type: 'config', target_id: null, before_data: null, after_data: '{"key":"announcement","value":"平台升级公告"}', ip_address: '127.0.0.1', created_at: '2026-04-07 18:00:00' },
-    { id: 6, operator_name: '超级管理员', operator_role: 'admin', action: 'login', target_type: 'user', target_id: 1, before_data: null, after_data: null, ip_address: '192.168.1.100', created_at: '2026-04-07 09:00:00' },
-  ];
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [jsonError, setJsonError] = useState<string | null>(null);
+  const [fetchError, setFetchError] = useState<string | null>(null);
 
   useEffect(() => {
     if (tab === 'configs') fetchConfigs();
@@ -100,14 +73,15 @@ export default function AdminSettings() {
   async function fetchConfigs() {
     try {
       setLoading(true);
+      setFetchError(null);
       const res = await http.get('/config/all');
       if (res.data?.code === 200 && res.data.data) {
         setConfigs(res.data.data);
       } else {
-        setConfigs(mockConfigs);
+        setFetchError('获取配置失败：响应格式异常');
       }
     } catch {
-      setConfigs(mockConfigs);
+      setFetchError('获取配置失败，请检查后端服务是否运行');
     } finally {
       setLoading(false);
     }
@@ -116,34 +90,50 @@ export default function AdminSettings() {
   async function fetchAuditLogs() {
     try {
       setLoading(true);
+      setFetchError(null);
       const res = await http.get('/admin/audit-logs', { params: { page: 1, pageSize: 50 } });
       if (res.data?.code === 200 && res.data.data) {
         setAuditLogs(res.data.data.list || res.data.data);
       } else {
-        setAuditLogs(mockAuditLogs);
+        setFetchError('获取审计日志失败：响应格式异常');
       }
     } catch {
-      setAuditLogs(mockAuditLogs);
+      setFetchError('获取审计日志失败，请检查后端服务是否运行');
     } finally {
       setLoading(false);
     }
   }
 
   async function saveConfig(key: string, value: string) {
+    // JSON 类型校验
+    const cfg = configs.find(c => c.config_key === key);
+    if (cfg?.config_type === 'json') {
+      try {
+        JSON.parse(value);
+      } catch {
+        setJsonError('JSON 格式不合法，请检查语法');
+        return;
+      }
+    }
+
     try {
       setSaving(true);
-      await http.put(`/config/${key}`, { value });
-      setConfigs(prev => prev.map(c => c.config_key === key ? { ...c, config_value: value } : c));
-      setSaveSuccess(key);
-      setTimeout(() => setSaveSuccess(null), 2000);
-    } catch {
-      // 模拟保存
-      setConfigs(prev => prev.map(c => c.config_key === key ? { ...c, config_value: value } : c));
-      setSaveSuccess(key);
-      setTimeout(() => setSaveSuccess(null), 2000);
+      setSaveError(null);
+      setJsonError(null);
+      const res = await http.put(`/config/${key}`, { value });
+      if (res.data?.code === 200) {
+        setConfigs(prev => prev.map(c => c.config_key === key ? { ...c, config_value: value } : c));
+        setSaveSuccess(key);
+        setTimeout(() => setSaveSuccess(null), 2000);
+        setEditingKey(null);
+      } else {
+        setSaveError(res.data?.message || '保存失败');
+      }
+    } catch (err: unknown) {
+      const msg = (err && typeof err === 'object' && 'message' in err) ? (err as { message: string }).message : '保存失败，请检查后端服务';
+      setSaveError(msg);
     } finally {
       setSaving(false);
-      setEditingKey(null);
     }
   }
 
@@ -218,6 +208,29 @@ export default function AdminSettings() {
             </div>
           </div>
 
+          {/* 保存错误提示 */}
+          {saveError && (
+            <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-start gap-3">
+              <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="text-sm font-medium text-red-800">保存失败</p>
+                <p className="text-xs text-red-600 mt-0.5">{saveError}</p>
+              </div>
+              <button onClick={() => setSaveError(null)} className="ml-auto p-1 hover:bg-red-100 rounded">
+                <X className="w-4 h-4 text-red-600" />
+              </button>
+            </div>
+          )}
+
+          {/* 数据加载错误 */}
+          {fetchError && (
+            <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-center gap-3">
+              <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0" />
+              <p className="text-sm text-red-800 flex-1">{fetchError}</p>
+              <button onClick={fetchConfigs} className="text-xs bg-red-600 text-white px-3 py-1.5 rounded-lg hover:bg-red-700">重试</button>
+            </div>
+          )}
+
           {Object.entries(groupedConfigs).map(([group, items]) => {
             const groupInfo = GROUP_LABELS[group] || { label: group, icon: Shield };
             const GroupIcon = groupInfo.icon;
@@ -257,7 +270,7 @@ export default function AdminSettings() {
                             <p className="text-xs text-gray-500 mt-0.5">{cfg.description}</p>
 
                             {editingKey === cfg.config_key ? (
-                              <div className="flex items-center gap-2 mt-2">
+                              <div className="mt-2 space-y-2">
                                 {cfg.config_type === 'boolean' ? (
                                   <select
                                     value={editValue}
@@ -282,32 +295,75 @@ export default function AdminSettings() {
                                       className="border border-gray-200 rounded-lg px-3 py-2 text-sm w-32 font-mono focus:ring-2 focus:ring-indigo-500 outline-none"
                                     />
                                   </div>
+                                ) : cfg.config_type === 'json' ? (
+                                  <div className="space-y-1">
+                                    <textarea
+                                      value={editValue}
+                                      onChange={e => { setEditValue(e.target.value); setJsonError(null); }}
+                                      rows={6}
+                                      className={`w-full border rounded-lg px-3 py-2 text-sm font-mono resize-y focus:ring-2 focus:ring-indigo-500 outline-none max-w-lg ${
+                                        jsonError ? 'border-red-300 bg-red-50' : 'border-gray-200'
+                                      }`}
+                                      placeholder='{"key": "value"}'
+                                    />
+                                    {jsonError && <p className="text-xs text-red-600">{jsonError}</p>}
+                                  </div>
+                                ) : cfg.config_type === 'image' ? (
+                                  <div className="space-y-2">
+                                    <input
+                                      type="url"
+                                      value={editValue}
+                                      onChange={e => setEditValue(e.target.value)}
+                                      className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none max-w-lg w-full"
+                                      placeholder="输入图片URL"
+                                    />
+                                    {editValue && (
+                                      <div className="w-32 h-16 bg-gray-100 rounded-lg overflow-hidden border border-gray-200">
+                                        <img src={editValue} alt="预览" className="w-full h-full object-contain" onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                                      </div>
+                                    )}
+                                  </div>
                                 ) : (
                                   <input
                                     type="text"
                                     value={editValue}
                                     onChange={e => setEditValue(e.target.value)}
-                                    className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none max-w-lg"
+                                    className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none max-w-lg w-full"
                                   />
                                 )}
-                                <button
-                                  onClick={() => saveConfig(cfg.config_key, editValue)}
-                                  disabled={saving}
-                                  className="p-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-                                >
-                                  <Check className="w-4 h-4" />
-                                </button>
-                                <button
-                                  onClick={() => setEditingKey(null)}
-                                  className="p-2 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 transition-colors"
-                                >
-                                  <X className="w-4 h-4" />
-                                </button>
+                                <div className="flex items-center gap-2">
+                                  <button
+                                    onClick={() => saveConfig(cfg.config_key, editValue)}
+                                    disabled={saving}
+                                    className="p-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50"
+                                  >
+                                    <Check className="w-4 h-4" />
+                                  </button>
+                                  <button
+                                    onClick={() => { setEditingKey(null); setJsonError(null); setSaveError(null); }}
+                                    className="p-2 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 transition-colors"
+                                  >
+                                    <X className="w-4 h-4" />
+                                  </button>
+                                </div>
                               </div>
                             ) : (
-                              <p className="text-sm text-gray-700 mt-1 truncate max-w-lg">
-                                {cfg.config_type === 'boolean' ? (cfg.config_value === 'true' ? '开启' : '关闭') : (cfg.config_value || '（未设置）')}
-                              </p>
+                              <>
+                                <p className="text-sm text-gray-700 mt-1 truncate max-w-lg">
+                                  {cfg.config_type === 'boolean'
+                                    ? (cfg.config_value === 'true' ? '开启' : '关闭')
+                                    : cfg.config_type === 'json'
+                                      ? (cfg.config_value ? '(JSON 数据)' : '（未设置）')
+                                      : cfg.config_type === 'image'
+                                        ? (cfg.config_value ? '(图片已设置)' : '（未设置）')
+                                        : (cfg.config_value || '（未设置）')}
+                                </p>
+                                {cfg.config_type === 'image' && cfg.config_value && (
+                                  <div className="mt-1 w-20 h-10 bg-gray-100 rounded overflow-hidden border border-gray-200">
+                                    <img src={cfg.config_value} alt={cfg.label} className="w-full h-full object-contain" onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                                  </div>
+                                )}
+                              </>
                             )}
                           </div>
 
@@ -339,7 +395,16 @@ export default function AdminSettings() {
 
       {/* 审计日志 */}
       {tab === 'audit' && (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        <div className="space-y-4">
+          {fetchError && (
+            <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-center gap-3">
+              <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0" />
+              <p className="text-sm text-red-800 flex-1">{fetchError}</p>
+              <button onClick={fetchAuditLogs} className="text-xs bg-red-600 text-white px-3 py-1.5 rounded-lg hover:bg-red-700">重试</button>
+            </div>
+          )}
+
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
           <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
             <div>
               <h3 className="text-sm font-bold text-gray-900">操作审计日志</h3>
@@ -395,6 +460,14 @@ export default function AdminSettings() {
               </motion.div>
             ))}
           </div>
+          </div>
+
+          {auditLogs.length === 0 && !fetchError && !loading && (
+            <div className="text-center py-12 text-gray-500">
+              <FileText className="w-10 h-10 mx-auto mb-3 opacity-30" />
+              <p className="text-sm">暂无审计日志</p>
+            </div>
+          )}
         </div>
       )}
     </div>
