@@ -9,6 +9,7 @@ import { Router } from 'express';
 import pool from '../db.js';
 import { authMiddleware, requireRole } from '../middleware/auth.js';
 import { createNotification, NotificationTemplates } from '../utils/notification.js';
+import { idempotency } from '../middleware/idempotency.js';
 
 const router = Router();
 
@@ -94,7 +95,7 @@ router.get('/profile', async (req, res) => {
 /**
  * POST /api/student/resumes - 投递简历到指定职位
  */
-router.post('/resumes', async (req, res) => {
+router.post('/resumes', idempotency(), async (req, res) => {
   try {
     const userId = req.user.id;
     const { job_id } = req.body;
@@ -104,7 +105,7 @@ router.post('/resumes', async (req, res) => {
     }
 
     // 检查职位是否存在
-    const [jobs] = await pool.query('SELECT id, title, company FROM jobs WHERE id = ? AND status = 1', [job_id]);
+    const [jobs] = await pool.query('SELECT id, title, company_name FROM jobs WHERE id = ? AND status = ?', [job_id, 'active']);
     if (jobs.length === 0) {
       return res.status(404).json({ code: 404, message: '职位不存在或已下架' });
     }
@@ -161,7 +162,7 @@ router.get('/resumes', async (req, res) => {
     const { status } = req.query;
 
     let sql = `
-      SELECT r.*, j.title AS job_title, j.company AS company_name,
+      SELECT r.*, j.title AS job_title, j.company_name,
              j.logo AS company_logo, j.salary AS job_salary, j.location AS job_location
       FROM resumes r
       LEFT JOIN jobs j ON r.job_id = j.id
@@ -189,7 +190,7 @@ router.get('/resumes', async (req, res) => {
 /**
  * POST /api/student/appointments - 预约导师 1v1 辅导
  */
-router.post('/appointments', async (req, res) => {
+router.post('/appointments', idempotency(), async (req, res) => {
   try {
     const userId = req.user.id;
     const { mentor_id, appointment_time, duration, note, fee, service_title } = req.body;
@@ -198,8 +199,13 @@ router.post('/appointments', async (req, res) => {
       return res.status(400).json({ code: 400, message: '导师ID和预约时间不能为空' });
     }
 
-    // 检查导师是否存在
-    const [mentors] = await pool.query('SELECT id FROM mentors WHERE id = ? AND status = 1', [mentor_id]);
+    // 检查导师是否存在（通过 mentor_profiles 表，mentor_id 是 users.id）
+    const [mentors] = await pool.query(
+      `SELECT mp.id FROM mentor_profiles mp
+       JOIN users u ON mp.user_id = u.id
+       WHERE mp.user_id = ? AND u.status = 1`,
+      [mentor_id]
+    );
     if (mentors.length === 0) {
       return res.status(404).json({ code: 404, message: '导师不存在或暂不可预约' });
     }
@@ -241,9 +247,9 @@ router.get('/appointments', async (req, res) => {
     const { status } = req.query;
 
     let sql = `
-      SELECT a.*, m.name AS mentor_name, m.avatar AS mentor_avatar, m.title AS mentor_title
+      SELECT a.*, mp.name AS mentor_name, mp.avatar AS mentor_avatar, mp.title AS mentor_title
       FROM appointments a
-      LEFT JOIN mentors m ON a.mentor_id = m.id
+      LEFT JOIN mentor_profiles mp ON a.mentor_id = mp.user_id
       WHERE a.student_id = ?
     `;
     const params = [userId];
@@ -317,7 +323,7 @@ router.put('/appointments/:id/cancel', async (req, res) => {
 /**
  * POST /api/student/appointments/:id/review - 评价导师
  */
-router.post('/appointments/:id/review', async (req, res) => {
+router.post('/appointments/:id/review', idempotency(), async (req, res) => {
   try {
     const userId = req.user.id;
     const appointmentId = req.params.id;
@@ -395,13 +401,13 @@ router.get('/favorites', async (req, res) => {
         let detail = {};
         try {
           if (fav.target_type === 'job') {
-            const [j] = await pool.query('SELECT title, company AS subtitle, logo AS image, salary AS extra FROM jobs WHERE id = ?', [fav.target_id]);
+            const [j] = await pool.query('SELECT title, company_name AS subtitle, logo AS image, salary AS extra FROM jobs WHERE id = ?', [fav.target_id]);
             detail = j[0] || {};
           } else if (fav.target_type === 'course') {
-            const [c] = await pool.query('SELECT title, mentor AS subtitle, cover AS image, rating AS extra FROM courses WHERE id = ?', [fav.target_id]);
+            const [c] = await pool.query('SELECT title, mentor_name AS subtitle, cover AS image, rating AS extra FROM courses WHERE id = ?', [fav.target_id]);
             detail = c[0] || {};
           } else if (fav.target_type === 'mentor') {
-            const [m] = await pool.query('SELECT name AS title, title AS subtitle, avatar AS image, rating AS extra FROM mentors WHERE id = ?', [fav.target_id]);
+            const [m] = await pool.query('SELECT name AS title, title AS subtitle, avatar AS image, rating AS extra FROM mentor_profiles WHERE id = ?', [fav.target_id]);
             detail = m[0] || {};
           }
         } catch {
@@ -421,7 +427,7 @@ router.get('/favorites', async (req, res) => {
 /**
  * POST /api/student/favorites - 添加收藏
  */
-router.post('/favorites', async (req, res) => {
+router.post('/favorites', idempotency(), async (req, res) => {
   try {
     const userId = req.user.id;
     const { target_type, target_id } = req.body;

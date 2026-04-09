@@ -1,37 +1,163 @@
-import { useParams, Link } from 'react-router-dom';
-import { Star, Clock, BookOpen, Video, Award, ChevronRight, MessageCircle } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { useParams, Link, useNavigate } from 'react-router-dom';
+import { Star, Clock, BookOpen, Video, Award, ChevronRight, MessageCircle, Calendar, Loader2, AlertCircle, Users } from 'lucide-react';
+import { motion } from 'framer-motion';
+import http from '@/api/http';
+import { useAuthStore } from '@/store/auth';
 
-const MENTOR_DATA = {
-  id: 1,
-  name: '陈经理',
-  title: '前头部互联网大厂招聘总监',
-  company: '某知名互联网公司',
-  experience: '10年+ HR经验',
-  avatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=400',
-  rating: 4.9,
-  students: 1250,
-  about: '作为前某头部大厂校园招聘负责人，我曾面试过超过5000名应届生。我深知大厂招聘的底层逻辑、简历筛选的标准以及面试官的偏好。我致力于帮助初入职场的同学避开求职坑，拿到心仪的Offer。',
-  expertise: ['简历精修', '模拟面试', '职业规划', '薪资谈判', '群面技巧'],
-  courses: [
-    { id: 2, title: '校招简历怎么写才能过海选？', type: '视频课', duration: '45分钟', students: '3.5w', price: '免费' },
-    { id: 5, title: '大厂群面(无领导小组)通关秘籍', type: '视频课', duration: '120分钟', students: '1.2w', price: '¥99' },
-  ],
-  services: [
-    { id: 1, title: '1V1 简历精修与深度诊断', duration: '60分钟', price: '¥299', desc: '逐行修改简历，挖掘个人亮点，匹配目标岗位需求。' },
-    { id: 2, title: '全真模拟面试与复盘', duration: '90分钟', price: '¥499', desc: '模拟真实大厂单面/群面场景，提供详细打分与改进建议。' },
-  ]
-};
+// 导师详情数据结构（匹配后端 mentor_profiles 表）
+interface MentorDetailData {
+  id: number;
+  user_id: number;
+  name: string;
+  title: string;
+  avatar: string;
+  bio: string;
+  expertise: string[];
+  tags: string[];
+  rating: string;
+  rating_count: number;
+  price: number;
+  available_time: string[];
+  status: number;
+}
+
+// 导师课程（从 courses 表关联查询）
+interface MentorCourse {
+  id: number;
+  title: string;
+  category: string;
+  duration: string;
+  views: string;
+  rating: string;
+  price: number;
+  cover: string;
+}
 
 export default function MentorDetail() {
   const { id } = useParams();
-  const mentor = id ? MENTOR_DATA : MENTOR_DATA;
+  const navigate = useNavigate();
+  const { isAuthenticated, user } = useAuthStore();
+
+  const [mentor, setMentor] = useState<MentorDetailData | null>(null);
+  const [courses, setCourses] = useState<MentorCourse[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [bookingLoading, setBookingLoading] = useState(false);
+
+  // 获取导师详情
+  useEffect(() => {
+    const fetchMentor = async () => {
+      try {
+        setLoading(true);
+        setError('');
+        const res = await http.get(`/mentors/${id}`);
+        setMentor(res.data);
+      } catch (err: any) {
+        console.error('获取导师详情失败:', err);
+        if (err?.code === 404 || err?.response?.status === 404) {
+          setError('导师不存在或已下架');
+        } else {
+          setError('加载失败，请稍后重试');
+        }
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (id) {
+      fetchMentor();
+    }
+  }, [id]);
+
+  // 获取导师的课程
+  useEffect(() => {
+    const fetchCourses = async () => {
+      try {
+        // 用导师名称作为关键词搜索其课程
+        if (mentor?.name) {
+          const res = await http.get('/courses', { params: { keyword: mentor.name, pageSize: 10 } });
+          const data = res.data;
+          setCourses(data.courses || []);
+        }
+      } catch (err) {
+        console.error('获取导师课程失败:', err);
+      }
+    };
+
+    if (mentor) {
+      fetchCourses();
+    }
+  }, [mentor]);
+
+  // 预约导师
+  const handleBookAppointment = async () => {
+    if (!isAuthenticated) {
+      navigate('/login', { state: { from: `/mentors/${id}` } });
+      return;
+    }
+
+    try {
+      setBookingLoading(true);
+      await http.post('/student/appointments', {
+        mentor_id: mentor?.id,
+        type: '1v1辅导',
+        note: `预约${mentor?.name}老师的1v1辅导服务`,
+      });
+      alert('预约申请已提交，请等待导师确认！');
+    } catch (err: any) {
+      alert(err?.message || '预约失败，请稍后重试');
+    } finally {
+      setBookingLoading(false);
+    }
+  };
+
+  // 加载状态
+  if (loading) {
+    return (
+      <div className="bg-gray-50 min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="w-10 h-10 text-primary-600 animate-spin mx-auto mb-4" />
+          <p className="text-gray-500">加载导师信息中...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // 错误状态
+  if (error || !mentor) {
+    return (
+      <div className="bg-gray-50 min-h-screen flex items-center justify-center">
+        <div className="text-center max-w-md px-4">
+          <AlertCircle className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+          <h2 className="text-xl font-bold text-gray-700 mb-2">{error || '导师不存在'}</h2>
+          <p className="text-gray-500 mb-6">可能该导师已下架或链接有误</p>
+          <Link to="/mentors" className="inline-flex items-center text-primary-600 hover:text-primary-700 font-medium">
+            ← 返回导师列表
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-gray-50 min-h-screen pb-20">
+      {/* 导师头部信息 */}
       <div className="bg-white border-b border-gray-200">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-          <div className="flex flex-col md:flex-row items-start md:items-center gap-8">
-            <img src={mentor.avatar} alt={mentor.name} className="w-32 h-32 rounded-full object-cover border-4 border-primary-50 shadow-md" />
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="flex flex-col md:flex-row items-start md:items-center gap-8"
+          >
+            <img
+              src={mentor.avatar || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&q=80&w=400'}
+              alt={mentor.name}
+              className="w-32 h-32 rounded-full object-cover border-4 border-primary-50 shadow-md"
+              onError={(e) => {
+                (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&q=80&w=400';
+              }}
+            />
             <div className="flex-1">
               <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-6 mb-3">
                 <h1 className="text-3xl font-bold text-gray-900">{mentor.name}</h1>
@@ -40,21 +166,25 @@ export default function MentorDetail() {
                 </span>
               </div>
               <p className="text-xl text-gray-600 mb-4">{mentor.title}</p>
-              
+
               <div className="flex flex-wrap items-center gap-6 text-sm text-gray-500">
                 <div className="flex items-center gap-1">
                   <Star className="w-4 h-4 text-yellow-400" fill="currentColor" />
                   <span className="font-medium text-gray-900">{mentor.rating}</span>
                   <span>学员评分</span>
+                  {mentor.rating_count > 0 && (
+                    <span className="text-gray-400">({mentor.rating_count}人评价)</span>
+                  )}
                 </div>
+                {mentor.price > 0 && (
+                  <div className="flex items-center gap-1">
+                    <span className="font-medium text-orange-500">¥{mentor.price}</span>
+                    <span>/次</span>
+                  </div>
+                )}
                 <div className="flex items-center gap-1">
-                  <BookOpen className="w-4 h-4" />
-                  <span className="font-medium text-gray-900">{mentor.students}+</span>
-                  <span>辅导人次</span>
-                </div>
-                <div className="flex items-center gap-1">
-                  <Award className="w-4 h-4" />
-                  <span>{mentor.experience}</span>
+                  <div className={`w-2 h-2 rounded-full ${mentor.status === 1 ? 'bg-green-500' : 'bg-gray-400'}`} />
+                  <span>{mentor.status === 1 ? '在线' : '离线'}</span>
                 </div>
               </div>
             </div>
@@ -63,90 +193,201 @@ export default function MentorDetail() {
                  <MessageCircle size={18} />
                  私信咨询
                </button>
-               <button className="flex-1 md:flex-none bg-primary-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-primary-700 transition-colors shadow-sm">
-                 立即预约
+               <button
+                 onClick={handleBookAppointment}
+                 disabled={bookingLoading}
+                 className="flex-1 md:flex-none bg-primary-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-primary-700 transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+               >
+                 {bookingLoading ? <Loader2 size={18} className="animate-spin" /> : <Calendar size={18} />}
+                 {bookingLoading ? '提交中...' : '立即预约'}
                </button>
             </div>
-          </div>
+          </motion.div>
         </div>
       </div>
 
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex flex-col lg:flex-row gap-8">
+        {/* 左侧主内容 */}
         <div className="flex-1 space-y-8">
-          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
-            <h2 className="text-lg font-bold text-gray-900 mb-4">擅长领域</h2>
-            <div className="flex flex-wrap gap-2">
-              {mentor.expertise.map((item, index) => (
-                <span key={index} className="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg text-sm">
-                  {item}
-                </span>
-              ))}
-            </div>
-          </div>
+          {/* 擅长领域 */}
+          {mentor.expertise && mentor.expertise.length > 0 && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1 }}
+              className="bg-white rounded-xl p-6 shadow-sm border border-gray-100"
+            >
+              <h2 className="text-lg font-bold text-gray-900 mb-4">擅长领域</h2>
+              <div className="flex flex-wrap gap-2">
+                {mentor.expertise.map((item, index) => (
+                  <span key={index} className="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg text-sm">
+                    {item}
+                  </span>
+                ))}
+              </div>
+            </motion.div>
+          )}
 
-          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+          {/* 标签 */}
+          {mentor.tags && mentor.tags.length > 0 && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.15 }}
+              className="bg-white rounded-xl p-6 shadow-sm border border-gray-100"
+            >
+              <h2 className="text-lg font-bold text-gray-900 mb-4">服务标签</h2>
+              <div className="flex flex-wrap gap-2">
+                {mentor.tags.map((tag, index) => (
+                  <span key={index} className="bg-primary-50 text-primary-700 px-3 py-1.5 rounded-full text-sm font-medium">
+                    {tag}
+                  </span>
+                ))}
+              </div>
+            </motion.div>
+          )}
+
+          {/* 导师介绍 */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className="bg-white rounded-xl p-6 shadow-sm border border-gray-100"
+          >
             <h2 className="text-lg font-bold text-gray-900 mb-4">导师介绍</h2>
-            <p className="text-gray-600 leading-relaxed">
-              {mentor.about}
+            <p className="text-gray-600 leading-relaxed whitespace-pre-line">
+              {mentor.bio || '该导师暂未填写个人简介。'}
             </p>
-          </div>
+          </motion.div>
 
-          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-lg font-bold text-gray-900">主讲课程</h2>
-              <Link to="/courses" className="text-sm text-primary-600 hover:text-primary-700 font-medium">查看全部</Link>
-            </div>
-            <div className="space-y-4">
-              {mentor.courses.map((course) => (
-                <Link key={course.id} to={`/courses/${course.id}`} className="group block border border-gray-100 rounded-lg p-4 hover:border-primary-200 hover:bg-primary-50 transition-colors">
-                  <div className="flex justify-between items-start">
-                    <div className="flex gap-4">
-                      <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center text-gray-400 group-hover:bg-white group-hover:text-primary-500 transition-colors">
-                        <Video size={24} />
-                      </div>
-                      <div>
-                        <h3 className="font-bold text-gray-900 group-hover:text-primary-700 transition-colors">{course.title}</h3>
-                        <div className="flex items-center gap-4 mt-2 text-xs text-gray-500">
-                          <span className="flex items-center gap-1"><Clock size={14} /> {course.duration}</span>
-                          <span className="flex items-center gap-1"><BookOpen size={14} /> {course.students} 人学过</span>
+          {/* 可预约时间 */}
+          {mentor.available_time && mentor.available_time.length > 0 && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.25 }}
+              className="bg-white rounded-xl p-6 shadow-sm border border-gray-100"
+            >
+              <h2 className="text-lg font-bold text-gray-900 mb-4">可预约时间</h2>
+              <div className="flex flex-wrap gap-2">
+                {mentor.available_time.map((time, index) => (
+                  <span key={index} className="flex items-center gap-1 bg-green-50 text-green-700 px-3 py-1.5 rounded-lg text-sm">
+                    <Clock size={14} />
+                    {time}
+                  </span>
+                ))}
+              </div>
+            </motion.div>
+          )}
+
+          {/* 主讲课程 */}
+          {courses.length > 0 && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
+              className="bg-white rounded-xl p-6 shadow-sm border border-gray-100"
+            >
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-lg font-bold text-gray-900">主讲课程</h2>
+                <Link to="/courses" className="text-sm text-primary-600 hover:text-primary-700 font-medium">查看全部</Link>
+              </div>
+              <div className="space-y-4">
+                {courses.map((course) => (
+                  <Link key={course.id} to={`/courses/${course.id}`} className="group block border border-gray-100 rounded-lg p-4 hover:border-primary-200 hover:bg-primary-50 transition-colors">
+                    <div className="flex justify-between items-start">
+                      <div className="flex gap-4">
+                        {course.cover ? (
+                          <img src={course.cover} alt={course.title} className="w-12 h-12 rounded-lg object-cover" />
+                        ) : (
+                          <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center text-gray-400 group-hover:bg-white group-hover:text-primary-500 transition-colors">
+                            <Video size={24} />
+                          </div>
+                        )}
+                        <div>
+                          <h3 className="font-bold text-gray-900 group-hover:text-primary-700 transition-colors">{course.title}</h3>
+                          <div className="flex items-center gap-4 mt-2 text-xs text-gray-500">
+                            {course.duration && (
+                              <span className="flex items-center gap-1"><Clock size={14} /> {course.duration}</span>
+                            )}
+                            <span className="flex items-center gap-1"><Users size={14} /> {course.views} 人学过</span>
+                            <span className="flex items-center gap-1">
+                              <Star size={14} className="text-yellow-400" fill="currentColor" /> {course.rating}
+                            </span>
+                          </div>
                         </div>
                       </div>
+                      <span className={`font-bold ${course.price === 0 ? 'text-green-500' : 'text-orange-500'}`}>
+                        {course.price === 0 ? '免费' : `¥${course.price}`}
+                      </span>
                     </div>
-                    <span className={`font-bold ${course.price === '免费' ? 'text-green-500' : 'text-orange-500'}`}>
-                      {course.price}
-                    </span>
-                  </div>
-                </Link>
-              ))}
-            </div>
-          </div>
+                  </Link>
+                ))}
+              </div>
+            </motion.div>
+          )}
         </div>
 
+        {/* 右侧预约信息 */}
         <div className="w-full lg:w-80">
-          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 sticky top-24">
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.2 }}
+            className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 sticky top-24"
+          >
             <h2 className="text-lg font-bold text-gray-900 mb-6">1v1 辅导服务</h2>
+
             <div className="space-y-4">
-              {mentor.services.map((service) => (
-                <div key={service.id} className="border border-gray-200 rounded-lg p-4 hover:border-primary-500 transition-colors cursor-pointer group">
-                  <div className="flex justify-between items-start mb-2">
-                    <h3 className="font-bold text-gray-900 group-hover:text-primary-600 transition-colors">{service.title}</h3>
-                    <span className="font-bold text-orange-500">{service.price}</span>
-                  </div>
-                  <p className="text-sm text-gray-500 mb-3 line-clamp-2">{service.desc}</p>
-                  <div className="flex justify-between items-center text-xs text-gray-400">
-                    <span className="flex items-center gap-1"><Clock size={14} /> {service.duration}</span>
-                    <span className="flex items-center text-primary-600 font-medium group-hover:translate-x-1 transition-transform">
-                      预约 <ChevronRight size={14} />
-                    </span>
-                  </div>
+              {/* 辅导服务卡片 */}
+              <div
+                onClick={handleBookAppointment}
+                className="border border-gray-200 rounded-lg p-4 hover:border-primary-500 transition-colors cursor-pointer group"
+              >
+                <div className="flex justify-between items-start mb-2">
+                  <h3 className="font-bold text-gray-900 group-hover:text-primary-600 transition-colors">预约1V1辅导</h3>
+                  <span className="font-bold text-orange-500">
+                    {mentor.price > 0 ? `¥${mentor.price}` : '免费'}
+                  </span>
                 </div>
-              ))}
+                <p className="text-sm text-gray-500 mb-3 line-clamp-2">
+                  与{mentor.name}老师进行一对一深度交流，获取个性化职业指导与建议。
+                </p>
+                <div className="flex justify-between items-center text-xs text-gray-400">
+                  <span className="flex items-center gap-1"><Clock size={14} /> 约60分钟</span>
+                  <span className="flex items-center text-primary-600 font-medium group-hover:translate-x-1 transition-transform">
+                    预约 <ChevronRight size={14} />
+                  </span>
+                </div>
+              </div>
+
+              {/* 导师信息统计 */}
+              <div className="pt-4 border-t border-gray-100 space-y-3">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-gray-500">导师评分</span>
+                  <span className="flex items-center gap-1 font-medium text-gray-900">
+                    <Star size={14} className="text-yellow-400" fill="currentColor" />
+                    {mentor.rating}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-gray-500">评价人数</span>
+                  <span className="font-medium text-gray-900">{mentor.rating_count} 人</span>
+                </div>
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-gray-500">当前状态</span>
+                  <span className={`flex items-center gap-1 font-medium ${mentor.status === 1 ? 'text-green-600' : 'text-gray-400'}`}>
+                    <div className={`w-2 h-2 rounded-full ${mentor.status === 1 ? 'bg-green-500' : 'bg-gray-400'}`} />
+                    {mentor.status === 1 ? '在线接单' : '暂不接单'}
+                  </span>
+                </div>
+              </div>
             </div>
-            
+
             <div className="mt-6 pt-6 border-t border-gray-100 text-center">
               <p className="text-xs text-gray-400">平台保障 · 不满意退款 · 隐私保护</p>
             </div>
-          </div>
+          </motion.div>
         </div>
       </div>
     </div>

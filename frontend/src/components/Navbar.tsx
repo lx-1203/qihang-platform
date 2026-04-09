@@ -3,14 +3,18 @@ import { useState, useEffect, useRef } from 'react';
 import { Search, UserCircle, Bell, LogOut, Settings, User, ChevronDown } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuthStore } from '@/store/auth';
+import { useConfigStore } from '@/store/config';
 import http from '@/api/http';
 
-// ====== 顶部导航栏（认证感知 + 通知铃铛） ======
+// ====== 顶部导航栏（认证感知 + 通知铃铛 + 配置驱动品牌） ======
 
 export default function Navbar() {
   const location = useLocation();
   const navigate = useNavigate();
   const { isAuthenticated, user, logout } = useAuthStore();
+  const brandName = useConfigStore(s => s.getString('brand_name', '启航平台'));
+  const brandLogo = useConfigStore(s => s.getString('brand_logo', ''));
+  const announcement = useConfigStore(s => s.getString('announcement', ''));
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const userMenuRef = useRef<HTMLDivElement>(null);
@@ -36,11 +40,10 @@ export default function Navbar() {
     try {
       const res = await http.get('/notifications/unread-count');
       if (res.data?.code === 200) {
-        setUnreadCount(res.data.data?.count || 0);
+        setUnreadCount(res.data.data?.unread || 0);
       }
     } catch {
-      // 模拟未读数
-      setUnreadCount(3);
+      // 接口不可用时保持 0，不使用 mock
     }
   }
 
@@ -76,15 +79,25 @@ export default function Navbar() {
 
   return (
     <header className="bg-white sticky top-0 z-50 border-b border-gray-100 shadow-sm">
+      {/* 全站公告条（配置中心可控） */}
+      {announcement && (
+        <div className="bg-primary-600 text-white text-center text-xs py-1.5 px-4">
+          {announcement}
+        </div>
+      )}
       <div className="max-w-[1200px] mx-auto px-4 sm:px-6">
         <div className="flex justify-between items-center h-14">
           {/* Left section: Logo and Nav */}
           <div className="flex items-center">
             <Link to="/" className="flex-shrink-0 flex items-center mr-8 lg:mr-12">
-              <div className="w-8 h-8 bg-[#14b8a6] rounded-lg flex items-center justify-center text-white font-bold text-xl mr-2 shadow-sm">
-                启
-              </div>
-              <span className="text-xl font-bold text-[#111827] tracking-tight whitespace-nowrap">启航平台</span>
+              {brandLogo ? (
+                <img src={brandLogo} alt={brandName} className="h-8 mr-2" />
+              ) : (
+                <div className="w-8 h-8 bg-[#14b8a6] rounded-lg flex items-center justify-center text-white font-bold text-xl mr-2 shadow-sm">
+                  {brandName.charAt(0)}
+                </div>
+              )}
+              <span className="text-xl font-bold text-[#111827] tracking-tight whitespace-nowrap">{brandName}</span>
             </Link>
 
             {/* Navigation */}

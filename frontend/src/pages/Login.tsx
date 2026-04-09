@@ -8,22 +8,101 @@ import {
   GraduationCap,
   ChevronLeft,
   ArrowRight,
+  Loader2,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import DevFloatButton from "../components/DevFloatButton";
+import { useAuthStore } from "@/store/auth";
+import { useConfigStore } from "@/store/config";
+import http from "@/api/http";
 
 export default function Login() {
   const [isLogin, setIsLogin] = useState(true);
   const [role, setRole] = useState<"student" | "mentor" | "company">("student");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [nickname, setNickname] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [agreedTerms, setAgreedTerms] = useState(false);
   const navigate = useNavigate();
+  const { setAuth } = useAuthStore();
+  const brandName = useConfigStore(s => s.getString('brand_name', '启航平台'));
 
   const handleToggleMode = () => {
     setIsLogin(!isLogin);
+    setError("");
   };
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setError("");
+
+    if (!email || !password) {
+      setError("请填写邮箱和密码");
+      return;
+    }
+
+    if (!isLogin && !agreedTerms) {
+      setError("请先同意服务条款和隐私政策");
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      if (isLogin) {
+        // 登录
+        const res = await http.post("/auth/login", { email, password });
+        if (res.data?.code === 200 && res.data.data) {
+          const { token, user } = res.data.data;
+          setAuth(token, user);
+          // 根据角色跳转
+          switch (user.role) {
+            case "admin":
+              navigate("/admin/dashboard");
+              break;
+            case "company":
+              navigate("/company/dashboard");
+              break;
+            case "mentor":
+              navigate("/mentor/dashboard");
+              break;
+            default:
+              navigate("/");
+          }
+        } else {
+          setError(res.data?.message || "登录失败");
+        }
+      } else {
+        // 注册
+        const res = await http.post("/auth/register", {
+          email,
+          password,
+          role,
+          nickname: nickname || undefined,
+        });
+        if ((res.data?.code === 201 || res.data?.code === 200) && res.data.data) {
+          const { token, user } = res.data.data;
+          setAuth(token, user);
+          navigate("/");
+        } else {
+          setError(res.data?.message || "注册失败");
+        }
+      }
+    } catch (err: unknown) {
+      if (err && typeof err === "object" && "response" in err) {
+        const axiosErr = err as { response?: { data?: { message?: string } } };
+        setError(axiosErr.response?.data?.message || "网络错误，请检查后端服务");
+      } else {
+        setError("网络错误，请稍后重试");
+      }
+    } finally {
+      setLoading(false);
+    }
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col md:flex-row">
-      <DevFloatButton />
       {/* 左侧：品牌展示/插画区域 */}
       <div className="hidden md:flex md:w-1/2 bg-[#111827] relative overflow-hidden flex-col justify-between p-12 lg:p-24 text-white">
         {/* 背景装饰图案 */}
@@ -58,9 +137,9 @@ export default function Login() {
             className="inline-flex items-center gap-2 mb-16 hover:opacity-80 transition-opacity"
           >
             <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-primary-900 font-bold text-2xl shadow-lg">
-              职
+              {brandName.charAt(0)}
             </div>
-            <span className="text-2xl font-bold tracking-tight">LOGO演示</span>
+            <span className="text-2xl font-bold tracking-tight">{brandName}</span>
           </Link>
 
           <AnimatePresence mode="wait">
@@ -124,9 +203,9 @@ export default function Login() {
         <div className="mx-auto w-full max-w-sm lg:max-w-md py-12">
           <div className="md:hidden flex items-center gap-2 mb-8 justify-center">
             <div className="w-8 h-8 bg-primary-600 rounded-lg flex items-center justify-center text-white font-bold text-xl">
-              职
+              {brandName.charAt(0)}
             </div>
-            <span className="text-xl font-bold text-gray-900">LOGO演示</span>
+            <span className="text-xl font-bold text-gray-900">{brandName}</span>
           </div>
 
           <motion.div
@@ -197,13 +276,42 @@ export default function Login() {
               )}
             </AnimatePresence>
 
-            <form className="space-y-5" onSubmit={(e) => e.preventDefault()}>
+            <form className="space-y-5" onSubmit={handleSubmit}>
+              {/* 错误提示 */}
+              {error && (
+                <div className="bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 rounded-lg">
+                  {error}
+                </div>
+              )}
+
+              {/* 注册时显示昵称输入 */}
+              {!isLogin && (
+                <div>
+                  <label htmlFor="nickname" className="block text-sm font-medium leading-6 text-gray-900">
+                    昵称（选填）
+                  </label>
+                  <div className="mt-2 relative rounded-md shadow-sm">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <User className="h-5 w-5 text-gray-400" aria-hidden="true" />
+                    </div>
+                    <input
+                      id="nickname"
+                      type="text"
+                      value={nickname}
+                      onChange={e => setNickname(e.target.value)}
+                      className="block w-full rounded-lg border-0 py-2.5 pl-10 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-primary-600 sm:text-sm sm:leading-6"
+                      placeholder="请输入昵称"
+                    />
+                  </div>
+                </div>
+              )}
+
               <div>
                 <label
                   htmlFor="email"
                   className="block text-sm font-medium leading-6 text-gray-900"
                 >
-                  邮箱或手机号
+                  邮箱
                 </label>
                 <div className="mt-2 relative rounded-md shadow-sm">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -218,8 +326,10 @@ export default function Login() {
                     type="email"
                     autoComplete="email"
                     required
+                    value={email}
+                    onChange={e => setEmail(e.target.value)}
                     className="block w-full rounded-lg border-0 py-2.5 pl-10 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-primary-600 sm:text-sm sm:leading-6"
-                    placeholder="请输入邮箱或手机号"
+                    placeholder="请输入邮箱"
                   />
                 </div>
               </div>
@@ -254,8 +364,10 @@ export default function Login() {
                     id="password"
                     name="password"
                     type="password"
-                    autoComplete="current-password"
+                    autoComplete={isLogin ? "current-password" : "new-password"}
                     required
+                    value={password}
+                    onChange={e => setPassword(e.target.value)}
                     className="block w-full rounded-lg border-0 py-2.5 pl-10 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-primary-600 sm:text-sm sm:leading-6"
                     placeholder="请输入密码"
                   />
@@ -273,6 +385,8 @@ export default function Login() {
                       id="terms"
                       name="terms"
                       type="checkbox"
+                      checked={agreedTerms}
+                      onChange={e => setAgreedTerms(e.target.checked)}
                       className="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-600"
                     />
                   </div>
@@ -301,10 +415,14 @@ export default function Login() {
               <div>
                 <button
                   type="submit"
-                  className="flex w-full justify-center items-center gap-2 rounded-lg bg-primary-600 px-3 py-3 text-sm font-semibold text-white shadow-sm hover:bg-primary-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-600 transition-colors"
+                  disabled={loading}
+                  className="flex w-full justify-center items-center gap-2 rounded-lg bg-primary-600 px-3 py-3 text-sm font-semibold text-white shadow-sm hover:bg-primary-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
+                  {loading ? (
+                    <Loader2 size={18} className="animate-spin" />
+                  ) : null}
                   {isLogin ? "登录" : "创建账号"}
-                  <ArrowRight size={18} />
+                  {!loading && <ArrowRight size={18} />}
                 </button>
               </div>
             </form>

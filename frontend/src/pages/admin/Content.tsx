@@ -1,13 +1,13 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import {
   Search, Briefcase, Video, Eye, EyeOff,
-  ChevronLeft, ChevronRight, Filter,
-  MoreVertical, Trash2, Edit3
+  MoreVertical, Trash2, Loader2
 } from 'lucide-react';
+import http from '@/api/http';
 
 // ====== 职位+课程内容管理 ======
-// 商业级要求：内容上下架管理、违规内容处理
+// 数据从 /api/admin/jobs 和 /api/admin/courses 获取
 
 type Tab = 'jobs' | 'courses';
 
@@ -18,8 +18,8 @@ interface JobItem {
   location: string;
   salary: string;
   type: string;
-  status: 'active' | 'inactive';
-  view_count: number;
+  status: string;
+  view_count?: number;
   created_at: string;
 }
 
@@ -28,7 +28,7 @@ interface CourseItem {
   title: string;
   mentor_name: string;
   category: string;
-  status: 'active' | 'inactive';
+  status: string;
   views: number;
   rating: number;
   created_at: string;
@@ -37,41 +37,93 @@ interface CourseItem {
 export default function AdminContent() {
   const [tab, setTab] = useState<Tab>('jobs');
   const [search, setSearch] = useState('');
-  const [page, setPage] = useState(1);
   const [actionMenu, setActionMenu] = useState<number | null>(null);
 
-  const mockJobs: JobItem[] = [
-    { id: 1, title: '前端开发工程师 (2026届校招)', company_name: '字节跳动', location: '北京/上海/杭州', salary: '25k-40k', type: '校招', status: 'active', view_count: 3250, created_at: '2026-03-10' },
-    { id: 2, title: '产品经理实习生 - 商业化方向', company_name: '腾讯', location: '深圳', salary: '200-300/天', type: '实习', status: 'active', view_count: 2100, created_at: '2026-03-08' },
-    { id: 3, title: 'AIGC 算法研究员', company_name: '百度', location: '北京', salary: '30k-60k', type: '校招', status: 'active', view_count: 4500, created_at: '2026-03-12' },
-    { id: 4, title: '海外市场运营专员', company_name: '米哈游', location: '上海', salary: '15k-25k', type: '校招', status: 'active', view_count: 1800, created_at: '2026-03-15' },
-    { id: 5, title: 'UI/UX 设计师实习', company_name: '小红书', location: '上海', salary: '250/天', type: '实习', status: 'inactive', view_count: 980, created_at: '2026-03-20' },
-    { id: 6, title: '管培生 (2026届)', company_name: '联合利华', location: '全国', salary: '12k-18k', type: '校招', status: 'active', view_count: 2800, created_at: '2026-03-22' },
-  ];
+  const [jobs, setJobs] = useState<JobItem[]>([]);
+  const [courses, setCourses] = useState<CourseItem[]>([]);
+  const [jobsLoading, setJobsLoading] = useState(true);
+  const [coursesLoading, setCoursesLoading] = useState(true);
+  const [error, setError] = useState('');
 
-  const mockCourses: CourseItem[] = [
-    { id: 1, title: '2024秋招互联网产品经理全攻略', mentor_name: '张产品', category: '产品', status: 'active', views: 125000, rating: 4.9, created_at: '2026-02-15' },
-    { id: 2, title: '前端开发面试高频手写题解析', mentor_name: '李前端', category: '技术', status: 'active', views: 83000, rating: 4.8, created_at: '2026-02-20' },
-    { id: 3, title: '四大八大审计实习生笔面试指南', mentor_name: '王审计', category: '金融', status: 'active', views: 56000, rating: 4.7, created_at: '2026-03-01' },
-    { id: 4, title: '如何写出一份让HR眼前一亮的简历', mentor_name: '赵HR', category: '求职技巧', status: 'active', views: 158000, rating: 4.9, created_at: '2026-01-10' },
-    { id: 5, title: '算法岗校招面经分享', mentor_name: '陈算法', category: '技术', status: 'inactive', views: 91000, rating: 4.8, created_at: '2026-03-05' },
-  ];
+  // 加载职位列表
+  async function fetchJobs(keyword = '') {
+    setJobsLoading(true);
+    setError('');
+    try {
+      const res = await http.get('/admin/jobs', { params: { keyword } });
+      if (res.data?.code === 200) {
+        setJobs(res.data.data?.jobs || []);
+      }
+    } catch {
+      setError('加载职位数据失败');
+      setJobs([]);
+    } finally {
+      setJobsLoading(false);
+    }
+  }
 
-  const [jobs, setJobs] = useState(mockJobs);
-  const [courses, setCourses] = useState(mockCourses);
+  // 加载课程列表
+  async function fetchCourses(keyword = '') {
+    setCoursesLoading(true);
+    setError('');
+    try {
+      const res = await http.get('/admin/courses', { params: { keyword } });
+      if (res.data?.code === 200) {
+        setCourses(res.data.data?.courses || []);
+      }
+    } catch {
+      setError('加载课程数据失败');
+      setCourses([]);
+    } finally {
+      setCoursesLoading(false);
+    }
+  }
 
-  function toggleJobStatus(id: number) {
-    setJobs(prev => prev.map(j => j.id === id ? { ...j, status: j.status === 'active' ? 'inactive' : 'active' } : j));
+  // 初始加载
+  useEffect(() => {
+    fetchJobs();
+    fetchCourses();
+  }, []);
+
+  // 搜索触发
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (tab === 'jobs') fetchJobs(search);
+      else fetchCourses(search);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [search, tab]);
+
+  // 上下架职位
+  async function toggleJobStatus(id: number) {
+    const job = jobs.find(j => j.id === id);
+    if (!job) return;
+    const newStatus = job.status === 'active' ? 'inactive' : 'active';
+    try {
+      await http.put(`/admin/jobs/${id}/status`, { status: newStatus });
+      setJobs(prev => prev.map(j => j.id === id ? { ...j, status: newStatus } : j));
+    } catch {
+      setError('操作失败，请重试');
+    }
     setActionMenu(null);
   }
 
-  function toggleCourseStatus(id: number) {
-    setCourses(prev => prev.map(c => c.id === id ? { ...c, status: c.status === 'active' ? 'inactive' : 'active' } : c));
+  // 上下架课程
+  async function toggleCourseStatus(id: number) {
+    const course = courses.find(c => c.id === id);
+    if (!course) return;
+    const newStatus = course.status === 'active' ? 'inactive' : 'active';
+    try {
+      await http.put(`/admin/courses/${id}/status`, { status: newStatus });
+      setCourses(prev => prev.map(c => c.id === id ? { ...c, status: newStatus } : c));
+    } catch {
+      setError('操作失败，请重试');
+    }
     setActionMenu(null);
   }
 
-  const filteredJobs = search ? jobs.filter(j => j.title.includes(search) || j.company_name.includes(search)) : jobs;
-  const filteredCourses = search ? courses.filter(c => c.title.includes(search) || c.mentor_name.includes(search)) : courses;
+  const isLoading = tab === 'jobs' ? jobsLoading : coursesLoading;
+  const currentList = tab === 'jobs' ? jobs : courses;
 
   return (
     <div className="space-y-6">
@@ -80,10 +132,18 @@ export default function AdminContent() {
         <p className="text-gray-500 mt-1">管理平台职位和课程内容，支持上下架和违规处理</p>
       </div>
 
+      {/* 错误提示 */}
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
+          {error}
+          <button onClick={() => setError('')} className="ml-2 text-red-500 hover:text-red-700">×</button>
+        </div>
+      )}
+
       {/* Tab切换 */}
       <div className="flex items-center gap-1 bg-gray-100 rounded-xl p-1 w-fit">
         <button
-          onClick={() => { setTab('jobs'); setSearch(''); setPage(1); }}
+          onClick={() => { setTab('jobs'); setSearch(''); }}
           className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium transition-all ${
             tab === 'jobs' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
           }`}
@@ -92,7 +152,7 @@ export default function AdminContent() {
           职位管理 ({jobs.length})
         </button>
         <button
-          onClick={() => { setTab('courses'); setSearch(''); setPage(1); }}
+          onClick={() => { setTab('courses'); setSearch(''); }}
           className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium transition-all ${
             tab === 'courses' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
           }`}
@@ -111,13 +171,29 @@ export default function AdminContent() {
             placeholder={tab === 'jobs' ? '搜索职位名称、公司...' : '搜索课程名称、讲师...'}
             value={search}
             onChange={e => setSearch(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
+            className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 outline-none"
           />
         </div>
       </div>
 
+      {/* 加载状态 */}
+      {isLoading && (
+        <div className="flex items-center justify-center py-20">
+          <Loader2 className="w-8 h-8 text-primary-500 animate-spin" />
+          <span className="ml-3 text-gray-500">加载中...</span>
+        </div>
+      )}
+
+      {/* 空状态 */}
+      {!isLoading && currentList.length === 0 && (
+        <div className="text-center py-20 text-gray-400">
+          <p className="text-lg">暂无{tab === 'jobs' ? '职位' : '课程'}数据</p>
+          <p className="text-sm mt-1">数据将在有内容发布后显示</p>
+        </div>
+      )}
+
       {/* 职位列表 */}
-      {tab === 'jobs' && (
+      {tab === 'jobs' && !jobsLoading && jobs.length > 0 && (
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
           <table className="w-full">
             <thead>
@@ -126,13 +202,12 @@ export default function AdminContent() {
                 <th className="text-left px-6 py-3.5 text-xs font-medium text-gray-500 uppercase">公司</th>
                 <th className="text-left px-6 py-3.5 text-xs font-medium text-gray-500 uppercase">类型</th>
                 <th className="text-left px-6 py-3.5 text-xs font-medium text-gray-500 uppercase">薪资</th>
-                <th className="text-left px-6 py-3.5 text-xs font-medium text-gray-500 uppercase">浏览</th>
                 <th className="text-left px-6 py-3.5 text-xs font-medium text-gray-500 uppercase">状态</th>
                 <th className="text-right px-6 py-3.5 text-xs font-medium text-gray-500 uppercase">操作</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {filteredJobs.map((job, i) => (
+              {jobs.map((job, i) => (
                 <motion.tr key={job.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i * 0.03 }} className="hover:bg-gray-50">
                   <td className="px-6 py-4">
                     <p className="text-sm font-medium text-gray-900 truncate max-w-[250px]">{job.title}</p>
@@ -146,7 +221,6 @@ export default function AdminContent() {
                     }`}>{job.type}</span>
                   </td>
                   <td className="px-6 py-4 text-sm text-gray-600 font-medium">{job.salary}</td>
-                  <td className="px-6 py-4 text-sm text-gray-500">{job.view_count.toLocaleString()}</td>
                   <td className="px-6 py-4">
                     <span className={`inline-flex items-center gap-1 text-xs font-medium ${
                       job.status === 'active' ? 'text-green-600' : 'text-gray-400'
@@ -165,9 +239,6 @@ export default function AdminContent() {
                           {job.status === 'active' ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                           {job.status === 'active' ? '下架' : '上架'}
                         </button>
-                        <button className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-gray-50 flex items-center gap-2">
-                          <Trash2 className="w-4 h-4" /> 删除
-                        </button>
                       </div>
                     )}
                   </td>
@@ -179,7 +250,7 @@ export default function AdminContent() {
       )}
 
       {/* 课程列表 */}
-      {tab === 'courses' && (
+      {tab === 'courses' && !coursesLoading && courses.length > 0 && (
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
           <table className="w-full">
             <thead>
@@ -194,7 +265,7 @@ export default function AdminContent() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {filteredCourses.map((course, i) => (
+              {courses.map((course, i) => (
                 <motion.tr key={course.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i * 0.03 }} className="hover:bg-gray-50">
                   <td className="px-6 py-4">
                     <p className="text-sm font-medium text-gray-900 truncate max-w-[300px]">{course.title}</p>
@@ -203,8 +274,8 @@ export default function AdminContent() {
                   <td className="px-6 py-4">
                     <span className="px-2 py-0.5 bg-purple-100 text-purple-700 rounded text-xs font-medium">{course.category}</span>
                   </td>
-                  <td className="px-6 py-4 text-sm text-gray-500">{(course.views / 10000).toFixed(1)}万</td>
-                  <td className="px-6 py-4 text-sm text-amber-600 font-medium">{course.rating}</td>
+                  <td className="px-6 py-4 text-sm text-gray-500">{course.views >= 10000 ? `${(course.views / 10000).toFixed(1)}万` : course.views}</td>
+                  <td className="px-6 py-4 text-sm text-amber-600 font-medium">{course.rating || '-'}</td>
                   <td className="px-6 py-4">
                     <span className={`inline-flex items-center gap-1 text-xs font-medium ${
                       course.status === 'active' ? 'text-green-600' : 'text-gray-400'
@@ -222,9 +293,6 @@ export default function AdminContent() {
                         <button onClick={() => toggleCourseStatus(course.id)} className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2">
                           {course.status === 'active' ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                           {course.status === 'active' ? '下架' : '上架'}
-                        </button>
-                        <button className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-gray-50 flex items-center gap-2">
-                          <Trash2 className="w-4 h-4" /> 删除
                         </button>
                       </div>
                     )}

@@ -179,6 +179,111 @@ export interface AuditLog {
   created_at: string;
 }
 
+// ====== 学生档案类型 ======
+
+export interface Student {
+  id: number;
+  user_id: number;
+  school: string;
+  major: string;
+  grade: string;
+  skills: string[];
+  job_intention: string;
+  resume_url: string;
+  bio: string;
+  created_at: string;
+  updated_at: string;
+}
+
+// ====== 企业资料类型 ======
+
+export interface Company {
+  id: number;
+  user_id: number;
+  name: string;
+  logo: string;
+  industry: string;
+  scale: string;
+  website: string;
+  address: string;
+  description: string;
+  contact_name: string;
+  contact_phone: string;
+  contact_email: string;
+  license_url: string;
+  verify_status: 'pending' | 'approved' | 'rejected';
+  verify_remark: string;
+  created_at: string;
+  updated_at: string;
+}
+
+// ====== 预约记录类型 ======
+
+export interface Appointment {
+  id: number;
+  student_id: number;
+  mentor_id: number;
+  student_name?: string;
+  mentor_name?: string;
+  type: string;
+  appointment_time: string;
+  note: string;
+  status: 'pending' | 'confirmed' | 'completed' | 'cancelled';
+  review_rating?: number;
+  review_content?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+// ====== 简历投递类型 ======
+
+export interface Resume {
+  id: number;
+  student_id: number;
+  job_id: number;
+  job_title?: string;
+  company_name?: string;
+  resume_url: string;
+  cover_letter: string;
+  status: 'pending' | 'viewed' | 'shortlisted' | 'interview' | 'rejected' | 'accepted';
+  feedback: string;
+  created_at: string;
+  updated_at: string;
+}
+
+// ====== 收藏类型 ======
+
+export interface Favorite {
+  id: number;
+  user_id: number;
+  target_type: 'job' | 'course' | 'mentor';
+  target_id: number;
+  target_title?: string;
+  created_at: string;
+}
+
+// ====== 导师资料详情类型 ======
+
+export interface MentorProfile {
+  id: number;
+  user_id: number;
+  name: string;
+  title: string;
+  avatar: string;
+  bio: string;
+  expertise: string[];
+  tags: string[];
+  rating: number;
+  rating_count: number;
+  price: number;
+  available_time: string[];
+  verify_status: 'pending' | 'approved' | 'rejected';
+  verify_remark: string;
+  status: number;
+  created_at: string;
+  updated_at: string;
+}
+
 // ====== 后台配置类型（数据全可控） ======
 
 export interface SiteConfig {

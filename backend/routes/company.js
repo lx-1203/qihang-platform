@@ -2,11 +2,18 @@ import { Router } from 'express';
 import pool from '../db.js';
 import { authMiddleware, requireRole } from '../middleware/auth.js';
 import { NotificationTemplates } from '../utils/notification.js';
+import { idempotency } from '../middleware/idempotency.js';
 
 const router = Router();
 
 // 所有企业端接口都需要登录 + company 角色
 router.use(authMiddleware, requireRole('company'));
+
+// ====== 辅助函数：获取当前用户的企业ID ======
+async function getCompanyId(userId) {
+  const [rows] = await pool.query('SELECT id FROM companies WHERE user_id = ?', [userId]);
+  return rows.length > 0 ? rows[0].id : null;
+}
 
 // ==================== 企业资料 ====================
 
@@ -34,6 +41,7 @@ router.get('/profile', async (req, res) => {
 });
 
 // 3.1 POST /api/company/profile - 创建/更新企业资料
+// 注：companies 表字段：company_name, industry, scale, description, logo, website, address, verify_status, verify_remark
 router.post('/profile', async (req, res) => {
   try {
     const {
@@ -44,9 +52,6 @@ router.post('/profile', async (req, res) => {
       logo,
       website,
       address,
-      contact_person,
-      contact_phone,
-      contact_email,
     } = req.body;
 
     if (!company_name) {
@@ -66,8 +71,7 @@ router.post('/profile', async (req, res) => {
       await pool.query(
         `UPDATE companies SET
           company_name = ?, industry = ?, scale = ?, description = ?,
-          logo = ?, website = ?, address = ?,
-          contact_person = ?, contact_phone = ?, contact_email = ?
+          logo = ?, website = ?, address = ?
         WHERE user_id = ?`,
         [
           company_name,
@@ -77,9 +81,6 @@ router.post('/profile', async (req, res) => {
           logo || '',
           website || '',
           address || '',
-          contact_person || '',
-          contact_phone || '',
-          contact_email || '',
           req.user.id,
         ]
       );
@@ -94,8 +95,8 @@ router.post('/profile', async (req, res) => {
       // 创建
       const [result] = await pool.query(
         `INSERT INTO companies
-          (user_id, company_name, industry, scale, description, logo, website, address, contact_person, contact_phone, contact_email)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          (user_id, company_name, industry, scale, description, logo, website, address)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           req.user.id,
           company_name,
@@ -105,9 +106,6 @@ router.post('/profile', async (req, res) => {
           logo || '',
           website || '',
           address || '',
-          contact_person || '',
-          contact_phone || '',
-          contact_email || '',
         ]
       );
 
@@ -129,13 +127,19 @@ router.post('/profile', async (req, res) => {
 // ==================== 职位管理 ====================
 
 // 3.4 GET /api/company/jobs - 获取本企业发布的职位列表
+// 注：jobs 表使用 company_id（FK → companies.id），需先查 companies.id
 router.get('/jobs', async (req, res) => {
   try {
+    const companyId = await getCompanyId(req.user.id);
+    if (!companyId) {
+      return res.json({ code: 200, data: { jobs: [], pagination: { page: 1, pageSize: 10, total: 0, totalPages: 0 } } });
+    }
+
     const { status, keyword, page = 1, pageSize = 10 } = req.query;
     const offset = (Number(page) - 1) * Number(pageSize);
 
-    let sql = 'SELECT * FROM jobs WHERE company_user_id = ?';
-    const params = [req.user.id];
+    let sql = 'SELECT * FROM jobs WHERE company_id = ?';
+    const params = [companyId];
 
     if (status) {
       sql += ' AND status = ?';
@@ -178,20 +182,19 @@ router.get('/jobs', async (req, res) => {
 });
 
 // 3.3 POST /api/company/jobs - 发布职位
-router.post('/jobs', async (req, res) => {
+// jobs 表字段：title, company_id, company_name, logo, location, salary, type, category, tags, description, requirements, urgent
+router.post('/jobs', idempotency(), async (req, res) => {
   try {
     const {
       title,
       description,
       requirements,
-      job_type,
+      type,
       location,
-      salary_min,
-      salary_max,
-      salary_unit,
+      salary,
       category,
-      experience,
-      education,
+      tags,
+      urgent,
     } = req.body;
 
     if (!title) {
@@ -203,34 +206,36 @@ router.post('/jobs', async (req, res) => {
         .json({ code: 400, message: '职位描述不能为空' });
     }
 
-    // 获取企业信息用于冗余存储企业名称
+    // 获取企业信息
     const [companies] = await pool.query(
-      'SELECT company_name, logo FROM companies WHERE user_id = ?',
+      'SELECT id, company_name, logo FROM companies WHERE user_id = ?',
       [req.user.id]
     );
-    const companyName = companies.length > 0 ? companies[0].company_name : '';
-    const companyLogo = companies.length > 0 ? companies[0].logo : '';
+    if (companies.length === 0) {
+      return res.status(400).json({ code: 400, message: '请先完善企业资料' });
+    }
+    const company = companies[0];
+
+    const tagsJson = tags ? (typeof tags === 'string' ? tags : JSON.stringify(tags)) : '[]';
 
     const [result] = await pool.query(
       `INSERT INTO jobs
-        (company_user_id, company_name, company_logo, title, description, requirements,
-         job_type, location, salary_min, salary_max, salary_unit, category, experience, education)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        (company_id, company_name, logo, title, description, requirements,
+         type, location, salary, category, tags, urgent)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
-        req.user.id,
-        companyName,
-        companyLogo,
+        company.id,
+        company.company_name,
+        company.logo || '',
         title,
         description || '',
         requirements || '',
-        job_type || 'full-time',
+        type || '校招',
         location || '',
-        salary_min || 0,
-        salary_max || 0,
-        salary_unit || 'month',
+        salary || '',
         category || '',
-        experience || '',
-        education || '',
+        tagsJson,
+        urgent ? 1 : 0,
       ]
     );
 
@@ -251,11 +256,12 @@ router.post('/jobs', async (req, res) => {
 router.put('/jobs/:id', async (req, res) => {
   try {
     const { id } = req.params;
+    const companyId = await getCompanyId(req.user.id);
 
     // 验证职位归属
     const [existing] = await pool.query(
-      'SELECT id FROM jobs WHERE id = ? AND company_user_id = ?',
-      [id, req.user.id]
+      'SELECT id FROM jobs WHERE id = ? AND company_id = ?',
+      [id, companyId]
     );
     if (existing.length === 0) {
       return res
@@ -267,36 +273,34 @@ router.put('/jobs/:id', async (req, res) => {
       title,
       description,
       requirements,
-      job_type,
+      type,
       location,
-      salary_min,
-      salary_max,
-      salary_unit,
+      salary,
       category,
-      experience,
-      education,
+      tags,
+      urgent,
     } = req.body;
+
+    const tagsJson = tags ? (typeof tags === 'string' ? tags : JSON.stringify(tags)) : undefined;
 
     await pool.query(
       `UPDATE jobs SET
         title = ?, description = ?, requirements = ?,
-        job_type = ?, location = ?, salary_min = ?, salary_max = ?,
-        salary_unit = ?, category = ?, experience = ?, education = ?
-      WHERE id = ? AND company_user_id = ?`,
+        type = ?, location = ?, salary = ?,
+        category = ?, tags = COALESCE(?, tags), urgent = ?
+      WHERE id = ? AND company_id = ?`,
       [
         title,
         description || '',
         requirements || '',
-        job_type || 'full-time',
+        type || '校招',
         location || '',
-        salary_min || 0,
-        salary_max || 0,
-        salary_unit || 'month',
+        salary || '',
         category || '',
-        experience || '',
-        education || '',
+        tagsJson,
+        urgent ? 1 : 0,
         id,
-        req.user.id,
+        companyId,
       ]
     );
 
@@ -313,10 +317,11 @@ router.put('/jobs/:id', async (req, res) => {
 router.delete('/jobs/:id', async (req, res) => {
   try {
     const { id } = req.params;
+    const companyId = await getCompanyId(req.user.id);
 
     const [existing] = await pool.query(
-      'SELECT id FROM jobs WHERE id = ? AND company_user_id = ?',
-      [id, req.user.id]
+      'SELECT id FROM jobs WHERE id = ? AND company_id = ?',
+      [id, companyId]
     );
     if (existing.length === 0) {
       return res
@@ -324,9 +329,9 @@ router.delete('/jobs/:id', async (req, res) => {
         .json({ code: 404, message: '职位不存在或无权操作' });
     }
 
-    await pool.query('DELETE FROM jobs WHERE id = ? AND company_user_id = ?', [
+    await pool.query('DELETE FROM jobs WHERE id = ? AND company_id = ?', [
       id,
-      req.user.id,
+      companyId,
     ]);
 
     res.json({ code: 200, message: '职位删除成功' });
@@ -341,6 +346,7 @@ router.put('/jobs/:id/status', async (req, res) => {
   try {
     const { id } = req.params;
     const { status } = req.body; // 'active' | 'inactive'
+    const companyId = await getCompanyId(req.user.id);
 
     if (!['active', 'inactive'].includes(status)) {
       return res
@@ -349,8 +355,8 @@ router.put('/jobs/:id/status', async (req, res) => {
     }
 
     const [existing] = await pool.query(
-      'SELECT id FROM jobs WHERE id = ? AND company_user_id = ?',
-      [id, req.user.id]
+      'SELECT id FROM jobs WHERE id = ? AND company_id = ?',
+      [id, companyId]
     );
     if (existing.length === 0) {
       return res
@@ -359,8 +365,8 @@ router.put('/jobs/:id/status', async (req, res) => {
     }
 
     await pool.query(
-      'UPDATE jobs SET status = ? WHERE id = ? AND company_user_id = ?',
-      [status, id, req.user.id]
+      'UPDATE jobs SET status = ? WHERE id = ? AND company_id = ?',
+      [status, id, companyId]
     );
 
     const statusText = status === 'active' ? '上架' : '下架';
@@ -374,22 +380,28 @@ router.put('/jobs/:id/status', async (req, res) => {
 // ==================== 简历管理 ====================
 
 // 3.8 GET /api/company/resumes - 收到的简历列表
+// resumes 表字段：student_id, job_id, status, resume_url, company_remark
 router.get('/resumes', async (req, res) => {
   try {
+    const companyId = await getCompanyId(req.user.id);
+    if (!companyId) {
+      return res.json({ code: 200, data: { resumes: [], pagination: { page: 1, pageSize: 10, total: 0, totalPages: 0 } } });
+    }
+
     const { job_id, status, keyword, page = 1, pageSize = 10 } = req.query;
     const offset = (Number(page) - 1) * Number(pageSize);
 
     let sql = `
       SELECT r.*, j.title AS job_title,
              u.nickname AS student_name, u.email AS student_email, u.avatar AS student_avatar,
-             s.school, s.major, s.graduation_year
+             s.school, s.major, s.grade
       FROM resumes r
       LEFT JOIN jobs j ON r.job_id = j.id
-      LEFT JOIN users u ON r.student_user_id = u.id
-      LEFT JOIN students s ON r.student_user_id = s.user_id
-      WHERE j.company_user_id = ?
+      LEFT JOIN users u ON r.student_id = u.id
+      LEFT JOIN students s ON r.student_id = s.user_id
+      WHERE j.company_id = ?
     `;
-    const params = [req.user.id];
+    const params = [companyId];
 
     if (job_id) {
       sql += ' AND r.job_id = ?';
@@ -435,12 +447,14 @@ router.get('/resumes', async (req, res) => {
 });
 
 // 3.9 PUT /api/company/resumes/:id/status - 更新简历状态
+// resumes.status ENUM: 'pending', 'viewed', 'interview', 'offered', 'rejected'
 router.put('/resumes/:id/status', async (req, res) => {
   try {
     const { id } = req.params;
     const { status, remark } = req.body;
+    const companyId = await getCompanyId(req.user.id);
 
-    const validStatuses = ['pending', 'viewed', 'interview', 'offer', 'rejected'];
+    const validStatuses = ['pending', 'viewed', 'interview', 'offered', 'rejected'];
     if (!validStatuses.includes(status)) {
       return res.status(400).json({
         code: 400,
@@ -452,8 +466,8 @@ router.put('/resumes/:id/status', async (req, res) => {
     const [existing] = await pool.query(
       `SELECT r.id, r.student_id, j.title AS job_title FROM resumes r
        JOIN jobs j ON r.job_id = j.id
-       WHERE r.id = ? AND j.company_user_id = ?`,
-      [id, req.user.id]
+       WHERE r.id = ? AND j.company_id = ?`,
+      [id, companyId]
     );
     if (existing.length === 0) {
       return res
@@ -487,7 +501,7 @@ router.put('/resumes/:id/status', async (req, res) => {
       pending: '待筛选',
       viewed: '已查看',
       interview: '面试',
-      offer: '录用',
+      offered: '录用',
       rejected: '拒绝',
     };
 
@@ -506,14 +520,27 @@ router.put('/resumes/:id/status', async (req, res) => {
 // 3.10 GET /api/company/stats - 企业数据统计
 router.get('/stats', async (req, res) => {
   try {
+    const companyId = await getCompanyId(req.user.id);
+    if (!companyId) {
+      return res.json({
+        code: 200,
+        data: {
+          jobs: { total_jobs: 0, active_jobs: 0, inactive_jobs: 0 },
+          resumes: { total_resumes: 0, pending_resumes: 0, viewed_resumes: 0, interview_resumes: 0, offered_resumes: 0, rejected_resumes: 0 },
+          dailyResumes: [],
+          jobRanking: [],
+        },
+      });
+    }
+
     // 职位统计
     const [jobStats] = await pool.query(
       `SELECT
         COUNT(*) AS total_jobs,
         SUM(CASE WHEN status = 'active' THEN 1 ELSE 0 END) AS active_jobs,
         SUM(CASE WHEN status = 'inactive' THEN 1 ELSE 0 END) AS inactive_jobs
-      FROM jobs WHERE company_user_id = ?`,
-      [req.user.id]
+      FROM jobs WHERE company_id = ?`,
+      [companyId]
     );
 
     // 简历统计
@@ -523,12 +550,12 @@ router.get('/stats', async (req, res) => {
         SUM(CASE WHEN r.status = 'pending' THEN 1 ELSE 0 END) AS pending_resumes,
         SUM(CASE WHEN r.status = 'viewed' THEN 1 ELSE 0 END) AS viewed_resumes,
         SUM(CASE WHEN r.status = 'interview' THEN 1 ELSE 0 END) AS interview_resumes,
-        SUM(CASE WHEN r.status = 'offer' THEN 1 ELSE 0 END) AS offer_resumes,
+        SUM(CASE WHEN r.status = 'offered' THEN 1 ELSE 0 END) AS offered_resumes,
         SUM(CASE WHEN r.status = 'rejected' THEN 1 ELSE 0 END) AS rejected_resumes
       FROM resumes r
       JOIN jobs j ON r.job_id = j.id
-      WHERE j.company_user_id = ?`,
-      [req.user.id]
+      WHERE j.company_id = ?`,
+      [companyId]
     );
 
     // 最近 7 天每天收到的简历数
@@ -536,10 +563,10 @@ router.get('/stats', async (req, res) => {
       `SELECT DATE(r.created_at) AS date, COUNT(*) AS count
        FROM resumes r
        JOIN jobs j ON r.job_id = j.id
-       WHERE j.company_user_id = ? AND r.created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+       WHERE j.company_id = ? AND r.created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)
        GROUP BY DATE(r.created_at)
        ORDER BY date`,
-      [req.user.id]
+      [companyId]
     );
 
     // 各职位的简历数排名 (Top 5)
@@ -547,11 +574,11 @@ router.get('/stats', async (req, res) => {
       `SELECT j.id, j.title, COUNT(r.id) AS resume_count
        FROM jobs j
        LEFT JOIN resumes r ON j.id = r.job_id
-       WHERE j.company_user_id = ?
+       WHERE j.company_id = ?
        GROUP BY j.id, j.title
        ORDER BY resume_count DESC
        LIMIT 5`,
-      [req.user.id]
+      [companyId]
     );
 
     res.json({
@@ -572,9 +599,10 @@ router.get('/stats', async (req, res) => {
 // ==================== 人才搜索 ====================
 
 // 3.11 GET /api/company/talent - 人才搜索
+// students 表字段：user_id, school, major, grade, skills(JSON), job_intention, resume_url, bio
 router.get('/talent', async (req, res) => {
   try {
-    const { keyword, school, major, education, page = 1, pageSize = 10 } = req.query;
+    const { keyword, school, major, page = 1, pageSize = 10 } = req.query;
     const offset = (Number(page) - 1) * Number(pageSize);
 
     let sql = `
@@ -586,8 +614,8 @@ router.get('/talent', async (req, res) => {
     const params = [];
 
     if (keyword) {
-      sql += ' AND (u.nickname LIKE ? OR s.skills LIKE ? OR s.job_intention LIKE ?)';
-      params.push(`%${keyword}%`, `%${keyword}%`, `%${keyword}%`);
+      sql += ' AND (u.nickname LIKE ? OR s.job_intention LIKE ?)';
+      params.push(`%${keyword}%`, `%${keyword}%`);
     }
     if (school) {
       sql += ' AND s.school LIKE ?';
@@ -596,10 +624,6 @@ router.get('/talent', async (req, res) => {
     if (major) {
       sql += ' AND s.major LIKE ?';
       params.push(`%${major}%`);
-    }
-    if (education) {
-      sql += ' AND s.education = ?';
-      params.push(education);
     }
 
     sql += ' ORDER BY s.updated_at DESC';

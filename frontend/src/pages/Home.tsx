@@ -6,9 +6,12 @@ import {
   Briefcase, Users, BookOpen, Globe, GraduationCap,
   MapPin, DollarSign, Heart, ArrowRight, Sparkles,
   FileText, Calendar, Compass, Lightbulb, Building2,
-  MessageCircle, Award, TrendingUp, ChevronDown, ChevronUp
+  MessageCircle, Award, TrendingUp, ChevronDown, ChevronUp,
+  Loader2
 } from 'lucide-react';
 import { useAuthStore } from '@/store/auth';
+import { useConfigStore } from '@/store/config';
+import http from '@/api/http';
 import OnboardingGuide from '@/components/OnboardingGuide';
 import FeatureStatus from '@/components/FeatureStatus';
 
@@ -21,9 +24,44 @@ export default function Home() {
   const [showGuide, setShowGuide] = useState(true);
   const timerRef = useRef<ReturnType<typeof setInterval>>();
 
-  // 轮播
+  // API 数据状态
+  const [hotJobs, setHotJobs] = useState<any[]>([]);
+  const [hotMentors, setHotMentors] = useState<any[]>([]);
+  const [hotCourses, setHotCourses] = useState<any[]>([]);
+  const [dataLoading, setDataLoading] = useState(true);
+
+  // 从配置中心读取首页内容
+  const heroTitle = useConfigStore(s => s.getString('home_hero_title', '你的职业发展，从启航开始'));
+  const heroSubtitle = useConfigStore(s => s.getString('home_hero_subtitle', '连接梦想与机遇，助力每一位大学生迈向理想职业'));
+  const statsJobs = useConfigStore(s => s.getString('home_stats_jobs', '10000+'));
+  const statsCompanies = useConfigStore(s => s.getString('home_stats_companies', '500+'));
+  const statsMentors = useConfigStore(s => s.getString('home_stats_mentors', '200+'));
+  const statsStudents = useConfigStore(s => s.getString('home_stats_students', '50000+'));
+
+  // 首页推荐数据从 API 加载
+  useEffect(() => {
+    setDataLoading(true);
+    Promise.allSettled([
+      http.get('/jobs', { params: { pageSize: 4 } }),
+      http.get('/mentors', { params: { pageSize: 4 } }),
+      http.get('/courses', { params: { pageSize: 4 } }),
+    ]).then(([jobsRes, mentorsRes, coursesRes]) => {
+      if (jobsRes.status === 'fulfilled' && jobsRes.value.data?.code === 200) {
+        setHotJobs(jobsRes.value.data.data?.jobs || []);
+      }
+      if (mentorsRes.status === 'fulfilled' && mentorsRes.value.data?.code === 200) {
+        setHotMentors(mentorsRes.value.data.data?.mentors || []);
+      }
+      if (coursesRes.status === 'fulfilled' && coursesRes.value.data?.code === 200) {
+        setHotCourses(coursesRes.value.data.data?.courses || []);
+      }
+      setDataLoading(false);
+    });
+  }, []);
+
+  // 轮播（首条使用配置中心内容）
   const slides = [
-    { title: '你的职业生涯\n从这里启航', sub: '汇聚海量校招/实习岗位，1v1大咖导师指导', bg: 'from-teal-600 via-emerald-700 to-teal-800', cta: '开始探索', link: '/jobs' },
+    { title: heroTitle.replace('，', '，\n'), sub: heroSubtitle, bg: 'from-teal-600 via-emerald-700 to-teal-800', cta: '开始探索', link: '/jobs' },
     { title: '大咖导师\n1对1辅导', sub: '简历精修、模拟面试、职业规划，帮你拿到心仪Offer', bg: 'from-blue-600 via-indigo-700 to-blue-800', cta: '找导师', link: '/mentors' },
     { title: '留学 · 考研 · 创业\n一站全覆盖', sub: '无论你选择哪条路，我们都为你保驾护航', bg: 'from-purple-600 via-violet-700 to-purple-800', cta: '了解更多', link: '/study-abroad' },
   ];
@@ -33,12 +71,12 @@ export default function Home() {
     return () => clearInterval(timerRef.current);
   }, []);
 
-  // 统计数字动画
+  // 统计数字（从配置中心读取展示值）
   const platformStats = [
-    { label: '注册学生', value: 10000, suffix: '+', icon: Users },
-    { label: '合作企业', value: 500, suffix: '+', icon: Building2 },
-    { label: '认证导师', value: 200, suffix: '+', icon: Award },
-    { label: '成功投递', value: 50000, suffix: '+', icon: FileText },
+    { label: '注册学生', value: statsStudents, icon: Users },
+    { label: '合作企业', value: statsCompanies, icon: Building2 },
+    { label: '认证导师', value: statsMentors, icon: Award },
+    { label: '成功投递', value: statsJobs, icon: FileText },
   ];
 
   // 快捷入口
@@ -50,28 +88,12 @@ export default function Home() {
     { label: '考研保研', desc: '择校/备考策略', icon: GraduationCap, link: '/postgrad', color: 'text-rose-600', bg: 'bg-rose-50' },
   ];
 
-  // 热门岗位推荐
-  const hotJobs = [
-    { title: '前端开发工程师', company: '字节跳动', location: '北京', salary: '15-25K', tags: ['React', '校招'] },
-    { title: '产品经理实习生', company: '腾讯', location: '深圳', salary: '200/天', tags: ['实习', '暑期'] },
-    { title: 'AIGC算法研究员', company: '百度', location: '北京', salary: '30-50K', tags: ['AI', '硕士'] },
-    { title: '市场营销管培生', company: '宝洁', location: '广州', salary: '18-22K', tags: ['快消', '管培'] },
-  ];
-
-  // 推荐导师
-  const hotMentors = [
-    { name: '陈经理', title: '某头部互联网大厂HRD', rating: 4.9, price: 299, tags: ['简历优化', '面试辅导'], avatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=200' },
-    { name: '张工', title: '高级前端架构师', rating: 4.8, price: 399, tags: ['技术面试', '系统设计'], avatar: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&q=80&w=200' },
-    { name: '王总监', title: '知名快消品牌市场总监', rating: 5.0, price: 349, tags: ['群面技巧', '营销方向'], avatar: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&q=80&w=200' },
-    { name: '赵博士', title: '常青藤海归 / 咨询顾问', rating: 4.8, price: 499, tags: ['Case面', '留学'], avatar: 'https://images.unsplash.com/photo-1598550874175-4d0ef436c909?auto=format&fit=crop&q=80&w=200' },
-  ];
-
-  // 精选课程
-  const hotCourses = [
-    { title: '简历撰写实战课：让HR 3秒被吸引', mentor: '陈经理', views: 2345, color: 'from-teal-400 to-emerald-500' },
-    { title: '群面必胜法：结构化表达框架', mentor: '王总监', views: 1890, color: 'from-blue-400 to-indigo-500' },
-    { title: '技术面试通关：算法与系统设计', mentor: '张工', views: 1567, color: 'from-purple-400 to-violet-500' },
-    { title: 'Case Interview 破解指南', mentor: '赵博士', views: 1234, color: 'from-amber-400 to-orange-500' },
+  // 课程封面颜色映射（根据索引循环）
+  const courseColors = [
+    'from-teal-400 to-emerald-500',
+    'from-blue-400 to-indigo-500',
+    'from-purple-400 to-violet-500',
+    'from-amber-400 to-orange-500',
   ];
 
   return (
@@ -181,7 +203,7 @@ export default function Home() {
               className="bg-white rounded-xl p-5 text-center shadow-sm border border-gray-100"
             >
               <s.icon className="w-6 h-6 text-primary-600 mx-auto mb-2" />
-              <div className="text-2xl font-bold text-gray-900">{s.value.toLocaleString()}{s.suffix}</div>
+              <div className="text-2xl font-bold text-gray-900">{s.value}</div>
               <div className="text-xs text-gray-500 mt-0.5">{s.label}</div>
             </motion.div>
           ))}
@@ -220,21 +242,26 @@ export default function Home() {
               查看更多 <ArrowRight className="w-4 h-4" />
             </Link>
           </div>
+          {dataLoading ? (
+            <div className="flex justify-center py-12"><Loader2 className="w-6 h-6 text-primary-600 animate-spin" /></div>
+          ) : hotJobs.length === 0 ? (
+            <p className="text-center text-gray-400 py-8">暂无在招岗位</p>
+          ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {hotJobs.map((job, i) => (
-              <motion.div key={i} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.08 }}>
-                <Link to="/jobs" className="block bg-white rounded-xl p-5 border border-gray-100 hover:shadow-md hover:border-primary-200 transition-all group">
+              <motion.div key={job.id || i} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.08 }}>
+                <Link to={`/jobs/${job.id}`} className="block bg-white rounded-xl p-5 border border-gray-100 hover:shadow-md hover:border-primary-200 transition-all group">
                   <div className="w-10 h-10 bg-gray-100 rounded-xl flex items-center justify-center mb-3 text-sm font-bold text-gray-600">
-                    {job.company[0]}
+                    {(job.company_name || '企')[0]}
                   </div>
                   <h4 className="text-sm font-bold text-gray-900 group-hover:text-primary-600 transition-colors">{job.title}</h4>
-                  <p className="text-xs text-gray-500 mt-1">{job.company}</p>
+                  <p className="text-xs text-gray-500 mt-1">{job.company_name}</p>
                   <div className="flex items-center gap-2 mt-2 text-xs text-gray-400">
                     <MapPin className="w-3 h-3" />{job.location}
                     <DollarSign className="w-3 h-3 ml-2" />{job.salary}
                   </div>
                   <div className="flex gap-1.5 mt-3">
-                    {job.tags.map(t => (
+                    {(Array.isArray(job.tags) ? job.tags : []).map((t: string) => (
                       <span key={t} className="text-[10px] px-2 py-0.5 bg-primary-50 text-primary-700 rounded-md font-medium">{t}</span>
                     ))}
                   </div>
@@ -242,6 +269,7 @@ export default function Home() {
               </motion.div>
             ))}
           </div>
+          )}
         </section>
 
         {/* ====== 大咖导师推荐 ====== */}
@@ -254,12 +282,23 @@ export default function Home() {
               查看更多 <ArrowRight className="w-4 h-4" />
             </Link>
           </div>
+          {dataLoading ? (
+            <div className="flex justify-center py-12"><Loader2 className="w-6 h-6 text-primary-600 animate-spin" /></div>
+          ) : hotMentors.length === 0 ? (
+            <p className="text-center text-gray-400 py-8">暂无认证导师</p>
+          ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {hotMentors.map((m, i) => (
-              <motion.div key={i} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.08 }}>
-                <Link to="/mentors" className="block bg-white rounded-xl p-5 border border-gray-100 hover:shadow-md hover:border-primary-200 transition-all group">
+              <motion.div key={m.id || i} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.08 }}>
+                <Link to={`/mentors/${m.id}`} className="block bg-white rounded-xl p-5 border border-gray-100 hover:shadow-md hover:border-primary-200 transition-all group">
                   <div className="flex items-center gap-3 mb-3">
-                    <img src={m.avatar} alt={m.name} className="w-12 h-12 rounded-xl object-cover border border-gray-100" />
+                    {m.avatar ? (
+                      <img src={m.avatar} alt={m.name} className="w-12 h-12 rounded-xl object-cover border border-gray-100" />
+                    ) : (
+                      <div className="w-12 h-12 rounded-xl bg-primary-100 flex items-center justify-center text-primary-700 font-bold">
+                        {(m.name || '导')[0]}
+                      </div>
+                    )}
                     <div>
                       <h4 className="text-sm font-bold text-gray-900 group-hover:text-primary-600 transition-colors">{m.name}</h4>
                       <p className="text-[11px] text-gray-500 truncate max-w-[120px]">{m.title}</p>
@@ -267,11 +306,11 @@ export default function Home() {
                   </div>
                   <div className="flex items-center gap-2 mb-3">
                     <Star className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />
-                    <span className="text-sm font-bold text-gray-900">{m.rating}</span>
-                    <span className="text-xs text-primary-600 font-medium ml-auto">{m.price}元/次</span>
+                    <span className="text-sm font-bold text-gray-900">{m.rating || '0.0'}</span>
+                    <span className="text-xs text-primary-600 font-medium ml-auto">{m.price || 0}元/次</span>
                   </div>
                   <div className="flex gap-1.5">
-                    {m.tags.map(t => (
+                    {(Array.isArray(m.tags) ? m.tags : []).slice(0, 3).map((t: string) => (
                       <span key={t} className="text-[10px] px-2 py-0.5 bg-gray-50 text-gray-600 rounded-md">{t}</span>
                     ))}
                   </div>
@@ -279,6 +318,7 @@ export default function Home() {
               </motion.div>
             ))}
           </div>
+          )}
         </section>
 
         {/* ====== 免费课程精选 ====== */}
@@ -291,24 +331,39 @@ export default function Home() {
               查看更多 <ArrowRight className="w-4 h-4" />
             </Link>
           </div>
+          {dataLoading ? (
+            <div className="flex justify-center py-12"><Loader2 className="w-6 h-6 text-primary-600 animate-spin" /></div>
+          ) : hotCourses.length === 0 ? (
+            <p className="text-center text-gray-400 py-8">暂无课程</p>
+          ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {hotCourses.map((c, i) => (
-              <motion.div key={i} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.08 }}>
-                <Link to="/courses" className="block bg-white rounded-xl overflow-hidden border border-gray-100 hover:shadow-md hover:border-primary-200 transition-all group">
-                  <div className={`h-32 bg-gradient-to-br ${c.color} relative flex items-center justify-center`}>
-                    <Play className="w-10 h-10 text-white/80 group-hover:text-white group-hover:scale-110 transition-all" />
-                  </div>
+              <motion.div key={c.id || i} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.08 }}>
+                <Link to={`/courses/${c.id}`} className="block bg-white rounded-xl overflow-hidden border border-gray-100 hover:shadow-md hover:border-primary-200 transition-all group">
+                  {c.cover ? (
+                    <div className="h-32 relative overflow-hidden">
+                      <img src={c.cover} alt={c.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
+                      <div className="absolute inset-0 bg-black/20 group-hover:bg-black/40 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
+                        <Play className="w-10 h-10 text-white" />
+                      </div>
+                    </div>
+                  ) : (
+                    <div className={`h-32 bg-gradient-to-br ${courseColors[i % courseColors.length]} relative flex items-center justify-center`}>
+                      <Play className="w-10 h-10 text-white/80 group-hover:text-white group-hover:scale-110 transition-all" />
+                    </div>
+                  )}
                   <div className="p-4">
                     <h4 className="text-sm font-bold text-gray-900 group-hover:text-primary-600 transition-colors line-clamp-2">{c.title}</h4>
                     <div className="flex items-center justify-between mt-2 text-xs text-gray-500">
-                      <span>{c.mentor}</span>
-                      <span>{c.views.toLocaleString()} 次播放</span>
+                      <span>{c.mentor || c.mentor_name || ''}</span>
+                      <span>{c.views} 次播放</span>
                     </div>
                   </div>
                 </Link>
               </motion.div>
             ))}
           </div>
+          )}
         </section>
 
         {/* ====== 平台价值说明 ====== */}

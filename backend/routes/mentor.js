@@ -2,6 +2,7 @@ import { Router } from 'express';
 import pool from '../db.js';
 import { authMiddleware, requireRole } from '../middleware/auth.js';
 import { NotificationTemplates } from '../utils/notification.js';
+import { idempotency } from '../middleware/idempotency.js';
 
 const router = Router();
 
@@ -76,12 +77,13 @@ router.get('/profile', async (req, res) => {
 });
 
 // ==================== 4.3-4.6 课程管理 ====================
+// 课程表为 courses（非 mentor_courses），字段：title, mentor_id, mentor_name, description, category, cover, video_url, duration(VARCHAR), difficulty, tags, views, rating, rating_count, status
 
 // POST /api/mentor/courses - 创建课程
-router.post('/courses', async (req, res) => {
+router.post('/courses', idempotency(), async (req, res) => {
   try {
     const userId = req.user.id;
-    const { title, description, category, cover_url, video_url, duration, difficulty } = req.body;
+    const { title, description, category, cover, video_url, duration, difficulty, tags } = req.body;
 
     if (!title || !description) {
       return res.status(400).json({ code: 400, message: '课程标题和描述不能为空' });
@@ -92,13 +94,20 @@ router.post('/courses', async (req, res) => {
       return res.status(400).json({ code: 400, message: '难度等级不正确' });
     }
 
+    // 获取导师信息
+    const [mentorRows] = await pool.query('SELECT id, name FROM mentor_profiles WHERE user_id = ?', [userId]);
+    const mentorProfileId = mentorRows.length > 0 ? mentorRows[0].id : null;
+    const mentorName = mentorRows.length > 0 ? mentorRows[0].name : '';
+
+    const tagsJson = tags ? (typeof tags === 'string' ? tags : JSON.stringify(tags)) : '[]';
+
     const [result] = await pool.query(
-      `INSERT INTO mentor_courses (mentor_user_id, title, description, category, cover_url, video_url, duration, difficulty)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-      [userId, title, description, category || '', cover_url || '', video_url || '', duration || 0, difficulty || 'beginner']
+      `INSERT INTO courses (mentor_id, mentor_name, title, description, category, cover, video_url, duration, difficulty, tags)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [mentorProfileId, mentorName, title, description, category || '', cover || '', video_url || '', duration || '', difficulty || 'beginner', tagsJson]
     );
 
-    const [rows] = await pool.query('SELECT * FROM mentor_courses WHERE id = ?', [result.insertId]);
+    const [rows] = await pool.query('SELECT * FROM courses WHERE id = ?', [result.insertId]);
     res.status(201).json({ code: 201, message: '课程创建成功', data: { course: rows[0] } });
   } catch (err) {
     console.error('创建课程失败:', err);
@@ -110,8 +119,16 @@ router.post('/courses', async (req, res) => {
 router.get('/courses', async (req, res) => {
   try {
     const { status, keyword } = req.query;
-    let sql = 'SELECT * FROM mentor_courses WHERE mentor_user_id = ?';
-    const params = [req.user.id];
+
+    // 查导师的 mentor_profiles.id
+    const [mpRows] = await pool.query('SELECT id FROM mentor_profiles WHERE user_id = ?', [req.user.id]);
+    if (mpRows.length === 0) {
+      return res.json({ code: 200, data: { courses: [], total: 0 } });
+    }
+    const mentorProfileId = mpRows[0].id;
+
+    let sql = 'SELECT * FROM courses WHERE mentor_id = ?';
+    const params = [mentorProfileId];
 
     if (status) {
       sql += ' AND status = ?';
@@ -137,16 +154,23 @@ router.put('/courses/:id', async (req, res) => {
     const courseId = Number(req.params.id);
     const userId = req.user.id;
 
+    // 获取 mentor_profiles.id
+    const [mpRows] = await pool.query('SELECT id FROM mentor_profiles WHERE user_id = ?', [userId]);
+    if (mpRows.length === 0) {
+      return res.status(404).json({ code: 404, message: '导师资料不存在' });
+    }
+    const mentorProfileId = mpRows[0].id;
+
     // 验证课程归属
     const [existing] = await pool.query(
-      'SELECT id FROM mentor_courses WHERE id = ? AND mentor_user_id = ?',
-      [courseId, userId]
+      'SELECT id FROM courses WHERE id = ? AND mentor_id = ?',
+      [courseId, mentorProfileId]
     );
     if (existing.length === 0) {
       return res.status(404).json({ code: 404, message: '课程不存在或无权修改' });
     }
 
-    const { title, description, category, cover_url, video_url, duration, difficulty, status } = req.body;
+    const { title, description, category, cover, video_url, duration, difficulty, status, tags } = req.body;
 
     const fields = [];
     const params = [];
@@ -154,23 +178,27 @@ router.put('/courses/:id', async (req, res) => {
     if (title !== undefined) { fields.push('title = ?'); params.push(title); }
     if (description !== undefined) { fields.push('description = ?'); params.push(description); }
     if (category !== undefined) { fields.push('category = ?'); params.push(category); }
-    if (cover_url !== undefined) { fields.push('cover_url = ?'); params.push(cover_url); }
+    if (cover !== undefined) { fields.push('cover = ?'); params.push(cover); }
     if (video_url !== undefined) { fields.push('video_url = ?'); params.push(video_url); }
     if (duration !== undefined) { fields.push('duration = ?'); params.push(duration); }
     if (difficulty !== undefined) { fields.push('difficulty = ?'); params.push(difficulty); }
     if (status !== undefined) { fields.push('status = ?'); params.push(status); }
+    if (tags !== undefined) {
+      fields.push('tags = ?');
+      params.push(typeof tags === 'string' ? tags : JSON.stringify(tags));
+    }
 
     if (fields.length === 0) {
       return res.status(400).json({ code: 400, message: '没有需要更新的字段' });
     }
 
-    params.push(courseId, userId);
+    params.push(courseId, mentorProfileId);
     await pool.query(
-      `UPDATE mentor_courses SET ${fields.join(', ')} WHERE id = ? AND mentor_user_id = ?`,
+      `UPDATE courses SET ${fields.join(', ')} WHERE id = ? AND mentor_id = ?`,
       params
     );
 
-    const [rows] = await pool.query('SELECT * FROM mentor_courses WHERE id = ?', [courseId]);
+    const [rows] = await pool.query('SELECT * FROM courses WHERE id = ?', [courseId]);
     res.json({ code: 200, message: '课程更新成功', data: { course: rows[0] } });
   } catch (err) {
     console.error('编辑课程失败:', err);
@@ -184,15 +212,21 @@ router.delete('/courses/:id', async (req, res) => {
     const courseId = Number(req.params.id);
     const userId = req.user.id;
 
+    const [mpRows] = await pool.query('SELECT id FROM mentor_profiles WHERE user_id = ?', [userId]);
+    if (mpRows.length === 0) {
+      return res.status(404).json({ code: 404, message: '导师资料不存在' });
+    }
+    const mentorProfileId = mpRows[0].id;
+
     const [existing] = await pool.query(
-      'SELECT id FROM mentor_courses WHERE id = ? AND mentor_user_id = ?',
-      [courseId, userId]
+      'SELECT id FROM courses WHERE id = ? AND mentor_id = ?',
+      [courseId, mentorProfileId]
     );
     if (existing.length === 0) {
       return res.status(404).json({ code: 404, message: '课程不存在或无权删除' });
     }
 
-    await pool.query('DELETE FROM mentor_courses WHERE id = ? AND mentor_user_id = ?', [courseId, userId]);
+    await pool.query('DELETE FROM courses WHERE id = ? AND mentor_id = ?', [courseId, mentorProfileId]);
     res.json({ code: 200, message: '课程删除成功' });
   } catch (err) {
     console.error('删除课程失败:', err);
@@ -201,6 +235,7 @@ router.delete('/courses/:id', async (req, res) => {
 });
 
 // ==================== 4.7-4.8 预约管理 ====================
+// appointments 表字段：student_id, mentor_id, appointment_time, duration, status, note, mentor_remark, service_title, fee, review_rating, review_content
 
 // GET /api/mentor/appointments - 预约列表
 router.get('/appointments', async (req, res) => {
@@ -209,8 +244,8 @@ router.get('/appointments', async (req, res) => {
     let sql = `
       SELECT a.*, u.nickname AS student_name, u.avatar AS student_avatar, u.email AS student_email
       FROM appointments a
-      JOIN users u ON a.student_user_id = u.id
-      WHERE a.mentor_user_id = ?
+      JOIN users u ON a.student_id = u.id
+      WHERE a.mentor_id = ?
     `;
     const params = [req.user.id];
 
@@ -241,7 +276,7 @@ router.put('/appointments/:id/status', async (req, res) => {
     }
 
     const [existing] = await pool.query(
-      'SELECT id, status AS current_status FROM appointments WHERE id = ? AND mentor_user_id = ?',
+      'SELECT id, status AS current_status FROM appointments WHERE id = ? AND mentor_id = ?',
       [appointmentId, userId]
     );
     if (existing.length === 0) {
@@ -252,7 +287,7 @@ router.put('/appointments/:id/status', async (req, res) => {
 
     const [rows] = await pool.query(
       `SELECT a.*, u.nickname AS student_name, u.avatar AS student_avatar
-       FROM appointments a JOIN users u ON a.student_user_id = u.id
+       FROM appointments a JOIN users u ON a.student_id = u.id
        WHERE a.id = ?`,
       [appointmentId]
     );
@@ -260,7 +295,7 @@ router.put('/appointments/:id/status', async (req, res) => {
     // 通知学生预约结果
     try {
       const appointment = rows[0];
-      const studentUserId = appointment.student_user_id;
+      const studentUserId = appointment.student_id;
       const [mentorRows] = await pool.query('SELECT nickname FROM users WHERE id = ?', [userId]);
       const mentorName = mentorRows[0]?.nickname || '导师';
       const timeStr = appointment.appointment_time
@@ -293,8 +328,8 @@ router.get('/students', async (req, res) => {
               COUNT(a.id) AS appointment_count,
               MAX(a.appointment_time) AS last_appointment
        FROM appointments a
-       JOIN users u ON a.student_user_id = u.id
-       WHERE a.mentor_user_id = ?
+       JOIN users u ON a.student_id = u.id
+       WHERE a.mentor_id = ?
        GROUP BY u.id, u.nickname, u.avatar, u.email, u.phone
        ORDER BY last_appointment DESC`,
       [req.user.id]
@@ -313,39 +348,43 @@ router.get('/stats', async (req, res) => {
   try {
     const userId = req.user.id;
 
+    // 获取 mentor_profiles.id
+    const [mpRows] = await pool.query('SELECT id FROM mentor_profiles WHERE user_id = ?', [userId]);
+    const mentorProfileId = mpRows.length > 0 ? mpRows[0].id : null;
+
     // 课程数
     const [courseCount] = await pool.query(
-      'SELECT COUNT(*) AS count FROM mentor_courses WHERE mentor_user_id = ?',
-      [userId]
+      'SELECT COUNT(*) AS count FROM courses WHERE mentor_id = ?',
+      [mentorProfileId]
     );
 
     // 学生数（去重）
     const [studentCount] = await pool.query(
-      'SELECT COUNT(DISTINCT student_user_id) AS count FROM appointments WHERE mentor_user_id = ?',
+      'SELECT COUNT(DISTINCT student_id) AS count FROM appointments WHERE mentor_id = ?',
       [userId]
     );
 
     // 预约数（总数 & 按状态分组）
     const [appointmentTotal] = await pool.query(
-      'SELECT COUNT(*) AS count FROM appointments WHERE mentor_user_id = ?',
+      'SELECT COUNT(*) AS count FROM appointments WHERE mentor_id = ?',
       [userId]
     );
     const [appointmentByStatus] = await pool.query(
-      'SELECT status, COUNT(*) AS count FROM appointments WHERE mentor_user_id = ? GROUP BY status',
+      'SELECT status, COUNT(*) AS count FROM appointments WHERE mentor_id = ? GROUP BY status',
       [userId]
     );
 
     // 本周辅导数（已完成）
     const [weeklyCompleted] = await pool.query(
       `SELECT COUNT(*) AS count FROM appointments
-       WHERE mentor_user_id = ? AND status = 'completed'
+       WHERE mentor_id = ? AND status = 'completed'
        AND appointment_time >= DATE_SUB(CURDATE(), INTERVAL WEEKDAY(CURDATE()) DAY)`,
       [userId]
     );
 
-    // 平均评分
+    // 平均评分（使用 review_rating 字段）
     const [avgRating] = await pool.query(
-      'SELECT AVG(rating) AS avg_rating, COUNT(rating) AS review_count FROM appointments WHERE mentor_user_id = ? AND rating IS NOT NULL',
+      'SELECT AVG(review_rating) AS avg_rating, COUNT(review_rating) AS review_count FROM appointments WHERE mentor_id = ? AND review_rating IS NOT NULL',
       [userId]
     );
 

@@ -5,6 +5,9 @@ import CompanyLayout from '../layouts/CompanyLayout';
 import AdminLayout from '../layouts/AdminLayout';
 import ProtectedRoute from '../components/ProtectedRoute';
 
+import NotFound from '../pages/NotFound';
+import ServerError from '../pages/ServerError';
+
 import Home from '../pages/Home';
 import Login from '../pages/Login';
 import Mentors from '../pages/Mentors';
@@ -37,12 +40,14 @@ import CompanyDashboardPage from '../pages/company/Dashboard';
 import CompanyProfile from '../pages/company/Profile';
 import CompanyJobManage from '../pages/company/JobManage';
 import CompanyResumePool from '../pages/company/ResumePool';
+import CompanyTalentSearch from '../pages/company/TalentSearch';
 
 // ====== 导师端 ======
 import MentorDashboardPage from '../pages/mentor/Dashboard';
 import MentorProfile from '../pages/mentor/Profile';
 import MentorCourseManage from '../pages/mentor/CourseManage';
 import MentorAppointments from '../pages/mentor/Appointments';
+import MentorStudents from '../pages/mentor/Students';
 
 // ====== 学生端 ======
 import StudentProfile from '../pages/student/Profile';
@@ -164,7 +169,7 @@ export const router = createBrowserRouter([
       },
       {
         path: 'students',
-        element: <MentorDashboardPage />  // 复用Dashboard暂时
+        element: <MentorStudents />
       },
       {
         path: 'profile',
@@ -198,7 +203,7 @@ export const router = createBrowserRouter([
       },
       {
         path: 'talent',
-        element: <CompanyResumePool />  // 复用简历池暂时
+        element: <CompanyTalentSearch />
       },
       {
         path: 'profile',
@@ -260,5 +265,15 @@ export const router = createBrowserRouter([
   {
     path: '/dev',
     element: <DevNav />
+  },
+  // ====== 错误页面 ======
+  {
+    path: '/500',
+    element: <ServerError />
+  },
+  // ====== 404 兜底路由（必须放在最后） ======
+  {
+    path: '*',
+    element: <NotFound />
   }
 ]);

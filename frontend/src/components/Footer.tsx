@@ -2,12 +2,19 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Globe, ChevronDown, ChevronUp, ArrowUp, Mail, MessageCircle, Share2, Twitter } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { useConfigStore } from '@/store/config';
 
 export default function Footer() {
   const { t, i18n } = useTranslation();
   const [isMobileExpanded, setIsMobileExpanded] = useState(false);
   const [showBackToTop, setShowBackToTop] = useState(false);
   const [isLangMenuOpen, setIsLangMenuOpen] = useState(false);
+
+  // 从配置中心读取
+  const companyName = useConfigStore(s => s.getString('footer_copyright', '© 2026 江苏初晓云网络科技有限公司'));
+  const icpNumber = useConfigStore(s => s.getString('footer_icp', ''));
+  const contactEmail = useConfigStore(s => s.getString('contact_email', ''));
+  const brandName = useConfigStore(s => s.getString('brand_name', '启航平台'));
 
   const languages = [
     { code: 'zh', name: t('footer.lang_zh') },
@@ -81,7 +88,6 @@ export default function Footer() {
   ];
 
   const currentYear = new Date().getFullYear();
-  const companyName = '您的企业名称'; // TODO: 替换为实际企业名称
 
   return (
     <footer className="bg-[#f9fafb] border-t border-gray-200 mt-20 relative w-full text-[#4b5563] font-sans">
@@ -160,7 +166,7 @@ export default function Footer() {
                 <a href="#" className="w-8 h-8 rounded-full bg-white border border-gray-200 flex items-center justify-center text-gray-500 hover:text-white hover:bg-[#1da1f2] hover:border-transparent transition-all shadow-sm">
                   <Twitter className="w-4 h-4" />
                 </a>
-                <a href="mailto:contact@example.com" className="w-8 h-8 rounded-full bg-white border border-gray-200 flex items-center justify-center text-gray-500 hover:text-white hover:bg-gray-800 hover:border-transparent transition-all shadow-sm">
+                <a href={contactEmail ? `mailto:${contactEmail}` : '#'} className="w-8 h-8 rounded-full bg-white border border-gray-200 flex items-center justify-center text-gray-500 hover:text-white hover:bg-gray-800 hover:border-transparent transition-all shadow-sm">
                   <Mail className="w-4 h-4" />
                 </a>
               </div>
@@ -194,14 +200,13 @@ export default function Footer() {
             
             {/* 版权与备案信息 */}
             <div className="flex flex-col md:flex-row items-center gap-2 md:gap-6 text-xs text-gray-500 text-center md:text-left">
-              <p>©{currentYear} {companyName} {t('footer.rights_reserved')}</p>
+              <p>{companyName} {t('footer.rights_reserved')}</p>
               <div className="flex items-center gap-4">
-                <a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener noreferrer" className="hover:text-[#2563eb] transition-colors">
-                  京ICP备XXXXXXXX号-1
-                </a>
-                <a href="#" target="_blank" rel="noopener noreferrer" className="hover:text-[#2563eb] transition-colors">
-                  京公网安备 XXXXXXXXXXXXXX号
-                </a>
+                {icpNumber && (
+                  <a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener noreferrer" className="hover:text-[#2563eb] transition-colors">
+                    {icpNumber}
+                  </a>
+                )}
               </div>
             </div>
 

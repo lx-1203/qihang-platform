@@ -535,15 +535,116 @@ router.put('/courses/:id/status', async (req, res) => {
 });
 
 // ==================== 2.14 全平台预约记录 ====================
-// 注：appointments 表暂未建立，返回空列表占位
-router.get('/appointments', (req, res) => {
-  res.json({
-    code: 200,
-    data: {
-      appointments: [],
-      pagination: { page: 1, pageSize: 20, total: 0, totalPages: 0 },
-    },
-  });
+router.get('/appointments', async (req, res) => {
+  try {
+    const { page = 1, pageSize = 20, status = '' } = req.query;
+    const offset = (Number(page) - 1) * Number(pageSize);
+    const limit = Number(pageSize);
+
+    let where = 'WHERE 1=1';
+    const params = [];
+
+    if (status) {
+      where += ' AND a.status = ?';
+      params.push(status);
+    }
+
+    const [countRows] = await pool.query(
+      `SELECT COUNT(*) AS total FROM appointments a ${where}`,
+      params
+    );
+    const total = countRows[0].total;
+
+    const [appointments] = await pool.query(
+      `SELECT a.*,
+              s.nickname AS student_name,
+              m.nickname AS mentor_name
+       FROM appointments a
+       LEFT JOIN users s ON a.student_id = s.id
+       LEFT JOIN users m ON a.mentor_id = m.id
+       ${where}
+       ORDER BY a.created_at DESC
+       LIMIT ? OFFSET ?`,
+      [...params, limit, offset]
+    );
+
+    res.json({
+      code: 200,
+      data: {
+        appointments,
+        pagination: {
+          page: Number(page),
+          pageSize: limit,
+          total,
+          totalPages: Math.ceil(total / limit),
+        },
+      },
+    });
+  } catch (err) {
+    console.error('获取预约记录失败:', err);
+    res.status(500).json({ code: 500, message: '服务器内部错误' });
+  }
+});
+
+// ==================== 2.15 操作审计日志 ====================
+router.get('/audit-logs', async (req, res) => {
+  try {
+    const {
+      page = 1,
+      pageSize = 20,
+      action = '',
+      target_type = '',
+      operator_id = '',
+    } = req.query;
+
+    const offset = (Number(page) - 1) * Number(pageSize);
+    const limit = Number(pageSize);
+
+    let where = 'WHERE 1=1';
+    const params = [];
+
+    if (action) {
+      where += ' AND action = ?';
+      params.push(action);
+    }
+    if (target_type) {
+      where += ' AND target_type = ?';
+      params.push(target_type);
+    }
+    if (operator_id) {
+      where += ' AND operator_id = ?';
+      params.push(Number(operator_id));
+    }
+
+    const [countRows] = await pool.query(
+      `SELECT COUNT(*) AS total FROM audit_logs ${where}`,
+      params
+    );
+    const total = countRows[0].total;
+
+    const [logs] = await pool.query(
+      `SELECT * FROM audit_logs ${where}
+       ORDER BY created_at DESC
+       LIMIT ? OFFSET ?`,
+      [...params, limit, offset]
+    );
+
+    res.json({
+      code: 200,
+      data: {
+        list: logs,
+        pagination: {
+          page: Number(page),
+          pageSize: limit,
+          total,
+          totalPages: Math.ceil(total / limit),
+        },
+      },
+    });
+  } catch (err) {
+    console.error('获取审计日志失败:', err);
+    res.status(500).json({ code: 500, message: '服务器内部错误' });
+  }
 });
 
 export default router;

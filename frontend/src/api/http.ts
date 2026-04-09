@@ -24,8 +24,9 @@ http.interceptors.request.use(
 );
 
 // ====== 响应拦截器：统一处理错误 ======
+// 注意：返回完整 response，前端统一用 res.data.code / res.data.data 读取
 http.interceptors.response.use(
-  (response) => response.data,
+  (response) => response,
   (error) => {
     const { response } = error;
 

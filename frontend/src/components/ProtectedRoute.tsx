@@ -6,8 +6,8 @@ import type { UserRole } from '../types';
 // 基于 RBAC 四角色权限模型，严格控制页面访问
 // DEV_MODE: 开发环境下跳过权限校验，方便调试
 
-// 开发模式开关（上线前改为 false 或删除此行）
-const DEV_MODE = true;
+// 开发模式开关：仅当环境变量 VITE_DEV_BYPASS=true 时启用
+const DEV_MODE = import.meta.env.VITE_DEV_BYPASS === 'true';
 
 interface ProtectedRouteProps {
   /** 允许访问的角色列表 */
