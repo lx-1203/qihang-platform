@@ -108,7 +108,26 @@ export default function MyAppointments() {
       setLoading(true);
       const res = await http.get('/student/appointments');
       if (res.data?.code === 200 && res.data.data) {
-        setAppointments(res.data.data.list || res.data.data);
+        // 将后端状态映射为前端展示状态
+        const raw = res.data.data.appointments || res.data.data.list || res.data.data;
+        const normalized = raw.map((a: any) => ({
+          ...a,
+          mentorName: a.mentor_name || a.mentorName || '',
+          mentorAvatar: a.mentor_avatar || a.mentorAvatar || '',
+          mentorTitle: a.mentor_title || a.mentorTitle || '',
+          serviceTitle: a.service_title || a.serviceTitle || '',
+          serviceType: a.service_title || a.serviceType || '导师辅导',
+          date: a.appointment_time ? String(a.appointment_time).slice(0, 10) : (a.date || ''),
+          time: a.appointment_time ? String(a.appointment_time).slice(11, 16) : (a.time || ''),
+          fee: a.fee || 0,
+          location: a.location || '线上',
+          hasReviewed: !!a.review_rating,
+          rating: a.review_rating,
+          reviewContent: a.review_content,
+          // 将 pending/confirmed → upcoming，其余保留
+          status: ['pending', 'confirmed'].includes(a.status) ? 'upcoming' : a.status,
+        }));
+        setAppointments(normalized);
       }
     } catch {
       // 使用默认 Mock 数据

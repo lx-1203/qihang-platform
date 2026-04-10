@@ -59,8 +59,8 @@ export default function AdminMentors() {
       setLoading(true);
       const res = await http.get('/admin/mentors', { params: { page, pageSize, status: statusFilter, keyword: search } });
       if (res.data?.code === 200 && res.data.data) {
-        setMentors(res.data.data.list);
-        setTotal(res.data.data.total);
+        setMentors(res.data.data.list || res.data.data.mentors || []);
+        setTotal(res.data.data.pagination?.total || res.data.data.total || 0);
       } else {
         applyMock();
       }

@@ -234,6 +234,39 @@ router.delete('/courses/:id', async (req, res) => {
   }
 });
 
+// PUT /api/mentor/courses/:id/status - 快速切换课程上下架状态
+router.put('/courses/:id/status', async (req, res) => {
+  try {
+    const courseId = Number(req.params.id);
+    const userId = req.user.id;
+    const { status } = req.body;
+
+    if (!status || !['active', 'inactive'].includes(status)) {
+      return res.status(400).json({ code: 400, message: '状态值不正确' });
+    }
+
+    const [mpRows] = await pool.query('SELECT id FROM mentor_profiles WHERE user_id = ?', [userId]);
+    if (mpRows.length === 0) {
+      return res.status(404).json({ code: 404, message: '导师资料不存在' });
+    }
+    const mentorProfileId = mpRows[0].id;
+
+    const [existing] = await pool.query(
+      'SELECT id FROM courses WHERE id = ? AND mentor_id = ? AND deleted_at IS NULL',
+      [courseId, mentorProfileId]
+    );
+    if (existing.length === 0) {
+      return res.status(404).json({ code: 404, message: '课程不存在或无权修改' });
+    }
+
+    await pool.query('UPDATE courses SET status = ? WHERE id = ?', [status, courseId]);
+    res.json({ code: 200, message: '状态更新成功' });
+  } catch (err) {
+    console.error('切换课程状态失败:', err);
+    res.status(500).json({ code: 500, message: '服务器内部错误' });
+  }
+});
+
 // ==================== 4.7-4.8 预约管理 ====================
 // appointments 表字段：student_id, mentor_id, appointment_time, duration, status, note, mentor_remark, service_title, fee, review_rating, review_content
 
@@ -314,6 +347,42 @@ router.put('/appointments/:id/status', async (req, res) => {
     res.json({ code: 200, message: '预约状态更新成功', data: { appointment: rows[0] } });
   } catch (err) {
     console.error('更新预约状态失败:', err);
+    res.status(500).json({ code: 500, message: '服务器内部错误' });
+  }
+});
+
+// PUT /api/mentor/appointments/:id/confirm - 确认预约（前端快捷路由）
+router.put('/appointments/:id/confirm', async (req, res) => {
+  try {
+    const appointmentId = Number(req.params.id);
+    await pool.query('UPDATE appointments SET status = ? WHERE id = ? AND mentor_id = ?', ['confirmed', appointmentId, req.user.id]);
+    res.json({ code: 200, message: '预约已确认' });
+  } catch (err) {
+    console.error('确认预约失败:', err);
+    res.status(500).json({ code: 500, message: '服务器内部错误' });
+  }
+});
+
+// PUT /api/mentor/appointments/:id/reject - 拒绝预约（前端快捷路由）
+router.put('/appointments/:id/reject', async (req, res) => {
+  try {
+    const appointmentId = Number(req.params.id);
+    await pool.query('UPDATE appointments SET status = ? WHERE id = ? AND mentor_id = ?', ['rejected', appointmentId, req.user.id]);
+    res.json({ code: 200, message: '预约已拒绝' });
+  } catch (err) {
+    console.error('拒绝预约失败:', err);
+    res.status(500).json({ code: 500, message: '服务器内部错误' });
+  }
+});
+
+// PUT /api/mentor/appointments/:id/complete - 完成预约（前端快捷路由）
+router.put('/appointments/:id/complete', async (req, res) => {
+  try {
+    const appointmentId = Number(req.params.id);
+    await pool.query('UPDATE appointments SET status = ? WHERE id = ? AND mentor_id = ?', ['completed', appointmentId, req.user.id]);
+    res.json({ code: 200, message: '预约已标记为完成' });
+  } catch (err) {
+    console.error('完成预约失败:', err);
     res.status(500).json({ code: 500, message: '服务器内部错误' });
   }
 });

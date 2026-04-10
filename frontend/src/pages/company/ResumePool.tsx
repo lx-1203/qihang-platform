@@ -81,9 +81,23 @@ export default function CompanyResumePool() {
   async function fetchResumes() {
     try {
       setLoading(true);
-      const res = await http.get('/company/resumes');
-      if (res.data?.code === 200 && res.data.data) {
-        setResumes(res.data.data.list || res.data.data);
+      const res = await http.get('/company/resumes', { params: { pageSize: 100 } });
+      if (res.data?.code === 200 && res.data.data?.resumes) {
+        // 将后端字段映射为前端字段
+        const normalized = res.data.data.resumes.map((r: any) => ({
+          id: r.id,
+          studentName: r.student_name || r.studentName || '',
+          university: r.school || r.university || '',
+          major: r.major || '',
+          degree: r.degree || '本科',
+          jobTitle: r.job_title || r.jobTitle || '',
+          status: r.status as ResumeStatus,
+          appliedAt: r.created_at ? String(r.created_at).slice(0, 16) : '',
+          phone: r.phone || '',
+          email: r.student_email || r.email || '',
+          avatar: r.student_avatar || r.avatar || '',
+        }));
+        setResumes(normalized);
       } else {
         setResumes(mockResumes);
       }

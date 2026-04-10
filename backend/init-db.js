@@ -74,12 +74,14 @@ const CREATE_JOBS_TABLE = `
     urgent          TINYINT NOT NULL DEFAULT 0 COMMENT '是否急聘: 1=是, 0=否',
     status          ENUM('active', 'inactive') NOT NULL DEFAULT 'active' COMMENT '上架状态',
     view_count      INT NOT NULL DEFAULT 0 COMMENT '浏览量',
+    deleted_at      TIMESTAMP NULL DEFAULT NULL COMMENT '软删除时间（NULL=未删除）',
     created_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     INDEX idx_type (type),
     INDEX idx_status (status),
     INDEX idx_company_id (company_id),
-    INDEX idx_category (category)
+    INDEX idx_category (category),
+    INDEX idx_deleted_at (deleted_at)
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='职位表'
 `;
 
@@ -126,11 +128,13 @@ const CREATE_COURSES_TABLE = `
     rating          DECIMAL(2,1) NOT NULL DEFAULT 5.0 COMMENT '评分',
     rating_count    INT NOT NULL DEFAULT 0 COMMENT '评价人数',
     status          ENUM('active', 'inactive') NOT NULL DEFAULT 'active' COMMENT '上架状态',
+    deleted_at      TIMESTAMP NULL DEFAULT NULL COMMENT '软删除时间（NULL=未删除）',
     created_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     INDEX idx_mentor_id (mentor_id),
     INDEX idx_status (status),
-    INDEX idx_category (category)
+    INDEX idx_category (category),
+    INDEX idx_deleted_at (deleted_at)
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='课程表'
 `;
 
@@ -219,10 +223,12 @@ const CREATE_NOTIFICATIONS_TABLE = `
     content         TEXT COMMENT '通知内容',
     related_id      INT DEFAULT NULL COMMENT '关联业务ID (预约ID/简历ID等)',
     is_read         TINYINT NOT NULL DEFAULT 0 COMMENT '0=未读, 1=已读',
+    deleted_at      TIMESTAMP NULL DEFAULT NULL COMMENT '软删除时间（NULL=未删除）',
     created_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     INDEX idx_user_id (user_id),
     INDEX idx_is_read (is_read),
     INDEX idx_type (type),
+    INDEX idx_deleted_at (deleted_at),
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='通知表'
 `;
@@ -367,6 +373,20 @@ const CREATE_ARTICLES_TABLE = `
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='就业指导文章表'
 `;
 
+// ====== 搜索历史表 ======
+const CREATE_SEARCH_HISTORIES_TABLE = `
+  CREATE TABLE IF NOT EXISTS search_histories (
+    id              INT AUTO_INCREMENT PRIMARY KEY,
+    user_id         INT NOT NULL COMMENT '用户ID',
+    keyword         VARCHAR(100) NOT NULL COMMENT '搜索关键词',
+    search_count    INT NOT NULL DEFAULT 1 COMMENT '搜索次数',
+    last_searched_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '最后搜索时间',
+    UNIQUE KEY uk_user_keyword (user_id, keyword),
+    INDEX idx_user_time (user_id, last_searched_at),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户搜索历史表'
+`;
+
 // ========== 按依赖关系排列的建表顺序 ==========
 const TABLE_DEFINITIONS = [
   { name: 'users',           sql: CREATE_USERS_TABLE },
@@ -383,7 +403,8 @@ const TABLE_DEFINITIONS = [
   { name: 'programs',        sql: CREATE_PROGRAMS_TABLE },
   { name: 'audit_logs',      sql: CREATE_AUDIT_LOGS_TABLE },
   { name: 'site_configs',    sql: CREATE_SITE_CONFIGS_TABLE },
-  { name: 'articles',        sql: CREATE_ARTICLES_TABLE },
+  { name: 'articles',           sql: CREATE_ARTICLES_TABLE },
+  { name: 'search_histories',   sql: CREATE_SEARCH_HISTORIES_TABLE },
 ];
 
 // ========== 种子数据 ==========

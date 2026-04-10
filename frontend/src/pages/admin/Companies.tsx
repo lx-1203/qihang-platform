@@ -63,8 +63,8 @@ export default function AdminCompanies() {
         params: { page, pageSize, status: statusFilter, keyword: search }
       });
       if (res.data?.code === 200 && res.data.data) {
-        setCompanies(res.data.data.list);
-        setTotal(res.data.data.total);
+        setCompanies(res.data.data.list || res.data.data.companies || []);
+        setTotal(res.data.data.pagination?.total || res.data.data.total || 0);
       } else {
         applyMock();
       }

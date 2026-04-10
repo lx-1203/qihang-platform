@@ -33,4 +33,25 @@ export default defineConfig({
       },
     },
   },
+
+  // 构建优化：代码分割 + chunk 大小控制
+  build: {
+    chunkSizeWarningLimit: 800,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          // 框架核心（几乎不变，长期缓存）
+          'react-vendor': ['react', 'react-dom'],
+          // 路由
+          'router-vendor': ['react-router-dom'],
+          // 动画
+          'motion-vendor': ['framer-motion'],
+          // 图标
+          'icons-vendor': ['lucide-react'],
+          // 国际化
+          'i18n-vendor': ['i18next', 'react-i18next'],
+        },
+      },
+    },
+  },
 })

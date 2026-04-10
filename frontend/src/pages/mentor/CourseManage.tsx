@@ -16,48 +16,48 @@ interface Course {
   title: string;
   description: string;
   category: string;
-  coverImage: string;
+  cover: string;
   difficulty: 'beginner' | 'intermediate' | 'advanced';
   views: number;
   rating: number;
-  studentCount: number;
+  rating_count: number;
   status: 'active' | 'inactive' | 'review';
-  createdAt: string;
+  created_at: string;
 }
 
 interface CourseForm {
   title: string;
   description: string;
   category: string;
-  coverImage: string;
+  cover: string;
   difficulty: 'beginner' | 'intermediate' | 'advanced';
 }
 
 const mockCourses: Course[] = [
   {
     id: 1, title: '校招简历怎么写才能过海选？', description: '从0到1打造一份能通过AI筛选的高质量校招简历，包含模板下载。',
-    category: '简历指导', coverImage: '', difficulty: 'beginner', views: 12400, rating: 4.9, studentCount: 850, status: 'active', createdAt: '2026-02-15',
+    category: '简历指导', cover: '', difficulty: 'beginner', views: 12400, rating: 4.9, rating_count: 850, status: 'active', created_at: '2026-02-15',
   },
   {
     id: 2, title: '大厂群面通关秘籍', description: '深度解析BAT、字节跳动等大厂群面环节，提供实战案例和话术模板。',
-    category: '面试辅导', coverImage: '', difficulty: 'intermediate', views: 8500, rating: 4.8, studentCount: 420, status: 'active', createdAt: '2026-03-01',
+    category: '面试辅导', cover: '', difficulty: 'intermediate', views: 8500, rating: 4.8, rating_count: 420, status: 'active', created_at: '2026-03-01',
   },
   {
     id: 3, title: '1V1模拟面试录像回放', description: '真实模拟面试场景回放与点评，帮助学生发现面试中的问题。',
-    category: '面试辅导', coverImage: '', difficulty: 'advanced', views: 3200, rating: 4.7, studentCount: 150, status: 'inactive', createdAt: '2026-03-10',
+    category: '面试辅导', cover: '', difficulty: 'advanced', views: 3200, rating: 4.7, rating_count: 150, status: 'inactive', created_at: '2026-03-10',
   },
   {
     id: 4, title: '职业规划必修课：找到你的方向', description: '帮助大学生明确职业方向，制定3-5年职业发展路线图。',
-    category: '职业规划', coverImage: '', difficulty: 'beginner', views: 6800, rating: 4.6, studentCount: 380, status: 'active', createdAt: '2026-01-20',
+    category: '职业规划', cover: '', difficulty: 'beginner', views: 6800, rating: 4.6, rating_count: 380, status: 'active', created_at: '2026-01-20',
   },
   {
     id: 5, title: '考研复试面试全攻略', description: '考研复试各环节深度解析，含英语口语、专业面试、综合素质面试技巧。',
-    category: '考研指导', coverImage: '', difficulty: 'intermediate', views: 4500, rating: 4.8, studentCount: 260, status: 'review', createdAt: '2026-03-25',
+    category: '考研指导', cover: '', difficulty: 'intermediate', views: 4500, rating: 4.8, rating_count: 260, status: 'active', created_at: '2026-03-25',
   },
 ];
 
 const emptyForm: CourseForm = {
-  title: '', description: '', category: '', coverImage: '', difficulty: 'beginner',
+  title: '', description: '', category: '', cover: '', difficulty: 'beginner',
 };
 
 const categories = ['简历指导', '面试辅导', '职业规划', '考研指导', '创业指导', '留学规划'];
@@ -93,7 +93,7 @@ export default function CourseManage() {
       setLoading(true);
       const res = await http.get('/mentor/courses');
       if (res.data?.code === 200 && res.data.data) {
-        setCourses(res.data.data.list || res.data.data);
+        setCourses(res.data.data.courses || res.data.data.list || res.data.data);
       }
     } catch {
       // 使用默认 Mock 数据
@@ -132,7 +132,7 @@ export default function CourseManage() {
       title: course.title,
       description: course.description,
       category: course.category,
-      coverImage: course.coverImage,
+      cover: course.cover,
       difficulty: course.difficulty,
     });
     setShowModal(true);
@@ -163,9 +163,9 @@ export default function CourseManage() {
           ...form,
           views: 0,
           rating: 0,
-          studentCount: 0,
-          status: 'review',
-          createdAt: new Date().toISOString().split('T')[0],
+          rating_count: 0,
+          status: 'active',
+          created_at: new Date().toISOString().split('T')[0],
         };
         try {
           const res = await http.post('/mentor/courses', form);
@@ -265,7 +265,7 @@ export default function CourseManage() {
           { label: '全部课程', value: courses.length, icon: BookOpen, bg: 'bg-primary-50', color: 'text-primary-600' },
           { label: '已上线', value: courses.filter(c => c.status === 'active').length, icon: ToggleRight, bg: 'bg-green-50', color: 'text-green-600' },
           { label: '总浏览量', value: formatViews(courses.reduce((a, c) => a + c.views, 0)), icon: Eye, bg: 'bg-blue-50', color: 'text-blue-600' },
-          { label: '总学员数', value: courses.reduce((a, c) => a + c.studentCount, 0).toLocaleString(), icon: Users, bg: 'bg-purple-50', color: 'text-purple-600' },
+          { label: '总学员数', value: courses.reduce((a, c) => a + (c.rating_count || 0), 0).toLocaleString(), icon: Users, bg: 'bg-purple-50', color: 'text-purple-600' },
         ].map((item, i) => (
           <motion.div
             key={item.label}
@@ -313,16 +313,17 @@ export default function CourseManage() {
                 >
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-3">
+                      {/* 课程封面 */}
                       <div className="w-14 h-10 bg-gray-100 rounded-lg flex items-center justify-center shrink-0">
-                        {course.coverImage ? (
-                          <img src={course.coverImage} alt="" className="w-full h-full object-cover rounded-lg" />
+                        {course.cover ? (
+                          <img src={course.cover} alt="" className="w-full h-full object-cover rounded-lg" />
                         ) : (
                           <BookOpen className="w-5 h-5 text-gray-400" />
                         )}
                       </div>
                       <div className="min-w-0">
                         <h4 className="font-semibold text-gray-900 text-sm truncate max-w-xs">{course.title}</h4>
-                        <p className="text-xs text-gray-500 mt-0.5">学员: {course.studentCount} · {course.createdAt}</p>
+                        <p className="text-xs text-gray-500 mt-0.5">评价: {course.rating_count} · {course.created_at?.slice(0, 10)}</p>
                       </div>
                     </div>
                   </td>
@@ -494,8 +495,8 @@ export default function CourseManage() {
                   </label>
                   <input
                     type="url"
-                    value={form.coverImage}
-                    onChange={e => setForm(prev => ({ ...prev, coverImage: e.target.value }))}
+                    value={form.cover}
+                    onChange={e => setForm(prev => ({ ...prev, cover: e.target.value }))}
                     placeholder="输入封面图片URL（可选）"
                     className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                   />

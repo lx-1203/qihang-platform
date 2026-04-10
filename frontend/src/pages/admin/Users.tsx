@@ -64,8 +64,8 @@ export default function AdminUsers() {
         params: { page, pageSize, role: roleFilter, status: statusFilter, keyword: search }
       });
       if (res.data?.code === 200 && res.data.data) {
-        setUsers(res.data.data.list);
-        setTotal(res.data.data.total);
+        setUsers(res.data.data.list || res.data.data.users || []);
+        setTotal(res.data.data.pagination?.total || res.data.data.total || 0);
       } else {
         // 使用模拟数据
         let filtered = [...mockUsers];
