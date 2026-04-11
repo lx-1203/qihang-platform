@@ -19,11 +19,30 @@ import configRouter from './routes/config.js';
 import articlesRouter from './routes/articles.js';
 import searchHistoryRouter from './routes/searchHistory.js';
 import { testConnection } from './db.js';
+import pool from './db.js';
+import { sqlInjectionGuard } from './middleware/sqlInjectionGuard.js';
+import { csrfOriginCheck } from './middleware/csrfProtection.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 dotenv.config();
+
+// ====== 启动前环境变量校验（SEC-001 / SEC-004）======
+const REQUIRED_ENV = ['JWT_SECRET', 'JWT_REFRESH_SECRET'];
+const missing = REQUIRED_ENV.filter(k => !process.env[k]);
+if (missing.length) {
+  console.error(`FATAL: 缺少必需环境变量: ${missing.join(', ')}`);
+  console.error('请复制 .env.example 为 .env 并填入所有必需值');
+  process.exit(1);
+}
+
+// ENCRYPTION_KEY 格式校验（SEC-004）— 可选但推荐
+if (process.env.ENCRYPTION_KEY && !/^[0-9a-f]{64}$/i.test(process.env.ENCRYPTION_KEY)) {
+  console.error('FATAL: ENCRYPTION_KEY 格式不正确，必须为 64 位十六进制字符串');
+  console.error('生成方法: node -e "console.log(require(\'crypto\').randomBytes(32).toString(\'hex\'))"');
+  process.exit(1);
+}
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -49,10 +68,37 @@ app.use((req, res, next) => {
   res.setHeader('X-Frame-Options', 'DENY');
   res.setHeader('X-XSS-Protection', '1; mode=block');
   res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  // Content Security Policy（CSP）— 防止 XSS 注入脚本
+  res.setHeader(
+    'Content-Security-Policy',
+    [
+      "default-src 'self'",
+      "script-src 'self' 'unsafe-inline'",   // 允许内联脚本（前端 SPA 需要）
+      "style-src 'self' 'unsafe-inline'",
+      "img-src 'self' data: https:",          // 允许 HTTPS 图片
+      "font-src 'self' data:",
+      "connect-src 'self' http://localhost:*", // 允许本地 API 调用
+      "frame-ancestors 'none'",               // 禁止被 iframe 嵌入
+      "base-uri 'self'",
+      "form-action 'self'",
+    ].join('; ')
+  );
+  // HSTS（仅生产环境启用 HTTPS 时生效）
+  if (process.env.NODE_ENV === 'production') {
+    res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+  }
   next();
 });
 
 // 接口限流（防止恶意刷接口，商业级安全要求）
+// ⚠️ SEC-003: 当前使用内存 Map 实现，存在以下局限性：
+//   1. 单进程限制：多实例部署 (PM2 cluster / K8s) 时各实例独立计数，总限制 = N × RATE_LIMIT_MAX
+//   2. 重启丢失：服务重启后所有计数清零
+//   3. 内存占用：高并发场景下 Map 可能增长较大（已有定期清理缓解）
+// 🔄 生产环境迁移路径：
+//   - 方案 A: 引入 Redis + express-rate-limit + rate-limit-redis（推荐）
+//   - 方案 B: 使用 Nginx 层限流（`limit_req_zone`），后端仅做业务限流
+//   - 迁移时保持相同的限流参数（100 req/min/IP），仅替换存储后端
 const rateLimitMap = new Map();
 const RATE_LIMIT_WINDOW = 60000; // 1分钟窗口
 const RATE_LIMIT_MAX = 100; // 每分钟最大请求数
@@ -89,6 +135,24 @@ setInterval(() => {
   }
 }, 60000);
 
+// 定期清理过期 Token 黑名单记录（每小时，SEC-002）
+setInterval(async () => {
+  try {
+    const [result] = await pool.query('DELETE FROM token_blacklist WHERE expires_at < NOW()');
+    if (result.affectedRows > 0) {
+      console.log(`[定时清理] 已清理 ${result.affectedRows} 条过期黑名单记录`);
+    }
+  } catch (err) {
+    console.error('[定时清理] token_blacklist 清理失败:', err.message);
+  }
+}, 60 * 60 * 1000);
+
+// SQL 注入防护（扫描 POST/PUT/DELETE/PATCH 请求体）
+app.use('/api', sqlInjectionGuard);
+
+// CSRF Origin 验证（防止跨站请求伪造）
+app.use('/api', csrfOriginCheck);
+
 // ====== 静态文件服务 (上传文件) ======
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
@@ -109,14 +173,27 @@ app.use('/api/config', configRouter);
 app.use('/api/articles', articlesRouter);
 app.use('/api/search-history', searchHistoryRouter);
 
-// ====== 健康检查 ======
-app.get('/api/health', (_req, res) => {
-  res.json({
+// ====== 健康检查（SEC-006：深度检查，含数据库连接验证）======
+app.get('/api/health', async (_req, res) => {
+  const health = {
     status: 'ok',
     timestamp: new Date().toISOString(),
     uptime: process.uptime(),
     env: process.env.NODE_ENV || 'development',
-  });
+    database: { status: 'unknown', latency: null },
+  };
+  try {
+    const start = Date.now();
+    const conn = await pool.getConnection();
+    await conn.ping();
+    conn.release();
+    health.database = { status: 'connected', latency: Date.now() - start + 'ms' };
+  } catch (err) {
+    health.status = 'degraded';
+    health.database = { status: 'disconnected', error: err.message };
+    return res.status(503).json(health);
+  }
+  res.json(health);
 });
 
 // ====== 全局错误处理（商业级要求：统一错误格式） ======
@@ -145,6 +222,8 @@ app.listen(PORT, async () => {
   console.log(`  📡 健康检查: http://localhost:${PORT}/api/health`);
   console.log(`  🔒 CORS: ${corsOptions.origin}`);
   console.log(`  🛡️  限流: ${RATE_LIMIT_MAX} req/min per IP`);
+  console.log(`  🔐 安全: SQL注入防护 + CSRF验证 + CSP + HSTS(生产)`);
+  console.log(`  🔑 认证: JWT(7d) + RefreshToken(30d)`);
 
   // 测试数据库连接
   await testConnection();

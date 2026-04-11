@@ -6,6 +6,8 @@ interface LazyImageProps extends React.ImgHTMLAttributes<HTMLImageElement> {
   placeholder?: string;
   /** 容器样式 */
   containerClassName?: string;
+  /** 是否使用 CDN（自动拼接 VITE_CDN_URL） */
+  useCDN?: boolean;
 }
 
 /**
@@ -19,12 +21,25 @@ export default function LazyImage({
   placeholder,
   containerClassName,
   className,
+  useCDN = true,
   ...props
 }: LazyImageProps) {
   const [imageSrc, setImageSrc] = useState<string | undefined>(undefined);
   const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState(false);
   const imgRef = useRef<HTMLImageElement>(null);
+
+  // 拼接 CDN URL
+  const getFullUrl = (url: string): string => {
+    if (!useCDN) return url;
+    const cdnUrl = import.meta.env.VITE_CDN_URL;
+    if (!cdnUrl || cdnUrl.trim() === '') return url;
+    // 如果已经是绝对路径（http:// 或 https://），直接返回
+    if (url.startsWith('http://') || url.startsWith('https://')) return url;
+    // 移除开头的斜杠，避免双斜杠
+    const cleanUrl = url.startsWith('/') ? url.slice(1) : url;
+    return `${cdnUrl.replace(/\/$/, '')}/${cleanUrl}`;
+  };
 
   useEffect(() => {
     if (!imgRef.current) return;

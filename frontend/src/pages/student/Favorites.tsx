@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Heart, Briefcase, BookOpen, User,
@@ -8,6 +9,8 @@ import {
 } from 'lucide-react';
 import http from '@/api/http';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
+import { ListSkeleton } from '../../components/ui/Skeleton';
+import ErrorState from '../../components/ui/ErrorState';
 
 // ====== 我的收藏 ======
 // 分 Tab 查看收藏的职位/课程/导师，支持取消收藏
@@ -121,10 +124,11 @@ const tabItems: { key: FavoriteTab; label: string; icon: React.ElementType }[] =
 
 export default function Favorites() {
   const [activeTab, setActiveTab] = useState<FavoriteTab>('jobs');
-  const [jobs, setJobs] = useState<FavoriteJob[]>(mockJobs);
-  const [courses, setCourses] = useState<FavoriteCourse[]>(mockCourses);
-  const [mentors, setMentors] = useState<FavoriteMentor[]>(mockMentors);
+  const [jobs, setJobs] = useState<FavoriteJob[]>([]);
+  const [courses, setCourses] = useState<FavoriteCourse[]>([]);
+  const [mentors, setMentors] = useState<FavoriteMentor[]>([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [searchKeyword, setSearchKeyword] = useState('');
   const [deleteTarget, setDeleteTarget] = useState<{id: number; name: string; type: FavoriteTab} | null>(null);
@@ -144,8 +148,9 @@ export default function Favorites() {
         if (data.courses) setCourses(data.courses);
         if (data.mentors) setMentors(data.mentors);
       }
-    } catch {
-      // 使用默认 Mock 数据
+    } catch (err) {
+      setError('数据加载失败，请刷新重试');
+      if (import.meta.env.DEV) console.error('[DEV] API error:', err);
     } finally {
       setLoading(false);
     }
@@ -198,9 +203,9 @@ export default function Favorites() {
         <Heart className="w-16 h-16 text-gray-200 mx-auto mb-4" />
         <p className="text-gray-500 text-sm">{msg.text}</p>
         <p className="text-xs text-gray-400 mt-1">浏览内容时点击爱心即可收藏</p>
-        <a href={msg.link} className="inline-block mt-4 text-sm text-primary-600 hover:text-primary-700 font-medium">
+        <Link to={msg.link} className="inline-block mt-4 text-sm text-primary-600 hover:text-primary-700 font-medium">
           {msg.linkText} →
-        </a>
+        </Link>
       </motion.div>
     );
   }
@@ -210,6 +215,9 @@ export default function Favorites() {
   const filteredJobs = jobs.filter(j => !keyword || j.title.toLowerCase().includes(keyword) || j.companyName.toLowerCase().includes(keyword));
   const filteredCourses = courses.filter(c => !keyword || c.title.toLowerCase().includes(keyword) || c.mentorName.toLowerCase().includes(keyword));
   const filteredMentors = mentors.filter(m => !keyword || m.name.toLowerCase().includes(keyword) || m.title.toLowerCase().includes(keyword));
+
+  if (loading) return <div className="max-w-5xl mx-auto px-4 py-8"><ListSkeleton count={5} /></div>;
+  if (error) return <div className="max-w-5xl mx-auto px-4 py-8"><ErrorState message={error} onRetry={() => { setError(null); fetchFavorites(); }} onLoadMockData={() => { setJobs(mockJobs); setCourses(mockCourses); setMentors(mockMentors); setError(null); }} /></div>;
 
   return (
     <div className="max-w-5xl mx-auto space-y-6">
@@ -306,12 +314,12 @@ export default function Favorites() {
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex-1 min-w-0">
-                        <a href={`/jobs/${job.id}`} className="group/link">
+                        <Link to={`/jobs/${job.id}`} className="group/link">
                           <h3 className="text-base font-bold text-gray-900 group-hover/link:text-primary-600 transition-colors flex items-center gap-1">
                             {job.title}
                             <ExternalLink className="w-3.5 h-3.5 opacity-0 group-hover/link:opacity-100 transition-opacity" />
                           </h3>
-                        </a>
+                        </Link>
                         <div className="flex items-center gap-2 mt-1.5">
                           <Building2 className="w-3.5 h-3.5 text-gray-400" />
                           <span className="text-sm text-gray-600">{job.companyName}</span>
@@ -386,11 +394,11 @@ export default function Favorites() {
                       </button>
                     </div>
                     <div className="p-4">
-                      <a href={`/courses/${course.id}`}>
+                      <Link to={`/courses/${course.id}`}>
                         <h3 className="text-sm font-bold text-gray-900 group-hover:text-primary-600 transition-colors line-clamp-2">
                           {course.title}
                         </h3>
-                      </a>
+                      </Link>
                       <p className="text-xs text-gray-500 mt-1.5">{course.mentorName}</p>
                       <div className="flex items-center justify-between mt-3">
                         <div className="flex items-center gap-1">
@@ -438,11 +446,11 @@ export default function Favorites() {
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-start justify-between">
-                          <a href={`/mentors/${mentor.id}`}>
+                          <Link to={`/mentors/${mentor.id}`}>
                             <h3 className="text-base font-bold text-gray-900 group-hover:text-primary-600 transition-colors">
                               {mentor.name}
                             </h3>
-                          </a>
+                          </Link>
                           <button
                             onClick={() => setDeleteTarget({ id: mentor.favoriteId, name: mentor.name, type: 'mentors' })}
                             className="p-1.5 text-red-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors flex-shrink-0"

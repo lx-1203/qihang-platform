@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   Briefcase, Building2, Calendar, MapPin,
@@ -6,6 +7,8 @@ import {
   ChevronRight, Search, Filter, ExternalLink
 } from 'lucide-react';
 import http from '@/api/http';
+import { ListSkeleton } from '../../components/ui/Skeleton';
+import ErrorState from '../../components/ui/ErrorState';
 
 // ====== 我的投递（求职申请列表） ======
 // 按状态筛选、进度追踪、查看岗位详情
@@ -88,10 +91,11 @@ const tabItems: { key: ApplicationStatus; label: string }[] = [
 ];
 
 export default function MyApplications() {
-  const [applications, setApplications] = useState<Application[]>(mockApplications);
+  const [applications, setApplications] = useState<Application[]>([]);
   const [activeTab, setActiveTab] = useState<ApplicationStatus>('all');
   const [searchKeyword, setSearchKeyword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const fetchApplications = useCallback(async (showLoading = true) => {
     try {
@@ -100,8 +104,9 @@ export default function MyApplications() {
       if (res.data?.code === 200 && res.data.data) {
         setApplications(res.data.data.list || res.data.data);
       }
-    } catch {
-      // 使用默认 Mock 数据
+    } catch (err) {
+      setError('数据加载失败，请刷新重试');
+      if (import.meta.env.DEV) console.error('[DEV] API error:', err);
     } finally {
       if (showLoading) setLoading(false);
     }
@@ -145,6 +150,9 @@ export default function MyApplications() {
     acc[app.status] = (acc[app.status] || 0) + 1;
     return acc;
   }, {} as Record<string, number>);
+
+  if (loading) return <div className="max-w-4xl mx-auto px-4 py-8"><ListSkeleton count={5} /></div>;
+  if (error) return <div className="max-w-4xl mx-auto px-4 py-8"><ErrorState message={error} onRetry={() => { setError(null); fetchApplications(); }} onLoadMockData={() => { setApplications(mockApplications); setError(null); }} /></div>;
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
@@ -225,12 +233,12 @@ export default function MyApplications() {
           >
             <Filter className="w-12 h-12 text-gray-300 mx-auto mb-4" />
             <p className="text-gray-500 text-sm">暂无相关投递记录</p>
-            <a
-              href="/jobs"
+            <Link
+              to="/jobs"
               className="inline-block mt-3 text-sm text-primary-600 hover:text-primary-700 font-medium"
             >
               去浏览职位 →
-            </a>
+            </Link>
           </motion.div>
         ) : (
           filtered.map((app, i) => {
@@ -323,12 +331,12 @@ export default function MyApplications() {
                   </div>
 
                   {/* 查看详情 */}
-                  <a
-                    href={`/jobs/${app.jobId}`}
+                  <Link
+                    to={`/jobs/${app.jobId}`}
                     className="flex items-center gap-1 text-xs text-gray-400 hover:text-primary-600 transition-colors flex-shrink-0 mt-1"
                   >
                     <ExternalLink className="w-3.5 h-3.5" />
-                  </a>
+                  </Link>
                 </div>
               </motion.div>
             );

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Plus, Search, Filter, MoreVertical, Edit3,
@@ -6,8 +6,11 @@ import {
   ChevronLeft, ChevronRight, X, Save, Loader2,
   DollarSign, Building2, Clock, FileText
 } from 'lucide-react';
+import axios from 'axios';
 import http from '@/api/http';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
+import { TableSkeleton } from '../../components/ui/Skeleton';
+import ErrorState from '../../components/ui/ErrorState';
 
 // ====== 企业端职位管理 ======
 // 商业级要求：CRUD 操作、状态切换、模态表单、搜索筛选
@@ -44,7 +47,8 @@ const EMPTY_JOB: Omit<JobRecord, 'id' | 'view_count' | 'applications' | 'created
 
 export default function CompanyJobManage() {
   const [jobs, setJobs] = useState<JobRecord[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [typeFilter, setTypeFilter] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<string>('all');
@@ -54,6 +58,14 @@ export default function CompanyJobManage() {
   const [actionMenu, setActionMenu] = useState<number | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<{id: number; name: string} | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
+
+  // 上下架确认弹窗
+  const [toggleTarget, setToggleTarget] = useState<{ id: number; currentStatus: 'active' | 'inactive' } | null>(null);
+  const [toggleLoading, setToggleLoading] = useState(false);
+
+  // 搜索防抖 + AbortController
+  const abortControllerRef = useRef<AbortController | null>(null);
+  const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // 模态框状态
   const [showModal, setShowModal] = useState(false);
@@ -75,22 +87,59 @@ export default function CompanyJobManage() {
 
   useEffect(() => {
     fetchJobs();
-  }, [page, typeFilter, statusFilter, search]);
+  }, [page, typeFilter, statusFilter]);
+
+  // 搜索防抖 + AbortController
+  useEffect(() => {
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
+    debounceTimerRef.current = setTimeout(() => {
+      fetchJobs();
+    }, 300);
+    return () => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+    };
+  }, [search]);
+
+  // 组件卸载时清理
+  useEffect(() => {
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+    };
+  }, []);
 
   async function fetchJobs() {
+    // 取消上一次请求
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+
     try {
       setLoading(true);
+      setError(null);
       const res = await http.get('/company/jobs', {
-        params: { page, pageSize, type: typeFilter, status: statusFilter, keyword: search }
+        params: { page, pageSize, type: typeFilter, status: statusFilter, keyword: search },
+        signal: controller.signal,
       });
       if (res.data?.code === 200 && res.data.data) {
         setJobs(res.data.data.list);
         setTotal(res.data.data.total);
       } else {
-        applyMockFilter();
+        setError('获取职位数据失败，服务器返回异常');
       }
-    } catch {
-      applyMockFilter();
+    } catch (err) {
+      if (axios.isCancel(err)) return;
+      setError('网络请求失败，请检查网络连接后重试');
     } finally {
       setLoading(false);
     }
@@ -107,13 +156,23 @@ export default function CompanyJobManage() {
     setTotal(filtered.length);
   }
 
-  function toggleJobStatus(id: number) {
-    setJobs(prev => prev.map(j => j.id === id ? { ...j, status: j.status === 'active' ? 'inactive' : 'active' } : j));
-    setActionMenu(null);
-    // 也尝试调用API
+  function requestToggleJobStatus(id: number) {
     const job = jobs.find(j => j.id === id);
-    if (job) {
-      http.put(`/company/jobs/${id}/status`, { status: job.status === 'active' ? 'inactive' : 'active' }).catch(() => {});
+    if (!job) return;
+    setToggleTarget({ id, currentStatus: job.status });
+    setActionMenu(null);
+  }
+
+  async function handleConfirmToggle() {
+    if (!toggleTarget) return;
+    try {
+      setToggleLoading(true);
+      const newStatus = toggleTarget.currentStatus === 'active' ? 'inactive' : 'active';
+      setJobs(prev => prev.map(j => j.id === toggleTarget.id ? { ...j, status: newStatus } : j));
+      http.put(`/company/jobs/${toggleTarget.id}/status`, { status: newStatus }).catch(() => {});
+    } finally {
+      setToggleLoading(false);
+      setToggleTarget(null);
     }
   }
 
@@ -246,7 +305,22 @@ export default function CompanyJobManage() {
         </div>
       </div>
 
+      {/* 加载状态 */}
+      {loading && (
+        <TableSkeleton rows={5} cols={6} />
+      )}
+
+      {/* 错误状态 */}
+      {!loading && error && (
+        <ErrorState
+          message={error}
+          onRetry={fetchJobs}
+          onLoadMockData={() => { applyMockFilter(); setError(null); }}
+        />
+      )}
+
       {/* 数据统计条 */}
+      {!loading && !error && (<>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
           { label: '在招职位', value: jobs.filter(j => j.status === 'active').length, icon: Briefcase, color: 'text-primary-600', bg: 'bg-primary-50' },
@@ -311,7 +385,7 @@ export default function CompanyJobManage() {
                   </td>
                   <td className="px-6 py-4">
                     <button
-                      onClick={() => toggleJobStatus(job.id)}
+                      onClick={() => requestToggleJobStatus(job.id)}
                       className={`inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-full cursor-pointer transition-colors ${
                         job.status === 'active'
                           ? 'bg-green-50 text-green-700 hover:bg-green-100'
@@ -348,7 +422,7 @@ export default function CompanyJobManage() {
                           <Edit3 className="w-4 h-4" /> 编辑
                         </button>
                         <button
-                          onClick={() => toggleJobStatus(job.id)}
+                          onClick={() => requestToggleJobStatus(job.id)}
                           className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
                         >
                           {job.status === 'active' ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -393,6 +467,7 @@ export default function CompanyJobManage() {
           </div>
         </div>
       </div>
+      </>)}
 
       {/* 创建/编辑模态框 */}
       <AnimatePresence>
@@ -564,6 +639,18 @@ export default function CompanyJobManage() {
         loading={deleteLoading}
         onConfirm={handleConfirmDelete}
         onCancel={() => setDeleteTarget(null)}
+      />
+
+      {/* 上下架确认弹窗 */}
+      <ConfirmDialog
+        open={!!toggleTarget}
+        variant={toggleTarget?.currentStatus === 'active' ? 'warning' : 'info'}
+        title={toggleTarget?.currentStatus === 'active' ? '确定下架该职位？' : '确定上架该职位？'}
+        description={toggleTarget?.currentStatus === 'active' ? '下架后求职者将无法看到该职位。' : '上架后该职位将对求职者可见。'}
+        confirmText={toggleTarget?.currentStatus === 'active' ? '确认下架' : '确认上架'}
+        loading={toggleLoading}
+        onConfirm={handleConfirmToggle}
+        onCancel={() => setToggleTarget(null)}
       />
     </div>
   );

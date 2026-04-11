@@ -11,7 +11,7 @@ const pool = mysql.createPool({
   password: process.env.DB_PASSWORD || '',
   database: process.env.DB_NAME || 'career_platform',
   waitForConnections: true,
-  connectionLimit: 10,
+  connectionLimit: parseInt(process.env.DB_POOL_LIMIT || '20', 10),
   queueLimit: 0,
   charset: 'utf8mb4',
 });

@@ -3,10 +3,11 @@ import pool from '../db.js';
 
 const router = Router();
 
-// GET /api/courses - 获取课程列表（支持筛选 + 分页）
+// GET /api/courses - 获取课程列表（游标分页 + 筛选）
 router.get('/', async (req, res) => {
   try {
-    const { category, keyword, difficulty, page = 1, pageSize = 20 } = req.query;
+    const { category, keyword, difficulty, cursor, limit = 20 } = req.query;
+    const pageLimit = Math.min(Number(limit), 50);
 
     let sql = 'SELECT * FROM courses WHERE status = "active" AND (deleted_at IS NULL)';
     const params = [];
@@ -25,35 +26,41 @@ router.get('/', async (req, res) => {
       params.push(kw, kw, `%${keyword}%`);
     }
 
-    // 查总数
-    const countSql = sql.replace('SELECT *', 'SELECT COUNT(*) as total');
-    const [countRows] = await pool.query(countSql, params);
-    const total = countRows[0].total;
+    // 游标分页：如果提供了 cursor（上一页最后一条的 id），则只查询 id 更小的记录
+    if (cursor && !isNaN(Number(cursor))) {
+      sql += ' AND id < ?';
+      params.push(Number(cursor));
+    }
 
-    // 排序 + 分页
-    sql += ' ORDER BY views DESC, created_at DESC';
-    const offset = (Math.max(1, Number(page)) - 1) * Number(pageSize);
-    sql += ' LIMIT ? OFFSET ?';
-    params.push(Number(pageSize), offset);
+    // 排序：按 id 倒序（最新的在前），确保游标稳定
+    sql += ' ORDER BY id DESC LIMIT ?';
+    params.push(pageLimit + 1);
 
     const [courses] = await pool.query(sql, params);
 
+    // 判断是否有下一页
+    let nextCursor = null;
+    let items = courses;
+    if (courses.length > pageLimit) {
+      items = courses.slice(0, pageLimit);
+      const lastItem = items[items.length - 1];
+      nextCursor = lastItem.id;
+    }
+
     // 解析 tags JSON 字段, 格式化 views
-    const parsedCourses = courses.map(course => ({
+    const parsedCourses = items.map(course => ({
       ...course,
       tags: typeof course.tags === 'string' ? JSON.parse(course.tags) : (course.tags || []),
-      // 与前端兼容: 将浏览量转为易读格式 (如 125000 -> "12.5w")
       views: formatViews(course.views),
       rating: String(course.rating),
-      // 保留导师信息兼容字段
       mentor: course.mentor_name,
     }));
 
     res.json({
       courses: parsedCourses,
-      total,
-      page: Number(page),
-      pageSize: Number(pageSize),
+      nextCursor,
+      hasMore: nextCursor !== null,
+      limit: pageLimit,
     });
   } catch (err) {
     console.error('获取课程列表失败:', err);

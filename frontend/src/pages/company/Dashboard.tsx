@@ -8,6 +8,7 @@ import {
   UserCheck, Calendar, BarChart3
 } from 'lucide-react';
 import http from '@/api/http';
+import { useAuthStore } from '@/store/auth';
 import OnboardingGuide from '@/components/OnboardingGuide';
 import FeatureStatus, { FeatureOverlay } from '@/components/FeatureStatus';
 
@@ -16,6 +17,7 @@ import FeatureStatus, { FeatureOverlay } from '@/components/FeatureStatus';
 // 与管理员（深色权威）和导师（绿色温暖）完全不同
 
 export default function CompanyDashboardPage() {
+  const { user } = useAuthStore();
   const [stats, setStats] = useState({
     activeJobs: 12, totalResumes: 156, pendingResumes: 43, interviews: 8,
   });
@@ -80,7 +82,7 @@ export default function CompanyDashboardPage() {
               </div>
               <div>
                 <div className="flex items-center gap-2">
-                  <h1 className="text-xl font-bold">字节跳动HR 的招聘工作台</h1>
+                  <h1 className="text-xl font-bold">{user?.nickname || user?.email || '企业用户'} 的招聘工作台</h1>
                   <span className="bg-green-400/20 text-green-300 text-[10px] font-bold px-2 py-0.5 rounded-full border border-green-400/30">已认证</span>
                 </div>
                 <p className="text-sm text-blue-200 mt-1">
@@ -124,9 +126,12 @@ export default function CompanyDashboardPage() {
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
         className="bg-white rounded-xl p-6 border border-gray-100"
       >
-        <h3 className="text-sm font-bold text-gray-900 mb-1 flex items-center gap-2">
-          <BarChart3 className="w-4 h-4 text-blue-600" /> 招聘漏斗分析
-        </h3>
+        <div className="flex items-center justify-between mb-1">
+          <h3 className="text-sm font-bold text-gray-900 flex items-center gap-2">
+            <BarChart3 className="w-4 h-4 text-blue-600" /> 招聘漏斗分析
+          </h3>
+          <FeatureStatus status="dev" label="实时漏斗数据" />
+        </div>
         <p className="text-xs text-gray-400 mb-5">从投递到入职的全链路转化数据</p>
         <div className="space-y-3">
           {funnel.map((f, i) => (

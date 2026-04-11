@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { BookOpen, Search, Play, Users, Star, ChevronRight, Loader2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import http from '@/api/http';
+import ErrorState from '../components/ui/ErrorState';
 
 // ====== 课程列表页 ======
 // 数据从 /api/courses 获取，不再使用硬编码 mock
@@ -16,6 +17,7 @@ export default function Courses() {
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const pageSize = 20;
 
   const fetchCourses = useCallback(async () => {
@@ -28,11 +30,15 @@ export default function Courses() {
       const res = await http.get('/courses', { params });
       if (res.data?.code === 200) {
         const data = res.data.data;
-        setCourses(data.courses || []);
+        const newCourses = data.courses || [];
+        setCourses(prev => page === 1 ? newCourses : [...prev, ...newCourses]);
         setTotal(data.total || 0);
+        setError(null);
+      } else {
+        setError('获取课程数据失败，服务器返回异常');
       }
     } catch {
-      // 接口失败保持空列表
+      setError('网络请求失败，请检查网络连接后重试');
     } finally {
       setLoading(false);
     }
@@ -104,11 +110,16 @@ export default function Courses() {
         </div>
 
         {/* Course Grid */}
-        {loading ? (
+        {loading && page === 1 ? (
           <div className="flex justify-center py-20">
             <Loader2 className="w-8 h-8 text-primary-600 animate-spin" />
           </div>
-        ) : courses.length === 0 ? (
+        ) : !loading && error && courses.length === 0 ? (
+          <ErrorState
+            message={error}
+            onRetry={() => { setPage(1); fetchCourses(); }}
+          />
+        ) : courses.length === 0 && !loading ? (
           <div className="bg-white rounded-2xl p-12 text-center border border-gray-100 shadow-sm">
             <div className="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4 text-gray-400">
               <BookOpen size={32} />
@@ -202,10 +213,17 @@ export default function Courses() {
           <div className="mt-12 flex justify-center">
             <button
               onClick={() => setPage(p => p + 1)}
-              className="px-6 py-2.5 border border-gray-300 text-[#4b5563] font-medium rounded-full hover:bg-gray-50 transition-colors flex items-center gap-2"
+              disabled={loading}
+              className="px-6 py-2.5 border border-gray-300 text-[#4b5563] font-medium rounded-full hover:bg-gray-50 transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
+              {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
               加载更多干货 <ChevronRight size={16} />
             </button>
+          </div>
+        )}
+        {loading && page > 1 && (
+          <div className="mt-12 flex justify-center">
+            <Loader2 className="w-6 h-6 text-primary-600 animate-spin" />
           </div>
         )}
 

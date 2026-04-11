@@ -12,7 +12,8 @@ import { useAuthStore } from '@/store/auth';
 // 固定在屏幕右下角，点击展开快捷导航面板
 // 上线前删除此组件或设置 DEV_MODE = false
 
-const DEV_MODE = true;
+// Vite 内置变量：生产构建时替换为 false，整个组件被 tree-shake 移除
+const DEV_MODE = import.meta.env.DEV;
 
 interface QuickLink {
   path: string;

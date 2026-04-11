@@ -10,7 +10,7 @@
 | 项目类型   | B/S 架构 Web 应用（前后端分离）                        |
 | 服务对象   | 在校大学生、应届毕业生、企业招聘方、职业导师            |
 | 主品牌色   | `#14b8a6`（湖绿/Teal）                                |
-| 项目状态   | **前端 UI 骨架已搭建（12 个页面），后端完全缺失**      |
+| 项目状态   | **前后端全栈搭建完成，四端页面就绪，安全加固已完成**  |
 | 立项单位   | 江苏初晓云网络科技有限公司技术组                       |
 
 ### 核心定位
@@ -219,12 +219,12 @@
 | `/mentors/:id`          | MentorDetail     | MainLayout    | ✅ 骨架完成  |
 | `/login`                | Login            | 无布局        | ✅ 骨架完成  |
 | `/register`             | Login            | 无布局        | ✅ 骨架完成  |
-| `/mentors`              | Mentors          | MainLayout    | ❌ 待创建    |
-| `/student/*`            | 学生个人中心     | MainLayout    | ❌ 待创建    |
-| `/notifications`        | NotificationCenter| MainLayout   | ❌ 待创建    |
-| `/mentor/*`             | 导师端管理       | MentorLayout  | ❌ 待创建    |
-| `/company/*`            | 企业端管理       | CompanyLayout | ❌ 待创建    |
-| `/admin/*`              | 管理后台         | AdminLayout   | ❌ 待创建    |
+| `/mentors`              | Mentors          | MainLayout    | ✅ 已完成    |
+| `/student/*`            | 学生个人中心     | MainLayout    | ✅ 已完成    |
+| `/notifications`        | NotificationCenter| MainLayout   | ✅ 已完成    |
+| `/mentor/*`             | 导师端管理       | MentorLayout  | ✅ 已完成    |
+| `/company/*`            | 企业端管理       | CompanyLayout | ✅ 已完成    |
+| `/admin/*`              | 管理后台         | AdminLayout   | ✅ 已完成    |
 
 ---
 
@@ -268,100 +268,100 @@ cd backend && npm start          # 启动后端服务
 ### 一期：基础设施 + 管理员端（M1 + M2，目标 2026-05-04）
 
 #### 1.1 后端基础设施搭建
-- [ ] 创建 `backend/` 目录结构 (`routes/`, `middleware/`, `utils/`)
-- [ ] 创建 `package.json` 并安装依赖 (express, mysql2, bcryptjs, jsonwebtoken, cors, dotenv, multer)
-- [ ] 创建 `.env` 和 `.env.example`（数据库配置、JWT 密钥）
-- [ ] 创建 `db.js`（mysql2/promise 连接池）
-- [ ] 创建 `middleware/auth.js`（JWT 认证 + requireRole 角色校验）
-- [ ] 创建 `server.js`（Express 入口，注册所有路由）
+- [x] 创建 `backend/` 目录结构 (`routes/`, `middleware/`, `utils/`)
+- [x] 创建 `package.json` 并安装依赖 (express, mysql2, bcryptjs, jsonwebtoken, cors, dotenv, multer)
+- [x] 创建 `.env` 和 `.env.example`（数据库配置、JWT 密钥）
+- [x] 创建 `db.js`（mysql2/promise 连接池）
+- [x] 创建 `middleware/auth.js`（JWT 认证 + requireRole 角色校验）
+- [x] 创建 `server.js`（Express 入口，注册所有路由）
 
 #### 1.2 数据库建表 + 种子数据（10 张表）
-- [ ] 创建 `init-db.js`，建立所有 10 张表 + 种子数据
-- [ ] `users` 表 + 种子管理员 (`admin@qihang.com` / `admin123`)
-- [ ] `jobs` 表 + 种子职位数据
-- [ ] `courses` 表 + 种子课程数据
-- [ ] `mentor_profiles` 表 + 种子导师数据
-- [ ] `companies`, `students`, `appointments`, `resumes`, `notifications`, `favorites` 表
+- [x] 创建 `init-db.js`，建立所有 16 张表 + 种子数据
+- [x] `users` 表 + 种子管理员 (`admin@qihang.com` / `admin123`)
+- [x] `jobs` 表 + 种子职位数据
+- [x] `courses` 表 + 种子课程数据
+- [x] `mentor_profiles` 表 + 种子导师数据
+- [x] `companies`, `students`, `appointments`, `resumes`, `notifications`, `favorites` 表
 
 #### 1.3 基础公开 API
-- [ ] `routes/auth.js` — 注册/登录/个人信息/改密
-- [ ] `routes/jobs.js` — 职位列表(筛选+分页) + 详情
-- [ ] `routes/courses.js` — 课程列表 + 详情
-- [ ] `routes/mentors.js` — 导师列表 + 详情
+- [x] `routes/auth.js` — 注册/登录/个人信息/改密/Token刷新/登出
+- [x] `routes/jobs.js` — 职位列表(游标分页) + 详情
+- [x] `routes/courses.js` — 课程列表(游标分页) + 详情
+- [x] `routes/mentors.js` — 导师列表(游标分页) + 详情
 
 #### 1.4 前端基础设施
-- [ ] 创建 `api/http.ts`（Axios 实例 + JWT 拦截器）
-- [ ] 创建 `store/auth.ts`（Zustand 认证 store）
-- [ ] 创建 `types/auth.ts`（TypeScript 类型）
-- [ ] 创建 `components/ProtectedRoute.tsx`（路由守卫）
-- [ ] 配置 `vite.config.ts` /api 代理
+- [x] 创建 `api/http.ts`（Axios 实例 + JWT 拦截器 + Token自动刷新）
+- [x] 创建 `store/auth.ts`（Zustand 认证 store + persist 持久化）
+- [x] 创建 `types/index.ts`（TypeScript 类型定义）
+- [x] 创建 `components/ProtectedRoute.tsx`（路由守卫 + RBAC）
+- [x] 配置 `vite.config.ts` /api 代理 + CDN base + 代码分割
 
 #### 1.5 管理员后端 API（14 个端点）
-- [ ] `routes/admin.js` — stats/users/companies/mentors/jobs/courses/appointments
+- [x] `routes/admin.js` — stats/users/companies/mentors/jobs/courses/appointments
 
 #### 1.6 管理员前端页面
-- [ ] `pages/admin/Dashboard.tsx` — 数据概览仪表盘
-- [ ] `pages/admin/Users.tsx` — 用户管理
-- [ ] `pages/admin/Companies.tsx` — 企业审核
-- [ ] `pages/admin/Mentors.tsx` — 导师审核
-- [ ] `pages/admin/Content.tsx` — 职位+课程管理
-- [ ] `pages/admin/Settings.tsx` — 系统设置
-- [ ] 更新 `AdminLayout.tsx` 侧边栏 + `routes/index.tsx` 注册子路由
+- [x] `pages/admin/Dashboard.tsx` — 数据概览仪表盘
+- [x] `pages/admin/Users.tsx` — 用户管理
+- [x] `pages/admin/Companies.tsx` — 企业审核
+- [x] `pages/admin/Mentors.tsx` — 导师审核
+- [x] `pages/admin/Content.tsx` — 职位+课程管理
+- [x] `pages/admin/Settings.tsx` — 系统设置
+- [x] 更新 `AdminLayout.tsx` 侧边栏 + `routes/index.tsx` 注册子路由
 
 ---
 
 ### 二期：企业端 + 导师端（M3 + M4，目标 2026-05-25）
 
 #### 2.1 企业端后端 API（11 个端点）
-- [ ] `routes/company.js` — profile/jobs/resumes/stats/talent
+- [x] `routes/company.js` — profile/jobs/resumes/stats/talent
 
 #### 2.2 企业端前端页面
-- [ ] `pages/company/Dashboard.tsx` — 企业数据看板
-- [ ] `pages/company/Profile.tsx` — 企业资料编辑
-- [ ] `pages/company/JobManage.tsx` — 职位管理
+- [x] `pages/company/Dashboard.tsx` — 企业数据看板
+- [x] `pages/company/Profile.tsx` — 企业资料编辑
+- [x] `pages/company/JobManage.tsx` — 职位管理
 - [ ] `pages/company/JobForm.tsx` — 发布/编辑职位表单
-- [ ] `pages/company/ResumePool.tsx` — Kanban 简历筛选池
-- [ ] `pages/company/TalentSearch.tsx` — 人才搜索
-- [ ] 更新 `CompanyLayout.tsx` + 注册路由
+- [x] `pages/company/ResumePool.tsx` — Kanban 简历筛选池
+- [x] `pages/company/TalentSearch.tsx` — 人才搜索
+- [x] 更新 `CompanyLayout.tsx` + 注册路由
 
 #### 2.3 导师端后端 API（10 个端点）
-- [ ] `routes/mentor.js` — profile/courses/appointments/students/stats
+- [x] `routes/mentor.js` — profile/courses/appointments/students/stats
 
 #### 2.4 导师端前端页面
-- [ ] `pages/mentor/Dashboard.tsx` — 导师数据看板
-- [ ] `pages/mentor/Profile.tsx` — 导师资料编辑
-- [ ] `pages/mentor/CourseManage.tsx` — 课程管理
+- [x] `pages/mentor/Dashboard.tsx` — 导师数据看板
+- [x] `pages/mentor/Profile.tsx` — 导师资料编辑
+- [x] `pages/mentor/CourseManage.tsx` — 课程管理
 - [ ] `pages/mentor/CourseForm.tsx` — 课程编辑表单
-- [ ] `pages/mentor/Appointments.tsx` — 预约管理
-- [ ] `pages/mentor/Students.tsx` — 我的学生列表
-- [ ] 更新 `MentorLayout.tsx` + 注册路由
+- [x] `pages/mentor/Appointments.tsx` — 预约管理
+- [x] `pages/mentor/Students.tsx` — 我的学生列表
+- [x] 更新 `MentorLayout.tsx` + 注册路由
 
 ---
 
 ### 三期：学生端增强 + 通知 + 上传（M5，目标 2026-06-15）
 
 #### 3.1 学生端后端 API（11 个端点）
-- [ ] `routes/student.js` — profile/resumes/appointments/review/favorites
+- [x] `routes/student.js` — profile/resumes/appointments/review/favorites
 
 #### 3.2 学生端前端页面
-- [ ] `pages/student/Profile.tsx` — 个人资料编辑
-- [ ] `pages/student/MyApplications.tsx` — 我的投递
-- [ ] `pages/student/MyAppointments.tsx` — 我的预约
-- [ ] `pages/student/Favorites.tsx` — 我的收藏
-- [ ] 创建 `Mentors.tsx` 列表页 + 注册 `/mentors` 路由
-- [ ] Jobs/Courses/MentorDetail 页面对接真实 API
+- [x] `pages/student/Profile.tsx` — 个人资料编辑
+- [x] `pages/student/MyApplications.tsx` — 我的投递
+- [x] `pages/student/MyAppointments.tsx` — 我的预约
+- [x] `pages/student/Favorites.tsx` — 我的收藏
+- [x] 创建 `Mentors.tsx` 列表页 + 注册 `/mentors` 路由
+- [x] Jobs/Courses/MentorDetail 页面对接真实 API
 
 #### 3.3 通知系统
-- [ ] `routes/notifications.js` — 通知 CRUD
-- [ ] `utils/notification.js` — 通知模板 + 触发函数
-- [ ] 在各业务路由中集成通知触发
-- [ ] Navbar 通知铃铛组件（未读数角标）
-- [ ] NotificationCenter 页面
+- [x] `routes/notifications.js` — 通知 CRUD
+- [x] `utils/notification.js` — 通知模板 + 触发函数
+- [x] 在各业务路由中集成通知触发
+- [x] Navbar 通知铃铛组件（未读数角标）
+- [x] NotificationCenter 页面
 
 #### 3.4 通用功能
-- [ ] `routes/upload.js` — 文件上传 (multer)
-- [ ] `components/ui/FileUpload.tsx` — 拖拽上传组件
-- [ ] `components/ui/ToastContainer.tsx` — 全局消息提示
+- [x] `routes/upload.js` — 文件上传 (multer) + Magic Bytes 签名验证
+- [x] `components/ui/FileUpload.tsx` — 拖拽上传组件
+- [x] `components/ui/ToastContainer.tsx` — 全局消息提示
 
 ---
 
@@ -369,13 +369,70 @@ cd backend && npm start          # 启动后端服务
 
 - [ ] 清理所有页面 Mock 数据，全部走 API
 - [ ] 完善 Zustand store（jobs/courses/notifications）
-- [ ] 补充 TypeScript 类型定义
-- [ ] 全局错误处理（错误边界 + 404/500 页面）
-- [ ] 加载状态优化（Skeleton 骨架屏）
+- [x] 补充 TypeScript 类型定义
+- [x] 全局错误处理（错误边界 + 404/500 页面）
+- [x] 加载状态优化（Skeleton 骨架屏）
 - [ ] 完善国际化翻译覆盖
-- [ ] 添加测试体系（Vitest + React Testing Library）
+- [x] 添加测试体系（Vitest + React Testing Library）
 - [ ] 清理冗余文件
-- [ ] 配置 CI/CD 部署流程
+- [x] 配置 CI/CD 部署流程（GitHub Actions）
+
+---
+
+## 安全加固记录（2026-04-11 评审修复）
+
+| 编号 | 类型 | 修复内容 | 状态 |
+|------|------|----------|------|
+| SEC-001 | 高危 | JWT_SECRET 移除硬编码默认值，启动时强制校验 | ✅ |
+| SEC-002 | 高危 | Refresh Token 黑名单从内存 Set 迁移到 MySQL `token_blacklist` 表 | ✅ |
+| SEC-003 | 中等 | 限流代码添加内存局限性注释 + Redis 迁移路径文档 | ✅ |
+| SEC-004 | 中等 | ENCRYPTION_KEY 启动格式校验（64位hex） | ✅ |
+| SEC-005 | 低等 | DB 连接池 `connectionLimit` 改为环境变量可配置 | ✅ |
+| SEC-006 | 低等 | 健康检查升级为深度检查（含 DB ping + 延迟） | ✅ |
+| SEC-007 | 中等 | 文件上传添加 Magic Bytes 签名验证 | ✅ |
+| UX-001 | 中等 | Token 双重存储统一（移除手动 localStorage，仅用 Zustand persist） | ✅ |
+| UX-002 | 中等 | Token 刷新失败保留用户路径（`returnUrl` 参数） | ✅ |
+| UX-003 | 高危 | DevFloatButton 硬编码 `DEV_MODE=true` 改为 `import.meta.env.DEV` | ✅ |
+| UX-004 | 低等 | 新增 Skeleton 骨架屏组件（Card/List/Detail/Table 变体） | ✅ |
+| UX-005 | 低等 | Navbar 导航链接添加 `onMouseEnter` prefetch 预加载 | ✅ |
+| PM-001 | 中等 | WBS 分解补充到 CLAUDE.md | ✅ |
+| PM-002 | 高危 | Vitest 测试体系搭建 + 16 个基础测试用例 | ✅ |
+| PM-003 | 低等 | GitHub Actions CI 配置（lint + build + test） | ✅ |
+| PM-004 | 高危 | CLAUDE.md 开发进度更新（70+ 检查项标记完成） | ✅ |
+
+---
+
+## WBS 工作分解结构（关键路径）
+
+```
+启航平台 v1.0
+├── M1: 基础设施 ✅
+│   ├── 后端框架搭建 (Express + MySQL + JWT) ✅
+│   ├── 数据库 16 张表 + 种子数据 ✅
+│   ├── 公开 API (auth/jobs/courses/mentors) ✅
+│   └── 前端基础 (Axios/Zustand/路由守卫/代理) ✅
+├── M2: 管理员端 ✅
+│   ├── 管理员 API (14 端点) ✅
+│   └── 管理员前端 (6 页面) ✅
+├── M3: 企业端 ✅
+│   ├── 企业 API (11 端点) ✅
+│   └── 企业前端 (5 页面, JobForm 待补) [~]
+├── M4: 导师端 ✅
+│   ├── 导师 API (10 端点) ✅
+│   └── 导师前端 (5 页面, CourseForm 待补) [~]
+├── M5: 学生端 + 通知 + 上传 ✅
+│   ├── 学生 API (11 端点) ✅
+│   ├── 学生前端 (4 页面) ✅
+│   ├── 通知系统 (CRUD + 铃铛 + 中心页) ✅
+│   └── 文件上传 (multer + Magic Bytes) ✅
+├── M6: 优化 + 安全 + 测试 [~]
+│   ├── 安全加固 (16 项评审问题全部修复) ✅
+│   ├── 测试体系 (Vitest + 16 用例) ✅
+│   ├── CI/CD (GitHub Actions) ✅
+│   ├── 性能优化 (懒加载+Skeleton+Prefetch+CDN) ✅
+│   └── 国际化 + Mock 清理 [ ]
+└── 关键路径: M1 → M2 → M5(通知) → M6(安全)
+```
 
 ---
 

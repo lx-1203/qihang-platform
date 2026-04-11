@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import {
   Search, Filter, UserPlus, MoreVertical,
@@ -6,6 +6,10 @@ import {
   ChevronLeft, ChevronRight, Download
 } from 'lucide-react';
 import http from '@/api/http';
+import { TableSkeleton } from '../../components/ui/Skeleton';
+import ErrorState from '../../components/ui/ErrorState';
+import ConfirmDialog from '@/components/ui/ConfirmDialog';
+import { showToast } from '@/components/ui/ToastContainer';
 
 // ====== 用户管理页面 ======
 // 商业级要求：RBAC四角色管控、状态管理、搜索筛选
@@ -30,7 +34,8 @@ const ROLE_MAP: Record<string, { label: string; color: string }> = {
 
 export default function AdminUsers() {
   const [users, setUsers] = useState<UserRecord[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<string>('all');
@@ -38,6 +43,9 @@ export default function AdminUsers() {
   const [total, setTotal] = useState(0);
   const pageSize = 10;
   const [actionMenu, setActionMenu] = useState<number | null>(null);
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const abortControllerRef = useRef<AbortController | null>(null);
+  const [confirmDialog, setConfirmDialog] = useState<{ open: boolean; userId: number | null; action: string }>({ open: false, userId: null, action: '' });
 
   // 模拟数据
   const mockUsers: UserRecord[] = [
@@ -53,41 +61,60 @@ export default function AdminUsers() {
     { id: 10, email: 'spam_user@test.com', nickname: 'spam_user123', role: 'student', avatar: '', phone: '', status: 0, created_at: '2026-04-01 02:00:00' },
   ];
 
+  // 搜索防抖：300ms 延迟
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(search);
+      setPage(1);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [search]);
+
   useEffect(() => {
     fetchUsers();
-  }, [page, roleFilter, statusFilter, search]);
+    return () => {
+      // 组件卸载时取消进行中的请求
+      abortControllerRef.current?.abort();
+    };
+  }, [page, roleFilter, statusFilter, debouncedSearch]);
 
   async function fetchUsers() {
+    // 取消上一次请求
+    abortControllerRef.current?.abort();
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+
     try {
       setLoading(true);
       const res = await http.get('/admin/users', {
-        params: { page, pageSize, role: roleFilter, status: statusFilter, keyword: search }
+        params: { page, pageSize, role: roleFilter, status: statusFilter, keyword: debouncedSearch },
+        signal: controller.signal,
       });
       if (res.data?.code === 200 && res.data.data) {
         setUsers(res.data.data.list || res.data.data.users || []);
         setTotal(res.data.data.pagination?.total || res.data.data.total || 0);
       } else {
-        // 使用模拟数据
-        let filtered = [...mockUsers];
-        if (roleFilter !== 'all') filtered = filtered.filter(u => u.role === roleFilter);
-        if (statusFilter !== 'all') filtered = filtered.filter(u => u.status === Number(statusFilter));
-        if (search) filtered = filtered.filter(u =>
-          u.nickname.includes(search) || u.email.includes(search)
-        );
-        setUsers(filtered);
-        setTotal(filtered.length);
+        setError('数据加载失败，请刷新重试');
       }
-    } catch {
-      let filtered = [...mockUsers];
-      if (roleFilter !== 'all') filtered = filtered.filter(u => u.role === roleFilter);
-      if (statusFilter !== 'all') filtered = filtered.filter(u => u.status === Number(statusFilter));
-      if (search) filtered = filtered.filter(u =>
-        u.nickname.includes(search) || u.email.includes(search)
-      );
-      setUsers(filtered);
-      setTotal(filtered.length);
+    } catch (err: any) {
+      // 忽略因取消请求导致的错误
+      if (err.name === 'CanceledError') return;
+      setError('数据加载失败，请刷新重试');
+      if (import.meta.env.DEV) console.error('[DEV] API error:', err);
     } finally {
       setLoading(false);
+    }
+  }
+
+  // 打开封禁确认弹窗（仅封禁需要确认，解封直接执行）
+  function handleStatusAction(userId: number, currentStatus: number) {
+    if (currentStatus === 1) {
+      // 封禁操作需要确认
+      setConfirmDialog({ open: true, userId, action: 'ban' });
+      setActionMenu(null);
+    } else {
+      // 解封直接执行
+      toggleUserStatus(userId, currentStatus);
     }
   }
 
@@ -100,9 +127,21 @@ export default function AdminUsers() {
       setUsers(prev => prev.map(u => u.id === userId ? { ...u, status: currentStatus === 1 ? 0 : 1 } : u));
     }
     setActionMenu(null);
+    setConfirmDialog({ open: false, userId: null, action: '' });
   }
 
   const totalPages = Math.ceil(total / pageSize);
+
+  if (loading) return <div className="space-y-6"><TableSkeleton rows={8} cols={6} /></div>;
+  if (error) return (
+    <div className="space-y-6">
+      <ErrorState
+        message={error}
+        onRetry={() => { setError(null); fetchUsers(); }}
+        onLoadMockData={() => { setUsers(mockUsers); setTotal(mockUsers.length); setError(null); }}
+      />
+    </div>
+  );
 
   return (
     <div className="space-y-6">
@@ -112,7 +151,10 @@ export default function AdminUsers() {
           <h1 className="text-2xl font-bold text-gray-900">用户管理</h1>
           <p className="text-gray-500 mt-1">管理平台所有用户账号，支持角色筛选和状态管控</p>
         </div>
-        <button className="flex items-center gap-2 px-4 py-2.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium text-sm">
+        <button
+          onClick={() => showToast({ type: 'info', title: '功能开发中', message: '该功能正在开发中，敬请期待' })}
+          className="flex items-center gap-2 px-4 py-2.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium text-sm"
+        >
           <Download className="w-4 h-4" />
           导出用户
         </button>
@@ -222,13 +264,16 @@ export default function AdminUsers() {
                     </button>
                     {actionMenu === user.id && (
                       <div className="absolute right-6 top-12 w-40 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-10">
-                        <button className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2">
+                        <button
+                          onClick={() => { showToast({ type: 'info', title: '功能开发中', message: '该功能正在开发中，敬请期待' }); setActionMenu(null); }}
+                          className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+                        >
                           <Shield className="w-4 h-4" />
                           查看详情
                         </button>
                         {user.role !== 'admin' && (
                           <button
-                            onClick={() => toggleUserStatus(user.id, user.status)}
+                            onClick={() => handleStatusAction(user.id, user.status)}
                             className={`w-full px-4 py-2 text-left text-sm hover:bg-gray-50 flex items-center gap-2 ${
                               user.status === 1 ? 'text-red-600' : 'text-green-600'
                             }`}
@@ -270,6 +315,21 @@ export default function AdminUsers() {
           </div>
         </div>
       </div>
+
+      {/* 封禁确认弹窗 */}
+      <ConfirmDialog
+        open={confirmDialog.open}
+        title="确定要封禁该用户吗？"
+        description="封禁后该用户将无法登录平台，所有进行中的操作将被中断。"
+        variant="danger"
+        confirmText="确认封禁"
+        onConfirm={() => {
+          if (confirmDialog.userId !== null) {
+            toggleUserStatus(confirmDialog.userId, 1);
+          }
+        }}
+        onCancel={() => setConfirmDialog({ open: false, userId: null, action: '' })}
+      />
     </div>
   );
 }

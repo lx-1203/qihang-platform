@@ -387,6 +387,18 @@ const CREATE_SEARCH_HISTORIES_TABLE = `
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户搜索历史表'
 `;
 
+// Token 黑名单表 — 替代内存 Set，支持持久化和多实例部署（SEC-002）
+const CREATE_TOKEN_BLACKLIST_TABLE = `
+  CREATE TABLE IF NOT EXISTS token_blacklist (
+    id         BIGINT AUTO_INCREMENT PRIMARY KEY,
+    token_hash CHAR(64) NOT NULL COMMENT 'SHA256 哈希',
+    expires_at DATETIME NOT NULL COMMENT '过期时间',
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY uk_token_hash (token_hash),
+    INDEX idx_expires_at (expires_at)
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='Token黑名单（软失效）'
+`;
+
 // ========== 按依赖关系排列的建表顺序 ==========
 const TABLE_DEFINITIONS = [
   { name: 'users',           sql: CREATE_USERS_TABLE },
@@ -405,6 +417,7 @@ const TABLE_DEFINITIONS = [
   { name: 'site_configs',    sql: CREATE_SITE_CONFIGS_TABLE },
   { name: 'articles',           sql: CREATE_ARTICLES_TABLE },
   { name: 'search_histories',   sql: CREATE_SEARCH_HISTORIES_TABLE },
+  { name: 'token_blacklist',    sql: CREATE_TOKEN_BLACKLIST_TABLE },
 ];
 
 // ========== 种子数据 ==========

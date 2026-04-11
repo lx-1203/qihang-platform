@@ -6,6 +6,9 @@ import {
   Camera, Users, FileText, ExternalLink
 } from 'lucide-react';
 import http from '@/api/http';
+import { DetailSkeleton } from '../../components/ui/Skeleton';
+import ErrorState from '../../components/ui/ErrorState';
+import { showToast } from '../../components/ui/ToastContainer';
 
 // ====== 企业资料编辑 ======
 // 商业级要求：完整企业信息管理、认证状态展示、双区域表单
@@ -44,7 +47,14 @@ const VERIFY_MAP: Record<string, { label: string; color: string; icon: typeof Ch
 };
 
 export default function CompanyProfile() {
-  const [profile, setProfile] = useState<CompanyProfile>({
+  const [profile, setProfile] = useState<CompanyProfile | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // 模拟数据（仅 DEV 模式手动加载用）
+  const mockProfile: CompanyProfile = {
     id: 1,
     companyName: '启航科技有限公司',
     industry: '互联网/IT',
@@ -58,10 +68,7 @@ export default function CompanyProfile() {
     contactEmail: 'hr@qihang-tech.com',
     verifyStatus: 'verified',
     createdAt: '2026-01-15',
-  });
-  const [saving, setSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
-  const [loading, setLoading] = useState(false);
+  };
 
   useEffect(() => {
     fetchProfile();
@@ -70,38 +77,60 @@ export default function CompanyProfile() {
   async function fetchProfile() {
     try {
       setLoading(true);
+      setError(null);
       const res = await http.get('/company/profile');
       if (res.data?.code === 200 && res.data.data) {
         setProfile(res.data.data);
+      } else {
+        setError('获取企业资料失败，服务器返回异常');
       }
     } catch {
-      // 使用默认模拟数据
+      setError('网络请求失败，请检查网络连接后重试');
     } finally {
       setLoading(false);
     }
   }
 
   async function handleSave() {
+    if (!profile) return;
     try {
       setSaving(true);
       await http.put('/company/profile', profile);
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
     } catch {
-      // 模拟保存成功
-      setSaved(true);
-      setTimeout(() => setSaved(false), 2000);
+      showToast({ type: 'error', title: '保存失败', message: '请检查网络连接后重试' });
     } finally {
       setSaving(false);
     }
   }
 
   function updateField(field: keyof CompanyProfile, value: string) {
-    setProfile(prev => ({ ...prev, [field]: value }));
+    setProfile(prev => prev ? { ...prev, [field]: value } : prev);
   }
 
-  const verifyInfo = VERIFY_MAP[profile.verifyStatus] || VERIFY_MAP.pending;
+  const verifyInfo = VERIFY_MAP[profile?.verifyStatus || 'pending'] || VERIFY_MAP.pending;
   const VerifyIcon = verifyInfo.icon;
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <DetailSkeleton />
+      </div>
+    );
+  }
+
+  if (error || !profile) {
+    return (
+      <div className="space-y-6">
+        <ErrorState
+          message={error || '企业资料加载失败'}
+          onRetry={fetchProfile}
+          onLoadMockData={() => { setProfile(mockProfile); setError(null); }}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

@@ -7,6 +7,8 @@ import {
 } from 'lucide-react';
 import http from '@/api/http';
 import FeatureStatus from '@/components/FeatureStatus';
+import { DetailSkeleton } from '../../components/ui/Skeleton';
+import ErrorState from '../../components/ui/ErrorState';
 
 // ====== 学生个人资料页 ======
 // 支持查看/编辑模式切换，个人信息编辑、技能标签管理、简历上传
@@ -50,11 +52,13 @@ const commonSkills = [
 ];
 
 export default function Profile() {
-  const [profile, setProfile] = useState<StudentProfile>(mockProfile);
+  const [profile, setProfile] = useState<StudentProfile | null>(null);
   const [editMode, setEditMode] = useState(false);
   const [editData, setEditData] = useState<StudentProfile>(mockProfile);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
   const [newSkill, setNewSkill] = useState('');
   const [saveSuccess, setSaveSuccess] = useState(false);
 
@@ -70,8 +74,9 @@ export default function Profile() {
         setProfile(res.data.data);
         setEditData(res.data.data);
       }
-    } catch {
-      // 使用默认 Mock 数据
+    } catch (err) {
+      setError('数据加载失败，请刷新重试');
+      if (import.meta.env.DEV) console.error('[DEV] API error:', err);
     } finally {
       setLoading(false);
     }
@@ -85,21 +90,21 @@ export default function Profile() {
       setEditMode(false);
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 3000);
-    } catch {
-      // API 未就绪时直接更新本地状态
-      setProfile(editData);
-      setEditMode(false);
-      setSaveSuccess(true);
-      setTimeout(() => setSaveSuccess(false), 3000);
+    } catch (err) {
+      // 保存失败：不更新 profile 状态，不退出编辑模式，显示错误提示
+      setSaveError('保存失败，请稍后重试');
+      if (import.meta.env.DEV) console.error('[DEV] Save error:', err);
+      setTimeout(() => setSaveError(null), 5000);
     } finally {
       setSaving(false);
     }
   }
 
   function handleCancel() {
-    setEditData(profile);
+    setEditData(profile || mockProfile);
     setEditMode(false);
     setNewSkill('');
+    setSaveError(null);
   }
 
   function addSkill(skill: string) {
@@ -129,6 +134,10 @@ export default function Profile() {
     );
   }
 
+  if (loading) return <div className="max-w-4xl mx-auto px-4 py-8"><DetailSkeleton /></div>;
+  if (error) return <div className="max-w-4xl mx-auto px-4 py-8"><ErrorState message={error} onRetry={() => { setError(null); fetchProfile(); }} onLoadMockData={() => { setProfile(mockProfile); setEditData(mockProfile); setError(null); }} /></div>;
+  if (!profile) return <div className="max-w-4xl mx-auto px-4 py-8"><DetailSkeleton /></div>;
+
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       {/* 页面标题 */}
@@ -146,6 +155,16 @@ export default function Profile() {
               className="flex items-center gap-1 text-sm text-green-600 font-medium"
             >
               <Check className="w-4 h-4" /> 保存成功
+            </motion.span>
+          )}
+          {saveError && (
+            <motion.span
+              initial={{ opacity: 0, x: 10 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0 }}
+              className="flex items-center gap-1 text-sm text-red-600 font-medium"
+            >
+              <X className="w-4 h-4" /> {saveError}
             </motion.span>
           )}
           {!editMode ? (

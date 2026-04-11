@@ -13,6 +13,7 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import http from "@/api/http";
 import { addSearchHistory } from "@/utils/searchHistory";
+import ErrorState from "@/components/ui/ErrorState";
 
 // ====== 岗位列表页 ======
 // 数据全部从 /api/jobs 获取，筛选项由接口返回
@@ -32,6 +33,7 @@ export default function Jobs() {
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const pageSize = 20;
 
   // 筛选选项（从 API filters 获取）
@@ -96,6 +98,7 @@ export default function Jobs() {
   // 获取岗位列表
   const fetchJobs = useCallback(async () => {
     setLoading(true);
+    setError(null);
     try {
       const params: Record<string, string | number> = { page, pageSize };
       if (activeType !== "全部") params.type = activeType;
@@ -116,7 +119,8 @@ export default function Jobs() {
         }
       }
     } catch {
-      // 接口失败保持空列表
+      setError('职位数据加载失败，请稍后重试');
+      if (import.meta.env.DEV) console.error('[DEV] Jobs API 失败');
     } finally {
       setLoading(false);
     }
@@ -379,6 +383,11 @@ export default function Jobs() {
             <div className="flex justify-center py-20">
               <Loader2 className="w-8 h-8 text-primary-600 animate-spin" />
             </div>
+          ) : error ? (
+            <ErrorState
+              message={error}
+              onRetry={() => { setError(null); fetchJobs(); }}
+            />
           ) : (
           <AnimatePresence mode="popLayout">
             {jobs.length > 0 ? (

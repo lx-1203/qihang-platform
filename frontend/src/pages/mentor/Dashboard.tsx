@@ -10,12 +10,18 @@ import {
 import http from '@/api/http';
 import OnboardingGuide from '@/components/OnboardingGuide';
 import { FeatureOverlay } from '@/components/FeatureStatus';
+import { showToast } from '@/components/ui/ToastContainer';
+import { useAuthStore } from '@/store/auth';
 
 // ====== 导师端仪表盘 ======
 // 风格：绿色温暖教学感，今日日程为核心差异
 // 与管理员（深色权威）和企业（蓝色招聘）完全不同
 
 export default function MentorDashboardPage() {
+  const { user } = useAuthStore();
+  const displayName = user?.nickname || user?.email || '导师';
+  const displayInitial = displayName.charAt(0);
+
   const [stats, setStats] = useState({
     totalCourses: 5, totalAppointments: 128, totalStudents: 86, rating: 4.9,
     monthSessions: 18, pendingAppts: 3, monthRevenue: 5370, ratingTrend: 0.2,
@@ -83,11 +89,11 @@ export default function MentorDashboardPage() {
           <div className="flex items-center justify-between flex-wrap gap-4">
             <div className="flex items-center gap-4">
               <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm border-2 border-white/30">
-                <span className="text-2xl font-bold">陈</span>
+                <span className="text-2xl font-bold">{displayInitial}</span>
               </div>
               <div>
                 <div className="flex items-center gap-2">
-                  <h1 className="text-xl font-bold">陈导师，欢迎回到工作台！</h1>
+                  <h1 className="text-xl font-bold">{displayName}，欢迎回到工作台！</h1>
                   <span className="bg-white/20 text-[10px] font-bold px-2 py-0.5 rounded-full border border-white/30">
                     <CheckCircle2 className="w-3 h-3 inline mr-0.5" />已认证
                   </span>
@@ -178,12 +184,12 @@ export default function MentorDashboardPage() {
                       <p className="text-xs opacity-70 mt-0.5">{item.service}</p>
                     </div>
                     {item.status === '进行中' && (
-                      <button className="text-xs bg-emerald-600 text-white px-3 py-1.5 rounded-lg font-medium hover:bg-emerald-700 transition-colors">
+                      <button onClick={() => showToast({ type: 'info', title: '功能开发中', message: '该功能正在开发中，敬请期待' })} className="text-xs bg-emerald-600 text-white px-3 py-1.5 rounded-lg font-medium hover:bg-emerald-700 transition-colors">
                         进入辅导
                       </button>
                     )}
                     {item.status === '待确认' && (
-                      <button className="text-xs bg-blue-600 text-white px-3 py-1.5 rounded-lg font-medium hover:bg-blue-700 transition-colors">
+                      <button onClick={() => showToast({ type: 'info', title: '功能开发中', message: '该功能正在开发中，敬请期待' })} className="text-xs bg-blue-600 text-white px-3 py-1.5 rounded-lg font-medium hover:bg-blue-700 transition-colors">
                         确认预约
                       </button>
                     )}

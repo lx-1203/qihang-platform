@@ -32,6 +32,9 @@ export default function Home() {
   const [hotMentors, setHotMentors] = useState<any[]>([]);
   const [hotCourses, setHotCourses] = useState<any[]>([]);
   const [dataLoading, setDataLoading] = useState(true);
+  const [jobsError, setJobsError] = useState(false);
+  const [mentorsError, setMentorsError] = useState(false);
+  const [coursesError, setCoursesError] = useState(false);
 
   // 从配置中心读取首页内容
   const heroTitle = useConfigStore(s => s.getString('home_hero_title', '你的职业发展，从启航开始'));
@@ -51,16 +54,50 @@ export default function Home() {
     ]).then(([jobsRes, mentorsRes, coursesRes]) => {
       if (jobsRes.status === 'fulfilled' && jobsRes.value.data?.code === 200) {
         setHotJobs(jobsRes.value.data.data?.jobs || []);
+      } else {
+        setJobsError(true);
       }
       if (mentorsRes.status === 'fulfilled' && mentorsRes.value.data?.code === 200) {
         setHotMentors(mentorsRes.value.data.data?.mentors || []);
+      } else {
+        setMentorsError(true);
       }
       if (coursesRes.status === 'fulfilled' && coursesRes.value.data?.code === 200) {
         setHotCourses(coursesRes.value.data.data?.courses || []);
+      } else {
+        setCoursesError(true);
       }
       setDataLoading(false);
     });
   }, []);
+
+  // 各模块独立重试
+  const retryJobs = async () => {
+    setJobsError(false);
+    try {
+      const res = await http.get('/jobs', { params: { pageSize: 4 } });
+      if (res.data?.code === 200) setHotJobs(res.data.data?.jobs || []);
+      else setJobsError(true);
+    } catch { setJobsError(true); }
+  };
+
+  const retryMentors = async () => {
+    setMentorsError(false);
+    try {
+      const res = await http.get('/mentors', { params: { pageSize: 4 } });
+      if (res.data?.code === 200) setHotMentors(res.data.data?.mentors || []);
+      else setMentorsError(true);
+    } catch { setMentorsError(true); }
+  };
+
+  const retryCourses = async () => {
+    setCoursesError(false);
+    try {
+      const res = await http.get('/courses', { params: { pageSize: 4 } });
+      if (res.data?.code === 200) setHotCourses(res.data.data?.courses || []);
+      else setCoursesError(true);
+    } catch { setCoursesError(true); }
+  };
 
   // 轮播（首条使用配置中心内容）
   const slides = [
@@ -255,8 +292,16 @@ export default function Home() {
           </div>
           {dataLoading ? (
             <div className="flex justify-center py-12"><Loader2 className="w-6 h-6 text-primary-600 animate-spin" /></div>
+          ) : jobsError ? (
+            <div className="text-center py-8">
+              <p className="text-sm text-gray-500">岗位数据加载失败 <button onClick={retryJobs} className="ml-2 text-primary-500 hover:underline">点击重试</button></p>
+            </div>
           ) : hotJobs.length === 0 ? (
-            <p className="text-center text-gray-400 py-8">暂无在招岗位</p>
+            <div className="text-center py-12">
+              <Briefcase className="w-10 h-10 text-gray-300 mx-auto mb-3" />
+              <p className="text-gray-400 mb-3">暂无在招岗位</p>
+              <Link to="/jobs" className="text-primary-500 text-sm hover:underline">浏览全部职位 →</Link>
+            </div>
           ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {hotJobs.map((job, i) => (
@@ -295,8 +340,16 @@ export default function Home() {
           </div>
           {dataLoading ? (
             <div className="flex justify-center py-12"><Loader2 className="w-6 h-6 text-primary-600 animate-spin" /></div>
+          ) : mentorsError ? (
+            <div className="text-center py-8">
+              <p className="text-sm text-gray-500">导师数据加载失败 <button onClick={retryMentors} className="ml-2 text-primary-500 hover:underline">点击重试</button></p>
+            </div>
           ) : hotMentors.length === 0 ? (
-            <p className="text-center text-gray-400 py-8">暂无认证导师</p>
+            <div className="text-center py-12">
+              <Users className="w-10 h-10 text-gray-300 mx-auto mb-3" />
+              <p className="text-gray-400 mb-3">暂无认证导师</p>
+              <Link to="/mentors" className="text-primary-500 text-sm hover:underline">浏览全部导师 →</Link>
+            </div>
           ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {hotMentors.map((m, i) => (
@@ -344,8 +397,16 @@ export default function Home() {
           </div>
           {dataLoading ? (
             <div className="flex justify-center py-12"><Loader2 className="w-6 h-6 text-primary-600 animate-spin" /></div>
+          ) : coursesError ? (
+            <div className="text-center py-8">
+              <p className="text-sm text-gray-500">课程数据加载失败 <button onClick={retryCourses} className="ml-2 text-primary-500 hover:underline">点击重试</button></p>
+            </div>
           ) : hotCourses.length === 0 ? (
-            <p className="text-center text-gray-400 py-8">暂无课程</p>
+            <div className="text-center py-12">
+              <BookOpen className="w-10 h-10 text-gray-300 mx-auto mb-3" />
+              <p className="text-gray-400 mb-3">暂无课程</p>
+              <Link to="/courses" className="text-primary-500 text-sm hover:underline">浏览全部课程 →</Link>
+            </div>
           ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {hotCourses.map((c, i) => (

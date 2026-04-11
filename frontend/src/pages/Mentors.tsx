@@ -3,9 +3,11 @@ import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   Search, Star, MapPin, Clock, Filter,
-  ChevronDown, Users, Award, MessageCircle
+  ChevronDown, Users, Award, MessageCircle, RefreshCw
 } from 'lucide-react';
 import http from '@/api/http';
+import { CardSkeleton } from '../components/ui/Skeleton';
+import ErrorState from '../components/ui/ErrorState';
 
 // ====== 导师列表页 ======
 
@@ -26,7 +28,8 @@ interface MentorItem {
 
 export default function Mentors() {
   const [mentors, setMentors] = useState<MentorItem[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [expertiseFilter, setExpertiseFilter] = useState('全部');
 
@@ -48,15 +51,16 @@ export default function Mentors() {
   async function fetchMentors() {
     try {
       setLoading(true);
+      setError(null);
       const res = await http.get('/mentors');
       if (res.data?.code === 200 && res.data.data) {
         const list = res.data.data.list || res.data.data;
         setMentors(list);
       } else {
-        setMentors(mockMentors);
+        setError('获取导师数据失败，服务器返回异常');
       }
     } catch {
-      setMentors(mockMentors);
+      setError('网络请求失败，请检查网络连接后重试');
     } finally {
       setLoading(false);
     }
@@ -114,12 +118,33 @@ export default function Mentors() {
       </div>
 
       {/* 统计 */}
+      {!loading && !error && (
       <div className="flex items-center gap-6 mb-6 text-sm text-gray-500">
         <span className="flex items-center gap-1"><Users className="w-4 h-4" /> 共 {filtered.length} 位导师</span>
         <span className="flex items-center gap-1"><Award className="w-4 h-4" /> 平均评分 {(filtered.reduce((a, b) => a + b.rating, 0) / (filtered.length || 1)).toFixed(1)}</span>
       </div>
+      )}
+
+      {/* 加载状态 */}
+      {loading && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <CardSkeleton key={i} />
+          ))}
+        </div>
+      )}
+
+      {/* 错误状态 */}
+      {!loading && error && (
+        <ErrorState
+          message={error}
+          onRetry={fetchMentors}
+          onLoadMockData={() => { setMentors(mockMentors); setError(null); }}
+        />
+      )}
 
       {/* 导师列表 */}
+      {!loading && !error && (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filtered.map((mentor, i) => (
           <motion.div
@@ -180,13 +205,23 @@ export default function Mentors() {
           </motion.div>
         ))}
       </div>
+      )}
 
       {/* 空状态 */}
-      {filtered.length === 0 && (
+      {!loading && !error && filtered.length === 0 && (
         <div className="text-center py-16">
-          <Users className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-          <p className="text-gray-500 font-medium">未找到匹配的导师</p>
-          <p className="text-gray-400 text-sm mt-1">试试调整筛选条件</p>
+          <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <Users className="w-8 h-8 text-gray-400" />
+          </div>
+          <h3 className="text-lg font-medium text-gray-900 mb-2">未找到匹配的导师</h3>
+          <p className="text-gray-500 mb-6">试试调整筛选条件或更换搜索关键词</p>
+          <button
+            onClick={() => { setSearch(''); setExpertiseFilter('全部'); }}
+            className="inline-flex items-center gap-2 px-4 py-2 bg-primary-50 text-primary-600 rounded-lg hover:bg-primary-100 transition-colors text-sm font-medium"
+          >
+            <RefreshCw className="w-4 h-4" />
+            清除所有筛选
+          </button>
         </div>
       )}
     </div>

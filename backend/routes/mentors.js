@@ -3,10 +3,11 @@ import pool from '../db.js';
 
 const router = Router();
 
-// GET /api/mentors - 获取导师列表（支持筛选 + 分页）
+// GET /api/mentors - 获取导师列表（游标分页 + 筛选）
 router.get('/', async (req, res) => {
   try {
-    const { keyword, page = 1, pageSize = 20 } = req.query;
+    const { keyword, cursor, limit = 20 } = req.query;
+    const pageLimit = Math.min(Number(limit), 50);
 
     let sql = 'SELECT * FROM mentor_profiles WHERE verify_status = "approved" AND status = 1';
     const params = [];
@@ -17,21 +18,29 @@ router.get('/', async (req, res) => {
       params.push(kw, kw, `%${keyword}%`, `%${keyword}%`);
     }
 
-    // 查总数
-    const countSql = sql.replace('SELECT *', 'SELECT COUNT(*) as total');
-    const [countRows] = await pool.query(countSql, params);
-    const total = countRows[0].total;
+    // 游标分页：如果提供了 cursor（上一页最后一条的 id），则只查询 id 更小的记录
+    if (cursor && !isNaN(Number(cursor))) {
+      sql += ' AND id < ?';
+      params.push(Number(cursor));
+    }
 
-    // 排序 + 分页
-    sql += ' ORDER BY rating DESC, rating_count DESC, created_at DESC';
-    const offset = (Math.max(1, Number(page)) - 1) * Number(pageSize);
-    sql += ' LIMIT ? OFFSET ?';
-    params.push(Number(pageSize), offset);
+    // 排序：按 id 倒序（最新的在前），确保游标稳定
+    sql += ' ORDER BY id DESC LIMIT ?';
+    params.push(pageLimit + 1);
 
     const [mentors] = await pool.query(sql, params);
 
+    // 判断是否有下一页
+    let nextCursor = null;
+    let items = mentors;
+    if (mentors.length > pageLimit) {
+      items = mentors.slice(0, pageLimit);
+      const lastItem = items[items.length - 1];
+      nextCursor = lastItem.id;
+    }
+
     // 解析 JSON 字段, 保持与前端兼容的数据结构
-    const parsedMentors = mentors.map(mentor => ({
+    const parsedMentors = items.map(mentor => ({
       id: mentor.id,
       name: mentor.name,
       title: mentor.title,
@@ -47,9 +56,9 @@ router.get('/', async (req, res) => {
 
     res.json({
       mentors: parsedMentors,
-      total,
-      page: Number(page),
-      pageSize: Number(pageSize),
+      nextCursor,
+      hasMore: nextCursor !== null,
+      limit: pageLimit,
     });
   } catch (err) {
     console.error('获取导师列表失败:', err);

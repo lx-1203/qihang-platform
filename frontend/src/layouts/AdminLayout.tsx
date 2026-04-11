@@ -90,7 +90,7 @@ export default function AdminLayout() {
           <Outlet />
         </div>
       </main>
-      <DevFloatButton />
+      {import.meta.env.DEV && <DevFloatButton />}
     </div>
   );
 }

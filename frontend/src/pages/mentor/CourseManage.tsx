@@ -7,6 +7,8 @@ import {
 } from 'lucide-react';
 import http from '@/api/http';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
+import { TableSkeleton } from '../../components/ui/Skeleton';
+import ErrorState from '../../components/ui/ErrorState';
 
 // ====== 导师课程管理页 ======
 // 课程列表、状态切换、创建/编辑课程
@@ -73,8 +75,9 @@ const statusMap = {
 };
 
 export default function CourseManage() {
-  const [courses, setCourses] = useState<Course[]>(mockCourses);
-  const [loading, setLoading] = useState(false);
+  const [courses, setCourses] = useState<Course[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [searchKeyword, setSearchKeyword] = useState('');
   const [filterCategory, setFilterCategory] = useState('all');
   const [showModal, setShowModal] = useState(false);
@@ -95,8 +98,9 @@ export default function CourseManage() {
       if (res.data?.code === 200 && res.data.data) {
         setCourses(res.data.data.courses || res.data.data.list || res.data.data);
       }
-    } catch {
-      // 使用默认 Mock 数据
+    } catch (err) {
+      setError('数据加载失败，请刷新重试');
+      if (import.meta.env.DEV) console.error('[DEV] API error:', err);
     } finally {
       setLoading(false);
     }
@@ -212,6 +216,17 @@ export default function CourseManage() {
     if (n >= 1000) return (n / 1000).toFixed(1) + 'k';
     return String(n);
   }
+
+  if (loading) return <div className="space-y-6"><TableSkeleton rows={8} cols={7} /></div>;
+  if (error) return (
+    <div className="space-y-6">
+      <ErrorState
+        message={error}
+        onRetry={() => { setError(null); fetchCourses(); }}
+        onLoadMockData={() => { setCourses(mockCourses); setError(null); }}
+      />
+    </div>
+  );
 
   return (
     <div className="space-y-6">

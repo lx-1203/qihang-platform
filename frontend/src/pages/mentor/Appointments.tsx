@@ -6,6 +6,9 @@ import {
   DollarSign, Timer, ChevronRight, AlertCircle
 } from 'lucide-react';
 import http from '@/api/http';
+import { ListSkeleton } from '../../components/ui/Skeleton';
+import ErrorState from '../../components/ui/ErrorState';
+import ConfirmDialog from '@/components/ui/ConfirmDialog';
 
 // ====== 导师预约管理页 ======
 // 预约列表、筛选标签、确认/拒绝/完成操作
@@ -95,10 +98,14 @@ const filterTabs: { key: AppointmentStatus; label: string }[] = [
 ];
 
 export default function MentorAppointments() {
-  const [appointments, setAppointments] = useState<Appointment[]>(mockAppointments);
-  const [loading, setLoading] = useState(false);
+  const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<AppointmentStatus>('all');
   const [searchKeyword, setSearchKeyword] = useState('');
+  const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
+  const [rejectingId, setRejectingId] = useState<number | null>(null);
+  const [rejectLoading, setRejectLoading] = useState(false);
 
   useEffect(() => {
     fetchAppointments();
@@ -111,8 +118,9 @@ export default function MentorAppointments() {
       if (res.data?.code === 200 && res.data.data) {
         setAppointments(res.data.data.list || res.data.data);
       }
-    } catch {
-      // 使用默认 Mock 数据
+    } catch (err) {
+      setError('数据加载失败，请刷新重试');
+      if (import.meta.env.DEV) console.error('[DEV] API error:', err);
     } finally {
       setLoading(false);
     }
@@ -190,6 +198,17 @@ export default function MentorAppointments() {
     const today = new Date().toISOString().split('T')[0];
     return dateStr === today;
   }
+
+  if (loading) return <div className="space-y-6"><ListSkeleton count={6} /></div>;
+  if (error) return (
+    <div className="space-y-6">
+      <ErrorState
+        message={error}
+        onRetry={() => { setError(null); fetchAppointments(); }}
+        onLoadMockData={() => { setAppointments(mockAppointments); setError(null); }}
+      />
+    </div>
+  );
 
   return (
     <div className="space-y-6">
@@ -350,7 +369,7 @@ export default function MentorAppointments() {
                             确认
                           </button>
                           <button
-                            onClick={() => rejectAppointment(apt.id)}
+                            onClick={() => { setRejectingId(apt.id); setRejectDialogOpen(true); }}
                             className="flex items-center gap-1 px-4 py-2 bg-white text-gray-600 border border-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors"
                           >
                             <XCircle className="w-4 h-4" />
@@ -396,6 +415,25 @@ export default function MentorAppointments() {
           </motion.div>
         )}
       </div>
+
+      {/* 拒绝预约确认弹窗 */}
+      <ConfirmDialog
+        open={rejectDialogOpen}
+        title="确定拒绝该预约？"
+        description="拒绝后学生将收到通知。"
+        variant="warning"
+        confirmText="确认拒绝"
+        loading={rejectLoading}
+        onConfirm={async () => {
+          if (rejectingId === null) return;
+          setRejectLoading(true);
+          await rejectAppointment(rejectingId);
+          setRejectLoading(false);
+          setRejectDialogOpen(false);
+          setRejectingId(null);
+        }}
+        onCancel={() => { setRejectDialogOpen(false); setRejectingId(null); }}
+      />
     </div>
   );
 }

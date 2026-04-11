@@ -1,0 +1,27 @@
+var fs=require("fs");
+var path=require("path");
+var dest=path.join("C:","Users","dsghy",".claude","plans","optimized-gathering-quokka-agent-a23f4926a0a264a7b.md");
+var L=[];
+L.push("# Implementation Plan: 16 Review Issues Fix");
+L.push("");
+L.push("> **Stack**: Express 4 + mysql2 (ESM), React 19 + Vite + Zustand + TS. No Redis.");
+L.push("");
+L.push("---");
+L.push("");
+L.push("## Phase A: Critical Security (5 issues)");
+L.push("");
+L.push("### A1: SEC-001 JWT_SECRET hardcoded fallback");
+L.push("");
+L.push("**Files:** backend/middleware/auth.js:6, backend/routes/auth.js:10-11, backend/server.js:28+, backend/.env.example:11-12");
+L.push("");
+L.push("**Changes:**");
+L.push("1. auth.js middleware line 6: Remove fallback. Set JWT_SECRET=process.env.JWT_SECRET, exit if missing. Export it.");
+L.push("2. routes/auth.js 10-11: Remove local declarations. Import JWT_SECRET from middleware. REFRESH_SECRET same fail-fast.");
+L.push("3. server.js after dotenv.config (line 28): Add REQUIRED_ENV validation for JWT_SECRET and JWT_REFRESH_SECRET.");
+L.push("4. .env.example: Replace predictable values with GENERATE_ME and generation command.");
+L.push("");
+L.push("**Preserve:** generateToken() signature, authMiddleware() logic, JWT_EXPIRES_IN fallback");
+L.push("**Verify:** Missing env=crash. Present=normal.");
+fs.writeFileSync(dest, L.join("
+"), "utf-8");
+console.log("Part 1 written");

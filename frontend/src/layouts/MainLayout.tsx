@@ -11,7 +11,7 @@ export default function MainLayout() {
         <Outlet />
       </main>
       <Footer />
-      <DevFloatButton />
+      {import.meta.env.DEV && <DevFloatButton />}
     </div>
   );
 }

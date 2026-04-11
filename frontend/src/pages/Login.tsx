@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import {
   Mail,
   Lock,
@@ -9,28 +9,80 @@ import {
   ChevronLeft,
   ArrowRight,
   Loader2,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuthStore } from "@/store/auth";
 import { useConfigStore } from "@/store/config";
 import http from "@/api/http";
+import { showToast } from "@/components/ui/ToastContainer";
+
+// 🔴 安全校验：仅允许本站相对路径，禁止跨站跳转（防开放重定向攻击）
+function isValidReturnUrl(url: string): boolean {
+  try {
+    const urlObj = new URL(url, window.location.origin);
+    return urlObj.origin === window.location.origin && url !== '/login' && url !== '/register';
+  } catch {
+    return false;
+  }
+}
+
+// 密码强度检测
+function getPasswordStrength(pwd: string): { level: number; label: string; color: string } {
+  // Common weak password blacklist
+  if (/^\d{6}$/.test(pwd) || ['123456','password','000000','111111','qwerty','abc123'].includes(pwd.toLowerCase())) {
+    return { level: 1, label: '弱', color: 'bg-red-500' };
+  }
+
+  let score = 0;
+  if (pwd.length >= 6) score++;
+  if (pwd.length >= 10) score++;
+  if (/[A-Z]/.test(pwd)) score++;
+  if (/[0-9]/.test(pwd)) score++;
+  if (/[^A-Za-z0-9]/.test(pwd)) score++;
+
+  if (score <= 1) return { level: 1, label: '弱', color: 'bg-red-500' };
+  if (score <= 3) return { level: 2, label: '中', color: 'bg-amber-500' };
+  return { level: 3, label: '强', color: 'bg-green-500' };
+}
+
+// 角色默认跳转路径
+const roleDefaultPath: Record<string, string> = {
+  admin: '/admin/dashboard',
+  company: '/company/dashboard',
+  mentor: '/mentor/dashboard',
+  student: '/',
+};
 
 export default function Login() {
   const [isLogin, setIsLogin] = useState(true);
   const [role, setRole] = useState<"student" | "mentor" | "company">("student");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [nickname, setNickname] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [agreedTerms, setAgreedTerms] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
   const { setAuth } = useAuthStore();
   const brandName = useConfigStore(s => s.getString('brand_name', '启航平台'));
+
+  // 密码强度（注册时实时计算）
+  const strength = getPasswordStrength(password);
+
+  // 🔴 提取 returnUrl（支持 URL 参数和 location.state 两种方式）
+  const searchParams = new URLSearchParams(location.search);
+  const returnUrl = searchParams.get('returnUrl') || (location.state as { from?: { pathname: string } })?.from?.pathname;
 
   const handleToggleMode = () => {
     setIsLogin(!isLogin);
     setError("");
+    setConfirmPassword("");
   };
 
   async function handleSubmit(e: React.FormEvent) {
@@ -39,6 +91,25 @@ export default function Login() {
 
     if (!email || !password) {
       setError("请填写邮箱和密码");
+      return;
+    }
+
+    // 邮箱格式校验
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      setError("请输入有效的邮箱地址");
+      return;
+    }
+
+    // 密码长度校验
+    if (password.length < 6) {
+      setError("密码长度至少为6位");
+      return;
+    }
+
+    // 注册时确认密码校验
+    if (!isLogin && password !== confirmPassword) {
+      setError("两次输入的密码不一致");
       return;
     }
 
@@ -54,21 +125,13 @@ export default function Login() {
         // 登录
         const res = await http.post("/auth/login", { email, password });
         if (res.data?.code === 200 && res.data.data) {
-          const { token, user } = res.data.data;
-          setAuth(token, user);
-          // 根据角色跳转
-          switch (user.role) {
-            case "admin":
-              navigate("/admin/dashboard");
-              break;
-            case "company":
-              navigate("/company/dashboard");
-              break;
-            case "mentor":
-              navigate("/mentor/dashboard");
-              break;
-            default:
-              navigate("/");
+          const { token, user, refreshToken } = res.data.data;
+          setAuth(token, user, refreshToken);
+          // 🔴 优先跳转 returnUrl（含安全校验），否则走角色默认路径
+          if (returnUrl && isValidReturnUrl(returnUrl)) {
+            navigate(returnUrl);
+          } else {
+            navigate(roleDefaultPath[user.role] || '/');
           }
         } else {
           setError(res.data?.message || "登录失败");
@@ -82,17 +145,22 @@ export default function Login() {
           nickname: nickname || undefined,
         });
         if ((res.data?.code === 201 || res.data?.code === 200) && res.data.data) {
-          const { token, user } = res.data.data;
-          setAuth(token, user);
-          navigate("/");
+          const { token, user, refreshToken } = res.data.data;
+          setAuth(token, user, refreshToken);
+          // 注册后也支持 returnUrl
+          if (returnUrl && isValidReturnUrl(returnUrl)) {
+            navigate(returnUrl);
+          } else {
+            navigate(roleDefaultPath[user.role] || '/');
+          }
         } else {
           setError(res.data?.message || "注册失败");
         }
       }
     } catch (err: unknown) {
-      if (err && typeof err === "object" && "response" in err) {
-        const axiosErr = err as { response?: { data?: { message?: string } } };
-        setError(axiosErr.response?.data?.message || "网络错误，请检查后端服务");
+      if (err && typeof err === "object" && "message" in err) {
+        const errObj = err as { message?: string };
+        setError(errObj.message || "网络错误，请稍后重试");
       } else {
         setError("网络错误，请稍后重试");
       }
@@ -344,12 +412,13 @@ export default function Login() {
                   </label>
                   {isLogin && (
                     <div className="text-sm leading-6">
-                      <a
-                        href="#"
+                      <button
+                        type="button"
+                        onClick={() => showToast({ type: 'info', title: '请联系管理员', message: '请联系平台管理员重置密码：admin@qihang.com' })}
                         className="font-medium text-primary-600 hover:text-primary-500"
                       >
                         忘记密码？
-                      </a>
+                      </button>
                     </div>
                   )}
                 </div>
@@ -363,16 +432,77 @@ export default function Login() {
                   <input
                     id="password"
                     name="password"
-                    type="password"
+                    type={showPassword ? "text" : "password"}
                     autoComplete={isLogin ? "current-password" : "new-password"}
                     required
                     value={password}
                     onChange={e => setPassword(e.target.value)}
-                    className="block w-full rounded-lg border-0 py-2.5 pl-10 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-primary-600 sm:text-sm sm:leading-6"
-                    placeholder="请输入密码"
+                    className="block w-full rounded-lg border-0 py-2.5 pl-10 pr-10 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-primary-600 sm:text-sm sm:leading-6"
+                    placeholder={isLogin ? "请输入密码" : "请输入密码（至少6位）"}
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 transition-colors"
+                  >
+                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
                 </div>
+                {/* 密码强度指示器（仅注册时显示） */}
+                {!isLogin && password && (
+                  <div className="mt-2">
+                    <div className="flex gap-1 mb-1">
+                      {[1, 2, 3].map(i => (
+                        <div key={i} className={`h-1 flex-1 rounded-full transition-colors ${
+                          i <= strength.level ? strength.color : 'bg-gray-200'
+                        }`} />
+                      ))}
+                    </div>
+                    <p className={`text-xs ${strength.level === 1 ? 'text-red-500' : strength.level === 2 ? 'text-amber-500' : 'text-green-500'}`}>
+                      密码强度：{strength.label}
+                    </p>
+                  </div>
+                )}
               </div>
+
+              {/* 注册时显示确认密码 */}
+              {!isLogin && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: "auto" }}
+                  exit={{ opacity: 0, height: 0 }}
+                >
+                  <label
+                    htmlFor="confirmPassword"
+                    className="block text-sm font-medium leading-6 text-gray-900"
+                  >
+                    确认密码
+                  </label>
+                  <div className="mt-2 relative rounded-md shadow-sm">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <Lock className="h-5 w-5 text-gray-400" aria-hidden="true" />
+                    </div>
+                    <input
+                      id="confirmPassword"
+                      name="confirmPassword"
+                      type={showConfirmPassword ? "text" : "password"}
+                      autoComplete="new-password"
+                      required
+                      value={confirmPassword}
+                      onChange={e => setConfirmPassword(e.target.value)}
+                      className="block w-full rounded-lg border-0 py-2.5 pl-10 pr-10 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-primary-600 sm:text-sm sm:leading-6"
+                      placeholder="请再次输入密码"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 transition-colors"
+                    >
+                      {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                    </button>
+                  </div>
+                </motion.div>
+              )}
 
               {!isLogin && (
                 <motion.div
@@ -443,7 +573,11 @@ export default function Login() {
               </div>
 
               <div className="mt-6 grid grid-cols-2 gap-4">
-                <button className="flex w-full items-center justify-center gap-3 rounded-lg bg-[#07C160] px-3 py-2.5 text-sm font-semibold text-white hover:bg-[#06ad56] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 transition-colors shadow-sm">
+                <button
+                  type="button"
+                  onClick={() => showToast({ type: 'info', title: '功能开发中', message: '微信登录功能正在开发中，敬请期待' })}
+                  className="flex w-full items-center justify-center gap-3 rounded-lg bg-[#07C160] px-3 py-2.5 text-sm font-semibold text-white hover:bg-[#06ad56] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 transition-colors shadow-sm"
+                >
                   {/* WeChat Icon */}
                   <svg
                     className="h-5 w-5"
@@ -459,7 +593,11 @@ export default function Login() {
                   </svg>
                   微信登录
                 </button>
-                <button className="flex w-full items-center justify-center gap-3 rounded-lg bg-white px-3 py-2.5 text-sm font-semibold text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 transition-colors shadow-sm">
+                <button
+                  type="button"
+                  onClick={() => showToast({ type: 'info', title: '功能开发中', message: 'GitHub 登录功能正在开发中，敬请期待' })}
+                  className="flex w-full items-center justify-center gap-3 rounded-lg bg-white px-3 py-2.5 text-sm font-semibold text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 transition-colors shadow-sm"
+                >
                   {/* GitHub Icon */}
                   <svg
                     className="h-5 w-5"

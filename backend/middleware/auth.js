@@ -3,7 +3,15 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-const JWT_SECRET = process.env.JWT_SECRET || 'career_jwt_secret_key_2025';
+// JWT 密钥 — 必须通过环境变量配置，禁止使用默认值（SEC-001）
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) {
+  console.error('FATAL: JWT_SECRET 环境变量必须设置');
+  console.error('请复制 .env.example 为 .env 并填入随机密钥');
+  process.exit(1);
+}
+
+export { JWT_SECRET };
 
 /**
  * 生成 JWT token

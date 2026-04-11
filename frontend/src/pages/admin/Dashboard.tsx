@@ -8,13 +8,16 @@ import {
   ChevronRight, Eye
 } from 'lucide-react';
 import http from '@/api/http';
+import { useAuthStore } from '@/store/auth';
 import OnboardingGuide from '@/components/OnboardingGuide';
+import FeatureStatus from '@/components/FeatureStatus';
 
 // ====== 管理员仪表盘 ======
 // 风格：深色权威感，indigo 主色调，平台指挥中心
 // 与企业端（蓝色招聘）和导师端（绿色教学）完全不同
 
 export default function AdminDashboard() {
+  const { user } = useAuthStore();
   const [stats, setStats] = useState({
     totalUsers: 12486, onlineJobs: 358, totalCourses: 124,
     totalCompanies: 89, certifiedMentors: 47, totalAppointments: 1256,
@@ -83,7 +86,7 @@ export default function AdminDashboard() {
                 <Shield className="w-7 h-7" />
               </div>
               <div>
-                <h1 className="text-xl font-bold">欢迎回来，超级管理员</h1>
+                <h1 className="text-xl font-bold">欢迎回来，{user?.nickname || user?.email || '管理员'}</h1>
                 <p className="text-sm text-slate-400 mt-0.5">{dateStr} {weekDays[today.getDay()]} · 平台全局管控中心</p>
               </div>
             </div>
@@ -223,7 +226,10 @@ export default function AdminDashboard() {
             <h3 className="text-sm font-bold text-gray-900 flex items-center gap-2">
               <Eye className="w-4 h-4 text-indigo-500" /> 操作审计日志
             </h3>
-            <Link to="/admin/settings" className="text-xs text-indigo-600 hover:underline">查看全部</Link>
+            <div className="flex items-center gap-3">
+              <FeatureStatus status="dev" label="实时审计日志" />
+              <Link to="/admin/settings" className="text-xs text-indigo-600 hover:underline">查看全部</Link>
+            </div>
           </div>
           <div className="space-y-4">
             {auditLogs.map((log, i) => (

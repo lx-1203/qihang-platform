@@ -6,8 +6,8 @@ import type { UserRole } from '../types';
 // 基于 RBAC 四角色权限模型，严格控制页面访问
 // DEV_MODE: 开发环境下跳过权限校验，方便调试
 
-// 开发模式开关：仅当环境变量 VITE_DEV_BYPASS=true 时启用
-const DEV_MODE = import.meta.env.VITE_DEV_BYPASS === 'true';
+// 开发模式开关：仅 Vite 开发服务器下启用，生产构建自动关闭
+const DEV_MODE = import.meta.env.DEV;
 
 interface ProtectedRouteProps {
   /** 允许访问的角色列表 */

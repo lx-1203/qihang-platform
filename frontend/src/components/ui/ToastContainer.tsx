@@ -23,6 +23,42 @@ interface ToastContextType {
   info: (title: string, message?: string) => void;
 }
 
+// ====== Standalone Toast（供组件树外使用，如 http.ts 拦截器） ======
+
+interface ShowToastOptions {
+  type: ToastType;
+  title: string;
+  message?: string;
+  duration?: number;
+}
+
+// 去重防抖：1s 内相同 type+title 的 Toast 仅弹出一次
+const recentToasts = new Map<string, number>();
+
+const TOAST_EVENT = 'qihang:toast';
+
+/**
+ * Standalone toast 函数 — 可在任何地方调用（不依赖 React Context）
+ * 用法：showToast({ type: 'error', title: '操作失败', message: '请稍后重试' })
+ */
+export function showToast(opts: ShowToastOptions): void {
+  // 去重：1s 内相同文案不重复弹出
+  const dedupKey = `${opts.type}:${opts.title}`;
+  const now = Date.now();
+  const lastTime = recentToasts.get(dedupKey);
+  if (lastTime && now - lastTime < 1000) return;
+  recentToasts.set(dedupKey, now);
+
+  // 清理过期的去重记录（防止内存泄漏）
+  if (recentToasts.size > 50) {
+    for (const [key, time] of recentToasts) {
+      if (now - time > 5000) recentToasts.delete(key);
+    }
+  }
+
+  window.dispatchEvent(new CustomEvent(TOAST_EVENT, { detail: opts }));
+}
+
 // ====== Toast Context ======
 
 const ToastContext = createContext<ToastContextType | null>(null);
@@ -105,6 +141,16 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
     const newToast: Toast = { ...toast, id: generateId() };
     setToasts((prev) => [...prev, newToast].slice(-5)); // 最多显示5个
   }, []);
+
+  // 监听 standalone showToast() 事件（来自组件树外部，如 http.ts 拦截器）
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent<ShowToastOptions>).detail;
+      addToast(detail);
+    };
+    window.addEventListener(TOAST_EVENT, handler);
+    return () => window.removeEventListener(TOAST_EVENT, handler);
+  }, [addToast]);
 
   const success = useCallback((title: string, message?: string) => {
     addToast({ type: 'success', title, message });

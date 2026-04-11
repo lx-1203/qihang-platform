@@ -94,7 +94,7 @@ export default function CompanyLayout() {
           <Outlet />
         </div>
       </main>
-      <DevFloatButton />
+      {import.meta.env.DEV && <DevFloatButton />}
     </div>
   );
 }

@@ -7,7 +7,10 @@ import {
   MessageSquare, ArrowRight, RefreshCw
 } from 'lucide-react';
 import http from '@/api/http';
+import ConfirmDialog from '@/components/ui/ConfirmDialog';
 import FeatureStatus from '@/components/FeatureStatus';
+import { CardSkeleton } from '../../components/ui/Skeleton';
+import ErrorState from '../../components/ui/ErrorState';
 
 // ====== 企业端简历筛选池 (Kanban) ======
 // 商业级要求：五列看板、简历卡片、状态变更
@@ -49,10 +52,15 @@ const STATUS_TRANSITIONS: Record<ResumeStatus, ResumeStatus[]> = {
 
 export default function CompanyResumePool() {
   const [resumes, setResumes] = useState<ResumeCard[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [jobFilter, setJobFilter] = useState<string>('all');
   const [expandedCard, setExpandedCard] = useState<number | null>(null);
+
+  // 淘汰确认弹窗
+  const [rejectTarget, setRejectTarget] = useState<{ id: number; name: string } | null>(null);
+  const [rejectLoading, setRejectLoading] = useState(false);
 
   // 模拟简历数据
   const mockResumes: ResumeCard[] = [
@@ -71,8 +79,8 @@ export default function CompanyResumePool() {
     { id: 13, studentName: '林小雅', university: '厦门大学', major: '新闻传播', degree: '本科', jobTitle: '市场运营专员', status: 'rejected', appliedAt: '2026-03-30 16:00', phone: '139****0123', email: 'lin@example.com', avatar: '' },
   ];
 
-  // 可用的职位列表（从简历数据中提取）
-  const jobTitles = Array.from(new Set(mockResumes.map(r => r.jobTitle)));
+  // 可用的职位列表（从当前简历数据中提取）
+  const jobTitles = Array.from(new Set((resumes.length > 0 ? resumes : mockResumes).map(r => r.jobTitle)));
 
   useEffect(() => {
     fetchResumes();
@@ -81,6 +89,7 @@ export default function CompanyResumePool() {
   async function fetchResumes() {
     try {
       setLoading(true);
+      setError(null);
       const res = await http.get('/company/resumes', { params: { pageSize: 100 } });
       if (res.data?.code === 200 && res.data.data?.resumes) {
         // 将后端字段映射为前端字段
@@ -99,19 +108,40 @@ export default function CompanyResumePool() {
         }));
         setResumes(normalized);
       } else {
-        setResumes(mockResumes);
+        setError('获取简历数据失败，服务器返回异常');
       }
     } catch {
-      setResumes(mockResumes);
+      setError('网络请求失败，请检查网络连接后重试');
     } finally {
       setLoading(false);
     }
   }
 
   function changeStatus(id: number, newStatus: ResumeStatus) {
+    // 淘汰操作需要二次确认
+    if (newStatus === 'rejected') {
+      const resume = resumes.find(r => r.id === id);
+      setRejectTarget({ id, name: resume?.studentName || '' });
+      return;
+    }
+    applyStatusChange(id, newStatus);
+  }
+
+  function applyStatusChange(id: number, newStatus: ResumeStatus) {
     setResumes(prev => prev.map(r => r.id === id ? { ...r, status: newStatus } : r));
     // 尝试调用API
     http.put(`/company/resumes/${id}/status`, { status: newStatus }).catch(() => {});
+  }
+
+  async function handleConfirmReject() {
+    if (!rejectTarget) return;
+    try {
+      setRejectLoading(true);
+      applyStatusChange(rejectTarget.id, 'rejected');
+    } finally {
+      setRejectLoading(false);
+      setRejectTarget(null);
+    }
   }
 
   // 筛选后的简历
@@ -181,7 +211,26 @@ export default function CompanyResumePool() {
         </div>
       </div>
 
+      {/* 加载状态 */}
+      {loading && (
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <CardSkeleton key={i} />
+          ))}
+        </div>
+      )}
+
+      {/* 错误状态 */}
+      {!loading && error && (
+        <ErrorState
+          message={error}
+          onRetry={fetchResumes}
+          onLoadMockData={() => { setResumes(mockResumes); setError(null); }}
+        />
+      )}
+
       {/* Kanban 看板 */}
+      {!loading && !error && (<>
       <div className="flex gap-4 overflow-x-auto pb-4" style={{ minHeight: '60vh' }}>
         {COLUMN_ORDER.map((status) => {
           const config = STATUS_CONFIG[status];
@@ -352,6 +401,19 @@ export default function CompanyResumePool() {
           </div>
         </div>
       </motion.div>
+      </>)}
+
+      {/* 淘汰确认弹窗 */}
+      <ConfirmDialog
+        open={!!rejectTarget}
+        variant="danger"
+        title="确定淘汰该候选人？"
+        description="淘汰后对方将收到通知，且无法恢复。"
+        confirmText="确认淘汰"
+        loading={rejectLoading}
+        onConfirm={handleConfirmReject}
+        onCancel={() => setRejectTarget(null)}
+      />
     </div>
   );
 }

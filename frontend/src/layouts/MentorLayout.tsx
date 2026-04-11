@@ -90,7 +90,7 @@ export default function MentorLayout() {
           <Outlet />
         </div>
       </main>
-      <DevFloatButton />
+      {import.meta.env.DEV && <DevFloatButton />}
     </div>
   );
 }

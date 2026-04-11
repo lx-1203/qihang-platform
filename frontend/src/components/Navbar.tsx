@@ -1,6 +1,6 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Search, UserCircle, Bell, LogOut, Settings, User, ChevronDown, Clock, X } from 'lucide-react';
+import { Search, UserCircle, Bell, LogOut, Settings, User, ChevronDown, Clock, X, Menu } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuthStore } from '@/store/auth';
 import { useConfigStore } from '@/store/config';
@@ -18,6 +18,8 @@ export default function Navbar() {
   const announcement = useConfigStore(s => s.getString('announcement', ''));
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
 
   // 搜索相关状态
@@ -36,12 +38,45 @@ export default function Navbar() {
     { path: '/study-abroad', label: '留学申请' },
   ];
 
-  // 获取未读通知数
+  // 获取未读通知数 + 30s 轮询（6.1）
   useEffect(() => {
     if (isAuthenticated) {
       fetchUnreadCount();
+      // 30s 轮询，页面不可见时暂停
+      let intervalId: ReturnType<typeof setInterval> | null = null;
+      const startPolling = () => {
+        intervalId = setInterval(fetchUnreadCount, 30000);
+      };
+      const stopPolling = () => {
+        if (intervalId) { clearInterval(intervalId); intervalId = null; }
+      };
+      const handleVisibility = () => {
+        if (document.hidden) { stopPolling(); }
+        else { fetchUnreadCount(); startPolling(); }
+      };
+      startPolling();
+      document.addEventListener('visibilitychange', handleVisibility);
+      return () => { stopPolling(); document.removeEventListener('visibilitychange', handleVisibility); };
     }
   }, [isAuthenticated]);
+
+  // 路由切换时自动关闭移动菜单
+  useEffect(() => {
+    setMobileMenuOpen(false);
+    setMobileSearchOpen(false);
+  }, [location.pathname]);
+
+  // ESC 键关闭移动菜单（无障碍）
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        if (mobileMenuOpen) setMobileMenuOpen(false);
+        if (mobileSearchOpen) setMobileSearchOpen(false);
+      }
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [mobileMenuOpen, mobileSearchOpen]);
 
   async function fetchUnreadCount() {
     try {
@@ -130,6 +165,21 @@ export default function Navbar() {
 
   const dashboardLink = getDashboardLink();
 
+  // 路由预加载映射（UX-005）— 鼠标悬停导航链接时预加载目标 chunk
+  const prefetchMap: Record<string, () => void> = {
+    '/jobs': () => import('../pages/Jobs'),
+    '/courses': () => import('../pages/Courses'),
+    '/guidance': () => import('../pages/Guidance'),
+    '/postgrad': () => import('../pages/Postgrad'),
+    '/entrepreneurship': () => import('../pages/Entrepreneurship'),
+    '/study-abroad': () => import('../pages/StudyAbroad'),
+  };
+
+  const handlePrefetch = useCallback((path: string) => {
+    const prefetch = prefetchMap[path];
+    if (prefetch) prefetch();
+  }, []);
+
   return (
     <header className="bg-white sticky top-0 z-50 border-b border-gray-100 shadow-sm">
       {/* 全站公告条（配置中心可控） */}
@@ -164,6 +214,7 @@ export default function Navbar() {
                   <Link
                     key={item.path}
                     to={item.path}
+                    onMouseEnter={() => handlePrefetch(item.path)}
                     className={`relative px-3 py-4 transition-colors ${
                       isActive ? 'text-[#14b8a6] font-bold' : 'text-[#4b5563] hover:text-[#111827] font-medium'
                     }`}
@@ -188,7 +239,16 @@ export default function Navbar() {
 
           {/* Right section */}
           <div className="flex items-center space-x-3 flex-shrink-0 ml-auto md:ml-0">
-            {/* Search */}
+            {/* Mobile search button */}
+            <button
+              onClick={() => { setMobileSearchOpen(!mobileSearchOpen); setMobileMenuOpen(false); }}
+              className="md:hidden p-2 text-gray-500 hover:text-primary-500 transition-colors rounded-lg"
+              aria-label="搜索"
+            >
+              <Search className="w-5 h-5" />
+            </button>
+
+            {/* Desktop Search */}
             <div className="hidden lg:flex relative items-center" ref={searchBoxRef}>
               <input
                 type="text"
@@ -344,9 +404,150 @@ export default function Navbar() {
                 </Link>
               </div>
             )}
+
+            {/* Mobile hamburger button */}
+            <button
+              onClick={() => { setMobileMenuOpen(!mobileMenuOpen); setMobileSearchOpen(false); }}
+              className="md:hidden p-2 text-gray-500 hover:text-primary-500 transition-colors rounded-lg"
+              aria-label={mobileMenuOpen ? '关闭菜单' : '打开菜单'}
+              aria-expanded={mobileMenuOpen}
+              aria-controls="mobile-nav-menu"
+            >
+              {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+            </button>
           </div>
         </div>
       </div>
+
+      {/* Mobile search panel */}
+      <AnimatePresence>
+        {mobileSearchOpen && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="md:hidden border-t border-gray-100 overflow-hidden"
+          >
+            <div className="px-4 py-3">
+              <div className="relative">
+                <input
+                  type="text"
+                  placeholder="搜索岗位、导师、面经..."
+                  value={navSearch}
+                  onChange={e => setNavSearch(e.target.value)}
+                  onKeyDown={(e) => {
+                    handleSearchKeyDown(e);
+                    if (e.key === 'Enter') setMobileSearchOpen(false);
+                  }}
+                  className="w-full pl-4 pr-10 py-2.5 bg-gray-100 border border-transparent rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary-400 focus:bg-white placeholder-gray-400 transition-all"
+                  autoFocus
+                />
+                <button
+                  className="absolute right-3 top-1/2 -translate-y-1/2"
+                  onClick={() => { handleNavSearch(); setMobileSearchOpen(false); }}
+                >
+                  <Search className="h-4 w-4 text-gray-400 hover:text-primary-500 transition-colors" />
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Mobile navigation menu */}
+      <AnimatePresence>
+        {mobileMenuOpen && (
+          <motion.div
+            id="mobile-nav-menu"
+            role="navigation"
+            aria-label="主导航"
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.2 }}
+            className="md:hidden border-t border-gray-100 bg-white overflow-hidden"
+          >
+            {/* Nav items */}
+            <nav className="px-4 py-2 space-y-1">
+              {navItems.map((item) => {
+                const isActive = item.path === '/'
+                  ? location.pathname === '/'
+                  : location.pathname.startsWith(item.path);
+                return (
+                  <Link
+                    key={item.path}
+                    to={item.path}
+                    className={`block px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                      isActive ? 'bg-primary-50 text-primary-600' : 'text-gray-700 hover:bg-gray-50'
+                    }`}
+                  >
+                    {item.label}
+                  </Link>
+                );
+              })}
+            </nav>
+
+            {/* User section */}
+            {isAuthenticated && user ? (
+              <div className="px-4 py-3 border-t border-gray-100 space-y-1">
+                <div className="flex items-center gap-3 px-3 py-2 mb-1">
+                  {user.avatar ? (
+                    <img src={user.avatar} alt="" className="w-8 h-8 rounded-full object-cover border border-gray-200" />
+                  ) : (
+                    <div className="w-8 h-8 rounded-full bg-primary-100 text-primary-700 flex items-center justify-center font-bold text-sm">
+                      {user.nickname?.charAt(0) || user.email?.charAt(0) || 'U'}
+                    </div>
+                  )}
+                  <div>
+                    <p className="text-sm font-medium text-gray-900">{user.nickname || user.email}</p>
+                    <p className="text-xs text-gray-500">{
+                      user.role === 'admin' ? '管理员' :
+                      user.role === 'company' ? '企业用户' :
+                      user.role === 'mentor' ? '导师' : '学生'
+                    }</p>
+                  </div>
+                </div>
+                {user.role === 'student' && (
+                  <Link to="/student/profile"
+                    className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-gray-700 hover:bg-gray-50 transition-colors">
+                    <User className="w-4 h-4 text-gray-400" /> 个人中心
+                  </Link>
+                )}
+                {dashboardLink && (
+                  <Link to={dashboardLink.path}
+                    className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-gray-700 hover:bg-gray-50 transition-colors">
+                    <Settings className="w-4 h-4 text-gray-400" /> {dashboardLink.label}
+                  </Link>
+                )}
+                <Link to="/notifications"
+                  className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-gray-700 hover:bg-gray-50 transition-colors">
+                  <Bell className="w-4 h-4 text-gray-400" />
+                  我的消息
+                  {unreadCount > 0 && (
+                    <span className="ml-auto px-1.5 py-0.5 bg-red-100 text-red-600 text-[10px] font-medium rounded-full">
+                      {unreadCount}
+                    </span>
+                  )}
+                </Link>
+                <button
+                  onClick={handleLogout}
+                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-red-600 hover:bg-red-50 transition-colors"
+                >
+                  <LogOut className="w-4 h-4" /> 退出登录
+                </button>
+              </div>
+            ) : (
+              <div className="px-4 py-3 border-t border-gray-100">
+                <Link to="/login"
+                  className="flex items-center justify-center gap-2 w-full px-4 py-2.5 bg-primary-500 text-white rounded-lg text-sm font-medium hover:bg-primary-600 transition-colors">
+                  <UserCircle className="w-4 h-4" /> 登录 / 注册
+                </Link>
+              </div>
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </header>
   );
 }

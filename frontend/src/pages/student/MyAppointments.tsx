@@ -6,6 +6,9 @@ import {
   XCircle, AlertCircle, DollarSign
 } from 'lucide-react';
 import http from '@/api/http';
+import { ListSkeleton } from '../../components/ui/Skeleton';
+import ErrorState from '../../components/ui/ErrorState';
+import { showToast } from '@/components/ui/ToastContainer';
 
 // ====== 我的预约（导师预约管理） ======
 // 预约列表、状态筛选、完成后评价（星级+文本）
@@ -91,9 +94,10 @@ const statusConfig: Record<AppointmentStatus, { label: string; color: string; bg
 };
 
 export default function MyAppointments() {
-  const [appointments, setAppointments] = useState<Appointment[]>(mockAppointments);
+  const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [activeTab, setActiveTab] = useState<AppointmentStatus>('upcoming');
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [showReviewModal, setShowReviewModal] = useState(false);
   const [reviewForm, setReviewForm] = useState<ReviewForm>({ appointmentId: 0, rating: 5, content: '' });
   const [submittingReview, setSubmittingReview] = useState(false);
@@ -129,8 +133,9 @@ export default function MyAppointments() {
         }));
         setAppointments(normalized);
       }
-    } catch {
-      // 使用默认 Mock 数据
+    } catch (err) {
+      setError('数据加载失败，请刷新重试');
+      if (import.meta.env.DEV) console.error('[DEV] API error:', err);
     } finally {
       setLoading(false);
     }
@@ -171,6 +176,9 @@ export default function MyAppointments() {
     acc[app.status] = (acc[app.status] || 0) + 1;
     return acc;
   }, {} as Record<string, number>);
+
+  if (loading) return <div className="max-w-4xl mx-auto px-4 py-8"><ListSkeleton count={5} /></div>;
+  if (error) return <div className="max-w-4xl mx-auto px-4 py-8"><ErrorState message={error} onRetry={() => { setError(null); fetchAppointments(); }} onLoadMockData={() => { setAppointments(mockAppointments); setError(null); }} /></div>;
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
@@ -312,11 +320,11 @@ export default function MyAppointments() {
                     {/* 即将开始 → 操作按钮 */}
                     {app.status === 'upcoming' && (
                       <div className="mt-4 pt-4 border-t border-gray-50 flex items-center gap-3">
-                        <button className="flex items-center gap-2 px-4 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors text-sm font-medium">
+                        <button onClick={() => showToast({ type: 'info', title: '功能开发中', message: '在线会议功能正在开发中' })} className="flex items-center gap-2 px-4 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors text-sm font-medium">
                           <Video className="w-4 h-4" />
                           进入会议
                         </button>
-                        <button className="px-4 py-2 border border-gray-300 text-gray-600 rounded-lg hover:bg-gray-50 transition-colors text-sm">
+                        <button onClick={() => showToast({ type: 'info', title: '功能开发中', message: '取消预约功能正在开发中，请联系导师' })} className="px-4 py-2 border border-gray-300 text-gray-600 rounded-lg hover:bg-gray-50 transition-colors text-sm">
                           取消预约
                         </button>
                       </div>

@@ -6,6 +6,7 @@ import {
   Loader2, User, X, Building2, BookOpen
 } from 'lucide-react';
 import http from '@/api/http';
+import { showToast } from '@/components/ui/ToastContainer';
 
 // 人才数据结构（匹配后端 /api/company/talent 返回）
 interface TalentItem {
@@ -301,7 +302,10 @@ export default function TalentSearch() {
                           查看简历
                         </a>
                       )}
-                      <button className="flex items-center gap-1 px-3 py-1.5 bg-primary-50 text-primary-700 rounded-lg text-xs font-medium hover:bg-primary-100 transition-colors">
+                      <button
+                        onClick={() => showToast({ type: 'info', title: '功能开发中', message: '该功能正在开发中，敬请期待' })}
+                        className="flex items-center gap-1 px-3 py-1.5 bg-primary-50 text-primary-700 rounded-lg text-xs font-medium hover:bg-primary-100 transition-colors"
+                      >
                         <Mail size={12} />
                         联系Ta
                       </button>

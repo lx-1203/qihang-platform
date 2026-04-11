@@ -26,6 +26,31 @@ const __dirname = path.dirname(__filename);
 
 const router = Router();
 
+// ====== 文件签名验证 — Magic Bytes（SEC-007）======
+// 防止攻击者伪造 mimetype 上传恶意文件
+const MAGIC_BYTES = {
+  'image/jpeg': [0xFF, 0xD8, 0xFF],
+  'image/jpg':  [0xFF, 0xD8, 0xFF],
+  'image/png':  [0x89, 0x50, 0x4E, 0x47],
+  'image/gif':  [0x47, 0x49, 0x46],
+  'image/webp': [0x52, 0x49, 0x46, 0x46], // RIFF header
+  'application/pdf': [0x25, 0x50, 0x44, 0x46], // %PDF
+};
+
+function validateFileSignature(filePath, mimetype) {
+  const expected = MAGIC_BYTES[mimetype];
+  if (!expected) return true; // doc/docx 等 ZIP 格式，跳过签名验证
+  try {
+    const fd = fs.openSync(filePath, 'r');
+    const buffer = Buffer.alloc(8);
+    fs.readSync(fd, buffer, 0, 8, 0);
+    fs.closeSync(fd);
+    return expected.every((byte, i) => buffer[i] === byte);
+  } catch {
+    return false;
+  }
+}
+
 // 确保 uploads 目录存在
 const UPLOAD_DIR = path.join(__dirname, '..', 'uploads');
 const AVATAR_DIR = path.join(UPLOAD_DIR, 'avatars');
@@ -120,6 +145,12 @@ router.post('/', authMiddleware, (req, res) => {
     }
 
     const file = req.file;
+
+    // 文件签名验证 — 防止伪造 mimetype（SEC-007）
+    if (!validateFileSignature(file.path, file.mimetype)) {
+      fs.unlinkSync(file.path);
+      return res.status(400).json({ code: 400, message: '文件内容与声明的类型不匹配，请上传真实文件' });
+    }
 
     // 按类型校验文件大小
     if (ALLOWED_IMAGE_TYPES.includes(file.mimetype) && file.size > MAX_IMAGE_SIZE) {
