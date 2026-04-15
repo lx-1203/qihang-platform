@@ -1,6 +1,7 @@
 import { Outlet } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
+import FloatingService from '../components/FloatingService';
 import DevFloatButton from '../components/DevFloatButton';
 
 export default function MainLayout() {
@@ -11,6 +12,7 @@ export default function MainLayout() {
         <Outlet />
       </main>
       <Footer />
+      <FloatingService />
       {import.meta.env.DEV && <DevFloatButton />}
     </div>
   );

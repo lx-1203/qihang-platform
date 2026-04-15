@@ -1,7 +1,7 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Search, UserCircle, Bell, LogOut, Settings, User, ChevronDown, Clock, X, Menu } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { Search, UserCircle, Bell, LogOut, Settings, User, ChevronDown, Clock, X, Menu, ArrowRight } from 'lucide-react';
+import { motion, AnimatePresence, useScroll, useTransform } from 'framer-motion';
 import { useAuthStore } from '@/store/auth';
 import { useConfigStore } from '@/store/config';
 import http from '@/api/http';
@@ -20,6 +20,7 @@ export default function Navbar() {
   const [unreadCount, setUnreadCount] = useState(0);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
 
   // 搜索相关状态
@@ -27,6 +28,13 @@ export default function Navbar() {
   const [showSearchHistory, setShowSearchHistory] = useState(false);
   const [searchHistory, setSearchHistory] = useState<string[]>([]);
   const searchBoxRef = useRef<HTMLDivElement>(null);
+
+  // 滚动收缩导航栏
+  useEffect(() => {
+    const handleScroll = () => setIsScrolled(window.scrollY > 80);
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   const navItems = [
     { path: '/', label: '首页' },
@@ -181,7 +189,7 @@ export default function Navbar() {
   }, []);
 
   return (
-    <header className="bg-white sticky top-0 z-50 border-b border-gray-100 shadow-sm">
+    <header className={`sticky top-0 z-50 border-b border-gray-100 transition-all duration-300 ease-out ${isScrolled ? 'bg-white/95 backdrop-blur-md shadow-md' : 'bg-white shadow-sm'}`}>
       {/* 全站公告条（配置中心可控） */}
       {announcement && (
         <div className="bg-primary-600 text-white text-center text-xs py-1.5 px-4">
@@ -189,22 +197,22 @@ export default function Navbar() {
         </div>
       )}
       <div className="max-w-[1200px] mx-auto px-4 sm:px-6">
-        <div className="flex justify-between items-center h-14">
+        <div className={`flex justify-between items-center transition-all duration-300 ${isScrolled ? 'h-12' : 'h-14'}`}>
           {/* Left section: Logo and Nav */}
           <div className="flex items-center">
             <Link to="/" className="flex-shrink-0 flex items-center mr-8 lg:mr-12">
               {brandLogo ? (
-                <img src={brandLogo} alt={brandName} className="h-8 mr-2" />
+                <img src={brandLogo} alt={brandName} className={`${isScrolled ? 'h-7' : 'h-8'} mr-2 transition-all duration-300`} />
               ) : (
-                <div className="w-8 h-8 bg-[#14b8a6] rounded-lg flex items-center justify-center text-white font-bold text-xl mr-2 shadow-sm">
+                <div className={`${isScrolled ? 'w-7 h-7' : 'w-8 h-8'} bg-[#14b8a6] rounded-lg flex items-center justify-center text-white font-bold text-xl mr-2 shadow-sm transition-all duration-300`}>
                   {brandName.charAt(0)}
                 </div>
               )}
-              <span className="text-xl font-bold text-[#111827] tracking-tight whitespace-nowrap">{brandName}</span>
+              <span className={`font-bold text-[#111827] tracking-tight whitespace-nowrap transition-all duration-300 ${isScrolled ? 'text-lg lg:hidden' : 'text-xl'}`}>{brandName}</span>
             </Link>
 
             {/* Navigation */}
-            <nav className="hidden md:flex space-x-1 text-[14px] whitespace-nowrap">
+            <nav className={`hidden md:flex space-x-1 text-[14px] whitespace-nowrap ${isScrolled ? 'lg:hidden' : ''}`}>
               {navItems.map((item) => {
                 const isActive = item.path === '/'
                   ? location.pathname === '/'
@@ -257,7 +265,7 @@ export default function Navbar() {
                 onChange={e => setNavSearch(e.target.value)}
                 onKeyDown={handleSearchKeyDown}
                 onFocus={handleSearchFocus}
-                className="w-[200px] pl-4 pr-10 py-1.5 bg-[#f3f4f6] border border-transparent rounded-full text-sm text-[#111827] focus:outline-none focus:ring-2 focus:ring-[#14b8a6] focus:bg-white placeholder-[#9ca3af] transition-all"
+                className={`${isScrolled ? 'w-[360px]' : 'w-[200px]'} pl-4 pr-10 py-1.5 bg-[#f3f4f6] border border-transparent rounded-full text-sm text-[#111827] focus:outline-none focus:ring-2 focus:ring-[#14b8a6] focus:bg-white placeholder-[#9ca3af] transition-all duration-300`}
               />
               <div
                 className="absolute right-3 top-1/2 -translate-y-1/2"
@@ -307,10 +315,14 @@ export default function Navbar() {
                 <Link
                   to="/notifications"
                   className="relative p-2 text-gray-500 hover:text-[#14b8a6] transition-colors rounded-lg hover:bg-gray-50"
+                  aria-label={unreadCount > 0 ? `通知，${unreadCount}条未读` : '通知'}
                 >
                   <Bell className="w-5 h-5" />
                   {unreadCount > 0 && (
-                    <span className="absolute top-1 right-1 min-w-[16px] h-4 px-1 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center leading-none">
+                    <span
+                      aria-live="polite"
+                      className="absolute top-1 right-1 min-w-[16px] h-4 px-1 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center leading-none"
+                    >
                       {unreadCount > 99 ? '99+' : unreadCount}
                     </span>
                   )}
@@ -321,6 +333,9 @@ export default function Navbar() {
                   <button
                     onClick={() => setUserMenuOpen(!userMenuOpen)}
                     className="flex items-center gap-2 py-1 px-2 rounded-lg hover:bg-gray-50 transition-colors"
+                    aria-label="用户菜单"
+                    aria-expanded={userMenuOpen}
+                    aria-haspopup="true"
                   >
                     {user.avatar ? (
                       <img src={user.avatar} alt="" className="w-7 h-7 rounded-full object-cover border border-gray-200" />
@@ -343,6 +358,8 @@ export default function Navbar() {
                         exit={{ opacity: 0, y: -8, scale: 0.95 }}
                         transition={{ duration: 0.15 }}
                         className="absolute right-0 top-full mt-2 w-52 bg-white rounded-xl shadow-lg border border-gray-200 py-2 z-50"
+                        role="menu"
+                        aria-label="用户操作菜单"
                       >
                         {/* 用户信息 */}
                         <div className="px-4 py-2 border-b border-gray-100">

@@ -384,6 +384,88 @@ router.post('/appointments/:id/review', idempotency(), async (req, res) => {
 
 // ==================== 收藏功能 ====================
 
+// ==================== 学生画像 ====================
+
+/**
+ * GET /api/student/portrait - 获取学生画像
+ */
+router.get('/portrait', async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const [rows] = await pool.query(
+      'SELECT * FROM student_portraits WHERE user_id = ?',
+      [userId]
+    );
+
+    if (rows.length === 0) {
+      return res.json({ code: 200, data: null, message: '暂无画像数据' });
+    }
+
+    const portrait = rows[0];
+    // JSON 字段解析
+    const data = {
+      skills: JSON.parse(portrait.skills || '[]'),
+      interests: JSON.parse(portrait.interests || '[]'),
+      industries: JSON.parse(portrait.industries || '[]'),
+      career_goals: JSON.parse(portrait.career_goals || '[]'),
+      self_intro: portrait.self_intro || '',
+      dimensions: JSON.parse(portrait.dimensions || '[]'),
+      updated_at: portrait.updated_at,
+    };
+
+    res.json({ code: 200, data });
+  } catch (err) {
+    console.error('获取学生画像失败:', err);
+    res.status(500).json({ code: 500, message: '服务器内部错误' });
+  }
+});
+
+/**
+ * PUT /api/student/portrait - 创建或更新学生画像
+ */
+router.put('/portrait', async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { skills, interests, industries, career_goals, self_intro, dimensions } = req.body;
+
+    // 序列化 JSON 字段
+    const skillsJson = JSON.stringify(skills || []);
+    const interestsJson = JSON.stringify(interests || []);
+    const industriesJson = JSON.stringify(industries || []);
+    const goalsJson = JSON.stringify(career_goals || []);
+    const dimensionsJson = JSON.stringify(dimensions || []);
+    const intro = (self_intro || '').substring(0, 200);
+
+    // UPSERT：存在则更新，不存在则插入
+    const [existing] = await pool.query(
+      'SELECT id FROM student_portraits WHERE user_id = ?',
+      [userId]
+    );
+
+    if (existing.length > 0) {
+      await pool.query(
+        `UPDATE student_portraits SET skills = ?, interests = ?, industries = ?,
+         career_goals = ?, self_intro = ?, dimensions = ?, updated_at = NOW()
+         WHERE user_id = ?`,
+        [skillsJson, interestsJson, industriesJson, goalsJson, intro, dimensionsJson, userId]
+      );
+    } else {
+      await pool.query(
+        `INSERT INTO student_portraits (user_id, skills, interests, industries, career_goals, self_intro, dimensions)
+         VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        [userId, skillsJson, interestsJson, industriesJson, goalsJson, intro, dimensionsJson]
+      );
+    }
+
+    res.json({ code: 200, message: '画像已保存' });
+  } catch (err) {
+    console.error('保存学生画像失败:', err);
+    res.status(500).json({ code: 500, message: '服务器内部错误' });
+  }
+});
+
+// ==================== 收藏功能（原有） ====================
+
 /**
  * GET /api/student/favorites - 收藏列表
  */

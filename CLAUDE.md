@@ -319,7 +319,7 @@ cd backend && npm start          # 启动后端服务
 - [x] `pages/company/Dashboard.tsx` — 企业数据看板
 - [x] `pages/company/Profile.tsx` — 企业资料编辑
 - [x] `pages/company/JobManage.tsx` — 职位管理
-- [ ] `pages/company/JobForm.tsx` — 发布/编辑职位表单
+- [x] `pages/company/JobForm.tsx` — 发布/编辑职位表单
 - [x] `pages/company/ResumePool.tsx` — Kanban 简历筛选池
 - [x] `pages/company/TalentSearch.tsx` — 人才搜索
 - [x] 更新 `CompanyLayout.tsx` + 注册路由
@@ -331,7 +331,7 @@ cd backend && npm start          # 启动后端服务
 - [x] `pages/mentor/Dashboard.tsx` — 导师数据看板
 - [x] `pages/mentor/Profile.tsx` — 导师资料编辑
 - [x] `pages/mentor/CourseManage.tsx` — 课程管理
-- [ ] `pages/mentor/CourseForm.tsx` — 课程编辑表单
+- [x] `pages/mentor/CourseForm.tsx` — 课程编辑表单
 - [x] `pages/mentor/Appointments.tsx` — 预约管理
 - [x] `pages/mentor/Students.tsx` — 我的学生列表
 - [x] 更新 `MentorLayout.tsx` + 注册路由
@@ -416,10 +416,10 @@ cd backend && npm start          # 启动后端服务
 │   └── 管理员前端 (6 页面) ✅
 ├── M3: 企业端 ✅
 │   ├── 企业 API (11 端点) ✅
-│   └── 企业前端 (5 页面, JobForm 待补) [~]
+│   └── 企业前端 (6 页面, 含 JobForm) ✅
 ├── M4: 导师端 ✅
 │   ├── 导师 API (10 端点) ✅
-│   └── 导师前端 (5 页面, CourseForm 待补) [~]
+│   └── 导师前端 (6 页面, 含 CourseForm) ✅
 ├── M5: 学生端 + 通知 + 上传 ✅
 │   ├── 学生 API (11 端点) ✅
 │   ├── 学生前端 (4 页面) ✅

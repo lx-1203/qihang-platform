@@ -160,7 +160,7 @@ export default function BackgroundBoost() {
           <div className="relative z-10 p-10 md:p-16">
             <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-8">
               <div className="max-w-2xl">
-                <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 backdrop-blur-md text-white border border-white/20 text-[13px] font-medium mb-6">
+                <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/20 backdrop-blur-md text-white border border-white/20 text-[13px] font-medium mb-6">
                   <Sparkles className="w-4 h-4 text-[#14b8a6]" /> 六大维度 · 全方位背景提升
                 </div>
                 <h1 className="text-[32px] md:text-[44px] font-bold text-white mb-4 leading-tight">
@@ -173,7 +173,7 @@ export default function BackgroundBoost() {
                   <button className="bg-[#14b8a6] text-white px-8 py-3.5 rounded-xl font-bold hover:bg-[#0f766e] transition-colors shadow-lg shadow-[#14b8a6]/20 flex items-center gap-2">
                     <MessageCircle className="w-4 h-4" /> 免费评估背景
                   </button>
-                  <button className="bg-white/10 backdrop-blur text-white px-8 py-3.5 rounded-xl font-bold hover:bg-white/20 transition-colors border border-white/20 flex items-center gap-2">
+                  <button className="bg-white/20 backdrop-blur text-white px-8 py-3.5 rounded-xl font-bold hover:bg-white/30 transition-colors border border-white/20 flex items-center gap-2">
                     <BookOpen className="w-4 h-4" /> 查看成功案例
                   </button>
                 </div>
@@ -186,7 +186,7 @@ export default function BackgroundBoost() {
                   { value: '95%', label: '满意度' },
                   { value: '120+', label: '在研课题' },
                 ].map((s, idx) => (
-                  <div key={idx} className="bg-white/10 backdrop-blur-md rounded-xl p-4 text-center border border-white/10 min-w-[120px]">
+                  <div key={idx} className="bg-white/15 backdrop-blur-md rounded-xl p-4 text-center border border-white/10 min-w-[120px]">
                     <div className="text-[24px] font-bold text-white">{s.value}</div>
                     <div className="text-[12px] text-gray-400">{s.label}</div>
                   </div>

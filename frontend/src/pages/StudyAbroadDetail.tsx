@@ -10,132 +10,44 @@ import {
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 
-// ====== Mock 数据（后续全部由后台接口提供，禁止前端写死） ======
+// ====== 数据导入（从 JSON 读取，管理员可通过配置页修改） ======
+import programDetailsData from '../data/study-abroad-program-details.json';
 
-const PROGRAM_DETAIL = {
-  id: 1,
-  school: '帝国理工学院',
-  schoolEn: 'Imperial College London',
-  program: '计算机科学 MSc',
-  programEn: 'MSc Computing',
-  country: '英国',
-  city: '伦敦',
-  ranking: 2,
-  subjectRanking: 3,
-  deadline: '2026-01-15',
-  tuition: '£38,900/年',
-  tuitionCNY: '约 ¥355,000',
-  duration: '1年（全日制）',
-  intake: '2026年秋季',
-  classSize: 120,
-  intlRatio: '85%',
-  employRate: '96%',
-  avgSalary: '£55,000',
-  logo: 'https://images.unsplash.com/photo-1607237138185-eedd9c632b0b?w=200&q=80',
-  cover: 'https://images.unsplash.com/photo-1526129318478-62ed807ebdf9?w=1200&q=80',
-  tags: ['STEM', '热门', 'QS Top 10', 'PSW签证'],
-  description: '帝国理工学院计算机科学硕士项目（MSc Computing）是英国最顶尖的CS硕士项目之一。该项目旨在为具有不同背景的学生提供扎实的计算机科学理论基础与实践技能，涵盖人工智能、机器学习、软件工程、数据库系统、计算机视觉等多个前沿方向。\n\n项目注重理论与实践结合，最后一个学期需完成个人或团队毕业项目（Individual/Group Project），通常与工业界合作（如Google DeepMind、Microsoft Research）。毕业生在全球科技企业中极具竞争力，平均起薪位居英国CS硕士项目前三。',
-  highlights: [
-    { text: 'QS 计算机科学学科排名全球第 3', icon: Award },
-    { text: '毕业生平均起薪 £55,000/年（约50万人民币）', icon: DollarSign },
-    { text: '与 Google、Meta、Microsoft、Apple 等企业有深度合作', icon: Building2 },
-    { text: '可选择个人项目或团队项目作为毕业课题', icon: Target },
-    { text: '地处伦敦 South Kensington，距海德公园步行5分钟', icon: MapPin },
-    { text: '毕业可获 PSW 签证留英工作 2 年', icon: Briefcase },
-  ],
-  requirements: {
-    gpa: '一等学位或以上（相当于 GPA 3.5/4.0 或国内985/211均分85+，双非90+）',
-    language: 'IELTS 7.0（单项不低于 6.5）或 TOEFL 100（单项不低于 22）',
-    background: '计算机科学、数学、电子工程、物理等理工科本科学位。转专业申请者需有较强的编程和数学基础。',
-    other: '需提交个人陈述（Personal Statement，500字以内）、两封学术推荐信、CV、成绩单',
-    workExp: '不强制要求工作经验，但有相关实习或项目经历会显著增加竞争力',
-    interview: '部分申请者会被邀请参加在线面试（约30分钟），考察编程思维和学术潜力',
-  },
-  materials: [
-    { name: '成绩单（中英文公证件）', required: true, tip: '需学校官方盖章' },
-    { name: '学位证 / 在读证明', required: true, tip: '在读生提交在读证明' },
-    { name: '个人陈述 PS', required: true, tip: '500字以内，突出学术热情和职业规划' },
-    { name: '简历 CV', required: true, tip: '1-2页，突出技术项目和实习经历' },
-    { name: '两封学术推荐信', required: true, tip: '建议找课程导师或研究导师' },
-    { name: 'IELTS / TOEFL 成绩单', required: true, tip: '可后补，最迟6月前提交' },
-    { name: 'GRE 成绩', required: false, tip: '不要求，但高分是加分项' },
-    { name: '编程作品集 / GitHub', required: false, tip: '强烈建议提供' },
-    { name: '实习证明', required: false, tip: '有大厂实习经历是加分项' },
-  ],
-  timeline: [
-    { date: '2025-10-01', event: '申请系统开放', detail: 'IC官网在线申请系统开放' },
-    { date: '2025-11-30', event: '第一轮截止（建议）', detail: '强烈建议在此前提交，第一轮录取概率最高' },
-    { date: '2026-01-15', event: '最终截止日期', detail: '所有申请材料须在此日期前提交' },
-    { date: '2026-02-15', event: '面试通知', detail: '部分申请者收到面试邀请' },
-    { date: '2026-03-15', event: '发放录取通知', detail: 'Offer / Conditional Offer 发放' },
-    { date: '2026-06-30', event: '缴纳押金截止', detail: '接受Offer并支付£2,000押金' },
-    { date: '2026-09-28', event: '课程开始', detail: '新生入学周' },
-  ],
-  curriculum: [
-    {
-      semester: '秋季学期 (Autumn Term)',
-      courses: [
-        { name: '算法设计 (Algorithms Design)', credits: 15, type: '必修' },
-        { name: '数据库系统 (Database Systems)', credits: 15, type: '必修' },
-        { name: '逻辑与人工智能推理 (Logic & AI Reasoning)', credits: 15, type: '必修' },
-        { name: '计算机架构 (Computer Architecture)', credits: 15, type: '必修' },
-      ]
-    },
-    {
-      semester: '春季学期 (Spring Term)',
-      courses: [
-        { name: '机器学习 (Machine Learning)', credits: 15, type: '核心选修' },
-        { name: '计算机视觉 (Computer Vision)', credits: 15, type: '核心选修' },
-        { name: '自然语言处理 (NLP)', credits: 15, type: '选修' },
-        { name: '网络安全 (Cybersecurity)', credits: 15, type: '选修' },
-        { name: '分布式系统 (Distributed Systems)', credits: 15, type: '选修' },
-        { name: '深度学习 (Deep Learning)', credits: 15, type: '选修' },
-      ]
-    },
-    {
-      semester: '夏季学期 (Summer Term)',
-      courses: [
-        { name: '毕业项目 (Individual/Group Project)', credits: 60, type: '必修' },
-      ]
-    },
-  ],
-  offers: [
-    { id: 1, background: '985', university: '北京大学 计算机科学', gpa: '3.8/4.0', ielts: '7.5', gre: '328', internship: '字节跳动 后端开发', research: '2段科研', result: 'admitted', date: '2026-03-10', scholarship: '无' },
-    { id: 2, background: '985', university: '上海交通大学 软件工程', gpa: '3.7/4.0', ielts: '7.0', gre: '', internship: 'Microsoft 实习', research: '1段科研+论文', result: 'admitted', date: '2026-03-08', scholarship: 'Bursary £3,000' },
-    { id: 3, background: '211', university: '北京邮电大学 通信工程', gpa: '3.6/4.0', ielts: '7.0', gre: '320', internship: '华为 研发', research: '1段科研', result: 'admitted', date: '2026-03-12', scholarship: '无' },
-    { id: 4, background: '双非', university: '杭州电子科技大学 CS', gpa: '3.9/4.0', ielts: '7.5', gre: '325', internship: '阿里巴巴 算法', research: '2段科研+SCI', result: 'rejected', date: '2026-03-12', scholarship: '' },
-    { id: 5, background: '985', university: '浙江大学 信息工程', gpa: '3.5/4.0', ielts: '7.0', gre: '', internship: '腾讯 实习', research: '无', result: 'waitlisted', date: '2026-03-15', scholarship: '' },
-    { id: 6, background: '海本', university: 'UCL Computer Science', gpa: '3.7/4.0 (First)', ielts: '-', gre: '', internship: 'Amazon SDE Intern', research: '1段科研', result: 'admitted', date: '2026-02-28', scholarship: '无' },
-    { id: 7, background: '985', university: '清华大学 自动化', gpa: '3.9/4.0', ielts: '7.5', gre: '330', internship: 'Google 实习', research: '3段科研+顶会', result: 'admitted', date: '2026-02-20', scholarship: 'Bursary £5,000' },
-    { id: 8, background: '211', university: '武汉大学 计算机', gpa: '3.4/4.0', ielts: '6.5', gre: '', internship: '美团 后端', research: '无', result: 'rejected', date: '2026-03-18', scholarship: '' },
-  ],
-  scholarship: '该项目提供以下奖学金机会：\n\n1. Departmental Bursary（£2,000-5,000）：需在申请时勾选奖学金选项，根据学术成绩和综合背景评定\n2. President\'s Scholarship：仅限博士生，硕士不适用\n3. CSC-Imperial Scholarship（全奖）：需先获得Imperial的Offer，再向CSC申请，名额极少\n4. 外部奖学金：Chevening Scholarship（英国政府奖学金）、志奋领奖学金等',
-  website: 'https://www.imperial.ac.uk/computing/prospective-students/courses/msc-computing/',
-  relatedPrograms: [
-    { id: 2, school: '帝国理工学院', program: '人工智能 MSc', ranking: 2 },
-    { id: 3, school: 'UCL', program: '计算机科学 MSc', ranking: 9 },
-    { id: 4, school: '爱丁堡大学', program: '人工智能 MSc', ranking: 22 },
-    { id: 5, school: '剑桥大学', program: '高级计算机科学 MPhil', ranking: 5 },
-  ],
-  employmentData: {
-    industries: [
-      { name: '科技/互联网', percent: 45 },
-      { name: '金融/银行', percent: 22 },
-      { name: '咨询', percent: 15 },
-      { name: '学术/读博', percent: 10 },
-      { name: '其他', percent: 8 },
-    ],
-    topEmployers: ['Google', 'Meta', 'Amazon', 'Microsoft', 'Goldman Sachs', 'BCG', 'Apple', 'DeepMind'],
-  },
+// 高亮图标映射：JSON 中存储字符串，渲染时映射为 Lucide 组件
+const HIGHLIGHT_ICON_MAP: Record<string, any> = {
+  Award, DollarSign, Building2, Target, MapPin, Briefcase,
+  GraduationCap, BookOpen, Star, Globe, Users,
 };
 
 // ====== 组件 ======
 
 export default function StudyAbroadDetail() {
-  const { id } = useParams();
+  const { id: rawId } = useParams();
+  const programId = parseInt(rawId || '1', 10);
+  const prog = (programDetailsData.programs as any[]).find((p: any) => p.id === programId);
+
   const [activeTab, setActiveTab] = useState<'overview' | 'requirements' | 'curriculum' | 'offers' | 'career'>('overview');
   const [saved, setSaved] = useState(false);
-  const prog = PROGRAM_DETAIL; // 后续根据 id 从 API 获取
+
+  // 404 处理：项目不存在
+  if (!prog) {
+    return (
+      <div className="min-h-screen bg-[#f9fafb] flex items-center justify-center p-4">
+        <div className="max-w-md w-full bg-white rounded-2xl shadow-lg p-8 text-center">
+          <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6">
+            <AlertCircle className="w-8 h-8 text-red-500" />
+          </div>
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">项目未找到</h1>
+          <p className="text-gray-500 mb-6">
+            抱歉，未找到 ID 为 {rawId} 的留学项目。请返回选校页面重新选择。
+          </p>
+          <Link to="/study-abroad/programs" className="inline-flex items-center gap-2 px-6 py-3 bg-[#14b8a6] text-white rounded-xl font-bold hover:bg-[#0f766e] transition-colors">
+            <ArrowRight className="w-4 h-4" /> 返回选校
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   const tabs = [
     { key: 'overview' as const, label: '项目概览', icon: BookOpen },
@@ -154,7 +66,7 @@ export default function StudyAbroadDetail() {
 
       {/* ====== 顶部封面 ====== */}
       <div className="relative h-[240px] md:h-[320px] overflow-hidden bg-[#0f172a]">
-        <img src={prog.cover} alt="" className="w-full h-full object-cover opacity-30" />
+        <img src={prog.cover} alt="" className="w-full h-full object-cover opacity-40" />
         <div className="absolute inset-0 bg-gradient-to-t from-[#0f172a] via-[#0f172a]/60 to-transparent" />
         <div className="absolute inset-0 bg-gradient-to-r from-[#14b8a6]/10 via-transparent to-purple-500/10" />
       </div>
@@ -283,14 +195,17 @@ export default function StudyAbroadDetail() {
 
                 <h3 className="text-[20px] font-bold text-[#111827] mb-4">项目亮点</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-8">
-                  {prog.highlights.map((h, idx) => (
+                  {prog.highlights.map((h: any, idx: number) => {
+                  const HIcon = HIGHLIGHT_ICON_MAP[h.icon] || Star;
+                  return (
                     <div key={idx} className="flex items-start gap-3 bg-[#f9fafb] rounded-xl p-4 border border-gray-100">
                       <div className="w-10 h-10 bg-[#f0fdfa] rounded-xl flex items-center justify-center shrink-0">
-                        <h.icon className="w-5 h-5 text-[#14b8a6]" />
+                        <HIcon className="w-5 h-5 text-[#14b8a6]" />
                       </div>
                       <span className="text-[14px] text-[#374151] font-medium pt-2">{h.text}</span>
                     </div>
-                  ))}
+                  );
+                })}
                 </div>
 
                 <h3 className="text-[20px] font-bold text-[#111827] mb-4">奖学金信息</h3>

@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import {
   BookOpen, Plus, Eye, Star, ToggleLeft, ToggleRight,
-  Edit3, Trash2, X, Search, Filter, Image,
-  FileText, BarChart3, Users, Loader2
+  Edit3, Trash2, Search, Filter,
+  Users, Loader2
 } from 'lucide-react';
 import http from '@/api/http';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
@@ -25,14 +26,6 @@ interface Course {
   rating_count: number;
   status: 'active' | 'inactive' | 'review';
   created_at: string;
-}
-
-interface CourseForm {
-  title: string;
-  description: string;
-  category: string;
-  cover: string;
-  difficulty: 'beginner' | 'intermediate' | 'advanced';
 }
 
 const mockCourses: Course[] = [
@@ -58,10 +51,6 @@ const mockCourses: Course[] = [
   },
 ];
 
-const emptyForm: CourseForm = {
-  title: '', description: '', category: '', cover: '', difficulty: 'beginner',
-};
-
 const categories = ['简历指导', '面试辅导', '职业规划', '考研指导', '创业指导', '留学规划'];
 const difficultyMap = {
   beginner: { label: '入门', color: 'bg-green-50 text-green-700' },
@@ -75,15 +64,12 @@ const statusMap = {
 };
 
 export default function CourseManage() {
+  const navigate = useNavigate();
   const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchKeyword, setSearchKeyword] = useState('');
   const [filterCategory, setFilterCategory] = useState('all');
-  const [showModal, setShowModal] = useState(false);
-  const [editingId, setEditingId] = useState<number | null>(null);
-  const [form, setForm] = useState<CourseForm>(emptyForm);
-  const [submitting, setSubmitting] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<{id: number; name: string} | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
 
@@ -129,64 +115,14 @@ export default function CourseManage() {
     }
   }
 
-  // 打开编辑模态框
+  // 打开编辑页面
   function openEdit(course: Course) {
-    setEditingId(course.id);
-    setForm({
-      title: course.title,
-      description: course.description,
-      category: course.category,
-      cover: course.cover,
-      difficulty: course.difficulty,
-    });
-    setShowModal(true);
+    navigate(`/mentor/courses/${course.id}/edit`, { state: { course } });
   }
 
-  // 打开创建模态框
+  // 打开创建页面
   function openCreate() {
-    setEditingId(null);
-    setForm(emptyForm);
-    setShowModal(true);
-  }
-
-  // 提交表单
-  async function handleSubmit() {
-    if (!form.title.trim() || !form.category) return;
-    try {
-      setSubmitting(true);
-      if (editingId) {
-        // 编辑
-        await http.put(`/mentor/courses/${editingId}`, form);
-        setCourses(prev => prev.map(c =>
-          c.id === editingId ? { ...c, ...form } : c
-        ));
-      } else {
-        // 创建
-        const newCourse: Course = {
-          id: Date.now(),
-          ...form,
-          views: 0,
-          rating: 0,
-          rating_count: 0,
-          status: 'active',
-          created_at: new Date().toISOString().split('T')[0],
-        };
-        try {
-          const res = await http.post('/mentor/courses', form);
-          if (res.data?.code === 200 && res.data.data) {
-            newCourse.id = res.data.data.id || newCourse.id;
-          }
-        } catch {
-          // 使用前端生成的数据
-        }
-        setCourses(prev => [newCourse, ...prev]);
-      }
-      setShowModal(false);
-    } catch {
-      // 忽略错误
-    } finally {
-      setSubmitting(false);
-    }
+    navigate('/mentor/courses/new');
   }
 
   // 删除课程
@@ -410,135 +346,6 @@ export default function CourseManage() {
           </div>
         )}
       </div>
-
-      {/* 创建/编辑课程模态框 */}
-      <AnimatePresence>
-        {showModal && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
-            onClick={() => setShowModal(false)}
-          >
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              onClick={e => e.stopPropagation()}
-              className="bg-white rounded-2xl w-full max-w-lg shadow-xl"
-            >
-              {/* 模态框头部 */}
-              <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-                <h3 className="text-lg font-bold text-gray-900">
-                  {editingId ? '编辑课程' : '创建新课程'}
-                </h3>
-                <button
-                  onClick={() => setShowModal(false)}
-                  className="p-1 rounded-lg hover:bg-gray-100 transition-colors"
-                >
-                  <X className="w-5 h-5 text-gray-400" />
-                </button>
-              </div>
-
-              {/* 模态框内容 */}
-              <div className="px-6 py-5 space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    <FileText className="w-4 h-4 inline mr-1" />
-                    课程标题 <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    value={form.title}
-                    onChange={e => setForm(prev => ({ ...prev, title: e.target.value }))}
-                    placeholder="输入课程标题"
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    课程描述
-                  </label>
-                  <textarea
-                    value={form.description}
-                    onChange={e => setForm(prev => ({ ...prev, description: e.target.value }))}
-                    rows={3}
-                    placeholder="介绍课程内容、适合人群..."
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 resize-none"
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      课程分类 <span className="text-red-500">*</span>
-                    </label>
-                    <select
-                      value={form.category}
-                      onChange={e => setForm(prev => ({ ...prev, category: e.target.value }))}
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm appearance-none bg-white focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                    >
-                      <option value="">选择分类</option>
-                      {categories.map(cat => (
-                        <option key={cat} value={cat}>{cat}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      <BarChart3 className="w-4 h-4 inline mr-1" />
-                      难度等级
-                    </label>
-                    <select
-                      value={form.difficulty}
-                      onChange={e => setForm(prev => ({ ...prev, difficulty: e.target.value as CourseForm['difficulty'] }))}
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm appearance-none bg-white focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                    >
-                      <option value="beginner">入门</option>
-                      <option value="intermediate">进阶</option>
-                      <option value="advanced">高级</option>
-                    </select>
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    <Image className="w-4 h-4 inline mr-1" />
-                    封面图片链接
-                  </label>
-                  <input
-                    type="url"
-                    value={form.cover}
-                    onChange={e => setForm(prev => ({ ...prev, cover: e.target.value }))}
-                    placeholder="输入封面图片URL（可选）"
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                  />
-                </div>
-              </div>
-
-              {/* 模态框底部 */}
-              <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-gray-100">
-                <button
-                  onClick={() => setShowModal(false)}
-                  className="px-5 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-                >
-                  取消
-                </button>
-                <button
-                  onClick={handleSubmit}
-                  disabled={submitting || !form.title.trim() || !form.category}
-                  className="flex items-center gap-2 px-5 py-2.5 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 transition-colors disabled:opacity-50"
-                >
-                  {submitting && <Loader2 className="w-4 h-4 animate-spin" />}
-                  {editingId ? '保存修改' : '创建课程'}
-                </button>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
 
       {/* 删除确认弹窗 */}
       <ConfirmDialog

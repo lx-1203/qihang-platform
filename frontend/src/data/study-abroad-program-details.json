@@ -1,0 +1,346 @@
+{
+  "_meta": {
+    "version": "1.0",
+    "lastUpdated": "2026-04-14",
+    "description": "留学项目详情数据 — highlights.icon 存储 Lucide 图标名，渲染时映射为组件"
+  },
+
+  "programs": [
+    {
+      "id": 1,
+      "school": "帝国理工学院",
+      "schoolEn": "Imperial College London",
+      "program": "计算机科学 MSc",
+      "programEn": "MSc Computing",
+      "country": "英国",
+      "city": "伦敦",
+      "ranking": 2,
+      "subjectRanking": 3,
+      "deadline": "2026-01-15",
+      "tuition": "£38,900/年",
+      "tuitionCNY": "约 ¥355,000",
+      "duration": "1年（全日制）",
+      "intake": "2026年秋季",
+      "classSize": 120,
+      "intlRatio": "85%",
+      "employRate": "96%",
+      "avgSalary": "£55,000",
+      "logo": "https://images.unsplash.com/photo-1607237138185-eedd9c632b0b?w=200&q=80",
+      "cover": "https://images.unsplash.com/photo-1526129318478-62ed807ebdf9?w=1200&q=80",
+      "tags": ["STEM", "热门", "QS Top 10", "PSW签证"],
+      "description": "帝国理工学院计算机科学硕士项目（MSc Computing）是英国最顶尖的CS硕士项目之一。该项目旨在为具有不同背景的学生提供扎实的计算机科学理论基础与实践技能，涵盖人工智能、机器学习、软件工程、数据库系统、计算机视觉等多个前沿方向。\n\n项目注重理论与实践结合，最后一个学期需完成个人或团队毕业项目（Individual/Group Project），通常与工业界合作（如Google DeepMind、Microsoft Research）。毕业生在全球科技企业中极具竞争力，平均起薪位居英国CS硕士项目前三。",
+      "highlights": [
+        { "text": "QS 计算机科学学科排名全球第 3", "icon": "Award" },
+        { "text": "毕业生平均起薪 £55,000/年（约50万人民币）", "icon": "DollarSign" },
+        { "text": "与 Google、Meta、Microsoft、Apple 等企业有深度合作", "icon": "Building2" },
+        { "text": "可选择个人项目或团队项目作为毕业课题", "icon": "Target" },
+        { "text": "地处伦敦 South Kensington，距海德公园步行5分钟", "icon": "MapPin" },
+        { "text": "毕业可获 PSW 签证留英工作 2 年", "icon": "Briefcase" }
+      ],
+      "requirements": {
+        "gpa": "一等学位或以上（相当于 GPA 3.5/4.0 或国内985/211均分85+，双非90+）",
+        "language": "IELTS 7.0（单项不低于 6.5）或 TOEFL 100（单项不低于 22）",
+        "background": "计算机科学、数学、电子工程、物理等理工科本科学位。转专业申请者需有较强的编程和数学基础。",
+        "other": "需提交个人陈述（Personal Statement，500字以内）、两封学术推荐信、CV、成绩单",
+        "workExp": "不强制要求工作经验，但有相关实习或项目经历会显著增加竞争力",
+        "interview": "部分申请者会被邀请参加在线面试（约30分钟），考察编程思维和学术潜力"
+      },
+      "materials": [
+        { "name": "成绩单（中英文公证件）", "required": true, "tip": "需学校官方盖章" },
+        { "name": "学位证 / 在读证明", "required": true, "tip": "在读生提交在读证明" },
+        { "name": "个人陈述 PS", "required": true, "tip": "500字以内，突出学术热情和职业规划" },
+        { "name": "简历 CV", "required": true, "tip": "1-2页，突出技术项目和实习经历" },
+        { "name": "两封学术推荐信", "required": true, "tip": "建议找课程导师或研究导师" },
+        { "name": "IELTS / TOEFL 成绩单", "required": true, "tip": "可后补，最迟6月前提交" },
+        { "name": "GRE 成绩", "required": false, "tip": "不要求，但高分是加分项" },
+        { "name": "编程作品集 / GitHub", "required": false, "tip": "强烈建议提供" },
+        { "name": "实习证明", "required": false, "tip": "有大厂实习经历是加分项" }
+      ],
+      "timeline": [
+        { "date": "2025-10-01", "event": "申请系统开放", "detail": "IC官网在线申请系统开放" },
+        { "date": "2025-11-30", "event": "第一轮截止（建议）", "detail": "强烈建议在此前提交，第一轮录取概率最高" },
+        { "date": "2026-01-15", "event": "最终截止日期", "detail": "所有申请材料须在此日期前提交" },
+        { "date": "2026-02-15", "event": "面试通知", "detail": "部分申请者收到面试邀请" },
+        { "date": "2026-03-15", "event": "发放录取通知", "detail": "Offer / Conditional Offer 发放" },
+        { "date": "2026-06-30", "event": "缴纳押金截止", "detail": "接受Offer并支付£2,000押金" },
+        { "date": "2026-09-28", "event": "课程开始", "detail": "新生入学周" }
+      ],
+      "curriculum": [
+        {
+          "semester": "秋季学期 (Autumn Term)",
+          "courses": [
+            { "name": "算法设计 (Algorithms Design)", "credits": 15, "type": "必修" },
+            { "name": "数据库系统 (Database Systems)", "credits": 15, "type": "必修" },
+            { "name": "逻辑与人工智能推理 (Logic & AI Reasoning)", "credits": 15, "type": "必修" },
+            { "name": "计算机架构 (Computer Architecture)", "credits": 15, "type": "必修" }
+          ]
+        },
+        {
+          "semester": "春季学期 (Spring Term)",
+          "courses": [
+            { "name": "机器学习 (Machine Learning)", "credits": 15, "type": "核心选修" },
+            { "name": "计算机视觉 (Computer Vision)", "credits": 15, "type": "核心选修" },
+            { "name": "自然语言处理 (NLP)", "credits": 15, "type": "选修" },
+            { "name": "网络安全 (Cybersecurity)", "credits": 15, "type": "选修" },
+            { "name": "分布式系统 (Distributed Systems)", "credits": 15, "type": "选修" },
+            { "name": "深度学习 (Deep Learning)", "credits": 15, "type": "选修" }
+          ]
+        },
+        {
+          "semester": "夏季学期 (Summer Term)",
+          "courses": [
+            { "name": "毕业项目 (Individual/Group Project)", "credits": 60, "type": "必修" }
+          ]
+        }
+      ],
+      "offers": [
+        { "id": 1, "background": "985", "university": "北京大学 计算机科学", "gpa": "3.8/4.0", "ielts": "7.5", "gre": "328", "internship": "字节跳动 后端开发", "research": "2段科研", "result": "admitted", "date": "2026-03-10", "scholarship": "" },
+        { "id": 2, "background": "985", "university": "上海交通大学 软件工程", "gpa": "3.7/4.0", "ielts": "7.0", "gre": "", "internship": "Microsoft 实习", "research": "1段科研+论文", "result": "admitted", "date": "2026-03-08", "scholarship": "Bursary £3,000" },
+        { "id": 3, "background": "211", "university": "北京邮电大学 通信工程", "gpa": "3.6/4.0", "ielts": "7.0", "gre": "320", "internship": "华为 研发", "research": "1段科研", "result": "admitted", "date": "2026-03-12", "scholarship": "" },
+        { "id": 4, "background": "双非", "university": "杭州电子科技大学 CS", "gpa": "3.9/4.0", "ielts": "7.5", "gre": "325", "internship": "阿里巴巴 算法", "research": "2段科研+SCI", "result": "rejected", "date": "2026-03-12", "scholarship": "" },
+        { "id": 5, "background": "985", "university": "浙江大学 信息工程", "gpa": "3.5/4.0", "ielts": "7.0", "gre": "", "internship": "腾讯 实习", "research": "", "result": "waitlisted", "date": "2026-03-15", "scholarship": "" },
+        { "id": 6, "background": "海本", "university": "UCL Computer Science", "gpa": "3.7/4.0 (First)", "ielts": "-", "gre": "", "internship": "Amazon SDE Intern", "research": "1段科研", "result": "admitted", "date": "2026-02-28", "scholarship": "" },
+        { "id": 7, "background": "985", "university": "清华大学 自动化", "gpa": "3.9/4.0", "ielts": "7.5", "gre": "330", "internship": "Google 实习", "research": "3段科研+顶会", "result": "admitted", "date": "2026-02-20", "scholarship": "Bursary £5,000" },
+        { "id": 8, "background": "211", "university": "武汉大学 计算机", "gpa": "3.4/4.0", "ielts": "6.5", "gre": "", "internship": "美团 后端", "research": "", "result": "rejected", "date": "2026-03-18", "scholarship": "" }
+      ],
+      "scholarship": "该项目提供以下奖学金机会：\n\n1. Departmental Bursary（£2,000-5,000）：需在申请时勾选奖学金选项，根据学术成绩和综合背景评定\n2. President's Scholarship：仅限博士生，硕士不适用\n3. CSC-Imperial Scholarship（全奖）：需先获得Imperial的Offer，再向CSC申请，名额极少\n4. 外部奖学金：Chevening Scholarship（英国政府奖学金）、志奋领奖学金等",
+      "website": "https://www.imperial.ac.uk/computing/prospective-students/courses/msc-computing/",
+      "relatedPrograms": [
+        { "id": 2, "school": "帝国理工学院", "program": "人工智能 MSc", "ranking": 2 },
+        { "id": 3, "school": "UCL", "program": "计算机科学 MSc", "ranking": 9 },
+        { "id": 4, "school": "爱丁堡大学", "program": "人工智能 MSc", "ranking": 22 },
+        { "id": 5, "school": "剑桥大学", "program": "高级计算机科学 MPhil", "ranking": 5 }
+      ],
+      "employmentData": {
+        "industries": [
+          { "name": "科技/互联网", "percent": 45 },
+          { "name": "金融/银行", "percent": 22 },
+          { "name": "咨询", "percent": 15 },
+          { "name": "学术/读博", "percent": 10 },
+          { "name": "其他", "percent": 8 }
+        ],
+        "topEmployers": ["Google", "Meta", "Amazon", "Microsoft", "Goldman Sachs", "BCG", "Apple", "DeepMind"]
+      }
+    },
+    {
+      "id": 2,
+      "school": "香港大学",
+      "schoolEn": "The University of Hong Kong",
+      "program": "商业分析 MSc",
+      "programEn": "MSc Business Analytics",
+      "country": "中国香港",
+      "city": "香港",
+      "ranking": 17,
+      "subjectRanking": 25,
+      "deadline": "2026-04-15",
+      "tuition": "HK$330,000/年",
+      "tuitionCNY": "约 ¥305,000",
+      "duration": "1年（全日制）",
+      "intake": "2026年秋季",
+      "classSize": 80,
+      "intlRatio": "60%",
+      "employRate": "98%",
+      "avgSalary": "HK$350,000",
+      "logo": "https://images.unsplash.com/photo-1536599018102-9f803c029e12?w=200&q=80",
+      "cover": "https://images.unsplash.com/photo-1536599018102-9f803c029e12?w=1200&q=80",
+      "tags": ["商科", "热门", "QS Top 20", "STEM"],
+      "description": "香港大学商业分析硕士（MSc Business Analytics）隶属于商学院，是港大最热门的商科项目之一。项目融合了统计学、计算机科学与商业管理，培养学生运用数据分析技术解决复杂商业问题的能力。\n\n课程涵盖大数据分析、机器学习、商业智能、运营优化等核心领域，并注重实战项目（Capstone Project），与知名企业合作完成真实商业案例。毕业生在咨询、金融科技、互联网和快消等行业深受欢迎。",
+      "highlights": [
+        { "text": "QS 商业分析硕士排名亚洲第 1", "icon": "Award" },
+        { "text": "毕业生平均起薪 HK$350,000/年", "icon": "DollarSign" },
+        { "text": "与 McKinsey、BCG、Deloitte 等企业有深度合作", "icon": "Building2" },
+        { "text": "可选择金融科技或市场分析方向专精", "icon": "Target" },
+        { "text": "地处香港岛薄扶林，交通便利", "icon": "MapPin" },
+        { "text": "毕业可获 IANG 签证留港工作 2 年", "icon": "Briefcase" }
+      ],
+      "requirements": {
+        "gpa": "二等一学位或以上（相当于 GPA 3.3/4.0 或国内985/211均分80+，双非85+）",
+        "language": "IELTS 6.5（单项不低于 5.5）或 TOEFL 80",
+        "background": "商科、经济、统计、计算机、工程等本科学位，需有一定的数学和编程基础",
+        "other": "需提交个人陈述、两封推荐信、CV、成绩单、GMAT/GRE（非强制但建议提交）",
+        "workExp": "不强制，但有2年以上工作经验的申请者有明显优势",
+        "interview": "大部分申请者会被邀请参加视频面试（约20分钟），考察沟通能力和分析思维"
+      },
+      "materials": [
+        { "name": "成绩单（中英文公证件）", "required": true, "tip": "需学校官方盖章" },
+        { "name": "学位证 / 在读证明", "required": true, "tip": "在读生提交在读证明" },
+        { "name": "个人陈述 PS", "required": true, "tip": "800字以内，突出数据分析兴趣和职业规划" },
+        { "name": "简历 CV", "required": true, "tip": "突出数据分析相关经历" },
+        { "name": "两封推荐信", "required": true, "tip": "至少一封学术推荐信" },
+        { "name": "IELTS / TOEFL 成绩单", "required": true, "tip": "可后补" },
+        { "name": "GMAT / GRE 成绩", "required": false, "tip": "GMAT 680+ 或 GRE 320+ 是加分项" },
+        { "name": "实习/工作证明", "required": false, "tip": "有数据分析相关经历强烈建议提供" }
+      ],
+      "timeline": [
+        { "date": "2025-09-01", "event": "申请系统开放", "detail": "HKU在线申请系统开放" },
+        { "date": "2025-10-16", "event": "第一轮截止", "detail": "提前批，录取概率最高" },
+        { "date": "2026-01-05", "event": "第二轮截止", "detail": "主要录取批次" },
+        { "date": "2026-04-15", "event": "最终截止日期", "detail": "如有剩余名额接受申请" },
+        { "date": "2026-05-30", "event": "最终录取通知", "detail": "所有批次录取结果发放完毕" },
+        { "date": "2026-06-30", "event": "缴纳留位费截止", "detail": "接受Offer并支付HK$50,000留位费" },
+        { "date": "2026-09-01", "event": "课程开始", "detail": "新生入学" }
+      ],
+      "curriculum": [
+        {
+          "semester": "秋季学期",
+          "courses": [
+            { "name": "商业统计分析 (Business Statistics)", "credits": 6, "type": "必修" },
+            { "name": "数据管理与可视化 (Data Management)", "credits": 6, "type": "必修" },
+            { "name": "商业分析基础 (Business Analytics Fundamentals)", "credits": 6, "type": "必修" },
+            { "name": "Python 编程 (Programming for Analytics)", "credits": 6, "type": "必修" }
+          ]
+        },
+        {
+          "semester": "春季学期",
+          "courses": [
+            { "name": "机器学习 (Machine Learning for Business)", "credits": 6, "type": "核心选修" },
+            { "name": "金融科技 (FinTech Analytics)", "credits": 6, "type": "选修" },
+            { "name": "数字营销分析 (Digital Marketing Analytics)", "credits": 6, "type": "选修" },
+            { "name": "运营分析 (Operations Analytics)", "credits": 6, "type": "选修" },
+            { "name": "深度学习应用 (Deep Learning Applications)", "credits": 6, "type": "选修" }
+          ]
+        },
+        {
+          "semester": "夏季学期",
+          "courses": [
+            { "name": "顶点项目 (Capstone Project)", "credits": 12, "type": "必修" }
+          ]
+        }
+      ],
+      "offers": [
+        { "id": 1, "background": "211", "university": "中南财经政法大学 金融", "gpa": "3.7/4.0", "ielts": "7.0", "gre": "", "internship": "德勤 审计", "research": "1段科研", "result": "admitted", "date": "2026-02-15", "scholarship": "" },
+        { "id": 2, "background": "双非", "university": "浙江工商大学 英语", "gpa": "3.8/4.0", "ielts": "7.5", "gre": "", "internship": "腾讯 数据分析", "research": "", "result": "admitted", "date": "2026-03-01", "scholarship": "" },
+        { "id": 3, "background": "985", "university": "中山大学 统计学", "gpa": "3.6/4.0", "ielts": "6.5", "gre": "325", "internship": "摩根大通 量化", "research": "2段科研", "result": "admitted", "date": "2026-02-20", "scholarship": "Merit Scholarship HK$30,000" },
+        { "id": 4, "background": "海本", "university": "Manchester BSc Finance", "gpa": "3.5/4.0 (2:1)", "ielts": "-", "gre": "", "internship": "PwC Advisory", "research": "", "result": "admitted", "date": "2026-03-10", "scholarship": "" },
+        { "id": 5, "background": "双非", "university": "广东财经大学 会计", "gpa": "3.4/4.0", "ielts": "6.5", "gre": "", "internship": "字节跳动 运营", "research": "", "result": "rejected", "date": "2026-03-20", "scholarship": "" },
+        { "id": 6, "background": "985", "university": "厦门大学 管理", "gpa": "3.9/4.0", "ielts": "7.0", "gre": "328", "internship": "McKinsey 实习", "research": "1段科研+论文", "result": "admitted", "date": "2026-01-28", "scholarship": "" }
+      ],
+      "scholarship": "该项目提供以下奖学金机会：\n\n1. HKU Business School Merit Scholarship（HK$30,000-100,000）：根据学术成绩和综合背景评定\n2. Entrance Scholarship：面向特别优秀的申请者，覆盖部分学费\n3. CSC-HKU Joint Scholarship（全奖）：需向CSC单独申请，名额有限",
+      "website": "https://www.hku.hk/",
+      "relatedPrograms": [
+        { "id": 1, "school": "帝国理工学院", "program": "计算机科学 MSc", "ranking": 2 },
+        { "id": 3, "school": "新加坡国立大学", "program": "商业分析 MSc", "ranking": 8 },
+        { "id": 4, "school": "香港中文大学", "program": "商业分析 MSc", "ranking": 36 }
+      ],
+      "employmentData": {
+        "industries": [
+          { "name": "金融/银行", "percent": 35 },
+          { "name": "咨询", "percent": 25 },
+          { "name": "科技/互联网", "percent": 20 },
+          { "name": "快消/零售", "percent": 12 },
+          { "name": "其他", "percent": 8 }
+        ],
+        "topEmployers": ["McKinsey", "BCG", "Goldman Sachs", "HSBC", "Deloitte", "Alibaba", "Tencent", "JPMorgan"]
+      }
+    },
+    {
+      "id": 3,
+      "school": "新加坡国立大学",
+      "schoolEn": "National University of Singapore",
+      "program": "数据科学与机器学习 MSc",
+      "programEn": "MSc in Data Science and Machine Learning",
+      "country": "新加坡",
+      "city": "新加坡",
+      "ranking": 8,
+      "subjectRanking": 12,
+      "deadline": "2026-03-15",
+      "tuition": "S$58,000/年",
+      "tuitionCNY": "约 ¥310,000",
+      "duration": "1-2年（全日制/兼读）",
+      "intake": "2026年秋季",
+      "classSize": 60,
+      "intlRatio": "75%",
+      "employRate": "97%",
+      "avgSalary": "S$80,000",
+      "logo": "https://images.unsplash.com/photo-1525921429624-479f8e56bfa1?w=200&q=80",
+      "cover": "https://images.unsplash.com/photo-1565967511849-76a60a516170?w=1200&q=80",
+      "tags": ["STEM", "热门", "QS Top 10", "数据科学"],
+      "description": "新加坡国立大学数据科学与机器学习硕士（MSc DSML）由数学系和计算机学院联合开设，是亚洲最顶尖的数据科学硕士项目之一。\n\n项目结合了严谨的数学理论与前沿的机器学习实践，课程涵盖深度学习、贝叶斯统计、优化理论、自然语言处理等核心领域。学生可选择学术研究方向（含论文）或行业实践方向（含实习项目）。新加坡的AI产业蓬勃发展，毕业生在全球范围内极具竞争力。",
+      "highlights": [
+        { "text": "QS 数据科学学科排名亚洲第 1", "icon": "Award" },
+        { "text": "毕业生平均起薪 S$80,000/年（约42万人民币）", "icon": "DollarSign" },
+        { "text": "与 Grab、Shopee、ByteDance、Google 等企业有深度合作", "icon": "Building2" },
+        { "text": "可选择学术方向（含论文）或行业方向（含实习）", "icon": "Target" },
+        { "text": "地处新加坡肯特岗，毗邻科技园区 one-north", "icon": "MapPin" },
+        { "text": "毕业可申请新加坡EP/SP工作准证", "icon": "Briefcase" }
+      ],
+      "requirements": {
+        "gpa": "二等一学位或以上（相当于 GPA 3.5/4.0 或国内985/211均分85+）",
+        "language": "IELTS 6.5 或 TOEFL 85（NUS 相对宽松）",
+        "background": "数学、统计、计算机、物理、工程等理工科本科学位，需有扎实的数学和编程基础",
+        "other": "需提交个人陈述、两封推荐信、CV、成绩单、GRE（建议但非必须）",
+        "workExp": "不强制，但有数据分析或机器学习相关经验会增加竞争力",
+        "interview": "不要求面试，但可能会有邮件追问补充材料"
+      },
+      "materials": [
+        { "name": "成绩单（中英文公证件）", "required": true, "tip": "需学校官方盖章" },
+        { "name": "学位证 / 在读证明", "required": true, "tip": "在读生提交在读证明" },
+        { "name": "个人陈述 PS", "required": true, "tip": "突出数学背景和研究兴趣" },
+        { "name": "简历 CV", "required": true, "tip": "突出科研项目和技术技能" },
+        { "name": "两封推荐信", "required": true, "tip": "至少一封学术推荐信" },
+        { "name": "IELTS / TOEFL 成绩单", "required": true, "tip": "可后补" },
+        { "name": "GRE 成绩", "required": false, "tip": "数学部分 165+ 是显著加分项" },
+        { "name": "研究计划 / 论文", "required": false, "tip": "选学术方向者建议提供" }
+      ],
+      "timeline": [
+        { "date": "2025-11-01", "event": "申请系统开放", "detail": "NUS在线申请系统开放" },
+        { "date": "2026-01-15", "event": "第一轮截止（建议）", "detail": "第一轮优先录取" },
+        { "date": "2026-03-15", "event": "最终截止日期", "detail": "所有申请材料须在此日期前提交" },
+        { "date": "2026-04-15", "event": "发放录取通知", "detail": "Offer 发放" },
+        { "date": "2026-06-15", "event": "接受Offer截止", "detail": "确认接受并支付押金" },
+        { "date": "2026-08-10", "event": "课程开始", "detail": "新生入学周" }
+      ],
+      "curriculum": [
+        {
+          "semester": "第一学期",
+          "courses": [
+            { "name": "数学优化 (Mathematical Optimisation)", "credits": 4, "type": "必修" },
+            { "name": "概率统计 (Probability & Statistics)", "credits": 4, "type": "必修" },
+            { "name": "机器学习理论 (Machine Learning Theory)", "credits": 4, "type": "必修" },
+            { "name": "数据挖掘 (Data Mining)", "credits": 4, "type": "核心选修" }
+          ]
+        },
+        {
+          "semester": "第二学期",
+          "courses": [
+            { "name": "深度学习 (Deep Learning)", "credits": 4, "type": "核心选修" },
+            { "name": "贝叶斯统计 (Bayesian Statistics)", "credits": 4, "type": "选修" },
+            { "name": "自然语言处理 (NLP)", "credits": 4, "type": "选修" },
+            { "name": "计算机视觉 (Computer Vision)", "credits": 4, "type": "选修" },
+            { "name": "强化学习 (Reinforcement Learning)", "credits": 4, "type": "选修" }
+          ]
+        },
+        {
+          "semester": "第三学期（可选）",
+          "courses": [
+            { "name": "学术论文 / 行业实习项目 (Thesis / Internship)", "credits": 12, "type": "必修" }
+          ]
+        }
+      ],
+      "offers": [
+        { "id": 1, "background": "985", "university": "复旦大学 数学", "gpa": "3.8/4.0", "ielts": "7.0", "gre": "330", "internship": "商汤科技 算法", "research": "2段科研+论文", "result": "admitted", "date": "2026-03-05", "scholarship": "Graduate Research Scholarship" },
+        { "id": 2, "background": "211", "university": "南京理工大学 统计", "gpa": "3.7/4.0", "ielts": "6.5", "gre": "325", "internship": "百度 数据分析", "research": "1段科研", "result": "admitted", "date": "2026-03-15", "scholarship": "" },
+        { "id": 3, "background": "985", "university": "华中科技大学 CS", "gpa": "3.5/4.0", "ielts": "6.5", "gre": "", "internship": "华为 研发", "research": "1段科研", "result": "waitlisted", "date": "2026-03-20", "scholarship": "" },
+        { "id": 4, "background": "海本", "university": "NTU CS (Singapore)", "gpa": "3.9/4.0", "ielts": "-", "gre": "335", "internship": "Grab ML Engineer", "research": "2段科研+顶会", "result": "admitted", "date": "2026-02-28", "scholarship": "Full Scholarship" },
+        { "id": 5, "background": "双非", "university": "成都理工大学 数学", "gpa": "3.6/4.0", "ielts": "6.5", "gre": "318", "internship": "字节跳动 推荐算法", "research": "1段科研", "result": "rejected", "date": "2026-04-01", "scholarship": "" }
+      ],
+      "scholarship": "该项目提供以下奖学金机会：\n\n1. NUS Graduate Research Scholarship：面向选择学术方向的优秀学生，覆盖学费+生活津贴\n2. NUS Merit Scholarship（S$5,000-15,000）：根据学术成绩评定\n3. CSC-NUS Joint Scholarship（全奖）：需向CSC单独申请\n4. ASEAN Scholarship：面向东盟国家学生",
+      "website": "https://www.comp.nus.edu.sg/",
+      "relatedPrograms": [
+        { "id": 1, "school": "帝国理工学院", "program": "计算机科学 MSc", "ranking": 2 },
+        { "id": 2, "school": "香港大学", "program": "商业分析 MSc", "ranking": 17 },
+        { "id": 5, "school": "南洋理工大学", "program": "人工智能 MSc", "ranking": 15 }
+      ],
+      "employmentData": {
+        "industries": [
+          { "name": "科技/互联网", "percent": 50 },
+          { "name": "金融/银行", "percent": 20 },
+          { "name": "学术/读博", "percent": 15 },
+          { "name": "咨询", "percent": 10 },
+          { "name": "其他", "percent": 5 }
+        ],
+        "topEmployers": ["Grab", "Shopee", "ByteDance", "Google", "Meta", "DBS Bank", "GovTech", "A*STAR"]
+      }
+    }
+  ]
+}

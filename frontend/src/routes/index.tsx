@@ -32,10 +32,13 @@ const StudyAbroadOffers = lazy(() => import('../pages/StudyAbroadOffers'));
 const StudyAbroadArticles = lazy(() => import('../pages/StudyAbroadArticles'));
 const BackgroundBoost = lazy(() => import('../pages/BackgroundBoost'));
 const NotificationCenter = lazy(() => import('../pages/NotificationCenter'));
+const Chat = lazy(() => import('../pages/Chat'));
+const SuccessCases = lazy(() => import('../pages/SuccessCases'));
 const StudentProfile = lazy(() => import('../pages/student/Profile'));
 const StudentMyApplications = lazy(() => import('../pages/student/MyApplications'));
 const StudentMyAppointments = lazy(() => import('../pages/student/MyAppointments'));
 const StudentFavorites = lazy(() => import('../pages/student/Favorites'));
+const StudentPortrait = lazy(() => import('../pages/student/Portrait'));
 
 // 懒加载页面 - 管理员端
 const AdminDashboard = lazy(() => import('../pages/admin/Dashboard'));
@@ -43,7 +46,14 @@ const AdminUsers = lazy(() => import('../pages/admin/Users'));
 const AdminCompanies = lazy(() => import('../pages/admin/Companies'));
 const AdminMentors = lazy(() => import('../pages/admin/Mentors'));
 const AdminContent = lazy(() => import('../pages/admin/Content'));
+const AdminArticles = lazy(() => import('../pages/admin/Articles'));
 const AdminSettings = lazy(() => import('../pages/admin/Settings'));
+const AdminStudyAbroad = lazy(() => import('../pages/admin/StudyAbroad'));
+const AdminStudyAbroadConfig = lazy(() => import('../pages/admin/StudyAbroadConfig'));
+const AdminHomeConfig = lazy(() => import('../pages/admin/HomeConfig'));
+const AdminThemeConfig = lazy(() => import('../pages/admin/ThemeConfig'));
+const AdminAnnouncements = lazy(() => import('../pages/admin/Announcements'));
+const AdminChatManage = lazy(() => import('../pages/admin/ChatManage'));
 
 // 懒加载页面 - 企业端
 const CompanyDashboardPage = lazy(() => import('../pages/company/Dashboard'));
@@ -51,6 +61,7 @@ const CompanyProfile = lazy(() => import('../pages/company/Profile'));
 const CompanyJobManage = lazy(() => import('../pages/company/JobManage'));
 const CompanyResumePool = lazy(() => import('../pages/company/ResumePool'));
 const CompanyTalentSearch = lazy(() => import('../pages/company/TalentSearch'));
+const CompanyJobForm = lazy(() => import('../pages/company/JobForm'));
 
 // 懒加载页面 - 导师端
 const MentorDashboardPage = lazy(() => import('../pages/mentor/Dashboard'));
@@ -58,6 +69,8 @@ const MentorProfile = lazy(() => import('../pages/mentor/Profile'));
 const MentorCourseManage = lazy(() => import('../pages/mentor/CourseManage'));
 const MentorAppointments = lazy(() => import('../pages/mentor/Appointments'));
 const MentorStudents = lazy(() => import('../pages/mentor/Students'));
+const MentorCourseForm = lazy(() => import('../pages/mentor/CourseForm'));
+const MentorResources = lazy(() => import('../pages/mentor/Resources'));
 
 // 加载中组件
 const LoadingFallback = () => (
@@ -151,6 +164,14 @@ export const router = createBrowserRouter([
         path: 'notifications',
         element: <Suspense fallback={<LoadingFallback />}><NotificationCenter /></Suspense>
       },
+      {
+        path: 'chat',
+        element: <Suspense fallback={<LoadingFallback />}><Chat /></Suspense>
+      },
+      {
+        path: 'success-cases',
+        element: <Suspense fallback={<LoadingFallback />}><SuccessCases /></Suspense>
+      },
       // ====== 学生个人中心（MainLayout下，需登录且为学生角色） ======
       {
         path: 'student/profile',
@@ -167,6 +188,10 @@ export const router = createBrowserRouter([
       {
         path: 'student/favorites',
         element: <ProtectedRoute allowedRoles={['student']}><Suspense fallback={<LoadingFallback />}><StudentFavorites /></Suspense></ProtectedRoute>
+      },
+      {
+        path: 'student/portrait',
+        element: <ProtectedRoute allowedRoles={['student']}><Suspense fallback={<LoadingFallback />}><StudentPortrait /></Suspense></ProtectedRoute>
       },
     ]
   },
@@ -187,6 +212,14 @@ export const router = createBrowserRouter([
         element: <Suspense fallback={<LoadingFallback />}><MentorCourseManage /></Suspense>
       },
       {
+        path: 'courses/new',
+        element: <Suspense fallback={<LoadingFallback />}><MentorCourseForm /></Suspense>
+      },
+      {
+        path: 'courses/:id/edit',
+        element: <Suspense fallback={<LoadingFallback />}><MentorCourseForm /></Suspense>
+      },
+      {
         path: 'appointments',
         element: <Suspense fallback={<LoadingFallback />}><MentorAppointments /></Suspense>
       },
@@ -197,6 +230,10 @@ export const router = createBrowserRouter([
       {
         path: 'profile',
         element: <Suspense fallback={<LoadingFallback />}><MentorProfile /></Suspense>
+      },
+      {
+        path: 'resources',
+        element: <Suspense fallback={<LoadingFallback />}><MentorResources /></Suspense>
       },
       {
         path: '',
@@ -219,6 +256,14 @@ export const router = createBrowserRouter([
       {
         path: 'jobs',
         element: <Suspense fallback={<LoadingFallback />}><CompanyJobManage /></Suspense>
+      },
+      {
+        path: 'jobs/new',
+        element: <Suspense fallback={<LoadingFallback />}><CompanyJobForm /></Suspense>
+      },
+      {
+        path: 'jobs/:id/edit',
+        element: <Suspense fallback={<LoadingFallback />}><CompanyJobForm /></Suspense>
       },
       {
         path: 'resumes',
@@ -263,12 +308,40 @@ export const router = createBrowserRouter([
         element: <Suspense fallback={<LoadingFallback />}><AdminMentors /></Suspense>
       },
       {
+        path: 'articles',
+        element: <Suspense fallback={<LoadingFallback />}><AdminArticles /></Suspense>
+      },
+      {
         path: 'content',
         element: <Suspense fallback={<LoadingFallback />}><AdminContent /></Suspense>
       },
       {
         path: 'settings',
         element: <Suspense fallback={<LoadingFallback />}><AdminSettings /></Suspense>
+      },
+      {
+        path: 'study-abroad',
+        element: <Suspense fallback={<LoadingFallback />}><AdminStudyAbroad /></Suspense>
+      },
+      {
+        path: 'study-abroad-config',
+        element: <Suspense fallback={<LoadingFallback />}><AdminStudyAbroadConfig /></Suspense>
+      },
+      {
+        path: 'home-config',
+        element: <Suspense fallback={<LoadingFallback />}><AdminHomeConfig /></Suspense>
+      },
+      {
+        path: 'theme-config',
+        element: <Suspense fallback={<LoadingFallback />}><AdminThemeConfig /></Suspense>
+      },
+      {
+        path: 'announcements',
+        element: <Suspense fallback={<LoadingFallback />}><AdminAnnouncements /></Suspense>
+      },
+      {
+        path: 'chat',
+        element: <Suspense fallback={<LoadingFallback />}><AdminChatManage /></Suspense>
       },
       {
         path: '',

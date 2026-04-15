@@ -1,119 +1,194 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Globe, GraduationCap, Search, ChevronRight, MapPin, Star, Clock,
   BookOpen, Briefcase, FlaskConical, FileText, Trophy, Heart,
   MessageCircle, Headphones, ArrowRight, TrendingUp, Users, Plane,
   Building2, DollarSign, Calendar, CheckCircle2, Sparkles, ChevronLeft,
-  Award, Zap, Shield, BarChart3, Target, Rocket
+  Award, Zap, Shield, BarChart3, Target, Rocket, User
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-// ====== Mock 数据（后续全部由后台 API 提供，禁止前端写死） ======
+// ====== JSON 数据导入 ======
+import countriesData from '../data/study-abroad-countries.json';
+import universitiesData from '../data/study-abroad-universities.json';
+import offersData from '../data/study-abroad-offers.json';
+import consultantsData from '../data/study-abroad-consultants.json';
+import uiConfig from '../data/study-abroad-ui-config.json';
+import articlesData from '../data/study-abroad-articles.json';
 
-const HERO_SLIDES = [
-  {
-    id: 1,
-    title: '2026 Fall 申请季已全面开启',
-    subtitle: '英/美/港/新/澳 五大热门地区同步接受申请，早申请早拿 Offer，把握黄金窗口期',
-    image: 'https://images.unsplash.com/photo-1523050854058-8df90110c9f1?w=1200&q=80',
-    tag: '🔥 申请季',
-    cta: '立即选校',
-    ctaLink: '/study-abroad/programs',
-  },
-  {
-    id: 2,
-    title: '英国 G5 · 一年制硕士申请攻略',
-    subtitle: '牛津 / 剑桥 / IC / LSE / UCL 五校最新录取标准、文书要求与面试技巧全解析',
-    image: 'https://images.unsplash.com/photo-1526129318478-62ed807ebdf9?w=1200&q=80',
-    tag: '📚 热门专题',
-    cta: '查看攻略',
-    ctaLink: '/study-abroad/articles',
-  },
-  {
-    id: 3,
-    title: '港三新二 · 低门槛高回报的留学选择',
-    subtitle: '离家近、费用低、QS排名高、就业前景好，适合求稳同学的最优解',
-    image: 'https://images.unsplash.com/photo-1536599018102-9f803c029e12?w=1200&q=80',
-    tag: '🌏 地区专题',
-    cta: '探索项目',
-    ctaLink: '/study-abroad/programs',
-  },
-  {
-    id: 4,
-    title: '双非逆袭 · QS Top 100 名校不是梦',
-    subtitle: '合理规划背景提升 + 精准选校定位，双非学生也能拿到世界名校 Offer',
-    image: 'https://images.unsplash.com/photo-1541339907198-e08756dedf3f?w=1200&q=80',
-    tag: '✨ 成功案例',
-    cta: '查看案例',
-    ctaLink: '/study-abroad/offers',
-  },
-];
+// ====== 可复用组件导入 ======
+import CountryCard from '../components/study-abroad/CountryCard';
+import ProgramCard from '../components/study-abroad/ProgramCard';
+import OfferStoryCard from '../components/study-abroad/OfferStoryCard';
+import TimelineView from '../components/study-abroad/TimelineView';
+import MajorExplorer from '../components/study-abroad/MajorExplorer';
+import CostEstimator from '../components/study-abroad/CostEstimator';
+import http from '../api/http';
 
-const COUNTRIES = [
-  { id: 'uk', name: '英国', flag: '🇬🇧', count: 1856, hot: true, desc: 'G5名校 · 一年制硕士 · 毕业可获2年PSW签证' },
-  { id: 'us', name: '美国', flag: '🇺🇸', count: 2403, hot: true, desc: '常春藤 · STEM优势 · 三年OPT工签' },
-  { id: 'hk', name: '中国香港', flag: '🇭🇰', count: 689, hot: true, desc: '港三名校 · 离家近 · 留港就业IANG签证' },
-  { id: 'sg', name: '新加坡', flag: '🇸🇬', count: 345, hot: true, desc: 'NUS/NTU双雄 · 亚洲金融中心 · 高就业率' },
-  { id: 'au', name: '澳大利亚', flag: '🇦🇺', count: 567, hot: false, desc: '八大名校 · 宽松移民政策 · 2年PSW签证' },
-  { id: 'ca', name: '加拿大', flag: '🇨🇦', count: 423, hot: false, desc: 'U15联盟 · 移民友好 · PGWP工签' },
-  { id: 'eu', name: '欧洲', flag: '🇪🇺', count: 678, hot: false, desc: '低学费/免学费 · 申根签 · 多语言优势' },
-  { id: 'jp', name: '日本', flag: '🇯🇵', count: 234, hot: false, desc: '东大/京大 · SGU英语项目 · 动漫文化' },
-];
+// ====== API 映射函数 ======
 
-const HOT_PROGRAMS = [
-  { id: 1, school: '帝国理工学院', schoolEn: 'Imperial College London', program: '计算机科学 MSc', country: '🇬🇧 英国', ranking: 2, deadline: '2026-01-15', tuition: '£38,900/年', tag: 'CS 热门', admitted: 23, applicants: 890, logo: 'https://images.unsplash.com/photo-1607237138185-eedd9c632b0b?w=100&q=80' },
-  { id: 2, school: '新加坡国立大学', schoolEn: 'NUS', program: '商业分析 MSc', country: '🇸🇬 新加坡', ranking: 8, deadline: '2026-01-31', tuition: 'S$58,000/年', tag: '就业率 98%', admitted: 45, applicants: 1200, logo: 'https://images.unsplash.com/photo-1562774053-701939374585?w=100&q=80' },
-  { id: 3, school: '香港大学', schoolEn: 'HKU', program: '金融学 MFin', country: '🇭🇰 香港', ranking: 17, deadline: '2025-12-20', tuition: 'HK$396,000', tag: '中环实习', admitted: 60, applicants: 950, logo: 'https://images.unsplash.com/photo-1541339907198-e08756dedf3f?w=100&q=80' },
-  { id: 4, school: '墨尔本大学', schoolEn: 'University of Melbourne', program: '信息技术 MIT', country: '🇦🇺 澳洲', ranking: 14, deadline: '2026-03-31', tuition: 'A$47,636/年', tag: '可移民', admitted: 120, applicants: 680, logo: 'https://images.unsplash.com/photo-1580537659466-0a9bfa916a54?w=100&q=80' },
-  { id: 5, school: '伦敦大学学院', schoolEn: 'UCL', program: '教育学 MA', country: '🇬🇧 英国', ranking: 9, deadline: '2026-03-01', tuition: '£30,800/年', tag: '教育 #1', admitted: 88, applicants: 560, logo: 'https://images.unsplash.com/photo-1592280771190-3e2e4d571952?w=100&q=80' },
-  { id: 6, school: '多伦多大学', schoolEn: 'University of Toronto', program: 'ECE MEng', country: '🇨🇦 加拿大', ranking: 21, deadline: '2026-02-01', tuition: 'C$62,250/年', tag: 'STEM 移民', admitted: 35, applicants: 420, logo: 'https://images.unsplash.com/photo-1569447891824-7a1758aa73a2?w=100&q=80' },
-  { id: 7, school: '香港科技大学', schoolEn: 'HKUST', program: '数据科学 MSc', country: '🇭🇰 香港', ranking: 47, deadline: '2026-02-01', tuition: 'HK$210,000', tag: '性价比高', admitted: 70, applicants: 800, logo: 'https://images.unsplash.com/photo-1523050854058-8df90110c9f1?w=100&q=80' },
-  { id: 8, school: '爱丁堡大学', schoolEn: 'University of Edinburgh', program: '人工智能 MSc', country: '🇬🇧 英国', ranking: 22, deadline: '2026-01-10', tuition: '£37,500/年', tag: 'AI 顶尖', admitted: 18, applicants: 1100, logo: 'https://images.unsplash.com/photo-1526129318478-62ed807ebdf9?w=100&q=80' },
-  { id: 9, school: '哥伦比亚大学', schoolEn: 'Columbia University', program: '统计学 MA', country: '🇺🇸 美国', ranking: 12, deadline: '2026-02-15', tuition: '$58,728/年', tag: '常春藤', admitted: 30, applicants: 1500, logo: 'https://images.unsplash.com/photo-1562774053-701939374585?w=100&q=80' },
-];
+/** 将 API 返回的 snake_case 行映射为 OfferItem */
+function mapApiOffer(row: any): OfferItem {
+  return {
+    id: String(row.id),
+    studentName: row.student_name,
+    avatar: row.avatar || null,
+    background: row.background,
+    gpa: row.gpa || '',
+    ielts: row.ielts ?? null,
+    toefl: row.toefl ?? null,
+    gre: row.gre ?? null,
+    internship: typeof row.internship === 'string' ? JSON.parse(row.internship) : (row.internship || []),
+    research: typeof row.research === 'string' ? JSON.parse(row.research) : (row.research || []),
+    result: row.result,
+    country: row.country,
+    school: row.school,
+    program: row.program,
+    scholarship: row.scholarship || '',
+    story: row.story || '',
+    date: row.date?.slice?.(0, 10) || row.date,
+    tags: typeof row.tags === 'string' ? JSON.parse(row.tags) : (row.tags || []),
+    likes: row.likes || 0,
+  };
+}
 
-const LATEST_OFFERS = [
-  { id: 1, school: '帝国理工学院', program: '计算机科学 MSc', result: 'admitted', background: '985 · 北京大学', gpa: '3.78', lang: 'IELTS 7.5', extra: '字节跳动实习 + 2段科研', date: '3小时前' },
-  { id: 2, school: '香港中文大学', program: '商业分析 MSc', result: 'admitted', background: '211 · 上海财经大学', gpa: '3.52', lang: 'IELTS 7.0', extra: '四大实习', date: '5小时前' },
-  { id: 3, school: '爱丁堡大学', program: '人工智能 MSc', result: 'rejected', background: '双非 · 杭州电子科技大学', gpa: '3.85', lang: 'IELTS 6.5', extra: '阿里实习 + 1段科研', date: '8小时前' },
-  { id: 4, school: '新加坡国立大学', program: '金融工程 MFE', result: 'admitted', background: '985 · 复旦大学', gpa: '3.62', lang: 'GRE 325', extra: '中金实习 + CFA L1', date: '12小时前' },
-  { id: 5, school: '伦敦大学学院', program: '教育学 MA', result: 'admitted', background: '211 · 华东师范大学', gpa: '3.65', lang: 'IELTS 7.5', extra: '支教经历 + 论文1篇', date: '1天前' },
-  { id: 6, school: '墨尔本大学', program: 'MIT 信息技术', result: 'admitted', background: '双非 · 深圳大学', gpa: '3.41', lang: 'IELTS 6.5', extra: '腾讯实习', date: '1天前' },
-  { id: 7, school: '哥伦比亚大学', program: '统计学 MA', result: 'waitlisted', background: '985 · 中国科学技术大学', gpa: '3.70', lang: 'GRE 328 + TOEFL 108', extra: '3段科研 + 论文2篇', date: '2天前' },
-];
+/** 将 API 返回的 snake_case 行映射为 ConsultantItem */
+function mapApiConsultant(row: any): ConsultantItem {
+  return {
+    id: String(row.id),
+    name: row.name,
+    title: row.title || '',
+    avatar: row.avatar || null,
+    specialty: typeof row.specialty === 'string' ? JSON.parse(row.specialty) : (row.specialty || []),
+    experience: row.experience || '',
+    education: row.education || '',
+    successCases: row.success_cases || 0,
+    country: row.country || '',
+    description: row.description || '',
+  };
+}
 
-const ARTICLES = [
-  { id: 1, title: '2026 Fall 英国G5申请全攻略：时间线、材料、面试技巧', category: '申请攻略', views: 12400, hot: true },
-  { id: 2, title: '雅思 7.5 备考心得：听力阅读满分经验分享', category: '语言考试', views: 8920, hot: true },
-  { id: 3, title: '港三新二商科跨专业申请：双非背景拿3个Offer', category: '录取案例', views: 15600, hot: true },
-  { id: 4, title: '留学文书 PS 写作框架：招生官最想看到什么？', category: '文书指导', views: 11200, hot: false },
-  { id: 5, title: '留学费用全攻略：英美港新澳各国花费对比', category: '费用规划', views: 9800, hot: false },
-  { id: 6, title: 'GPA 换算指南：百分制/4.0/WES 到底怎么算？', category: '申请工具', views: 7600, hot: false },
-];
+// ====== 页面级常量（从 JSON 配置读取，管理员可通过配置页修改） ======
 
-const BG_SERVICES = [
-  { id: 1, title: '名企实习', desc: '字节/腾讯/高盛 核心岗位远程+线下', icon: Briefcase, color: 'text-blue-500', bg: 'bg-blue-50', stat: '500+ 岗位' },
-  { id: 2, title: '科研项目', desc: '哈佛/MIT/清华 教授课题直推', icon: FlaskConical, color: 'text-purple-500', bg: 'bg-purple-50', stat: '120+ 课题' },
-  { id: 3, title: '论文发表', desc: 'SCI/SSCI/EI 期刊 1v1 辅导', icon: FileText, color: 'text-green-500', bg: 'bg-green-50', stat: '95% 发表率' },
-  { id: 4, title: '国际竞赛', desc: '挑战杯/互联网+/HULT Prize 辅导', icon: Trophy, color: 'text-amber-500', bg: 'bg-amber-50', stat: '80% 获奖率' },
-  { id: 5, title: '志愿公益', desc: '国际支教/环保/社区服务推荐', icon: Heart, color: 'text-rose-500', bg: 'bg-rose-50', stat: '50+ 项目' },
-  { id: 6, title: '语言培训', desc: '雅思/托福/GRE/GMAT 保分班', icon: BookOpen, color: 'text-sky-500', bg: 'bg-sky-50', stat: '平均提1.5分' },
-];
+const HERO_SLIDES = uiConfig.heroSlides;
 
-const STATS = [
-  { label: '合作院校', value: '3,200+', icon: Building2 },
-  { label: '成功案例', value: '18,600+', icon: Award },
-  { label: 'Offer 总数', value: '26,400+', icon: Trophy },
-  { label: '平均录取率', value: '94.7%', icon: Target },
-];
+const ICON_MAP: Record<string, any> = { Building2, Award, Trophy, Target };
+const STATS = uiConfig.stats.map(s => ({ ...s, icon: ICON_MAP[s.icon] || Building2 }));
+
+const ARTICLES = articlesData.articles.slice(0, 6).map(a => ({
+  id: a.id, title: a.title, category: a.category, views: a.views, hot: a.views > 10000,
+}));
+
+const SERVICE_ICON_MAP: Record<string, any> = {
+  Users, Briefcase, FlaskConical, FileText, BookOpen, Trophy, Heart, Award,
+};
+
+const SERVICE_COLOR_MAP: Record<string, string> = {
+  blue: 'from-blue-600/80 to-blue-900/90',
+  teal: 'from-teal-600/80 to-teal-900/90',
+  purple: 'from-purple-600/80 to-purple-900/90',
+  rose: 'from-rose-600/80 to-rose-900/90',
+  amber: 'from-amber-600/80 to-amber-900/90',
+  indigo: 'from-indigo-600/80 to-indigo-900/90',
+  emerald: 'from-emerald-600/80 to-emerald-900/90',
+  cyan: 'from-cyan-600/80 to-cyan-900/90',
+};
+
+// ====== 类型定义 ======
+
+interface CountryItem {
+  id: string;
+  name: string;
+  flag: string;
+  hot: boolean;
+  projectCount: number;
+  desc: string;
+  tuitionRange: string;
+  livingCost: string;
+  totalBudget: string;
+  language: string;
+  visaType: string;
+  advantages: string[];
+  topUniversities: string[];
+  popularMajors: string[];
+  [key: string]: unknown;
+}
+
+interface ProgramItem {
+  id: number;
+  name: string;
+  nameEn: string;
+  duration: string;
+  tuition: string;
+  tuitionCNY: string;
+  deadline: string;
+  intake: string;
+  language: string;
+  gpaReq: string;
+  classSize: number;
+  employRate: string;
+  avgSalary: string;
+  tags: string[];
+  admittedCount: number;
+  applicantCount: number;
+}
+
+interface UniversityItem {
+  id: number;
+  school: string;
+  schoolEn: string;
+  country: string;
+  countryName: string;
+  city: string;
+  ranking: number;
+  logo: string;
+  cover: string;
+  programs: ProgramItem[];
+  highlights: string[];
+}
+
+interface OfferItem {
+  id: string;
+  studentName: string;
+  avatar: string | null;
+  background: string;
+  gpa: string;
+  ielts: number | null;
+  toefl: number | null;
+  gre: number | null;
+  internship: string[];
+  research: string[];
+  result: string;
+  country: string;
+  school: string;
+  program: string;
+  scholarship: string;
+  story: string;
+  date: string;
+  tags: string[];
+  likes: number;
+}
+
+interface ConsultantItem {
+  id: string;
+  name: string;
+  title: string;
+  avatar: string | null;
+  specialty: string[];
+  experience: string;
+  education: string;
+  successCases: number;
+  country: string;
+  description: string;
+}
 
 // ====== 组件 ======
 
 export default function StudyAbroad() {
   const [currentSlide, setCurrentSlide] = useState(0);
-  const [selectedCountry, setSelectedCountry] = useState<string | null>(null);
-  const [hoveredProgram, setHoveredProgram] = useState<number | null>(null);
+  const [quoteIndex, setQuoteIndex] = useState(0);
+  const [quotePaused, setQuotePaused] = useState(false);
 
   // 自动轮播
   useEffect(() => {
@@ -122,6 +197,82 @@ export default function StudyAbroad() {
     }, 5000);
     return () => clearInterval(timer);
   }, []);
+
+  // 新人寄语自动轮播（6s + hover暂停 + 页面隐藏暂停）
+  useEffect(() => {
+    if (quotePaused) return;
+    const timer = setInterval(() => {
+      setQuoteIndex((prev) => (prev + 1) % uiConfig.newcomerQuotes.length);
+    }, 6000);
+    return () => clearInterval(timer);
+  }, [quotePaused]);
+
+  useEffect(() => {
+    const handleVisibility = () => setQuotePaused(document.hidden);
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => document.removeEventListener('visibilitychange', handleVisibility);
+  }, []);
+
+  // 类型断言 + API 数据状态
+  const countries = countriesData as CountryItem[];
+  const universities = universitiesData as UniversityItem[];
+  const [offers, setOffers] = useState<OfferItem[]>(offersData as OfferItem[]);
+  const [consultants, setConsultants] = useState<ConsultantItem[]>(consultantsData as ConsultantItem[]);
+
+  // 尝试从 API 加载 Offer 和顾问数据，失败则保持 JSON 数据
+  useEffect(() => {
+    http.get('/study-abroad/offers', { params: { pageSize: 20 } })
+      .then(res => {
+        const apiList = res.data.data?.list;
+        if (Array.isArray(apiList) && apiList.length > 0) {
+          setOffers(apiList.map(mapApiOffer));
+        }
+      })
+      .catch(() => {});
+
+    http.get('/study-abroad/consultants')
+      .then(res => {
+        const apiList = res.data.data;
+        if (Array.isArray(apiList) && apiList.length > 0) {
+          setConsultants(apiList.map(mapApiConsultant));
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  // 提取热门项目（按 QS 排名排序，取前 9 个项目）
+  const hotPrograms = useMemo(() => {
+    const pairs: { program: ProgramItem; university: UniversityItem }[] = [];
+    const sorted = [...universities]
+      .filter((u) => u.ranking > 0)
+      .sort((a, b) => a.ranking - b.ranking);
+    for (const uni of sorted) {
+      if (uni.programs.length > 0) {
+        pairs.push({ program: uni.programs[0], university: uni });
+      }
+      if (pairs.length >= 9) break;
+    }
+    return pairs;
+  }, [universities]);
+
+  // 最新 Offer（取前 7 条）
+  const latestOffers = useMemo(() => offers.slice(0, 7), [offers]);
+
+  // 精选顾问（取前 4 位）
+  const featuredConsultants = useMemo(() => consultants.slice(0, 4), [consultants]);
+
+  // 热门国家优先排列（hot 在前）
+  const sortedCountries = useMemo(() => {
+    return [...countries].sort((a, b) => {
+      if (a.hot && !b.hot) return -1;
+      if (!a.hot && b.hot) return 1;
+      return 0;
+    });
+  }, [countries]);
+
+  // 第一个热门国家用 featured，其余用 compact
+  const featuredCountry = sortedCountries[0];
+  const compactCountries = sortedCountries.slice(1);
 
   return (
     <div className="min-h-screen bg-[#f9fafb] pb-16">
@@ -137,15 +288,15 @@ export default function StudyAbroad() {
             exit={{ opacity: 0 }}
             transition={{ duration: 0.8 }}
           >
-            <img src={HERO_SLIDES[currentSlide].image} alt="" className="w-full h-full object-cover opacity-25 scale-105" />
+            <img src={HERO_SLIDES[currentSlide].image} alt="" className="w-full h-full object-cover opacity-40 scale-105" />
           </motion.div>
         </AnimatePresence>
-        <div className="absolute inset-0 bg-gradient-to-r from-[#0f172a] via-[#0f172a]/85 to-[#0f172a]/40" />
+        <div className="absolute inset-0 bg-gradient-to-r from-[#0f172a] via-[#0f172a]/85 to-[#0f172a]/60" />
         <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-[#0f172a] to-transparent" />
 
         <div className="relative z-10 max-w-[1200px] mx-auto px-4 sm:px-6 pt-16 pb-20 md:pt-20 md:pb-24">
           <div className="max-w-2xl">
-            <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 backdrop-blur-md text-white border border-white/20 text-[13px] font-medium mb-6">
+            <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/20 backdrop-blur-md text-white border border-white/20 text-[13px] font-medium mb-6">
               <Globe className="w-4 h-4 text-[#14b8a6]" />
               {HERO_SLIDES[currentSlide].tag}
             </motion.div>
@@ -155,13 +306,31 @@ export default function StudyAbroad() {
                 <p className="text-[15px] md:text-[18px] text-gray-300 leading-relaxed mb-8 max-w-xl">{HERO_SLIDES[currentSlide].subtitle}</p>
               </motion.div>
             </AnimatePresence>
-            <div className="flex flex-wrap gap-4">
+            <div className="flex flex-wrap gap-4 mb-8">
               <Link to={HERO_SLIDES[currentSlide].ctaLink} className="bg-[#14b8a6] text-white px-8 py-4 rounded-xl font-bold text-[15px] hover:bg-[#0f766e] transition-all shadow-lg shadow-[#14b8a6]/25 flex items-center gap-2 hover:gap-3">
                 {HERO_SLIDES[currentSlide].cta} <ArrowRight className="w-4 h-4" />
               </Link>
-              <Link to="/study-abroad/offers" className="bg-white/10 backdrop-blur-md text-white border border-white/25 px-8 py-4 rounded-xl font-bold text-[15px] hover:bg-white/20 transition-all flex items-center gap-2">
+              <Link to="/study-abroad/offers" className="bg-white/20 backdrop-blur-md text-white border border-white/25 px-8 py-4 rounded-xl font-bold text-[15px] hover:bg-white/30 transition-all flex items-center gap-2">
                 <TrendingUp className="w-4 h-4" /> 查看 Offer 榜
               </Link>
+            </div>
+
+            {/* 14 国快捷入口 */}
+            <div className="flex flex-wrap gap-2">
+              {countries.map((c) => (
+                <Link
+                  key={c.id}
+                  to={`/study-abroad/programs?country=${c.id}`}
+                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[12px] font-medium transition-all ${
+                    c.hot
+                      ? 'bg-[#14b8a6]/20 text-[#5eead4] border border-[#14b8a6]/30 hover:bg-[#14b8a6]/30'
+                      : 'bg-white/8 text-gray-300 border border-white/10 hover:bg-white/15'
+                  }`}
+                >
+                  <span className="text-sm">{c.flag}</span>
+                  {c.name}
+                </Link>
+              ))}
             </div>
           </div>
 
@@ -221,40 +390,32 @@ export default function StudyAbroad() {
           </div>
         </section>
 
-        {/* ====== 国家/地区探索 ====== */}
+        {/* ====== 国家/地区探索（14 国 · CountryCard） ====== */}
         <section className="mb-14">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-[22px] font-bold text-[#111827] flex items-center gap-2">
               <MapPin className="w-6 h-6 text-[#14b8a6]" /> 按国家 / 地区探索
+              <span className="text-[13px] font-normal text-[#9ca3af] ml-2">覆盖 {countries.length} 个国家/地区</span>
             </h2>
             <Link to="/study-abroad/programs" className="text-[14px] text-[#6b7280] hover:text-[#14b8a6] font-medium flex items-center transition-colors">查看全部 <ChevronRight className="w-4 h-4 ml-1" /></Link>
           </div>
+
+          {/* Featured 大卡 — 第一个热门国家 */}
+          {featuredCountry && (
+            <div className="mb-5">
+              <CountryCard country={featuredCountry} variant="featured" />
+            </div>
+          )}
+
+          {/* Compact 网格 — 其余国家 */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {COUNTRIES.map((country, idx) => (
-              <motion.div key={country.id} initial={{ opacity: 0, y: 15 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: idx * 0.05 }}>
-                <Link to={`/study-abroad/programs?country=${country.id}`}
-                  className={`block p-5 rounded-2xl border transition-all duration-200 hover:shadow-md group ${
-                    selectedCountry === country.id ? 'bg-[#f0fdfa] border-[#14b8a6] shadow-md' : 'bg-white border-gray-100 hover:border-[#14b8a6]/40'
-                  }`}
-                >
-                  <div className="flex items-center gap-3 mb-2">
-                    <span className="text-[32px]">{country.flag}</span>
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <h3 className="text-[16px] font-bold text-[#111827]">{country.name}</h3>
-                        {country.hot && <span className="text-[10px] font-bold bg-red-50 text-red-500 px-1.5 py-0.5 rounded border border-red-100">热门</span>}
-                      </div>
-                      <span className="text-[12px] text-[#14b8a6] font-medium">{country.count} 个硕士项目</span>
-                    </div>
-                  </div>
-                  <p className="text-[12px] text-[#9ca3af] leading-relaxed group-hover:text-[#6b7280] transition-colors">{country.desc}</p>
-                </Link>
-              </motion.div>
+            {compactCountries.map((country) => (
+              <CountryCard key={country.id} country={country} variant="compact" />
             ))}
           </div>
         </section>
 
-        {/* ====== 热门项目推荐 ====== */}
+        {/* ====== 热门项目推荐（ProgramCard） ====== */}
         <section className="mb-14">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-[22px] font-bold text-[#111827] flex items-center gap-2">
@@ -263,62 +424,28 @@ export default function StudyAbroad() {
             <Link to="/study-abroad/programs" className="text-[14px] text-[#6b7280] hover:text-[#14b8a6] font-medium flex items-center transition-colors">全部项目 <ChevronRight className="w-4 h-4 ml-1" /></Link>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-            {HOT_PROGRAMS.slice(0, 9).map((prog, idx) => (
-              <motion.div key={prog.id} initial={{ opacity: 0, y: 15 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: idx * 0.04 }}>
-                <Link to={`/study-abroad/programs/${prog.id}`}
-                  className="block bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-lg hover:border-[#14b8a6]/30 transition-all duration-300 overflow-hidden group"
-                  onMouseEnter={() => setHoveredProgram(prog.id)}
-                  onMouseLeave={() => setHoveredProgram(null)}
-                >
-                  <div className="p-5">
-                    <div className="flex items-start gap-3 mb-3">
-                      <div className="w-12 h-12 rounded-xl bg-gray-100 overflow-hidden shrink-0 ring-2 ring-gray-50">
-                        <img src={prog.logo} alt={prog.school} className="w-full h-full object-cover" />
-                      </div>
-                      <div className="flex-grow min-w-0">
-                        <div className="flex items-center gap-2">
-                          <h3 className="text-[15px] font-bold text-[#111827] truncate group-hover:text-[#14b8a6] transition-colors">{prog.school}</h3>
-                          <span className="shrink-0 bg-[#f0fdfa] text-[#14b8a6] text-[11px] font-bold px-1.5 py-0.5 rounded border border-[#ccfbf1]">QS #{prog.ranking}</span>
-                        </div>
-                        <p className="text-[12px] text-[#9ca3af] truncate">{prog.schoolEn}</p>
-                      </div>
-                    </div>
-                    <h4 className="text-[14px] font-semibold text-[#374151] mb-2">{prog.program}</h4>
-                    <div className="flex items-center gap-3 text-[12px] text-[#9ca3af] mb-3">
-                      <span>{prog.country}</span>
-                      <span className="w-0.5 h-0.5 rounded-full bg-gray-300" />
-                      <span>截止 {prog.deadline}</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-[14px] font-bold text-[#14b8a6]">{prog.tuition}</span>
-                      <span className="text-[11px] bg-orange-50 text-orange-600 px-2 py-0.5 rounded-full font-medium border border-orange-100">{prog.tag}</span>
-                    </div>
-                    {/* 录取率条 */}
-                    <div className="mt-3 pt-3 border-t border-gray-50">
-                      <div className="flex items-center justify-between text-[11px] text-[#9ca3af] mb-1">
-                        <span>平台录取 {prog.admitted} 人</span>
-                        <span>申请 {prog.applicants} 人</span>
-                      </div>
-                      <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                        <motion.div
-                          className="h-full bg-gradient-to-r from-[#14b8a6] to-[#0f766e] rounded-full"
-                          initial={{ width: 0 }}
-                          whileInView={{ width: `${Math.min((prog.admitted / prog.applicants) * 100 * 8, 100)}%` }}
-                          viewport={{ once: true }}
-                          transition={{ duration: 1, delay: idx * 0.05 }}
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </Link>
-              </motion.div>
+            {hotPrograms.map(({ program, university }) => (
+              <ProgramCard
+                key={`${university.id}-${program.id}`}
+                program={program}
+                university={{
+                  id: university.id,
+                  school: university.school,
+                  schoolEn: university.schoolEn,
+                  country: university.country.toUpperCase(),
+                  ranking: university.ranking,
+                  logo: university.logo,
+                }}
+                mode="compact"
+              />
             ))}
           </div>
         </section>
 
+        {/* ====== Offer 动态 + 侧边栏 ====== */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-14">
 
-          {/* ====== Offer 动态 ====== */}
+          {/* Offer 动态 */}
           <div className="lg:col-span-2">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-[22px] font-bold text-[#111827] flex items-center gap-2">
@@ -328,50 +455,44 @@ export default function StudyAbroad() {
               <Link to="/study-abroad/offers" className="text-[14px] text-[#6b7280] hover:text-[#14b8a6] font-medium flex items-center transition-colors">完整 Offer 榜 <ChevronRight className="w-4 h-4 ml-1" /></Link>
             </div>
             <div className="space-y-3">
-              {LATEST_OFFERS.map((offer, idx) => (
-                <motion.div key={offer.id} initial={{ opacity: 0, x: -10 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ delay: idx * 0.04 }}
-                  className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all flex items-center gap-4">
-                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${offer.result === 'admitted' ? 'bg-green-50' : offer.result === 'rejected' ? 'bg-red-50' : 'bg-yellow-50'}`}>
-                    {offer.result === 'admitted' && <CheckCircle2 className="w-5 h-5 text-green-500" />}
-                    {offer.result === 'rejected' && <span className="text-red-500 font-bold text-sm">✕</span>}
-                    {offer.result === 'waitlisted' && <Clock className="w-5 h-5 text-yellow-500" />}
-                  </div>
-                  <div className="flex-grow min-w-0">
-                    <div className="flex items-center gap-2 mb-0.5">
-                      <h4 className="text-[14px] font-bold text-[#111827] truncate">{offer.school}</h4>
-                      <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${offer.result === 'admitted' ? 'bg-green-100 text-green-700' : offer.result === 'rejected' ? 'bg-red-100 text-red-700' : 'bg-yellow-100 text-yellow-700'}`}>
-                        {offer.result === 'admitted' ? 'Offer ✓' : offer.result === 'rejected' ? 'Rej ✕' : 'WL ◷'}
-                      </span>
-                    </div>
-                    <p className="text-[12px] text-[#6b7280] truncate">{offer.program} · {offer.background}</p>
-                  </div>
-                  <div className="hidden md:flex items-center gap-2 text-[11px] text-[#9ca3af] shrink-0">
-                    <span className="bg-gray-50 px-2 py-0.5 rounded">GPA {offer.gpa}</span>
-                    <span className="bg-gray-50 px-2 py-0.5 rounded">{offer.lang}</span>
-                  </div>
-                  <span className="text-[11px] text-[#d1d5db] shrink-0 whitespace-nowrap">{offer.date}</span>
-                </motion.div>
+              {latestOffers.map((offer) => (
+                <OfferStoryCard key={offer.id} offer={offer} mode="compact" />
               ))}
             </div>
           </div>
 
-          {/* ====== 右侧边栏 ====== */}
+          {/* 右侧边栏 */}
           <div className="space-y-6">
-            {/* 咨询卡片 */}
+            {/* 国家专属顾问推荐 */}
             <div className="bg-gradient-to-b from-[#f0fdfa] to-white p-6 rounded-2xl border border-[#ccfbf1] relative overflow-hidden">
               <div className="absolute top-0 right-0 w-24 h-24 bg-[#14b8a6]/10 rounded-full blur-2xl" />
               <div className="relative">
-                <div className="w-12 h-12 bg-[#14b8a6] rounded-xl flex items-center justify-center mb-4 text-white shadow-lg shadow-[#14b8a6]/20">
-                  <Headphones className="w-6 h-6" />
+                <h3 className="text-[17px] font-bold text-[#111827] mb-4 flex items-center gap-2">
+                  <Users className="w-5 h-5 text-[#14b8a6]" /> 资深留学顾问
+                </h3>
+                <div className="space-y-3">
+                  {featuredConsultants.map((consultant) => (
+                    <Link key={consultant.id} to="/study-abroad/background" className="flex items-start gap-3 p-3 rounded-xl bg-white/80 border border-gray-100 hover:shadow-sm hover:border-primary-200 transition-all cursor-pointer">
+                      <div className="w-10 h-10 rounded-full bg-[#14b8a6]/10 flex items-center justify-center shrink-0">
+                        <User className="w-5 h-5 text-[#14b8a6]" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2 mb-0.5">
+                          <span className="text-[13px] font-bold text-[#111827]">{consultant.name}</span>
+                          <span className="text-[10px] text-[#14b8a6] bg-[#f0fdfa] px-1.5 py-0.5 rounded font-medium">{consultant.experience}经验</span>
+                        </div>
+                        <p className="text-[11px] text-[#6b7280] leading-snug line-clamp-2">{consultant.description}</p>
+                        <div className="flex items-center gap-2 mt-1">
+                          <span className="text-[10px] text-[#9ca3af]">成功案例 <span className="text-[#14b8a6] font-bold">{consultant.successCases}+</span></span>
+                          <span className="text-[10px] text-[#9ca3af]">·</span>
+                          <span className="text-[10px] text-[#9ca3af]">{consultant.specialty.join('/')}</span>
+                        </div>
+                      </div>
+                    </Link>
+                  ))}
                 </div>
-                <h3 className="text-[18px] font-bold text-[#111827] mb-2">免费留学规划</h3>
-                <p className="text-[13px] text-[#6b7280] mb-3 leading-relaxed">资深留学规划师 1v1 评估你的背景，定制专属选校方案</p>
-                <div className="flex items-center gap-2 text-[11px] text-[#9ca3af] mb-4 bg-white/50 rounded-lg px-3 py-2">
-                  <Clock className="w-3.5 h-3.5" />
-                  <span>人工客服：周一至周五 9:00-17:30（北京时间）</span>
-                </div>
-                <button className="w-full bg-[#14b8a6] text-white py-3.5 rounded-xl font-bold hover:bg-[#0f766e] transition-colors flex items-center justify-center gap-2 shadow-md shadow-[#14b8a6]/15">
-                  <MessageCircle className="w-4 h-4" /> 立即免费咨询
+                <button className="w-full mt-4 bg-[#14b8a6] text-white py-3 rounded-xl font-bold text-[13px] hover:bg-[#0f766e] transition-colors flex items-center justify-center gap-2 shadow-md shadow-[#14b8a6]/15">
+                  <MessageCircle className="w-4 h-4" /> 预约免费咨询
                 </button>
                 <p className="text-center text-[10px] text-[#9ca3af] mt-2">已有 <span className="text-[#14b8a6] font-bold">12,400+</span> 名同学获得了免费评估</p>
               </div>
@@ -405,28 +526,169 @@ export default function StudyAbroad() {
           </div>
         </div>
 
-        {/* ====== 背景提升服务 ====== */}
+        {/* ====== 学员故事（数据来自 ui-config） ====== */}
+        <section className="mb-14">
+          <div className="text-center mb-8">
+            <h2 className="text-[22px] font-bold text-[#111827] flex items-center justify-center gap-2 mb-2">
+              <Sparkles className="w-6 h-6 text-[#14b8a6]" /> 他们的故事，也是你的未来
+            </h2>
+            <p className="text-[13px] text-[#9ca3af]">真实学员的申请历程与成长蜕变</p>
+          </div>
+          <div className="space-y-6">
+            {uiConfig.studentStories.map((story, idx) => (
+              <Link key={story.id} to="/study-abroad/offers" className="block">
+                <motion.div
+                  initial={{ opacity: 0, x: idx % 2 === 0 ? -30 : 30 }}
+                  whileInView={{ opacity: 1, x: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.5, delay: idx * 0.1 }}
+                  className={`flex flex-col md:flex-row ${idx % 2 === 1 ? 'md:flex-row-reverse' : ''} gap-6 bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md hover:border-primary-200 transition-all overflow-hidden cursor-pointer`}
+                >
+                {/* 图片区 */}
+                <div className="md:w-1/3 h-48 md:h-auto overflow-hidden shrink-0">
+                  <img src={story.image} alt={story.studentName} className="w-full h-full object-cover" />
+                </div>
+                {/* 文字区 */}
+                <div className="md:w-2/3 p-6 flex flex-col justify-center">
+                  <div className="flex items-center gap-3 mb-3">
+                    <h3 className="text-[18px] font-bold text-[#111827]">{story.studentName}</h3>
+                    <span className="text-[12px] text-[#6b7280] bg-gray-50 px-2 py-0.5 rounded">{story.background}</span>
+                    <span className="text-[12px] font-bold text-[#14b8a6] bg-[#f0fdfa] px-2 py-0.5 rounded border border-[#ccfbf1]">→ {story.result}</span>
+                  </div>
+                  <p className="text-[15px] text-[#374151] mb-3 leading-relaxed italic">"{story.quote}"</p>
+                  <p className="text-[13px] text-[#6b7280] mb-4 leading-relaxed line-clamp-2">{story.story}</p>
+                  <div className="flex items-center justify-between">
+                    <div className="flex flex-wrap gap-2">
+                      {story.tags.map((tag: string) => (
+                        <span key={tag} className="text-[11px] text-[#14b8a6] bg-[#f0fdfa] px-2 py-0.5 rounded">{tag}</span>
+                      ))}
+                    </div>
+                    <div className="flex items-center gap-3 text-[12px] text-[#9ca3af]">
+                      <span className="flex items-center gap-1"><Heart className="w-3.5 h-3.5" />{story.likes}</span>
+                      <span className="flex items-center gap-1"><Users className="w-3.5 h-3.5" />{story.views}</span>
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+              </Link>
+            ))}
+          </div>
+          <div className="text-center mt-6">
+            <Link to="/study-abroad/offers" className="inline-flex items-center gap-2 text-[14px] font-medium text-[#14b8a6] hover:gap-3 transition-all">
+              查看更多学员故事 <ArrowRight className="w-4 h-4" />
+            </Link>
+          </div>
+        </section>
+
+        {/* ====== 重要时间节点（TimelineView） ====== */}
+        <section className="mb-14">
+          <TimelineView />
+        </section>
+
+        {/* ====== 探索专业方向（MajorExplorer） ====== */}
+        <MajorExplorer />
+
+        {/* ====== 费用估算器（CostEstimator） ====== */}
+        <CostEstimator />
+
+        {/* ====== 新人寄语轮播 ====== */}
+        <section className="mb-14">
+          <div
+            className="relative rounded-2xl overflow-hidden min-h-[320px] md:min-h-[360px]"
+            onMouseEnter={() => setQuotePaused(true)}
+            onMouseLeave={() => setQuotePaused(false)}
+          >
+            {/* 背景图 */}
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={quoteIndex}
+                className="absolute inset-0"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.8 }}
+              >
+                <img
+                  src={uiConfig.newcomerQuotes[quoteIndex].image}
+                  alt=""
+                  className="w-full h-full object-cover"
+                />
+              </motion.div>
+            </AnimatePresence>
+            {/* 暗色遮罩 */}
+            <div className="absolute inset-0 bg-black/50" />
+            {/* 引言内容 */}
+            <div className="relative z-10 flex flex-col items-center justify-center h-full min-h-[320px] md:min-h-[360px] px-6 text-center">
+              <div className="text-[48px] md:text-[64px] text-white/20 font-serif leading-none mb-2">"</div>
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={quoteIndex}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                  transition={{ duration: 0.5 }}
+                  className="max-w-2xl"
+                >
+                  <p className="text-[22px] md:text-[28px] text-white font-bold leading-relaxed mb-6 tracking-wide">
+                    {uiConfig.newcomerQuotes[quoteIndex].quote}
+                  </p>
+                  <p className="text-[14px] text-white/80 font-medium mb-1">
+                    — {uiConfig.newcomerQuotes[quoteIndex].author}
+                  </p>
+                  <p className="text-[12px] text-white/50">
+                    {uiConfig.newcomerQuotes[quoteIndex].background}
+                  </p>
+                </motion.div>
+              </AnimatePresence>
+              {/* 圆点指示器 */}
+              <div className="flex items-center gap-2 mt-8">
+                {uiConfig.newcomerQuotes.map((_: any, idx: number) => (
+                  <button
+                    key={idx}
+                    onClick={() => setQuoteIndex(idx)}
+                    className={`transition-all duration-300 rounded-full ${
+                      idx === quoteIndex ? 'w-8 h-2.5 bg-[#14b8a6]' : 'w-2.5 h-2.5 bg-white/30 hover:bg-white/50'
+                    }`}
+                  />
+                ))}
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* ====== 八大维度背景提升服务 ====== */}
         <section className="mb-14">
           <div className="flex items-center justify-between mb-2">
             <h2 className="text-[22px] font-bold text-[#111827] flex items-center gap-2">
-              <Star className="w-6 h-6 text-[#14b8a6]" /> 背景提升服务
+              <Star className="w-6 h-6 text-[#14b8a6]" /> 八大维度背景提升
             </h2>
             <Link to="/study-abroad/background" className="text-[14px] text-[#6b7280] hover:text-[#14b8a6] font-medium flex items-center transition-colors">了解全部 <ChevronRight className="w-4 h-4 ml-1" /></Link>
           </div>
-          <p className="text-[13px] text-[#9ca3af] mb-6">六大维度全面提升申请竞争力 · 与旗下实习/创赛/保研业务深度联动</p>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-            {BG_SERVICES.map((service, idx) => (
-              <motion.div key={service.id} initial={{ opacity: 0, y: 10 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: idx * 0.05 }}>
-                <Link to="/study-abroad/background" className="block bg-white p-5 rounded-2xl border border-gray-100 shadow-sm hover:shadow-lg hover:border-[#14b8a6]/30 transition-all group cursor-pointer text-center">
-                  <div className={`w-12 h-12 ${service.bg} rounded-2xl flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform`}>
-                    <service.icon className={`w-6 h-6 ${service.color}`} />
-                  </div>
-                  <h4 className="text-[14px] font-bold text-[#111827] mb-1">{service.title}</h4>
-                  <p className="text-[11px] text-[#9ca3af] mb-2 leading-snug">{service.desc}</p>
-                  <span className="text-[11px] text-[#14b8a6] font-bold">{service.stat}</span>
-                </Link>
-              </motion.div>
-            ))}
+          <p className="text-[13px] text-[#9ca3af] mb-6">八大维度全面提升申请竞争力 · 与旗下实习/创赛/保研业务深度联动</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {uiConfig.serviceCards.map((service: any, idx: number) => {
+              const IconComp = SERVICE_ICON_MAP[service.icon] || Star;
+              const gradientClass = SERVICE_COLOR_MAP[service.color] || 'from-gray-600/80 to-gray-900/90';
+              return (
+                <motion.div key={service.id} initial={{ opacity: 0, y: 15 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: idx * 0.05 }}>
+                  <Link to="/study-abroad/background" className="block rounded-2xl overflow-hidden group relative h-[200px]">
+                    {/* 背景图 */}
+                    <img src={service.image} alt={service.title} className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                    {/* 渐变遮罩 */}
+                    <div className={`absolute inset-0 bg-gradient-to-t ${gradientClass} group-hover:opacity-90 transition-opacity`} />
+                    {/* 内容 */}
+                    <div className="relative z-10 h-full flex flex-col justify-end p-5">
+                      <div className="w-9 h-9 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center mb-3">
+                        <IconComp className="w-5 h-5 text-white" />
+                      </div>
+                      <h4 className="text-[15px] font-bold text-white mb-0.5">{service.title}</h4>
+                      <p className="text-[12px] text-white/70 font-medium mb-1">{service.subtitle}</p>
+                      <p className="text-[11px] text-white/50 leading-snug">{service.description}</p>
+                    </div>
+                  </Link>
+                </motion.div>
+              );
+            })}
           </div>
         </section>
 

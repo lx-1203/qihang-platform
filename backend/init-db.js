@@ -214,6 +214,22 @@ const CREATE_FAVORITES_TABLE = `
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户收藏表'
 `;
 
+const CREATE_STUDENT_PORTRAITS_TABLE = `
+  CREATE TABLE IF NOT EXISTS student_portraits (
+    id              INT AUTO_INCREMENT PRIMARY KEY,
+    user_id         INT NOT NULL UNIQUE COMMENT '用户ID',
+    skills          JSON COMMENT '技能标签',
+    interests       JSON COMMENT '兴趣方向',
+    industries      JSON COMMENT '目标行业',
+    career_goals    JSON COMMENT '职业目标',
+    self_intro      VARCHAR(200) DEFAULT '' COMMENT '一句话介绍',
+    dimensions      JSON COMMENT '能力维度自评',
+    created_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    updated_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='学生画像表'
+`;
+
 const CREATE_NOTIFICATIONS_TABLE = `
   CREATE TABLE IF NOT EXISTS notifications (
     id              INT AUTO_INCREMENT PRIMARY KEY,
@@ -399,6 +415,80 @@ const CREATE_TOKEN_BLACKLIST_TABLE = `
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='Token黑名单（软失效）'
 `;
 
+// ====== 留学录取案例表 ======
+const CREATE_STUDY_ABROAD_OFFERS_TABLE = `
+  CREATE TABLE IF NOT EXISTS study_abroad_offers (
+    id              INT AUTO_INCREMENT PRIMARY KEY,
+    student_name    VARCHAR(100) NOT NULL COMMENT '学生姓名',
+    avatar          VARCHAR(500) DEFAULT '' COMMENT '头像URL',
+    background      VARCHAR(500) NOT NULL COMMENT '背景描述: 985·计算机·GPA 3.7',
+    gpa             VARCHAR(20) DEFAULT '' COMMENT 'GPA',
+    ielts           DECIMAL(2,1) DEFAULT NULL COMMENT '雅思成绩',
+    toefl           INT DEFAULT NULL COMMENT '托福成绩',
+    gre             INT DEFAULT NULL COMMENT 'GRE成绩',
+    internship      JSON COMMENT '实习经历数组',
+    research        JSON COMMENT '科研经历数组',
+    result          VARCHAR(300) NOT NULL COMMENT '录取结果',
+    country         VARCHAR(10) NOT NULL COMMENT '国家ID: uk/us/de...',
+    school          VARCHAR(200) NOT NULL COMMENT '录取院校',
+    program         VARCHAR(200) NOT NULL COMMENT '录取项目',
+    scholarship     VARCHAR(200) DEFAULT '' COMMENT '奖学金',
+    story           TEXT COMMENT '申请故事',
+    date            DATE NOT NULL COMMENT '录取日期',
+    tags            JSON COMMENT '标签',
+    likes           INT DEFAULT 0 COMMENT '点赞数',
+    status          ENUM('active','inactive') DEFAULT 'active',
+    created_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_country (country),
+    INDEX idx_status (status),
+    INDEX idx_date (date)
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='留学录取案例表'
+`;
+
+// ====== 留学时间线表 ======
+const CREATE_STUDY_ABROAD_TIMELINE_TABLE = `
+  CREATE TABLE IF NOT EXISTS study_abroad_timeline (
+    id              INT AUTO_INCREMENT PRIMARY KEY,
+    date            DATE NOT NULL COMMENT '事件日期',
+    title           VARCHAR(200) NOT NULL COMMENT '事件标题',
+    description     TEXT COMMENT '事件描述',
+    type            ENUM('event','deadline','live','tips') NOT NULL DEFAULT 'event' COMMENT '类型',
+    category        VARCHAR(50) DEFAULT '' COMMENT '分类',
+    icon            VARCHAR(50) DEFAULT '' COMMENT '图标',
+    color           VARCHAR(50) DEFAULT '' COMMENT '颜色',
+    link            VARCHAR(500) DEFAULT '' COMMENT '关联链接',
+    tags            JSON COMMENT '标签',
+    status          ENUM('active','inactive') DEFAULT 'active',
+    created_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_date (date),
+    INDEX idx_type (type),
+    INDEX idx_status (status)
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='留学时间线表'
+`;
+
+// ====== 留学顾问表 ======
+const CREATE_STUDY_ABROAD_CONSULTANTS_TABLE = `
+  CREATE TABLE IF NOT EXISTS study_abroad_consultants (
+    id              INT AUTO_INCREMENT PRIMARY KEY,
+    name            VARCHAR(100) NOT NULL COMMENT '顾问姓名',
+    title           VARCHAR(200) DEFAULT '' COMMENT '头衔',
+    avatar          VARCHAR(500) DEFAULT '' COMMENT '头像URL',
+    specialty       JSON COMMENT '擅长国家/方向',
+    experience      VARCHAR(50) DEFAULT '' COMMENT '从业年限',
+    education       VARCHAR(200) DEFAULT '' COMMENT '学历背景',
+    success_cases   INT DEFAULT 0 COMMENT '成功案例数',
+    country         VARCHAR(10) NOT NULL COMMENT '负责国家ID',
+    description     TEXT COMMENT '个人简介',
+    status          ENUM('active','inactive') DEFAULT 'active',
+    created_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_country (country),
+    INDEX idx_status (status)
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='留学顾问表'
+`;
+
 // ========== 按依赖关系排列的建表顺序 ==========
 const TABLE_DEFINITIONS = [
   { name: 'users',           sql: CREATE_USERS_TABLE },
@@ -410,6 +500,7 @@ const TABLE_DEFINITIONS = [
   { name: 'appointments',    sql: CREATE_APPOINTMENTS_TABLE },
   { name: 'resumes',         sql: CREATE_RESUMES_TABLE },
   { name: 'favorites',       sql: CREATE_FAVORITES_TABLE },
+  { name: 'student_portraits', sql: CREATE_STUDENT_PORTRAITS_TABLE },
   { name: 'notifications',   sql: CREATE_NOTIFICATIONS_TABLE },
   { name: 'universities',    sql: CREATE_UNIVERSITIES_TABLE },
   { name: 'programs',        sql: CREATE_PROGRAMS_TABLE },
@@ -418,6 +509,9 @@ const TABLE_DEFINITIONS = [
   { name: 'articles',           sql: CREATE_ARTICLES_TABLE },
   { name: 'search_histories',   sql: CREATE_SEARCH_HISTORIES_TABLE },
   { name: 'token_blacklist',    sql: CREATE_TOKEN_BLACKLIST_TABLE },
+  { name: 'study_abroad_offers',     sql: CREATE_STUDY_ABROAD_OFFERS_TABLE },
+  { name: 'study_abroad_timeline',   sql: CREATE_STUDY_ABROAD_TIMELINE_TABLE },
+  { name: 'study_abroad_consultants', sql: CREATE_STUDY_ABROAD_CONSULTANTS_TABLE },
 ];
 
 // ========== 种子数据 ==========
@@ -1292,6 +1386,129 @@ async function seedArticles(conn) {
   }
 }
 
+/**
+ * 插入留学录取案例种子数据
+ */
+async function seedStudyAbroadOffers(conn) {
+  const [existing] = await conn.query('SELECT COUNT(*) as count FROM study_abroad_offers');
+  if (existing[0].count > 0) return;
+
+  const offers = [
+    {
+      student_name: '李明', avatar: '', background: '985 · 计算机科学 · GPA 3.7/4.0', gpa: '3.7/4.0',
+      ielts: 7.5, toefl: 105, gre: 325,
+      internship: JSON.stringify(['字节跳动后端实习6个月', '腾讯暑期算法实习']),
+      research: JSON.stringify(['一篇CCF-B会议论文一作']),
+      result: 'Imperial College London - MSc Computing', country: 'uk', school: '帝国理工学院',
+      program: '计算机科学 MSc', scholarship: '£5,000 院校奖学金',
+      story: '从大二开始规划留学，通过启航平台匹配到帝国学长做1v1文书指导，最终拿到梦校Offer！',
+      date: '2025-12-15', tags: JSON.stringify(['CS热门', 'G5录取', '奖学金']), likes: 328
+    },
+    {
+      student_name: '张雪', avatar: '', background: '211 · 金融学 · GPA 3.4/4.0', gpa: '3.4/4.0',
+      ielts: 7.0, toefl: null, gre: 320,
+      internship: JSON.stringify(['中金公司IBD实习', '四大审计暑期实习']),
+      research: JSON.stringify([]),
+      result: 'HKU - MFin 金融学硕士', country: 'hk', school: '香港大学',
+      program: '金融学 MFin', scholarship: '无',
+      story: 'GPA不算高，但通过启航的背景提升项目补充了2段高质量实习，面试表现突出拿下港大MFin！',
+      date: '2025-11-28', tags: JSON.stringify(['金融热门', '港三录取', '逆袭']), likes: 456
+    },
+    {
+      student_name: '陈晨', avatar: '', background: '985 · 数学与应用数学 · GPA 3.65/4.0', gpa: '3.65/4.0',
+      ielts: 7.0, toefl: 100, gre: 330,
+      internship: JSON.stringify(['华泰证券量化实习']),
+      research: JSON.stringify(['一篇数学建模论文']),
+      result: 'Columbia University - MA Statistics', country: 'us', school: '哥伦比亚大学',
+      program: '统计学 MA', scholarship: '$10,000 Merit Scholarship',
+      story: '数学转统计方向，GRE刷到330+，在启航导师指导下优化了PS中的量化经历，顺利进入常春藤！',
+      date: '2025-03-15', tags: JSON.stringify(['常春藤', '转专业', '奖学金']), likes: 789
+    },
+    {
+      student_name: '韩天宇', avatar: '', background: '985 · 机械工程 · GPA 3.52/4.0', gpa: '3.52/4.0',
+      ielts: 6.5, toefl: null, gre: null,
+      internship: JSON.stringify(['博世汽车研发实习6个月']),
+      research: JSON.stringify(['RoboMaster全国赛一等奖']),
+      result: 'TU Munich - MSc Mechanical Engineering', country: 'de', school: '慕尼黑工业大学TUM',
+      program: '机械工程 MSc', scholarship: 'DAAD奖学金 €850/月',
+      story: '通过启航的APS审核辅导一次性通过，TUM免学费+DAAD奖学金，每年仅需8万生活费！',
+      date: '2025-05-10', tags: JSON.stringify(['德国免学费', 'TU9精英', 'DAAD奖学金']), likes: 534
+    },
+    {
+      student_name: '杨思琪', avatar: '', background: '211 · 法语专业 · GPA 3.68/4.0', gpa: '3.68/4.0',
+      ielts: null, toefl: null, gre: null,
+      internship: JSON.stringify(['法国驻华使馆文化处实习']),
+      research: JSON.stringify([]),
+      result: 'Sciences Po Paris - Master International Affairs', country: 'fr', school: '巴黎政治大学Sciences Po',
+      program: '国际事务 Master', scholarship: 'Eiffel Excellence €1,700/月',
+      story: '法语专业转申国际关系，获得Eiffel卓越奖学金全额资助！公立大学注册费仅€243/年！',
+      date: '2025-04-20', tags: JSON.stringify(['法国精英校', 'Eiffel全奖', '跨专业']), likes: 623
+    },
+  ];
+
+  for (const o of offers) {
+    await conn.query(
+      `INSERT INTO study_abroad_offers (student_name, avatar, background, gpa, ielts, toefl, gre, internship, research, result, country, school, program, scholarship, story, date, tags, likes)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [o.student_name, o.avatar, o.background, o.gpa, o.ielts, o.toefl, o.gre, o.internship, o.research, o.result, o.country, o.school, o.program, o.scholarship, o.story, o.date, o.tags, o.likes]
+    );
+  }
+}
+
+/**
+ * 插入留学时间线种子数据
+ */
+async function seedStudyAbroadTimeline(conn) {
+  const [existing] = await conn.query('SELECT COUNT(*) as count FROM study_abroad_timeline');
+  if (existing[0].count > 0) return;
+
+  const events = [
+    { date: '2025-09-01', title: '英国G5 Round 1 截止', description: '牛津、剑桥、帝国理工、UCL、LSE第一轮申请截止', type: 'deadline', category: '英国', icon: '🇬🇧', color: 'red', link: '', tags: JSON.stringify(['英国', 'G5', '第一轮']) },
+    { date: '2025-10-15', title: 'UCAS 牛剑申请截止', description: '牛津和剑桥本科申请通过UCAS提交的最终截止日', type: 'deadline', category: '英国', icon: '🎓', color: 'red', link: '', tags: JSON.stringify(['牛剑', '本科']) },
+    { date: '2025-11-01', title: '美国 ED/EA 截止', description: '美国Top50大学Early Decision/Early Action申请截止', type: 'deadline', category: '美国', icon: '🇺🇸', color: 'red', link: '', tags: JSON.stringify(['美国', 'ED', 'EA']) },
+    { date: '2025-11-15', title: '港校第一轮截止', description: '香港大学、港中文、港科技热门项目第一轮截止', type: 'deadline', category: '中国香港', icon: '🇭🇰', color: 'red', link: '', tags: JSON.stringify(['香港', '第一轮']) },
+    { date: '2025-12-01', title: '新加坡NUS/NTU主轮截止', description: '新加坡国立大学和南洋理工大学大部分硕士项目截止', type: 'deadline', category: '新加坡', icon: '🇸🇬', color: 'red', link: '', tags: JSON.stringify(['新加坡', 'NUS', 'NTU']) },
+    { date: '2026-01-05', title: '美国 RD 截止', description: '美国常规申请截止，覆盖Top100绝大部分学校', type: 'deadline', category: '美国', icon: '🇺🇸', color: 'red', link: '', tags: JSON.stringify(['美国', 'RD', '常规申请']) },
+    { date: '2026-01-15', title: '德国APS审核材料截止', description: '申请德国夏季学期的APS审核材料提交最终截止', type: 'deadline', category: '德国', icon: '🇩🇪', color: 'red', link: '', tags: JSON.stringify(['德国', 'APS']) },
+    { date: '2026-02-01', title: '日本SGU项目截止', description: '东大、京大等SGU全英文项目申请截止', type: 'deadline', category: '日本', icon: '🇯🇵', color: 'red', link: '', tags: JSON.stringify(['日本', 'SGU']) },
+    { date: '2025-10-20', title: '留学申请季启动直播', description: '启航资深顾问团队解读2026 Fall各国申请趋势', type: 'live', category: '综合', icon: '📺', color: 'purple', link: '/study-abroad', tags: JSON.stringify(['直播', '申请趋势']) },
+    { date: '2025-12-15', title: 'GRE/GMAT备考工作坊', description: '名师带你制定冲刺计划，高效备考GRE/GMAT', type: 'event', category: '综合', icon: '📝', color: 'amber', link: '', tags: JSON.stringify(['GRE', 'GMAT', '备考']) },
+    { date: '2026-03-01', title: '春季留学选校规划', description: '根据已出结果调整选校策略，做好最终选择', type: 'tips', category: '综合', icon: '💡', color: 'green', link: '', tags: JSON.stringify(['选校', '春季规划']) },
+  ];
+
+  for (const e of events) {
+    await conn.query(
+      `INSERT INTO study_abroad_timeline (date, title, description, type, category, icon, color, link, tags)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [e.date, e.title, e.description, e.type, e.category, e.icon, e.color, e.link, e.tags]
+    );
+  }
+}
+
+/**
+ * 插入留学顾问种子数据
+ */
+async function seedStudyAbroadConsultants(conn) {
+  const [existing] = await conn.query('SELECT COUNT(*) as count FROM study_abroad_consultants');
+  if (existing[0].count > 0) return;
+
+  const consultants = [
+    { name: '陈思远', title: '资深英国留学顾问', avatar: '', specialty: JSON.stringify(['英国G5', '商科', '计算机']), experience: '8年', education: '帝国理工学院 MSc', success_cases: 312, country: 'uk', description: '帝国理工校友，8年英国留学申请经验，G5录取率85%+' },
+    { name: '张晓峰', title: '美国留学首席顾问', avatar: '', specialty: JSON.stringify(['美国Top30', 'STEM', '商科']), experience: '10年', education: '哥伦比亚大学 MBA', success_cases: 456, country: 'us', description: '常春藤名校申请专家，累计帮助450+学生圆梦美国名校' },
+    { name: '王芳', title: '港新留学顾问', avatar: '', specialty: JSON.stringify(['香港', '新加坡', '金融', '商业分析']), experience: '6年', education: '香港大学 MFin', success_cases: 234, country: 'hk', description: '港大金融硕士，精通港三+新二申请' },
+    { name: '刘德华', title: '德国留学顾问', avatar: '', specialty: JSON.stringify(['德国TU9', '工科', 'APS辅导']), experience: '7年', education: '慕尼黑工业大学 MSc', success_cases: 189, country: 'de', description: 'TUM校友，APS审核辅导通过率98%' },
+    { name: '赵丽颖', title: '澳新留学顾问', avatar: '', specialty: JSON.stringify(['澳洲八大', '新西兰', '移民规划']), experience: '5年', education: '墨尔本大学 MEd', success_cases: 267, country: 'au', description: '精通澳洲八大和新西兰名校申请，兼顾移民路径规划' },
+  ];
+
+  for (const c of consultants) {
+    await conn.query(
+      `INSERT INTO study_abroad_consultants (name, title, avatar, specialty, experience, education, success_cases, country, description)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [c.name, c.title, c.avatar, c.specialty, c.experience, c.education, c.success_cases, c.country, c.description]
+    );
+  }
+}
+
 // ========== 主流程 ==========
 
 async function initDatabase() {
@@ -1391,6 +1608,15 @@ async function initDatabase() {
 
     await seedArticles(conn);
     console.log('        ✔ 就业指导文章数据');
+
+    await seedStudyAbroadOffers(conn);
+    console.log('        ✔ 留学录取案例数据');
+
+    await seedStudyAbroadTimeline(conn);
+    console.log('        ✔ 留学时间线数据');
+
+    await seedStudyAbroadConsultants(conn);
+    console.log('        ✔ 留学顾问数据');
   } catch (err) {
     console.error('  ❌ 插入种子数据失败:', err.message);
     console.error(err.stack);
@@ -1400,7 +1626,7 @@ async function initDatabase() {
   await conn.end();
 
   console.log('\n  ✅ 数据库初始化完成！');
-  console.log('  📊 已创建 15 张表 + 种子数据');
+  console.log('  📊 已创建 20 张表 + 种子数据');
   console.log('  🔑 种子用户密码统一为: password123 (管理员为 admin123)\n');
 }
 

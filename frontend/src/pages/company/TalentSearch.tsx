@@ -1,9 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import {
   Search, Filter, Users, MapPin, GraduationCap, Briefcase,
   Mail, Phone, FileText, ChevronLeft, ChevronRight,
-  Loader2, User, X, Building2, BookOpen
+  Loader2, User, X, Building2, BookOpen, Star, Tag, TrendingUp
 } from 'lucide-react';
 import http from '@/api/http';
 import { showToast } from '@/components/ui/ToastContainer';
@@ -22,6 +22,8 @@ interface TalentItem {
   job_intention: string;
   resume_url: string;
   bio: string;
+  /** 自定义标签（企业端本地管理） */
+  _tags?: string[];
 }
 
 interface Pagination {
@@ -29,6 +31,31 @@ interface Pagination {
   pageSize: number;
   total: number;
   totalPages: number;
+}
+
+// ====== 关键词匹配度评分 ======
+function calcMatchScore(talent: TalentItem, kw: string, majorKw: string): number {
+  if (!kw && !majorKw) return 0;
+  let score = 0;
+  const kwLower = kw.toLowerCase();
+  const majorLower = majorKw.toLowerCase();
+
+  // 求职意向完全匹配 +40
+  if (kwLower && talent.job_intention?.toLowerCase().includes(kwLower)) score += 40;
+  // 技能匹配 +10 each (max 30)
+  const skills = typeof talent.skills === 'string'
+    ? (() => { try { return JSON.parse(talent.skills); } catch { return talent.skills.split(','); } })()
+    : (talent.skills || []);
+  if (kwLower) {
+    const matched = skills.filter((s: string) => s.toLowerCase().includes(kwLower)).length;
+    score += Math.min(30, matched * 10);
+  }
+  // 专业匹配 +20
+  if (majorLower && talent.major?.toLowerCase().includes(majorLower)) score += 20;
+  // 学校匹配 +10
+  if (kwLower && talent.school?.toLowerCase().includes(kwLower)) score += 10;
+
+  return Math.min(100, score);
 }
 
 export default function TalentSearch() {
@@ -43,6 +70,44 @@ export default function TalentSearch() {
   const [school, setSchool] = useState('');
   const [major, setMajor] = useState('');
   const [showFilters, setShowFilters] = useState(false);
+
+  // 标签管理（本地 localStorage 持久化）
+  const [talentTags, setTalentTags] = useState<Record<number, string[]>>(() => {
+    try {
+      return JSON.parse(localStorage.getItem('qihang_talent_tags') || '{}');
+    } catch { return {}; }
+  });
+  const [tagInput, setTagInput] = useState<Record<number, string>>({});
+
+  // 持久化标签
+  useEffect(() => {
+    localStorage.setItem('qihang_talent_tags', JSON.stringify(talentTags));
+  }, [talentTags]);
+
+  const addTag = (talentId: number) => {
+    const text = (tagInput[talentId] || '').trim();
+    if (!text) return;
+    const current = talentTags[talentId] || [];
+    if (current.includes(text)) return;
+    setTalentTags(prev => ({ ...prev, [talentId]: [...current, text] }));
+    setTagInput(prev => ({ ...prev, [talentId]: '' }));
+  };
+
+  const removeTag = (talentId: number, tag: string) => {
+    setTalentTags(prev => ({
+      ...prev,
+      [talentId]: (prev[talentId] || []).filter(t => t !== tag),
+    }));
+  };
+
+  // 计算匹配度
+  const talentsWithScore = useMemo(() => {
+    return talents.map(t => ({
+      ...t,
+      _matchScore: calcMatchScore(t, keyword, major),
+      _tags: talentTags[t.id] || [],
+    }));
+  }, [talents, keyword, major, talentTags]);
 
   useEffect(() => {
     fetchTalents();
@@ -210,7 +275,7 @@ export default function TalentSearch() {
         </div>
       ) : (
         <div className="space-y-4">
-          {talents.map((talent, index) => (
+          {talentsWithScore.map((talent, index) => (
             <motion.div
               key={talent.id}
               initial={{ opacity: 0, y: 20 }}
@@ -226,6 +291,19 @@ export default function TalentSearch() {
                   ) : (
                     <div className="w-16 h-16 rounded-full bg-primary-100 flex items-center justify-center text-primary-700 font-bold text-xl">
                       {talent.nickname?.charAt(0) || <User size={24} />}
+                    </div>
+                  )}
+                  {/* 匹配度评分 */}
+                  {talent._matchScore > 0 && (
+                    <div className="mt-2 text-center">
+                      <div className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold ${
+                        talent._matchScore >= 60 ? 'bg-green-100 text-green-700' :
+                        talent._matchScore >= 30 ? 'bg-yellow-100 text-yellow-700' :
+                        'bg-gray-100 text-gray-600'
+                      }`}>
+                        <TrendingUp size={10} />
+                        {talent._matchScore}%
+                      </div>
                     </div>
                   )}
                 </div>
@@ -280,6 +358,29 @@ export default function TalentSearch() {
                     </div>
                   )}
 
+                  {/* 企业自定义标签 */}
+                  <div className="flex flex-wrap items-center gap-1.5 mb-3">
+                    {(talent._tags || []).map(tag => (
+                      <span key={tag} className="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-50 text-amber-700 rounded-full text-xs font-medium">
+                        <Tag size={10} />
+                        {tag}
+                        <button onClick={() => removeTag(talent.id, tag)} className="hover:text-red-500">
+                          <X size={10} />
+                        </button>
+                      </span>
+                    ))}
+                    <div className="inline-flex items-center gap-1">
+                      <input
+                        type="text"
+                        value={tagInput[talent.id] || ''}
+                        onChange={(e) => setTagInput(prev => ({ ...prev, [talent.id]: e.target.value }))}
+                        onKeyDown={(e) => e.key === 'Enter' && addTag(talent.id)}
+                        placeholder="添加标签"
+                        className="w-20 px-2 py-0.5 border border-dashed border-gray-300 rounded-full text-xs focus:outline-none focus:border-primary-400"
+                      />
+                    </div>
+                  </div>
+
                   {/* 联系方式 + 操作 */}
                   <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pt-3 border-t border-gray-100">
                     <div className="flex items-center gap-4 text-xs text-gray-400">
@@ -302,6 +403,21 @@ export default function TalentSearch() {
                           查看简历
                         </a>
                       )}
+                      <button
+                        onClick={() => {
+                          const tags = talentTags[talent.id] || [];
+                          if (!tags.includes('⭐ 已收藏')) {
+                            setTalentTags(prev => ({ ...prev, [talent.id]: [...tags, '⭐ 已收藏'] }));
+                            showToast({ type: 'success', title: '已收藏该人才' });
+                          } else {
+                            showToast({ type: 'info', title: '已在收藏中' });
+                          }
+                        }}
+                        className="flex items-center gap-1 px-3 py-1.5 bg-amber-50 text-amber-700 rounded-lg text-xs font-medium hover:bg-amber-100 transition-colors"
+                      >
+                        <Star size={12} />
+                        收藏
+                      </button>
                       <button
                         onClick={() => showToast({ type: 'info', title: '功能开发中', message: '该功能正在开发中，敬请期待' })}
                         className="flex items-center gap-1 px-3 py-1.5 bg-primary-50 text-primary-700 rounded-lg text-xs font-medium hover:bg-primary-100 transition-colors"

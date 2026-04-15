@@ -1,0 +1,240 @@
+[
+  {
+    "id": "uk",
+    "country": "英国",
+    "currency": "£",
+    "currencyCode": "GBP",
+    "exchangeRate": 9.2,
+    "freeTuition": false,
+    "specialNotes": null,
+    "undergraduate": { "min": 15000, "max": 45000, "unit": "年" },
+    "master": { "min": 15000, "max": 45000, "unit": "年" },
+    "phd": { "min": 15000, "max": 25000, "unit": "年" },
+    "living": {
+      "tier1": { "city": "London", "min": 15000, "max": 18000 },
+      "tier2": { "city": "Manchester", "min": 10000, "max": 14000 }
+    },
+    "other": { "visa": 348, "insurance": 470, "flight": 6000 }
+  },
+  {
+    "id": "us",
+    "country": "美国",
+    "currency": "$",
+    "currencyCode": "USD",
+    "exchangeRate": 7.2,
+    "freeTuition": false,
+    "specialNotes": "博士阶段多数理工科项目提供全额奖学金（TA/RA），学费全免并提供生活津贴",
+    "undergraduate": { "min": 30000, "max": 65000, "unit": "年" },
+    "master": { "min": 30000, "max": 65000, "unit": "年" },
+    "phd": { "min": 0, "max": 35000, "unit": "年" },
+    "living": {
+      "tier1": { "city": "New York", "min": 20000, "max": 25000 },
+      "tier2": { "city": "Columbus", "min": 12000, "max": 16000 }
+    },
+    "other": { "visa": 160, "insurance": 2000, "flight": 8000 }
+  },
+  {
+    "id": "hk",
+    "country": "中国香港",
+    "currency": "HK$",
+    "currencyCode": "HKD",
+    "exchangeRate": 0.92,
+    "freeTuition": false,
+    "specialNotes": "博士阶段可申请HKPFS（香港博士研究生奖学金），每月津贴HK$27,600，学费全免",
+    "undergraduate": { "min": 150000, "max": 350000, "unit": "年" },
+    "master": { "min": 150000, "max": 350000, "unit": "年" },
+    "phd": { "min": 42100, "max": 42100, "unit": "年" },
+    "living": {
+      "tier1": { "city": "港岛", "min": 100000, "max": 120000 },
+      "tier2": { "city": "新界", "min": 70000, "max": 90000 }
+    },
+    "other": { "visa": 530, "insurance": 5000, "flight": 2000 }
+  },
+  {
+    "id": "sg",
+    "country": "新加坡",
+    "currency": "S$",
+    "currencyCode": "SGD",
+    "exchangeRate": 5.4,
+    "freeTuition": false,
+    "specialNotes": "博士阶段通常提供全额奖学金，学费全免并提供每月SGD 2,000-3,500的生活津贴",
+    "undergraduate": { "min": 40000, "max": 60000, "unit": "年" },
+    "master": { "min": 40000, "max": 60000, "unit": "年" },
+    "phd": { "min": 0, "max": 0, "unit": "年" },
+    "living": {
+      "tier1": { "city": "市中心", "min": 18000, "max": 24000 },
+      "tier2": { "city": "郊区", "min": 12000, "max": 16000 }
+    },
+    "other": { "visa": 30, "insurance": 500, "flight": 3000 }
+  },
+  {
+    "id": "au",
+    "country": "澳大利亚",
+    "currency": "A$",
+    "currencyCode": "AUD",
+    "exchangeRate": 4.7,
+    "freeTuition": false,
+    "specialNotes": null,
+    "undergraduate": { "min": 35000, "max": 50000, "unit": "年" },
+    "master": { "min": 35000, "max": 50000, "unit": "年" },
+    "phd": { "min": 28000, "max": 40000, "unit": "年" },
+    "living": {
+      "tier1": { "city": "Sydney", "min": 25000, "max": 30000 },
+      "tier2": { "city": "Adelaide", "min": 18000, "max": 22000 }
+    },
+    "other": { "visa": 710, "insurance": 600, "flight": 5000 }
+  },
+  {
+    "id": "ca",
+    "country": "加拿大",
+    "currency": "C$",
+    "currencyCode": "CAD",
+    "exchangeRate": 5.3,
+    "freeTuition": false,
+    "specialNotes": null,
+    "undergraduate": { "min": 20000, "max": 55000, "unit": "年" },
+    "master": { "min": 15000, "max": 45000, "unit": "年" },
+    "phd": { "min": 7000, "max": 20000, "unit": "年" },
+    "living": {
+      "tier1": { "city": "Toronto", "min": 18000, "max": 22000 },
+      "tier2": { "city": "Halifax", "min": 12000, "max": 16000 }
+    },
+    "other": { "visa": 150, "insurance": 800, "flight": 8000 }
+  },
+  {
+    "id": "jp",
+    "country": "日本",
+    "currency": "¥",
+    "currencyCode": "JPY",
+    "exchangeRate": 0.048,
+    "freeTuition": false,
+    "specialNotes": null,
+    "undergraduate": { "min": 535800, "max": 900000, "unit": "年" },
+    "master": { "min": 535800, "max": 900000, "unit": "年" },
+    "phd": { "min": 535800, "max": 535800, "unit": "年" },
+    "living": {
+      "tier1": { "city": "东京", "min": 1200000, "max": 1600000 },
+      "tier2": { "city": "福冈", "min": 800000, "max": 1000000 }
+    },
+    "other": { "visa": 200, "insurance": 20000, "flight": 3000 }
+  },
+  {
+    "id": "de",
+    "country": "德国",
+    "currency": "€",
+    "currencyCode": "EUR",
+    "exchangeRate": 7.8,
+    "freeTuition": true,
+    "specialNotes": "德国公立大学免学费，仅收€150-300/学期注册费（含交通票）。巴登-符腾堡州除外（€1,500/学期）",
+    "undergraduate": { "min": 0, "max": 3000, "unit": "年" },
+    "master": { "min": 0, "max": 3000, "unit": "年" },
+    "phd": { "min": 0, "max": 0, "unit": "年" },
+    "living": {
+      "tier1": { "city": "Munich", "min": 12000, "max": 16800 },
+      "tier2": { "city": "Leipzig", "min": 8400, "max": 10800 }
+    },
+    "other": { "visa": 75, "insurance": 1320, "flight": 6000 }
+  },
+  {
+    "id": "fr",
+    "country": "法国",
+    "currency": "€",
+    "currencyCode": "EUR",
+    "exchangeRate": 7.8,
+    "freeTuition": true,
+    "specialNotes": "法国公立大学注册费极低：本科€170/年，硕士€243/年，博士€380/年。商学院（Grande École）学费另计",
+    "undergraduate": { "min": 170, "max": 20000, "unit": "年" },
+    "master": { "min": 243, "max": 40000, "unit": "年" },
+    "phd": { "min": 380, "max": 380, "unit": "年" },
+    "living": {
+      "tier1": { "city": "Paris", "min": 12000, "max": 18000 },
+      "tier2": { "city": "Lyon", "min": 8000, "max": 12000 }
+    },
+    "other": { "visa": 99, "insurance": 0, "flight": 6000 }
+  },
+  {
+    "id": "kr",
+    "country": "韩国",
+    "currency": "₩",
+    "currencyCode": "KRW",
+    "exchangeRate": 0.0053,
+    "freeTuition": false,
+    "specialNotes": null,
+    "undergraduate": { "min": 8000000, "max": 16000000, "unit": "年" },
+    "master": { "min": 8000000, "max": 16000000, "unit": "年" },
+    "phd": { "min": 8000000, "max": 16000000, "unit": "年" },
+    "living": {
+      "tier1": { "city": "首尔", "min": 8000000, "max": 12000000 },
+      "tier2": { "city": "釜山", "min": 5000000, "max": 7000000 }
+    },
+    "other": { "visa": 60000, "insurance": 200000, "flight": 2500 }
+  },
+  {
+    "id": "nz",
+    "country": "新西兰",
+    "currency": "NZ$",
+    "currencyCode": "NZD",
+    "exchangeRate": 4.3,
+    "freeTuition": false,
+    "specialNotes": "博士阶段国际生享受国内生学费标准，约NZ$7,000/年，性价比极高",
+    "undergraduate": { "min": 30000, "max": 45000, "unit": "年" },
+    "master": { "min": 30000, "max": 50000, "unit": "年" },
+    "phd": { "min": 7000, "max": 7000, "unit": "年" },
+    "living": {
+      "tier1": { "city": "Auckland", "min": 15000, "max": 20000 },
+      "tier2": { "city": "Christchurch", "min": 12000, "max": 16000 }
+    },
+    "other": { "visa": 330, "insurance": 600, "flight": 7000 }
+  },
+  {
+    "id": "ie",
+    "country": "爱尔兰",
+    "currency": "€",
+    "currencyCode": "EUR",
+    "exchangeRate": 7.8,
+    "freeTuition": false,
+    "specialNotes": null,
+    "undergraduate": { "min": 10000, "max": 20000, "unit": "年" },
+    "master": { "min": 12000, "max": 25000, "unit": "年" },
+    "phd": { "min": 5000, "max": 15000, "unit": "年" },
+    "living": {
+      "tier1": { "city": "Dublin", "min": 12000, "max": 18000 },
+      "tier2": { "city": "Cork", "min": 8000, "max": 12000 }
+    },
+    "other": { "visa": 300, "insurance": 500, "flight": 6000 }
+  },
+  {
+    "id": "ch",
+    "country": "瑞士",
+    "currency": "CHF",
+    "currencyCode": "CHF",
+    "exchangeRate": 8.1,
+    "freeTuition": false,
+    "specialNotes": "瑞士公立大学学费极低（CHF 580-1,600/学期），但生活费全球最高",
+    "undergraduate": { "min": 1160, "max": 3200, "unit": "年" },
+    "master": { "min": 1160, "max": 3200, "unit": "年" },
+    "phd": { "min": 1160, "max": 3200, "unit": "年" },
+    "living": {
+      "tier1": { "city": "Zurich", "min": 24000, "max": 30000 },
+      "tier2": { "city": "Lausanne", "min": 18000, "max": 24000 }
+    },
+    "other": { "visa": 88, "insurance": 3600, "flight": 6000 }
+  },
+  {
+    "id": "it",
+    "country": "意大利",
+    "currency": "€",
+    "currencyCode": "EUR",
+    "exchangeRate": 7.8,
+    "freeTuition": false,
+    "specialNotes": "意大利公立大学可申请学费减免（ISEE认证），最低可至€0。私立设计学院€10,000-30,000/年",
+    "undergraduate": { "min": 0, "max": 4000, "unit": "年" },
+    "master": { "min": 0, "max": 4000, "unit": "年" },
+    "phd": { "min": 0, "max": 1500, "unit": "年" },
+    "living": {
+      "tier1": { "city": "Milan", "min": 10000, "max": 14000 },
+      "tier2": { "city": "Bologna", "min": 7000, "max": 10000 }
+    },
+    "other": { "visa": 50, "insurance": 400, "flight": 5000 }
+  }
+]

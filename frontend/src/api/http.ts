@@ -7,7 +7,6 @@ import { showToast } from '../components/ui/ToastContainer';
 
 const http = axios.create({
   baseURL: '/api',
-  timeout: 15000,
   headers: {
     'Content-Type': 'application/json',
     'X-Requested-With': 'XMLHttpRequest',  // CSRF 防护标头

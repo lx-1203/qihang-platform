@@ -1,10 +1,11 @@
 import { useState, useEffect, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import {
   Plus, Search, Filter, MoreVertical, Edit3,
   Trash2, Eye, EyeOff, MapPin, Briefcase,
-  ChevronLeft, ChevronRight, X, Save, Loader2,
-  DollarSign, Building2, Clock, FileText
+  ChevronLeft, ChevronRight, Loader2,
+  Clock, FileText
 } from 'lucide-react';
 import axios from 'axios';
 import http from '@/api/http';
@@ -35,17 +36,8 @@ const JOB_TYPE_COLORS: Record<string, string> = {
   '兼职': 'bg-purple-100 text-purple-700',
 };
 
-const EMPTY_JOB: Omit<JobRecord, 'id' | 'view_count' | 'applications' | 'created_at'> = {
-  title: '',
-  location: '',
-  salary: '',
-  type: '全职',
-  status: 'active',
-  description: '',
-  requirements: '',
-};
-
 export default function CompanyJobManage() {
+  const navigate = useNavigate();
   const [jobs, setJobs] = useState<JobRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -66,12 +58,6 @@ export default function CompanyJobManage() {
   // 搜索防抖 + AbortController
   const abortControllerRef = useRef<AbortController | null>(null);
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  // 模态框状态
-  const [showModal, setShowModal] = useState(false);
-  const [editingJob, setEditingJob] = useState<Partial<JobRecord>>(EMPTY_JOB);
-  const [isEditing, setIsEditing] = useState(false);
-  const [saving, setSaving] = useState(false);
 
   // 模拟数据
   const mockJobs: JobRecord[] = [
@@ -195,57 +181,12 @@ export default function CompanyJobManage() {
   }
 
   function openCreateModal() {
-    setEditingJob({ ...EMPTY_JOB });
-    setIsEditing(false);
-    setShowModal(true);
+    navigate('/company/jobs/new');
   }
 
   function openEditModal(job: JobRecord) {
-    setEditingJob({ ...job });
-    setIsEditing(true);
-    setShowModal(true);
+    navigate(`/company/jobs/${job.id}/edit`, { state: { job } });
     setActionMenu(null);
-  }
-
-  async function handleSaveJob() {
-    if (!editingJob.title || !editingJob.location || !editingJob.salary) return;
-    try {
-      setSaving(true);
-      if (isEditing && editingJob.id) {
-        await http.put(`/company/jobs/${editingJob.id}`, editingJob);
-        setJobs(prev => prev.map(j => j.id === editingJob.id ? { ...j, ...editingJob } as JobRecord : j));
-      } else {
-        const res = await http.post('/company/jobs', editingJob);
-        const newId = res.data?.data?.id || Date.now();
-        const newJob: JobRecord = {
-          ...editingJob as JobRecord,
-          id: newId,
-          view_count: 0,
-          applications: 0,
-          created_at: new Date().toISOString().split('T')[0],
-        };
-        setJobs(prev => [newJob, ...prev]);
-        setTotal(prev => prev + 1);
-      }
-    } catch {
-      // 模拟操作
-      if (isEditing && editingJob.id) {
-        setJobs(prev => prev.map(j => j.id === editingJob.id ? { ...j, ...editingJob } as JobRecord : j));
-      } else {
-        const newJob: JobRecord = {
-          ...editingJob as JobRecord,
-          id: Date.now(),
-          view_count: 0,
-          applications: 0,
-          created_at: new Date().toISOString().split('T')[0],
-        };
-        setJobs(prev => [newJob, ...prev]);
-        setTotal(prev => prev + 1);
-      }
-    } finally {
-      setSaving(false);
-      setShowModal(false);
-    }
   }
 
   const totalPages = Math.ceil(total / pageSize);
@@ -468,167 +409,6 @@ export default function CompanyJobManage() {
         </div>
       </div>
       </>)}
-
-      {/* 创建/编辑模态框 */}
-      <AnimatePresence>
-        {showModal && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
-            onClick={() => setShowModal(false)}
-          >
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              onClick={e => e.stopPropagation()}
-              className="bg-white rounded-2xl shadow-xl w-full max-w-2xl mx-4 max-h-[85vh] overflow-y-auto"
-            >
-              {/* 模态框头部 */}
-              <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-                <h3 className="text-lg font-bold text-gray-900">
-                  {isEditing ? '编辑职位' : '发布新职位'}
-                </h3>
-                <button
-                  onClick={() => setShowModal(false)}
-                  className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors"
-                >
-                  <X className="w-5 h-5 text-gray-400" />
-                </button>
-              </div>
-
-              {/* 表单内容 */}
-              <div className="p-6 space-y-5">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                  {/* 职位名称 */}
-                  <div className="md:col-span-2">
-                    <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                      职位名称 <span className="text-red-500">*</span>
-                    </label>
-                    <div className="relative">
-                      <Briefcase className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                      <input
-                        type="text"
-                        value={editingJob.title || ''}
-                        onChange={e => setEditingJob(prev => ({ ...prev, title: e.target.value }))}
-                        className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 outline-none"
-                        placeholder="如：前端开发工程师 (2026届)"
-                      />
-                    </div>
-                  </div>
-
-                  {/* 工作地点 */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                      工作地点 <span className="text-red-500">*</span>
-                    </label>
-                    <div className="relative">
-                      <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                      <input
-                        type="text"
-                        value={editingJob.location || ''}
-                        onChange={e => setEditingJob(prev => ({ ...prev, location: e.target.value }))}
-                        className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 outline-none"
-                        placeholder="如：北京/上海"
-                      />
-                    </div>
-                  </div>
-
-                  {/* 薪资范围 */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                      薪资范围 <span className="text-red-500">*</span>
-                    </label>
-                    <div className="relative">
-                      <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                      <input
-                        type="text"
-                        value={editingJob.salary || ''}
-                        onChange={e => setEditingJob(prev => ({ ...prev, salary: e.target.value }))}
-                        className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 outline-none"
-                        placeholder="如：25k-40k 或 200/天"
-                      />
-                    </div>
-                  </div>
-
-                  {/* 职位类型 */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                      职位类型 <span className="text-red-500">*</span>
-                    </label>
-                    <select
-                      value={editingJob.type || '全职'}
-                      onChange={e => setEditingJob(prev => ({ ...prev, type: e.target.value as JobRecord['type'] }))}
-                      className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 outline-none bg-white"
-                    >
-                      <option value="全职">全职</option>
-                      <option value="实习">实习</option>
-                      <option value="兼职">兼职</option>
-                    </select>
-                  </div>
-
-                  {/* 职位状态 */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1.5">发布状态</label>
-                    <select
-                      value={editingJob.status || 'active'}
-                      onChange={e => setEditingJob(prev => ({ ...prev, status: e.target.value as 'active' | 'inactive' }))}
-                      className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 outline-none bg-white"
-                    >
-                      <option value="active">立即发布</option>
-                      <option value="inactive">暂不发布</option>
-                    </select>
-                  </div>
-
-                  {/* 职位描述 */}
-                  <div className="md:col-span-2">
-                    <label className="block text-sm font-medium text-gray-700 mb-1.5">职位描述</label>
-                    <textarea
-                      value={editingJob.description || ''}
-                      onChange={e => setEditingJob(prev => ({ ...prev, description: e.target.value }))}
-                      rows={3}
-                      className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 outline-none resize-none"
-                      placeholder="请描述岗位职责和工作内容..."
-                    />
-                  </div>
-
-                  {/* 任职要求 */}
-                  <div className="md:col-span-2">
-                    <label className="block text-sm font-medium text-gray-700 mb-1.5">任职要求</label>
-                    <textarea
-                      value={editingJob.requirements || ''}
-                      onChange={e => setEditingJob(prev => ({ ...prev, requirements: e.target.value }))}
-                      rows={3}
-                      className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 outline-none resize-none"
-                      placeholder="请描述学历要求、技能要求等..."
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* 模态框底部 */}
-              <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-gray-100 bg-gray-50/50">
-                <button
-                  onClick={() => setShowModal(false)}
-                  className="px-5 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
-                >
-                  取消
-                </button>
-                <button
-                  onClick={handleSaveJob}
-                  disabled={saving || !editingJob.title || !editingJob.location || !editingJob.salary}
-                  className="flex items-center gap-2 px-5 py-2.5 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-                  {saving ? '保存中...' : isEditing ? '保存修改' : '发布职位'}
-                </button>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
 
       {/* 删除确认弹窗 */}
       <ConfirmDialog

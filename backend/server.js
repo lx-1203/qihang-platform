@@ -18,6 +18,8 @@ import programsRouter from './routes/programs.js';
 import configRouter from './routes/config.js';
 import articlesRouter from './routes/articles.js';
 import searchHistoryRouter from './routes/searchHistory.js';
+import studyAbroadRouter from './routes/study-abroad.js';
+import chatRouter from './routes/chat.js';
 import { testConnection } from './db.js';
 import pool from './db.js';
 import { sqlInjectionGuard } from './middleware/sqlInjectionGuard.js';
@@ -172,6 +174,8 @@ app.use('/api/programs', programsRouter);
 app.use('/api/config', configRouter);
 app.use('/api/articles', articlesRouter);
 app.use('/api/search-history', searchHistoryRouter);
+app.use('/api/study-abroad', studyAbroadRouter);
+app.use('/api/chat', chatRouter);
 
 // ====== 健康检查（SEC-006：深度检查，含数据库连接验证）======
 app.get('/api/health', async (_req, res) => {
@@ -245,5 +249,6 @@ app.listen(PORT, async () => {
   console.log(`     /api/universities            留学院校`);
   console.log(`     /api/programs                留学专业`);
   console.log(`     /api/config/*                站点配置`);
+  console.log(`     /api/chat/*                  客服聊天`);
   console.log('');
 });

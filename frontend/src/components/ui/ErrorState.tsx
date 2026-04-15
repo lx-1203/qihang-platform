@@ -10,6 +10,8 @@ interface ErrorStateProps {
   onLoadMockData?: () => void;
   /** 自定义类名 */
   className?: string;
+  /** compact 变体：行内错误提示，不占全屏 */
+  compact?: boolean;
 }
 
 /**
@@ -22,7 +24,23 @@ export default function ErrorState({
   onRetry,
   onLoadMockData,
   className = '',
+  compact = false,
 }: ErrorStateProps) {
+  // compact 变体：行内小尺寸错误提示
+  if (compact) {
+    return (
+      <div className={`flex items-center gap-3 px-4 py-3 bg-red-50 border border-red-100 rounded-xl ${className}`}>
+        <AlertTriangle className="w-4 h-4 text-red-400 shrink-0" />
+        <span className="text-sm text-red-600 flex-1">{message}</span>
+        {onRetry && (
+          <button onClick={onRetry} className="text-xs text-red-500 hover:text-red-700 font-medium flex items-center gap-1 shrink-0">
+            <RefreshCw className="w-3 h-3" /> 重试
+          </button>
+        )}
+      </div>
+    );
+  }
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}

@@ -18,7 +18,7 @@ export default function Entrepreneurship() {
           <div className="absolute inset-0 bg-gradient-to-r from-black/80 to-transparent"></div>
           
           <div className="relative z-10 p-10 md:p-16 flex flex-col items-start max-w-2xl">
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 backdrop-blur-md text-white border border-white/20 text-[14px] font-medium mb-6">
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/20 backdrop-blur-md text-white border border-white/20 text-[14px] font-medium mb-6">
               <Rocket className="w-4 h-4 text-[#14b8a6]" /> 激发无限潜能
             </div>
             <h1 className="text-[36px] md:text-[48px] font-bold text-white mb-4 leading-tight">
@@ -31,7 +31,7 @@ export default function Entrepreneurship() {
               <button className="bg-[#14b8a6] text-white px-8 py-3.5 rounded-xl font-bold hover:bg-[#0f766e] transition-colors shadow-lg shadow-[#14b8a6]/20">
                 发布创业项目
               </button>
-              <button className="bg-white/10 backdrop-blur-md text-white border border-white/20 px-8 py-3.5 rounded-xl font-bold hover:bg-white/20 transition-colors">
+              <button className="bg-white/20 backdrop-blur-md text-white border border-white/20 px-8 py-3.5 rounded-xl font-bold hover:bg-white/30 transition-colors">
                 寻找合伙人
               </button>
             </div>

@@ -1,10 +1,10 @@
 import { useState, useEffect, useCallback, createContext, useContext } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { CheckCircle2, AlertCircle, Info, X, AlertTriangle } from 'lucide-react';
+import { CheckCircle2, AlertCircle, Info, X, AlertTriangle, Loader2 } from 'lucide-react';
 
 // ====== Toast 类型定义 ======
 
-type ToastType = 'success' | 'error' | 'warning' | 'info';
+type ToastType = 'success' | 'error' | 'warning' | 'info' | 'loading';
 
 interface Toast {
   id: string;
@@ -21,6 +21,8 @@ interface ToastContextType {
   error: (title: string, message?: string) => void;
   warning: (title: string, message?: string) => void;
   info: (title: string, message?: string) => void;
+  /** loading toast：默认不自动关闭，返回 id 供手动关闭 */
+  loading: (title: string, message?: string) => string;
 }
 
 // ====== Standalone Toast（供组件树外使用，如 http.ts 拦截器） ======
@@ -78,6 +80,7 @@ const iconMap: Record<ToastType, React.ReactNode> = {
   error: <AlertCircle size={20} className="text-red-500" />,
   warning: <AlertTriangle size={20} className="text-yellow-500" />,
   info: <Info size={20} className="text-blue-500" />,
+  loading: <Loader2 size={20} className="text-primary-500 animate-spin" />,
 };
 
 // 样式映射
@@ -86,6 +89,7 @@ const styleMap: Record<ToastType, string> = {
   error: 'border-red-200 bg-red-50',
   warning: 'border-yellow-200 bg-yellow-50',
   info: 'border-blue-200 bg-blue-50',
+  loading: 'border-primary-200 bg-primary-50',
 };
 
 // 生成唯一 ID
@@ -168,8 +172,15 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
     addToast({ type: 'info', title, message });
   }, [addToast]);
 
+  const loading = useCallback((title: string, message?: string): string => {
+    const id = generateId();
+    const newToast: Toast = { id, type: 'loading', title, message, duration: 0 };
+    setToasts((prev) => [...prev, newToast].slice(-5));
+    return id;
+  }, []);
+
   return (
-    <ToastContext.Provider value={{ addToast, removeToast, success, error, warning, info }}>
+    <ToastContext.Provider value={{ addToast, removeToast, success, error, warning, info, loading }}>
       {children}
 
       {/* Toast 容器：右上角固定定位 */}

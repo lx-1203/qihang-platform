@@ -647,4 +647,708 @@ router.get('/audit-logs', async (req, res) => {
   }
 });
 
+// ==================== 2.16 文章管理 - 获取文章列表 ====================
+router.get('/articles', async (req, res) => {
+  try {
+    const { page = 1, pageSize = 20, keyword = '', category = '', status = '' } = req.query;
+    const offset = (Number(page) - 1) * Number(pageSize);
+    const limit = Number(pageSize);
+
+    let where = 'WHERE 1=1';
+    const params = [];
+
+    if (keyword) {
+      where += ' AND (title LIKE ? OR summary LIKE ? OR author LIKE ?)';
+      const kw = `%${keyword}%`;
+      params.push(kw, kw, kw);
+    }
+
+    if (category && category !== '全部') {
+      where += ' AND category = ?';
+      params.push(category);
+    }
+
+    if (status) {
+      where += ' AND status = ?';
+      params.push(status);
+    }
+
+    const [countRows] = await pool.query(
+      `SELECT COUNT(*) AS total FROM articles ${where}`,
+      params
+    );
+    const total = countRows[0].total;
+
+    const [articles] = await pool.query(
+      `SELECT * FROM articles ${where} ORDER BY created_at DESC LIMIT ? OFFSET ?`,
+      [...params, limit, offset]
+    );
+
+    res.json({
+      code: 200,
+      data: {
+        articles,
+        pagination: {
+          page: Number(page),
+          pageSize: limit,
+          total,
+          totalPages: Math.ceil(total / limit),
+        },
+      },
+    });
+  } catch (err) {
+    console.error('获取文章列表失败:', err);
+    res.status(500).json({ code: 500, message: '服务器内部错误' });
+  }
+});
+
+// ==================== 2.17 文章管理 - 获取单篇文章 ====================
+router.get('/articles/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const [rows] = await pool.query('SELECT * FROM articles WHERE id = ?', [id]);
+    
+    if (rows.length === 0) {
+      return res.status(404).json({ code: 404, message: '文章不存在' });
+    }
+
+    res.json({ code: 200, data: rows[0] });
+  } catch (err) {
+    console.error('获取文章详情失败:', err);
+    res.status(500).json({ code: 500, message: '服务器内部错误' });
+  }
+});
+
+// ==================== 2.18 文章管理 - 创建文章 ====================
+router.post('/articles', async (req, res) => {
+  try {
+    const { title, summary, content, category, cover, author, status } = req.body;
+
+    if (!title || !content) {
+      return res.status(400).json({ code: 400, message: '标题和内容不能为空' });
+    }
+
+    const [result] = await pool.query(
+      `INSERT INTO articles (title, summary, content, category, cover, author, status)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      [title, summary || '', content, category || '校招指南', cover || '', author || '管理员', status || 'draft']
+    );
+
+    res.json({
+      code: 200,
+      message: '文章创建成功',
+      data: { id: result.insertId },
+    });
+  } catch (err) {
+    console.error('创建文章失败:', err);
+    res.status(500).json({ code: 500, message: '服务器内部错误' });
+  }
+});
+
+// ==================== 2.19 文章管理 - 更新文章 ====================
+router.put('/articles/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { title, summary, content, category, cover, author, status } = req.body;
+
+    const [rows] = await pool.query('SELECT id FROM articles WHERE id = ?', [id]);
+    if (rows.length === 0) {
+      return res.status(404).json({ code: 404, message: '文章不存在' });
+    }
+
+    await pool.query(
+      `UPDATE articles 
+       SET title = COALESCE(?, title),
+           summary = COALESCE(?, summary),
+           content = COALESCE(?, content),
+           category = COALESCE(?, category),
+           cover = COALESCE(?, cover),
+           author = COALESCE(?, author),
+           status = COALESCE(?, status)
+       WHERE id = ?`,
+      [title, summary, content, category, cover, author, status, id]
+    );
+
+    res.json({ code: 200, message: '文章更新成功' });
+  } catch (err) {
+    console.error('更新文章失败:', err);
+    res.status(500).json({ code: 500, message: '服务器内部错误' });
+  }
+});
+
+// ==================== 2.20 文章管理 - 删除文章 ====================
+router.delete('/articles/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const [rows] = await pool.query('SELECT id FROM articles WHERE id = ?', [id]);
+    if (rows.length === 0) {
+      return res.status(404).json({ code: 404, message: '文章不存在' });
+    }
+
+    await pool.query('DELETE FROM articles WHERE id = ?', [id]);
+
+    res.json({ code: 200, message: '文章删除成功' });
+  } catch (err) {
+    console.error('删除文章失败:', err);
+    res.status(500).json({ code: 500, message: '服务器内部错误' });
+  }
+});
+
+// ==================== 3.0 留学数据管理 - 院校 CRUD ====================
+
+// 3.1 院校列表
+router.get('/universities', async (req, res) => {
+  try {
+    const { page = 1, pageSize = 20, keyword, region, status } = req.query;
+    let where = '1=1';
+    const params = [];
+
+    if (keyword) {
+      where += ' AND (name_zh LIKE ? OR name_en LIKE ?)';
+      const kw = `%${keyword}%`;
+      params.push(kw, kw);
+    }
+    if (region) { where += ' AND region = ?'; params.push(region); }
+    if (status) { where += ' AND status = ?'; params.push(status); }
+
+    const [countRows] = await pool.query(`SELECT COUNT(*) as total FROM universities WHERE ${where}`, params);
+    const total = countRows[0].total;
+    const offset = (Math.max(1, Number(page)) - 1) * Number(pageSize);
+
+    const [list] = await pool.query(
+      `SELECT u.*, (SELECT COUNT(*) FROM programs p WHERE p.university_id = u.id) AS program_count
+       FROM universities u WHERE ${where} ORDER BY u.qs_ranking IS NULL, u.qs_ranking ASC, u.id DESC LIMIT ? OFFSET ?`,
+      [...params, Number(pageSize), offset]
+    );
+
+    res.json({ code: 200, data: { list, total, page: Number(page), pageSize: Number(pageSize) } });
+  } catch (err) {
+    console.error('管理员获取院校列表失败:', err);
+    res.status(500).json({ code: 500, message: '服务器内部错误' });
+  }
+});
+
+// 3.2 院校详情
+router.get('/universities/:id', async (req, res) => {
+  try {
+    const [rows] = await pool.query('SELECT * FROM universities WHERE id = ?', [req.params.id]);
+    if (rows.length === 0) return res.status(404).json({ code: 404, message: '院校不存在' });
+    res.json({ code: 200, data: rows[0] });
+  } catch (err) {
+    console.error('获取院校详情失败:', err);
+    res.status(500).json({ code: 500, message: '服务器内部错误' });
+  }
+});
+
+// 3.3 新增院校
+router.post('/universities', async (req, res) => {
+  try {
+    const { name_zh, name_en, region, country, city, logo, cover, qs_ranking, description, highlights,
+            gpa_min, toefl_min, ielts_min, gre_required, tuition_min, tuition_max, website, apply_link } = req.body;
+    if (!name_zh || !name_en || !region || !country) {
+      return res.status(400).json({ code: 400, message: '中文名、英文名、地区、国家为必填' });
+    }
+    const [result] = await pool.query(
+      `INSERT INTO universities (name_zh, name_en, region, country, city, logo, cover, qs_ranking, description, highlights,
+        gpa_min, toefl_min, ielts_min, gre_required, tuition_min, tuition_max, website, apply_link)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [name_zh, name_en, region, country, city || '', logo || '', cover || '', qs_ranking || null, description || '',
+       highlights ? JSON.stringify(highlights) : null, gpa_min || null, toefl_min || null, ielts_min || null,
+       gre_required || 0, tuition_min || null, tuition_max || null, website || '', apply_link || '']
+    );
+    res.json({ code: 200, message: '院校创建成功', data: { id: result.insertId } });
+  } catch (err) {
+    console.error('创建院校失败:', err);
+    res.status(500).json({ code: 500, message: '服务器内部错误' });
+  }
+});
+
+// 3.4 编辑院校
+router.put('/universities/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const [rows] = await pool.query('SELECT id FROM universities WHERE id = ?', [id]);
+    if (rows.length === 0) return res.status(404).json({ code: 404, message: '院校不存在' });
+
+    const { name_zh, name_en, region, country, city, logo, cover, qs_ranking, description, highlights,
+            gpa_min, toefl_min, ielts_min, gre_required, tuition_min, tuition_max, website, apply_link } = req.body;
+    await pool.query(
+      `UPDATE universities SET name_zh=COALESCE(?,name_zh), name_en=COALESCE(?,name_en), region=COALESCE(?,region),
+        country=COALESCE(?,country), city=COALESCE(?,city), logo=COALESCE(?,logo), cover=COALESCE(?,cover),
+        qs_ranking=?, description=COALESCE(?,description), highlights=?,
+        gpa_min=?, toefl_min=?, ielts_min=?, gre_required=COALESCE(?,gre_required),
+        tuition_min=?, tuition_max=?, website=COALESCE(?,website), apply_link=COALESCE(?,apply_link) WHERE id=?`,
+      [name_zh, name_en, region, country, city, logo, cover, qs_ranking ?? null, description,
+       highlights ? JSON.stringify(highlights) : null, gpa_min ?? null, toefl_min ?? null, ielts_min ?? null,
+       gre_required, tuition_min ?? null, tuition_max ?? null, website, apply_link, id]
+    );
+    res.json({ code: 200, message: '院校更新成功' });
+  } catch (err) {
+    console.error('更新院校失败:', err);
+    res.status(500).json({ code: 500, message: '服务器内部错误' });
+  }
+});
+
+// 3.5 删除院校
+router.delete('/universities/:id', async (req, res) => {
+  try {
+    const [rows] = await pool.query('SELECT id FROM universities WHERE id = ?', [req.params.id]);
+    if (rows.length === 0) return res.status(404).json({ code: 404, message: '院校不存在' });
+    await pool.query('DELETE FROM universities WHERE id = ?', [req.params.id]);
+    res.json({ code: 200, message: '院校删除成功' });
+  } catch (err) {
+    console.error('删除院校失败:', err);
+    res.status(500).json({ code: 500, message: '服务器内部错误' });
+  }
+});
+
+// 3.6 院校上下架
+router.patch('/universities/:id/status', async (req, res) => {
+  try {
+    const { status } = req.body;
+    if (!['active', 'inactive'].includes(status)) {
+      return res.status(400).json({ code: 400, message: 'status 值必须为 active 或 inactive' });
+    }
+    const [rows] = await pool.query('SELECT id FROM universities WHERE id = ?', [req.params.id]);
+    if (rows.length === 0) return res.status(404).json({ code: 404, message: '院校不存在' });
+    await pool.query('UPDATE universities SET status = ? WHERE id = ?', [status, req.params.id]);
+    res.json({ code: 200, message: `院校已${status === 'active' ? '上架' : '下架'}` });
+  } catch (err) {
+    console.error('切换院校状态失败:', err);
+    res.status(500).json({ code: 500, message: '服务器内部错误' });
+  }
+});
+
+// ==================== 3.7 留学数据管理 - 项目 CRUD ====================
+
+// 项目列表
+router.get('/programs', async (req, res) => {
+  try {
+    const { page = 1, pageSize = 20, university_id, category, degree, keyword } = req.query;
+    let where = '1=1';
+    const params = [];
+
+    if (university_id) { where += ' AND p.university_id = ?'; params.push(Number(university_id)); }
+    if (category) { where += ' AND p.category = ?'; params.push(category); }
+    if (degree) { where += ' AND p.degree = ?'; params.push(degree); }
+    if (keyword) {
+      where += ' AND (p.name_zh LIKE ? OR p.name_en LIKE ?)';
+      const kw = `%${keyword}%`;
+      params.push(kw, kw);
+    }
+
+    const [countRows] = await pool.query(
+      `SELECT COUNT(*) as total FROM programs p WHERE ${where}`, params
+    );
+    const total = countRows[0].total;
+    const offset = (Math.max(1, Number(page)) - 1) * Number(pageSize);
+
+    const [list] = await pool.query(
+      `SELECT p.*, u.name_zh AS university_name, u.name_en AS university_name_en, u.region
+       FROM programs p LEFT JOIN universities u ON p.university_id = u.id
+       WHERE ${where} ORDER BY p.id DESC LIMIT ? OFFSET ?`,
+      [...params, Number(pageSize), offset]
+    );
+
+    res.json({ code: 200, data: { list, total, page: Number(page), pageSize: Number(pageSize) } });
+  } catch (err) {
+    console.error('管理员获取项目列表失败:', err);
+    res.status(500).json({ code: 500, message: '服务器内部错误' });
+  }
+});
+
+// 项目详情
+router.get('/programs/:id', async (req, res) => {
+  try {
+    const [rows] = await pool.query(
+      `SELECT p.*, u.name_zh AS university_name FROM programs p LEFT JOIN universities u ON p.university_id = u.id WHERE p.id = ?`,
+      [req.params.id]
+    );
+    if (rows.length === 0) return res.status(404).json({ code: 404, message: '项目不存在' });
+    res.json({ code: 200, data: rows[0] });
+  } catch (err) {
+    console.error('获取项目详情失败:', err);
+    res.status(500).json({ code: 500, message: '服务器内部错误' });
+  }
+});
+
+// 新增项目
+router.post('/programs', async (req, res) => {
+  try {
+    const { university_id, name_zh, name_en, degree, department, category, duration, language,
+            gpa_min, toefl_min, ielts_min, tuition_total, scholarship, deadline, apply_link,
+            requirements, employment_rate, avg_salary, career_paths, description, tags } = req.body;
+    if (!university_id || !name_zh || !name_en || !category) {
+      return res.status(400).json({ code: 400, message: '关联院校、中英文名、学科大类为必填' });
+    }
+    const [result] = await pool.query(
+      `INSERT INTO programs (university_id, name_zh, name_en, degree, department, category, duration, language,
+        gpa_min, toefl_min, ielts_min, tuition_total, scholarship, deadline, apply_link,
+        requirements, employment_rate, avg_salary, career_paths, description, tags)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [university_id, name_zh, name_en, degree || '硕士', department || '', category, duration || '', language || '英语',
+       gpa_min || null, toefl_min || null, ielts_min || null, tuition_total || '', scholarship || '', deadline || '',
+       apply_link || '', requirements || '', employment_rate || null, avg_salary || '',
+       career_paths ? JSON.stringify(career_paths) : null, description || '', tags ? JSON.stringify(tags) : null]
+    );
+    res.json({ code: 200, message: '项目创建成功', data: { id: result.insertId } });
+  } catch (err) {
+    console.error('创建项目失败:', err);
+    res.status(500).json({ code: 500, message: '服务器内部错误' });
+  }
+});
+
+// 编辑项目
+router.put('/programs/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const [rows] = await pool.query('SELECT id FROM programs WHERE id = ?', [id]);
+    if (rows.length === 0) return res.status(404).json({ code: 404, message: '项目不存在' });
+
+    const { university_id, name_zh, name_en, degree, department, category, duration, language,
+            gpa_min, toefl_min, ielts_min, tuition_total, scholarship, deadline, apply_link,
+            requirements, employment_rate, avg_salary, career_paths, description, tags, status } = req.body;
+    await pool.query(
+      `UPDATE programs SET university_id=COALESCE(?,university_id), name_zh=COALESCE(?,name_zh), name_en=COALESCE(?,name_en),
+        degree=COALESCE(?,degree), department=COALESCE(?,department), category=COALESCE(?,category),
+        duration=COALESCE(?,duration), language=COALESCE(?,language), gpa_min=?, toefl_min=?, ielts_min=?,
+        tuition_total=COALESCE(?,tuition_total), scholarship=COALESCE(?,scholarship), deadline=COALESCE(?,deadline),
+        apply_link=COALESCE(?,apply_link), requirements=COALESCE(?,requirements), employment_rate=?,
+        avg_salary=COALESCE(?,avg_salary), career_paths=?, description=COALESCE(?,description),
+        tags=?, status=COALESCE(?,status) WHERE id=?`,
+      [university_id, name_zh, name_en, degree, department, category, duration, language,
+       gpa_min ?? null, toefl_min ?? null, ielts_min ?? null, tuition_total, scholarship, deadline,
+       apply_link, requirements, employment_rate ?? null, avg_salary,
+       career_paths ? JSON.stringify(career_paths) : null, description,
+       tags ? JSON.stringify(tags) : null, status, id]
+    );
+    res.json({ code: 200, message: '项目更新成功' });
+  } catch (err) {
+    console.error('更新项目失败:', err);
+    res.status(500).json({ code: 500, message: '服务器内部错误' });
+  }
+});
+
+// 删除项目
+router.delete('/programs/:id', async (req, res) => {
+  try {
+    const [rows] = await pool.query('SELECT id FROM programs WHERE id = ?', [req.params.id]);
+    if (rows.length === 0) return res.status(404).json({ code: 404, message: '项目不存在' });
+    await pool.query('DELETE FROM programs WHERE id = ?', [req.params.id]);
+    res.json({ code: 200, message: '项目删除成功' });
+  } catch (err) {
+    console.error('删除项目失败:', err);
+    res.status(500).json({ code: 500, message: '服务器内部错误' });
+  }
+});
+
+// ==================== 3.8 留学数据管理 - 录取案例 CRUD ====================
+
+// 案例列表
+router.get('/study-abroad-offers', async (req, res) => {
+  try {
+    const { page = 1, pageSize = 20, country, keyword, status } = req.query;
+    let where = '1=1';
+    const params = [];
+
+    if (country) { where += ' AND country = ?'; params.push(country); }
+    if (status) { where += ' AND status = ?'; params.push(status); }
+    if (keyword) {
+      where += ' AND (student_name LIKE ? OR school LIKE ? OR program LIKE ?)';
+      const kw = `%${keyword}%`;
+      params.push(kw, kw, kw);
+    }
+
+    const [countRows] = await pool.query(`SELECT COUNT(*) as total FROM study_abroad_offers WHERE ${where}`, params);
+    const total = countRows[0].total;
+    const offset = (Math.max(1, Number(page)) - 1) * Number(pageSize);
+
+    const [list] = await pool.query(
+      `SELECT * FROM study_abroad_offers WHERE ${where} ORDER BY date DESC, id DESC LIMIT ? OFFSET ?`,
+      [...params, Number(pageSize), offset]
+    );
+
+    res.json({ code: 200, data: { list, total, page: Number(page), pageSize: Number(pageSize) } });
+  } catch (err) {
+    console.error('获取录取案例列表失败:', err);
+    res.status(500).json({ code: 500, message: '服务器内部错误' });
+  }
+});
+
+// 案例详情
+router.get('/study-abroad-offers/:id', async (req, res) => {
+  try {
+    const [rows] = await pool.query('SELECT * FROM study_abroad_offers WHERE id = ?', [req.params.id]);
+    if (rows.length === 0) return res.status(404).json({ code: 404, message: '案例不存在' });
+    res.json({ code: 200, data: rows[0] });
+  } catch (err) {
+    console.error('获取案例详情失败:', err);
+    res.status(500).json({ code: 500, message: '服务器内部错误' });
+  }
+});
+
+// 新增案例
+router.post('/study-abroad-offers', async (req, res) => {
+  try {
+    const { student_name, avatar, background, gpa, ielts, toefl, gre, internship, research,
+            result, country, school, program, scholarship, story, date, tags, likes } = req.body;
+    if (!student_name || !background || !result || !country || !school || !program || !date) {
+      return res.status(400).json({ code: 400, message: '学生姓名、背景、录取结果、国家、院校、项目、日期为必填' });
+    }
+    const [dbResult] = await pool.query(
+      `INSERT INTO study_abroad_offers (student_name, avatar, background, gpa, ielts, toefl, gre, internship, research,
+        result, country, school, program, scholarship, story, date, tags, likes)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [student_name, avatar || '', background, gpa || '', ielts || null, toefl || null, gre || null,
+       internship ? JSON.stringify(internship) : '[]', research ? JSON.stringify(research) : '[]',
+       result, country, school, program, scholarship || '', story || '', date,
+       tags ? JSON.stringify(tags) : '[]', likes || 0]
+    );
+    res.json({ code: 200, message: '案例创建成功', data: { id: dbResult.insertId } });
+  } catch (err) {
+    console.error('创建案例失败:', err);
+    res.status(500).json({ code: 500, message: '服务器内部错误' });
+  }
+});
+
+// 编辑案例
+router.put('/study-abroad-offers/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const [rows] = await pool.query('SELECT id FROM study_abroad_offers WHERE id = ?', [id]);
+    if (rows.length === 0) return res.status(404).json({ code: 404, message: '案例不存在' });
+
+    const { student_name, avatar, background, gpa, ielts, toefl, gre, internship, research,
+            result, country, school, program, scholarship, story, date, tags, likes, status } = req.body;
+    await pool.query(
+      `UPDATE study_abroad_offers SET student_name=COALESCE(?,student_name), avatar=COALESCE(?,avatar),
+        background=COALESCE(?,background), gpa=COALESCE(?,gpa), ielts=?, toefl=?, gre=?,
+        internship=?, research=?, result=COALESCE(?,result), country=COALESCE(?,country),
+        school=COALESCE(?,school), program=COALESCE(?,program), scholarship=COALESCE(?,scholarship),
+        story=COALESCE(?,story), date=COALESCE(?,date), tags=?, likes=COALESCE(?,likes),
+        status=COALESCE(?,status) WHERE id=?`,
+      [student_name, avatar, background, gpa, ielts ?? null, toefl ?? null, gre ?? null,
+       internship ? JSON.stringify(internship) : null, research ? JSON.stringify(research) : null,
+       result, country, school, program, scholarship, story, date,
+       tags ? JSON.stringify(tags) : null, likes, status, id]
+    );
+    res.json({ code: 200, message: '案例更新成功' });
+  } catch (err) {
+    console.error('更新案例失败:', err);
+    res.status(500).json({ code: 500, message: '服务器内部错误' });
+  }
+});
+
+// 删除案例
+router.delete('/study-abroad-offers/:id', async (req, res) => {
+  try {
+    const [rows] = await pool.query('SELECT id FROM study_abroad_offers WHERE id = ?', [req.params.id]);
+    if (rows.length === 0) return res.status(404).json({ code: 404, message: '案例不存在' });
+    await pool.query('DELETE FROM study_abroad_offers WHERE id = ?', [req.params.id]);
+    res.json({ code: 200, message: '案例删除成功' });
+  } catch (err) {
+    console.error('删除案例失败:', err);
+    res.status(500).json({ code: 500, message: '服务器内部错误' });
+  }
+});
+
+// ==================== 3.9 留学数据管理 - 时间线 CRUD ====================
+
+// 时间线列表
+router.get('/study-abroad-timeline', async (req, res) => {
+  try {
+    const { page = 1, pageSize = 50, type, status } = req.query;
+    let where = '1=1';
+    const params = [];
+
+    if (type) { where += ' AND type = ?'; params.push(type); }
+    if (status) { where += ' AND status = ?'; params.push(status); }
+
+    const [countRows] = await pool.query(`SELECT COUNT(*) as total FROM study_abroad_timeline WHERE ${where}`, params);
+    const total = countRows[0].total;
+    const offset = (Math.max(1, Number(page)) - 1) * Number(pageSize);
+
+    const [list] = await pool.query(
+      `SELECT * FROM study_abroad_timeline WHERE ${where} ORDER BY date ASC LIMIT ? OFFSET ?`,
+      [...params, Number(pageSize), offset]
+    );
+
+    res.json({ code: 200, data: { list, total, page: Number(page), pageSize: Number(pageSize) } });
+  } catch (err) {
+    console.error('获取时间线列表失败:', err);
+    res.status(500).json({ code: 500, message: '服务器内部错误' });
+  }
+});
+
+// 时间线详情
+router.get('/study-abroad-timeline/:id', async (req, res) => {
+  try {
+    const [rows] = await pool.query('SELECT * FROM study_abroad_timeline WHERE id = ?', [req.params.id]);
+    if (rows.length === 0) return res.status(404).json({ code: 404, message: '事件不存在' });
+    res.json({ code: 200, data: rows[0] });
+  } catch (err) {
+    console.error('获取时间线详情失败:', err);
+    res.status(500).json({ code: 500, message: '服务器内部错误' });
+  }
+});
+
+// 新增时间线事件
+router.post('/study-abroad-timeline', async (req, res) => {
+  try {
+    const { date, title, description, type, category, icon, color, link, tags } = req.body;
+    if (!date || !title || !type) {
+      return res.status(400).json({ code: 400, message: '日期、标题、类型为必填' });
+    }
+    const [result] = await pool.query(
+      `INSERT INTO study_abroad_timeline (date, title, description, type, category, icon, color, link, tags)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [date, title, description || '', type, category || '', icon || '', color || '', link || '',
+       tags ? JSON.stringify(tags) : '[]']
+    );
+    res.json({ code: 200, message: '事件创建成功', data: { id: result.insertId } });
+  } catch (err) {
+    console.error('创建时间线事件失败:', err);
+    res.status(500).json({ code: 500, message: '服务器内部错误' });
+  }
+});
+
+// 编辑时间线事件
+router.put('/study-abroad-timeline/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const [rows] = await pool.query('SELECT id FROM study_abroad_timeline WHERE id = ?', [id]);
+    if (rows.length === 0) return res.status(404).json({ code: 404, message: '事件不存在' });
+
+    const { date, title, description, type, category, icon, color, link, tags, status } = req.body;
+    await pool.query(
+      `UPDATE study_abroad_timeline SET date=COALESCE(?,date), title=COALESCE(?,title),
+        description=COALESCE(?,description), type=COALESCE(?,type), category=COALESCE(?,category),
+        icon=COALESCE(?,icon), color=COALESCE(?,color), link=COALESCE(?,link),
+        tags=?, status=COALESCE(?,status) WHERE id=?`,
+      [date, title, description, type, category, icon, color, link,
+       tags ? JSON.stringify(tags) : null, status, id]
+    );
+    res.json({ code: 200, message: '事件更新成功' });
+  } catch (err) {
+    console.error('更新时间线事件失败:', err);
+    res.status(500).json({ code: 500, message: '服务器内部错误' });
+  }
+});
+
+// 删除时间线事件
+router.delete('/study-abroad-timeline/:id', async (req, res) => {
+  try {
+    const [rows] = await pool.query('SELECT id FROM study_abroad_timeline WHERE id = ?', [req.params.id]);
+    if (rows.length === 0) return res.status(404).json({ code: 404, message: '事件不存在' });
+    await pool.query('DELETE FROM study_abroad_timeline WHERE id = ?', [req.params.id]);
+    res.json({ code: 200, message: '事件删除成功' });
+  } catch (err) {
+    console.error('删除时间线事件失败:', err);
+    res.status(500).json({ code: 500, message: '服务器内部错误' });
+  }
+});
+
+// ==================== 3.10 留学数据管理 - 顾问 CRUD ====================
+
+// 顾问列表
+router.get('/study-abroad-consultants', async (req, res) => {
+  try {
+    const { page = 1, pageSize = 20, country, keyword, status } = req.query;
+    let where = '1=1';
+    const params = [];
+
+    if (country) { where += ' AND country = ?'; params.push(country); }
+    if (status) { where += ' AND status = ?'; params.push(status); }
+    if (keyword) {
+      where += ' AND (name LIKE ? OR title LIKE ?)';
+      const kw = `%${keyword}%`;
+      params.push(kw, kw);
+    }
+
+    const [countRows] = await pool.query(`SELECT COUNT(*) as total FROM study_abroad_consultants WHERE ${where}`, params);
+    const total = countRows[0].total;
+    const offset = (Math.max(1, Number(page)) - 1) * Number(pageSize);
+
+    const [list] = await pool.query(
+      `SELECT * FROM study_abroad_consultants WHERE ${where} ORDER BY success_cases DESC, id DESC LIMIT ? OFFSET ?`,
+      [...params, Number(pageSize), offset]
+    );
+
+    res.json({ code: 200, data: { list, total, page: Number(page), pageSize: Number(pageSize) } });
+  } catch (err) {
+    console.error('获取顾问列表失败:', err);
+    res.status(500).json({ code: 500, message: '服务器内部错误' });
+  }
+});
+
+// 顾问详情
+router.get('/study-abroad-consultants/:id', async (req, res) => {
+  try {
+    const [rows] = await pool.query('SELECT * FROM study_abroad_consultants WHERE id = ?', [req.params.id]);
+    if (rows.length === 0) return res.status(404).json({ code: 404, message: '顾问不存在' });
+    res.json({ code: 200, data: rows[0] });
+  } catch (err) {
+    console.error('获取顾问详情失败:', err);
+    res.status(500).json({ code: 500, message: '服务器内部错误' });
+  }
+});
+
+// 新增顾问
+router.post('/study-abroad-consultants', async (req, res) => {
+  try {
+    const { name, title, avatar, specialty, experience, education, success_cases, country, description } = req.body;
+    if (!name || !country) {
+      return res.status(400).json({ code: 400, message: '姓名和负责国家为必填' });
+    }
+    const [result] = await pool.query(
+      `INSERT INTO study_abroad_consultants (name, title, avatar, specialty, experience, education, success_cases, country, description)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [name, title || '', avatar || '', specialty ? JSON.stringify(specialty) : '[]',
+       experience || '', education || '', success_cases || 0, country, description || '']
+    );
+    res.json({ code: 200, message: '顾问创建成功', data: { id: result.insertId } });
+  } catch (err) {
+    console.error('创建顾问失败:', err);
+    res.status(500).json({ code: 500, message: '服务器内部错误' });
+  }
+});
+
+// 编辑顾问
+router.put('/study-abroad-consultants/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const [rows] = await pool.query('SELECT id FROM study_abroad_consultants WHERE id = ?', [id]);
+    if (rows.length === 0) return res.status(404).json({ code: 404, message: '顾问不存在' });
+
+    const { name, title, avatar, specialty, experience, education, success_cases, country, description, status } = req.body;
+    await pool.query(
+      `UPDATE study_abroad_consultants SET name=COALESCE(?,name), title=COALESCE(?,title),
+        avatar=COALESCE(?,avatar), specialty=?, experience=COALESCE(?,experience),
+        education=COALESCE(?,education), success_cases=COALESCE(?,success_cases),
+        country=COALESCE(?,country), description=COALESCE(?,description),
+        status=COALESCE(?,status) WHERE id=?`,
+      [name, title, avatar, specialty ? JSON.stringify(specialty) : null,
+       experience, education, success_cases, country, description, status, id]
+    );
+    res.json({ code: 200, message: '顾问更新成功' });
+  } catch (err) {
+    console.error('更新顾问失败:', err);
+    res.status(500).json({ code: 500, message: '服务器内部错误' });
+  }
+});
+
+// 删除顾问
+router.delete('/study-abroad-consultants/:id', async (req, res) => {
+  try {
+    const [rows] = await pool.query('SELECT id FROM study_abroad_consultants WHERE id = ?', [req.params.id]);
+    if (rows.length === 0) return res.status(404).json({ code: 404, message: '顾问不存在' });
+    await pool.query('DELETE FROM study_abroad_consultants WHERE id = ?', [req.params.id]);
+    res.json({ code: 200, message: '顾问删除成功' });
+  } catch (err) {
+    console.error('删除顾问失败:', err);
+    res.status(500).json({ code: 500, message: '服务器内部错误' });
+  }
+});
+
 export default router;

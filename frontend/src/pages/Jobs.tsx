@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { Link, useSearchParams, useNavigate } from "react-router-dom";
 import {
   Search,
   MapPin,
@@ -19,6 +19,7 @@ import ErrorState from "@/components/ui/ErrorState";
 // 数据全部从 /api/jobs 获取，筛选项由接口返回
 
 export default function Jobs() {
+  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [activeCategory, setActiveCategory] = useState("全部");
   const [activeType, setActiveType] = useState("全部");
@@ -399,7 +400,8 @@ export default function Jobs() {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, scale: 0.95 }}
                   transition={{ duration: 0.2 }}
-                  className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-lg hover:border-primary-200 transition-all group"
+                  onClick={() => navigate(`/jobs/${job.id}`)}
+                  className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-lg hover:border-primary-200 transition-all group cursor-pointer"
                 >
                   <div className="flex flex-col sm:flex-row gap-6">
                     <div className="flex-1">

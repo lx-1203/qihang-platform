@@ -359,7 +359,7 @@ export default function OnboardingGuide({ role, inline = false }: OnboardingGuid
           initial={{ opacity: 0, scale: 0.8 }}
           animate={{ opacity: 1, scale: 1 }}
           onClick={handleReset}
-          className="fixed bottom-6 right-24 z-[9998] bg-gradient-to-r from-primary-500 to-teal-500 text-white px-4 py-2.5 rounded-full shadow-lg hover:shadow-xl flex items-center gap-2 text-sm font-medium transition-shadow"
+          className="fixed bottom-8 left-1/2 -translate-x-1/2 z-[9998] bg-gradient-to-r from-primary-500 to-teal-500 text-white px-5 py-3 rounded-full shadow-lg hover:shadow-xl flex items-center gap-2 text-sm font-medium transition-shadow"
           title="重新查看引导教程"
         >
           <Rocket className="w-4 h-4" />

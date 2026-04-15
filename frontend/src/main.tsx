@@ -4,7 +4,7 @@ import { RouterProvider } from 'react-router-dom'
 import { router } from './routes'
 import { initSiteConfig } from './store/config'
 import { ToastProvider } from './components/ui/ToastContainer'
-import ErrorBoundary from './components/ErrorBoundary'
+import ErrorBoundary from './components/ui/ErrorBoundary'
 import './index.css'
 import './i18n' // 引入 i18n 配置文件
 

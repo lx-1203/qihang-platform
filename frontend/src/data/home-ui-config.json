@@ -1,0 +1,133 @@
+{
+  "_meta": {
+    "version": "1.0",
+    "lastUpdated": "2026-04-14",
+    "description": "首页 UI 配置 — 管理员可通过后台配置页修改，无需改代码"
+  },
+
+  "heroSlides": [
+    {
+      "id": "slide-1",
+      "title": "你的职业发展，\n从启航开始",
+      "subtitle": "连接梦想与机遇，助力每一位大学生迈向理想职业",
+      "gradient": "from-teal-600 via-emerald-700 to-teal-800",
+      "cta": "开始探索",
+      "ctaLink": "/jobs"
+    },
+    {
+      "id": "slide-2",
+      "title": "大咖导师\n1对1辅导",
+      "subtitle": "简历精修、模拟面试、职业规划，帮你拿到心仪Offer",
+      "gradient": "from-blue-600 via-indigo-700 to-blue-800",
+      "cta": "找导师",
+      "ctaLink": "/mentors"
+    },
+    {
+      "id": "slide-3",
+      "title": "留学 · 考研 · 创业\n一站全覆盖",
+      "subtitle": "无论你选择哪条路，我们都为你保驾护航",
+      "gradient": "from-purple-600 via-violet-700 to-purple-800",
+      "cta": "了解更多",
+      "ctaLink": "/study-abroad"
+    }
+  ],
+
+  "quickEntries": [
+    {
+      "label": "校招直通车",
+      "desc": "名企实习/校招",
+      "icon": "Briefcase",
+      "link": "/jobs",
+      "color": "text-blue-600",
+      "bg": "bg-gradient-to-br from-blue-50 to-blue-100/50"
+    },
+    {
+      "label": "大咖1v1",
+      "desc": "导师辅导预约",
+      "icon": "MessageCircle",
+      "link": "/mentors",
+      "color": "text-teal-600",
+      "bg": "bg-gradient-to-br from-teal-50 to-teal-100/50"
+    },
+    {
+      "label": "干货资料库",
+      "desc": "免费课程学习",
+      "icon": "BookOpen",
+      "link": "/courses",
+      "color": "text-amber-600",
+      "bg": "bg-gradient-to-br from-amber-50 to-amber-100/50"
+    },
+    {
+      "label": "留学申请",
+      "desc": "院校评估/文书",
+      "icon": "Globe",
+      "link": "/study-abroad",
+      "color": "text-purple-600",
+      "bg": "bg-gradient-to-br from-purple-50 to-purple-100/50",
+      "badge": "new"
+    },
+    {
+      "label": "考研保研",
+      "desc": "择校/备考策略",
+      "icon": "GraduationCap",
+      "link": "/postgrad",
+      "color": "text-rose-600",
+      "bg": "bg-gradient-to-br from-rose-50 to-rose-100/50"
+    }
+  ],
+
+  "courseColors": [
+    "from-teal-400 to-emerald-500",
+    "from-blue-400 to-indigo-500",
+    "from-purple-400 to-violet-500",
+    "from-amber-400 to-orange-500"
+  ],
+
+  "valueSections": [
+    {
+      "role": "对学生",
+      "icon": "GraduationCap",
+      "color": "text-purple-600",
+      "bg": "bg-purple-50",
+      "border": "border-purple-100",
+      "gradientFrom": "from-purple-400",
+      "gradientTo": "to-purple-600",
+      "points": [
+        "一站搜索校招/实习/社招岗位",
+        "1v1预约行业大咖导师辅导",
+        "免费学习简历、面试、职业规划课程",
+        "获取考研/留学/创业全方位资讯"
+      ]
+    },
+    {
+      "role": "对企业",
+      "icon": "Building2",
+      "color": "text-blue-600",
+      "bg": "bg-blue-50",
+      "border": "border-blue-100",
+      "gradientFrom": "from-blue-400",
+      "gradientTo": "to-blue-600",
+      "points": [
+        "零门槛发布招聘岗位",
+        "Kanban式简历筛选管理",
+        "精准人才搜索与推荐",
+        "数据化招聘效果分析"
+      ]
+    },
+    {
+      "role": "对导师",
+      "icon": "Award",
+      "color": "text-emerald-600",
+      "bg": "bg-emerald-50",
+      "border": "border-emerald-100",
+      "gradientFrom": "from-emerald-400",
+      "gradientTo": "to-emerald-600",
+      "points": [
+        "自主管理课程与辅导档期",
+        "获取学生真实评价反馈",
+        "平台推广增加个人影响力",
+        "数据化运营提升辅导质量"
+      ]
+    }
+  ]
+}

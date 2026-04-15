@@ -303,3 +303,17 @@ export interface SiteConfig {
   group: string;
   editable: boolean;
 }
+
+// ====== 时间轴事件类型 ======
+
+/** 校招日历时间轴事件 */
+export interface TimelineEvent {
+  id: string;
+  date: string;
+  title: string;
+  description: string;
+  type: 'deadline' | 'event' | 'live' | 'tips';
+  category: 'recruitment' | 'course' | 'activity';
+  link?: string;
+  icon?: string;
+}

@@ -15,6 +15,23 @@ import http from '@/api/http';
 import OnboardingGuide from '@/components/OnboardingGuide';
 import FeatureStatus from '@/components/FeatureStatus';
 import { addSearchHistory } from '@/utils/searchHistory';
+import ServiceGrid from '@/components/ServiceGrid';
+import StudentStories from '@/components/StudentStories';
+import ProcessSteps from '@/components/ProcessSteps';
+import CampusTimeline from '@/components/CampusTimeline';
+import SceneBanner from '@/components/SceneBanner';
+import { CardSkeleton } from '@/components/ui/Skeleton';
+import ErrorState from '@/components/ui/ErrorState';
+import { LazyImage } from '@/components/ui';
+
+// ====== JSON 配置导入 ======
+import homeConfig from '../data/home-ui-config.json';
+
+// ====== 图标映射（JSON 中存储字符串，渲染时映射为 Lucide 组件） ======
+const ICON_MAP: Record<string, any> = {
+  Briefcase, MessageCircle, BookOpen, Globe, GraduationCap,
+  Building2, Award, Users, FileText,
+};
 
 // ====== 首页 ======
 // 学生为主的门户首页，登录后展示个性化推荐和引导
@@ -99,12 +116,14 @@ export default function Home() {
     } catch { setCoursesError(true); }
   };
 
-  // 轮播（首条使用配置中心内容）
-  const slides = [
-    { title: heroTitle.replace('，', '，\n'), sub: heroSubtitle, bg: 'from-teal-600 via-emerald-700 to-teal-800', cta: '开始探索', link: '/jobs' },
-    { title: '大咖导师\n1对1辅导', sub: '简历精修、模拟面试、职业规划，帮你拿到心仪Offer', bg: 'from-blue-600 via-indigo-700 to-blue-800', cta: '找导师', link: '/mentors' },
-    { title: '留学 · 考研 · 创业\n一站全覆盖', sub: '无论你选择哪条路，我们都为你保驾护航', bg: 'from-purple-600 via-violet-700 to-purple-800', cta: '了解更多', link: '/study-abroad' },
-  ];
+  // 轮播（首条使用配置中心内容，其余从 JSON 读取）
+  const slides = homeConfig.heroSlides.map((s: any, idx: number) => ({
+    title: idx === 0 ? heroTitle.replace('，', '，\n') : s.title,
+    sub: idx === 0 ? heroSubtitle : s.subtitle,
+    bg: s.gradient,
+    cta: s.cta,
+    link: s.ctaLink,
+  }));
 
   useEffect(() => {
     timerRef.current = setInterval(() => setCurrentSlide(p => (p + 1) % slides.length), 5000);
@@ -119,22 +138,15 @@ export default function Home() {
     { label: '成功投递', value: statsJobs, icon: FileText },
   ];
 
-  // 快捷入口
-  const quickEntries = [
-    { label: '校招直通车', desc: '名企实习/校招', icon: Briefcase, link: '/jobs', color: 'text-blue-600', bg: 'bg-blue-50' },
-    { label: '大咖1v1', desc: '导师辅导预约', icon: MessageCircle, link: '/mentors', color: 'text-teal-600', bg: 'bg-teal-50' },
-    { label: '干货资料库', desc: '免费课程学习', icon: BookOpen, link: '/courses', color: 'text-amber-600', bg: 'bg-amber-50' },
-    { label: '留学申请', desc: '院校评估/文书', icon: Globe, link: '/study-abroad', color: 'text-purple-600', bg: 'bg-purple-50', badge: 'new' as const },
-    { label: '考研保研', desc: '择校/备考策略', icon: GraduationCap, link: '/postgrad', color: 'text-rose-600', bg: 'bg-rose-50' },
-  ];
+  // 快捷入口（从 JSON 配置读取，图标字符串映射为组件）
+  const quickEntries = homeConfig.quickEntries.map((e: any) => ({
+    ...e,
+    icon: ICON_MAP[e.icon] || Briefcase,
+    badge: e.badge as 'new' | undefined,
+  }));
 
-  // 课程封面颜色映射（根据索引循环）
-  const courseColors = [
-    'from-teal-400 to-emerald-500',
-    'from-blue-400 to-indigo-500',
-    'from-purple-400 to-violet-500',
-    'from-amber-400 to-orange-500',
-  ];
+  // 课程封面颜色映射（从 JSON 配置读取）
+  const courseColors = homeConfig.courseColors;
 
   return (
     <div>
@@ -146,8 +158,9 @@ export default function Home() {
             transition={{ duration: 0.6 }}
             className={`absolute inset-0 bg-gradient-to-br ${slides[currentSlide].bg}`}
           >
-            <div className="absolute inset-0 bg-black/10" />
+            <div className="absolute inset-0 bg-black/20" />
             <div className="absolute top-20 right-20 w-96 h-96 bg-white/5 rounded-full blur-3xl" />
+            <div className="absolute -bottom-10 -left-20 w-72 h-72 bg-white/5 rounded-full blur-3xl" />
           </motion.div>
         </AnimatePresence>
 
@@ -279,6 +292,16 @@ export default function Home() {
           </div>
         </div>
 
+      </div>
+
+      {/* ====== 场景描述 Banner（全宽） ====== */}
+      <SceneBanner />
+
+      <div className="max-w-[1200px] mx-auto px-4 sm:px-6">
+
+        {/* ====== 服务特色卡片网格 ====== */}
+        <ServiceGrid />
+
         {/* ====== 为你推荐 — 热门岗位 ====== */}
         <section className="pb-10">
           <div className="flex items-center justify-between mb-6">
@@ -291,11 +314,11 @@ export default function Home() {
             </Link>
           </div>
           {dataLoading ? (
-            <div className="flex justify-center py-12"><Loader2 className="w-6 h-6 text-primary-600 animate-spin" /></div>
-          ) : jobsError ? (
-            <div className="text-center py-8">
-              <p className="text-sm text-gray-500">岗位数据加载失败 <button onClick={retryJobs} className="ml-2 text-primary-500 hover:underline">点击重试</button></p>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              {[0,1,2,3].map(i => <CardSkeleton key={i} />)}
             </div>
+          ) : jobsError ? (
+            <ErrorState message="岗位数据加载失败" onRetry={retryJobs} />
           ) : hotJobs.length === 0 ? (
             <div className="text-center py-12">
               <Briefcase className="w-10 h-10 text-gray-300 mx-auto mb-3" />
@@ -339,11 +362,11 @@ export default function Home() {
             </Link>
           </div>
           {dataLoading ? (
-            <div className="flex justify-center py-12"><Loader2 className="w-6 h-6 text-primary-600 animate-spin" /></div>
-          ) : mentorsError ? (
-            <div className="text-center py-8">
-              <p className="text-sm text-gray-500">导师数据加载失败 <button onClick={retryMentors} className="ml-2 text-primary-500 hover:underline">点击重试</button></p>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              {[0,1,2,3].map(i => <CardSkeleton key={i} />)}
             </div>
+          ) : mentorsError ? (
+            <ErrorState message="导师数据加载失败" onRetry={retryMentors} />
           ) : hotMentors.length === 0 ? (
             <div className="text-center py-12">
               <Users className="w-10 h-10 text-gray-300 mx-auto mb-3" />
@@ -357,7 +380,7 @@ export default function Home() {
                 <Link to={`/mentors/${m.id}`} className="block bg-white rounded-xl p-5 border border-gray-100 hover:shadow-md hover:border-primary-200 transition-all group">
                   <div className="flex items-center gap-3 mb-3">
                     {m.avatar ? (
-                      <img src={m.avatar} alt={m.name} className="w-12 h-12 rounded-xl object-cover border border-gray-100" />
+                      <LazyImage src={m.avatar} alt={m.name} variant="avatar" className="w-12 h-12 border border-gray-100" />
                     ) : (
                       <div className="w-12 h-12 rounded-xl bg-primary-100 flex items-center justify-center text-primary-700 font-bold">
                         {(m.name || '导')[0]}
@@ -396,11 +419,11 @@ export default function Home() {
             </Link>
           </div>
           {dataLoading ? (
-            <div className="flex justify-center py-12"><Loader2 className="w-6 h-6 text-primary-600 animate-spin" /></div>
-          ) : coursesError ? (
-            <div className="text-center py-8">
-              <p className="text-sm text-gray-500">课程数据加载失败 <button onClick={retryCourses} className="ml-2 text-primary-500 hover:underline">点击重试</button></p>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              {[0,1,2,3].map(i => <CardSkeleton key={i} />)}
             </div>
+          ) : coursesError ? (
+            <ErrorState message="课程数据加载失败" onRetry={retryCourses} />
           ) : hotCourses.length === 0 ? (
             <div className="text-center py-12">
               <BookOpen className="w-10 h-10 text-gray-300 mx-auto mb-3" />
@@ -414,7 +437,7 @@ export default function Home() {
                 <Link to={`/courses/${c.id}`} className="block bg-white rounded-xl overflow-hidden border border-gray-100 hover:shadow-md hover:border-primary-200 transition-all group">
                   {c.cover ? (
                     <div className="h-32 relative overflow-hidden">
-                      <img src={c.cover} alt={c.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
+                      <LazyImage src={c.cover} alt={c.title} variant="cover" className="w-full h-full" />
                       <div className="absolute inset-0 bg-black/20 group-hover:bg-black/40 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
                         <Play className="w-10 h-10 text-white" />
                       </div>
@@ -438,40 +461,53 @@ export default function Home() {
           )}
         </section>
 
+        {/* ====== 学员故事墙 ====== */}
+        <StudentStories />
+
+        {/* ====== 求职流程步骤条 ====== */}
+        <ProcessSteps />
+
+        {/* ====== 校招日历时间轴 ====== */}
+        <CampusTimeline />
+
         {/* ====== 平台价值说明 ====== */}
         <section className="pb-16">
           <h2 className="text-xl font-bold text-gray-900 text-center mb-2">一个平台，三方受益</h2>
           <p className="text-sm text-gray-500 text-center mb-8">启航平台连接学生、企业、导师，让每一方都获得价值</p>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {[
-              {
-                role: '对学生', icon: GraduationCap, color: 'text-purple-600', bg: 'bg-purple-50', border: 'border-purple-100',
-                points: ['一站搜索校招/实习/社招岗位', '1v1预约行业大咖导师辅导', '免费学习简历、面试、职业规划课程', '获取考研/留学/创业全方位资讯'],
-              },
-              {
-                role: '对企业', icon: Building2, color: 'text-blue-600', bg: 'bg-blue-50', border: 'border-blue-100',
-                points: ['零门槛发布招聘岗位', 'Kanban式简历筛选管理', '精准人才搜索与推荐', '数据化招聘效果分析'],
-              },
-              {
-                role: '对导师', icon: Award, color: 'text-emerald-600', bg: 'bg-emerald-50', border: 'border-emerald-100',
-                points: ['自主管理课程与辅导档期', '获取学生真实评价反馈', '平台推广增加个人影响力', '数据化运营提升辅导质量'],
-              },
-            ].map((item, i) => (
+            {homeConfig.valueSections.map((item: any, i: number) => {
+              const IconComp = ICON_MAP[item.icon] || GraduationCap;
+              return (
               <motion.div key={i} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 + i * 0.1 }}
-                className={`${item.bg} rounded-2xl p-6 border ${item.border}`}
+                className={`${item.bg} rounded-2xl overflow-hidden border ${item.border}`}
               >
-                <item.icon className={`w-8 h-8 ${item.color} mb-4`} />
+                {/* 装饰渐变条 */}
+                <div className={`h-1 bg-gradient-to-r ${item.gradientFrom} ${item.gradientTo}`} />
+                <div className="p-6">
+                <IconComp className={`w-8 h-8 ${item.color} mb-4`} />
                 <h3 className="text-lg font-bold text-gray-900 mb-3">{item.role}</h3>
                 <ul className="space-y-2">
-                  {item.points.map((p, pi) => (
+                  {item.points.map((p: string, pi: number) => (
                     <li key={pi} className="text-sm text-gray-600 flex items-start gap-2">
                       <TrendingUp className={`w-4 h-4 ${item.color} shrink-0 mt-0.5`} />
                       {p}
                     </li>
                   ))}
                 </ul>
+                </div>
               </motion.div>
-            ))}
+              );
+            })}
+          </div>
+
+          {/* CTA */}
+          <div className="text-center mt-10">
+            <Link to="/register"
+              className="inline-flex items-center gap-2 rounded-full px-8 py-3 bg-primary-600 text-white font-semibold hover:bg-primary-700 hover:-translate-y-0.5 shadow-md hover:shadow-lg transition-all duration-300"
+            >
+              立即开始你的求职之旅
+              <ArrowRight className="w-4 h-4" />
+            </Link>
           </div>
         </section>
       </div>

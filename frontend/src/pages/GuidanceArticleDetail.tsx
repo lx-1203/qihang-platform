@@ -105,9 +105,9 @@ export default function GuidanceArticleDetail() {
 
   return (
     <div className="min-h-screen bg-gray-50 pt-8 pb-16">
-      <div className="max-w-[800px] mx-auto px-4 sm:px-6">
+      <div className="max-w-[900px] mx-auto px-4 sm:px-6">
         {/* 面包屑 */}
-        <div className="flex items-center gap-2 text-sm text-gray-500 mb-6">
+        <div className="flex items-center gap-2 text-sm text-gray-500 mb-8">
           <Link to="/guidance" className="hover:text-primary-600 transition-colors">就业指导</Link>
           <ChevronRight className="w-4 h-4" />
           <Link to="/guidance/articles" className="hover:text-primary-600 transition-colors">文章资讯</Link>
@@ -122,7 +122,7 @@ export default function GuidanceArticleDetail() {
         >
           {/* 封面 */}
           {article.cover && (
-            <div className="h-64 sm:h-80 overflow-hidden">
+            <div className="h-72 sm:h-96 overflow-hidden">
               <img
                 src={article.cover}
                 alt={article.title}
@@ -132,49 +132,49 @@ export default function GuidanceArticleDetail() {
           )}
 
           {/* 文章头 */}
-          <div className="p-6 sm:p-10">
+          <div className="p-8 sm:p-12">
             {/* 分类标签 */}
-            <span className={`inline-block px-3 py-1 rounded-lg text-xs font-medium border mb-4 ${
+            <span className={`inline-block px-4 py-1.5 rounded-lg text-sm font-medium border mb-5 ${
               categoryColors[article.category] || 'bg-gray-50 text-gray-600 border-gray-200'
             }`}>
               {article.category}
             </span>
 
-            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 leading-snug mb-4">
+            <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 leading-snug mb-6">
               {article.title}
             </h1>
 
             {/* 元信息 */}
-            <div className="flex flex-wrap items-center gap-4 text-sm text-gray-500 mb-8 pb-6 border-b border-gray-100">
-              <span className="flex items-center gap-1.5">
-                <User className="w-4 h-4" />
+            <div className="flex flex-wrap items-center gap-6 text-sm text-gray-500 mb-10 pb-8 border-b border-gray-100">
+              <span className="flex items-center gap-2">
+                <User className="w-5 h-5" />
                 {article.author}
               </span>
-              <span className="flex items-center gap-1.5">
-                <Clock className="w-4 h-4" />
+              <span className="flex items-center gap-2">
+                <Clock className="w-5 h-5" />
                 {formatDate(article.created_at)}
               </span>
-              <span className="flex items-center gap-1.5">
-                <Eye className="w-4 h-4" />
+              <span className="flex items-center gap-2">
+                <Eye className="w-5 h-5" />
                 {article.view_count} 次阅读
               </span>
             </div>
 
             {/* 正文 */}
             <div
-              className="prose prose-sm max-w-none"
+              className="prose prose-lg max-w-none"
               dangerouslySetInnerHTML={{ __html: renderMarkdown(article.content) }}
             />
           </div>
         </motion.article>
 
         {/* 返回按钮 */}
-        <div className="mt-8 text-center">
+        <div className="mt-10 text-center">
           <Link
             to="/guidance/articles"
-            className="inline-flex items-center gap-2 text-primary-600 hover:text-primary-700 font-medium text-sm transition-colors"
+            className="inline-flex items-center gap-2 text-primary-600 hover:text-primary-700 font-medium text-base transition-colors"
           >
-            <ArrowLeft className="w-4 h-4" />
+            <ArrowLeft className="w-5 h-5" />
             返回文章列表
           </Link>
         </div>
