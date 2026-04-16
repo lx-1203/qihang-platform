@@ -2,15 +2,18 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  MessageSquare, Send, Plus, Search, ArrowLeft,
+  MessageSquare, Plus, Search, ArrowLeft,
   LogIn, MessageCircle, Loader2, X, Clock,
-  Headphones, Bot, ChevronDown,
+  Headphones, Bot, ChevronDown, Sparkles, Shield, Star,
 } from 'lucide-react';
 import { useChatStore } from '@/store/chat';
-import type { ChatConversation } from '@/store/chat';
+import type { ChatConversation, ChatMessage } from '@/store/chat';
 import ChatBubble from '@/components/ChatBubble';
+import MessageInput from '@/components/chat/MessageInput';
+import FAQList from '@/components/chat/FAQList';
 import { useAuthStore } from '@/store/auth';
 import { Skeleton } from '@/components/ui/Skeleton';
+import Tag from '@/components/ui/Tag';
 
 // ====== 聊天页面 ======
 // 左侧会话列表 + 右侧消息区域，移动端切换视图
@@ -166,9 +169,13 @@ function ConversationItem({ conversation, isActive, onSelect }: ConversationItem
           )}
         </div>
         {/* 状态标签 */}
-        <span className={`inline-block text-[10px] px-1.5 py-0.5 rounded-full font-medium mt-1 ${statusConfig.color}`}>
+        <Tag
+          variant={conversation.status === 'active' ? 'green' : conversation.status === 'pending' ? 'yellow' : 'gray'}
+          size="xs"
+          className="mt-1"
+        >
           {statusConfig.label}
-        </span>
+        </Tag>
       </div>
     </motion.button>
   );
@@ -188,11 +195,10 @@ export default function Chat() {
     createConversation,
     selectConversation,
     sendMessage,
+    resendMessage,
     stopPolling,
   } = useChatStore();
 
-  // 输入框内容
-  const [inputValue, setInputValue] = useState('');
   // 会话搜索关键词
   const [searchKeyword, setSearchKeyword] = useState('');
   // 移动端视图状态：list = 会话列表，chat = 聊天区域
@@ -201,11 +207,13 @@ export default function Chat() {
   const [creating, setCreating] = useState(false);
   // 是否显示 "滚动到底部" 按钮
   const [showScrollDown, setShowScrollDown] = useState(false);
+  // 游客消息（未登录体验对话）
+  const [guestMessages, setGuestMessages] = useState<ChatMessage[]>([]);
+  const [guestSending, setGuestSending] = useState(false);
 
   // DOM 引用
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLTextAreaElement>(null);
 
   // ====== 生命周期 ======
 
@@ -253,40 +261,77 @@ export default function Chat() {
 
   // ====== 发送消息 ======
 
-  /** 发送消息（验证 + 清空输入） */
-  const handleSend = useCallback(async () => {
-    const content = inputValue.trim();
-    if (!content || isSending) return;
+  /** 通过 MessageInput 组件发送消息 */
+  const handleSend = useCallback(async (content: string) => {
+    if (!content.trim() || isSending) return;
+    await sendMessage(content);
+  }, [isSending, sendMessage]);
 
-    const success = await sendMessage(content);
-    if (success) {
-      setInputValue('');
-      // 重置输入框高度
-      if (inputRef.current) {
-        inputRef.current.style.height = 'auto';
-      }
+  /** 重发失败消息 */
+  const handleResend = useCallback((index: number) => {
+    resendMessage(index);
+  }, [resendMessage]);
+
+  // ====== 游客体验对话 ======
+
+  /** 获取游客已发送消息数 */
+  const getGuestChatCount = useCallback((): number => {
+    try {
+      return parseInt(localStorage.getItem('guest_chat_count') || '0', 10);
+    } catch {
+      return 0;
     }
-  }, [inputValue, isSending, sendMessage]);
-
-  /** 键盘快捷键：Ctrl+Enter 发送 */
-  const handleKeyDown = useCallback(
-    (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-      if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
-        e.preventDefault();
-        handleSend();
-      }
-    },
-    [handleSend],
-  );
-
-  /** 自动调整 textarea 高度 */
-  const handleInputChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setInputValue(e.target.value);
-    // 自动增长，最大 120px
-    const el = e.target;
-    el.style.height = 'auto';
-    el.style.height = `${Math.min(el.scrollHeight, 120)}px`;
   }, []);
+
+  /** 游客发送消息（最多3条） */
+  const handleGuestSend = useCallback((content: string) => {
+    const count = getGuestChatCount();
+    if (count >= 3) return;
+
+    setGuestSending(true);
+
+    // 添加用户消息
+    const userMsg: ChatMessage = {
+      id: -(Date.now()),
+      conversation_id: 0,
+      sender_id: -1,
+      sender_role: 'user',
+      content: content.trim(),
+      msg_type: 'text',
+      file_url: '',
+      is_read: 0,
+      created_at: new Date().toISOString(),
+      localStatus: 'sent',
+    };
+
+    setGuestMessages(prev => [...prev, userMsg]);
+
+    const newCount = count + 1;
+    localStorage.setItem('guest_chat_count', String(newCount));
+
+    // 模拟 AI 回复
+    setTimeout(() => {
+      const replies = [
+        '你好！我是启小航 AI 助手 🤖\n很高兴为你服务！你可以问我关于求职、考研、课程等方面的问题。\n\n登录后可获得更完整的咨询体验哦~',
+        '这是一个很好的问题！启航平台提供丰富的求职和学习资源。\n\n📌 建议你登录后体验完整功能，包括：\n• 一对一导师咨询\n• 岗位精准推荐\n• 简历投递跟踪',
+        '感谢你的使用！你已经体验了全部 3 条游客消息。\n\n🔐 登录后即可解锁：\n• 无限聊天对话\n• 专属客服通道\n• AI 智能求职助手\n\n期待你的加入！',
+      ];
+      const aiMsg: ChatMessage = {
+        id: -(Date.now() + 1),
+        conversation_id: 0,
+        sender_id: 0,
+        sender_role: 'ai',
+        content: replies[Math.min(newCount - 1, replies.length - 1)],
+        msg_type: 'text',
+        file_url: '',
+        is_read: 0,
+        created_at: new Date().toISOString(),
+        sender_name: '启小航',
+      };
+      setGuestMessages(prev => [...prev, aiMsg]);
+      setGuestSending(false);
+    }, 800 + Math.random() * 600);
+  }, [getGuestChatCount]);
 
   // ====== 新建会话 ======
 
@@ -335,30 +380,167 @@ export default function Chat() {
   // 当前用户 ID（用于判断消息方向）
   const currentUserId = user?.id ?? 0;
 
-  // ====== 未登录提示 ======
+  // ====== 未登录：游客体验模式 ======
 
   if (!isAuthenticated) {
+    const guestCount = getGuestChatCount();
+    const guestLimitReached = guestCount >= 3;
+
     return (
-      <div className="max-w-[1200px] mx-auto px-4 sm:px-6 py-16">
+      <div className="max-w-[1200px] mx-auto px-4 sm:px-6 py-4 sm:py-6">
+        {/* 页面标题 */}
         <motion.div
-          initial={{ opacity: 0, y: 30 }}
+          initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="flex flex-col items-center justify-center text-center"
+          className="mb-4"
         >
-          <div className="w-20 h-20 rounded-full bg-primary-50 flex items-center justify-center mb-6">
-            <MessageSquare className="w-10 h-10 text-primary-400" />
+          <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+            <MessageSquare className="w-6 h-6 text-primary-600" />
+            在线咨询
+          </h1>
+          <p className="text-gray-500 text-sm mt-1">与 AI 助手实时沟通，获取专属指导 · 登录后解锁完整功能</p>
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.05 }}
+          className="grid grid-cols-1 lg:grid-cols-5 gap-6"
+          style={{ minHeight: 'calc(100vh - 260px)' }}
+        >
+          {/* 左侧：FAQ 列表 */}
+          <div className="lg:col-span-2 bg-white rounded-2xl shadow-sm border border-gray-100 p-6 overflow-y-auto" style={{ maxHeight: 'calc(100vh - 260px)' }}>
+            <FAQList />
           </div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">登录后即可使用消息功能</h2>
-          <p className="text-gray-500 mb-8 max-w-md">
-            登录启航平台，与客服或 AI 助手在线沟通，获取求职、考研、留学等一站式指导服务。
-          </p>
-          <Link
-            to="/login?returnUrl=/chat"
-            className="inline-flex items-center gap-2 px-6 py-3 bg-primary-600 text-white rounded-xl hover:bg-primary-700 transition-colors font-medium shadow-lg shadow-primary-600/20"
-          >
-            <LogIn className="w-5 h-5" />
-            立即登录
-          </Link>
+
+          {/* 右侧：体验对话区 */}
+          <div className="lg:col-span-3 bg-white rounded-2xl shadow-sm border border-gray-100 flex flex-col overflow-hidden" style={{ maxHeight: 'calc(100vh - 260px)' }}>
+            {/* 对话头部 */}
+            <div className="px-4 sm:px-6 py-3 border-b border-gray-100 flex items-center gap-3">
+              <div className="w-9 h-9 rounded-full bg-gradient-to-br from-violet-100 to-purple-100 flex items-center justify-center flex-shrink-0">
+                <Bot className="w-4 h-4 text-violet-600" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h2 className="text-sm font-bold text-gray-900 flex items-center gap-1.5">
+                  启小航 AI 助手
+                  <Tag variant="purple" size="xs">体验模式</Tag>
+                </h2>
+                <p className="text-[10px] text-gray-400 mt-0.5">
+                  {guestLimitReached ? '体验次数已用完' : `剩余 ${3 - guestCount} 次体验机会`}
+                </p>
+              </div>
+              <Sparkles className="w-4 h-4 text-violet-400" />
+            </div>
+
+            {/* 对话消息区域 */}
+            <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-1">
+              {/* 欢迎提示 */}
+              <div className="flex justify-center mb-4">
+                <Tag variant="gray" size="xs">
+                  体验模式 · 最多 3 条消息
+                </Tag>
+              </div>
+
+              {/* 初始 AI 欢迎消息 */}
+              {guestMessages.length === 0 && (
+                <div className="flex items-start gap-2.5 mb-3">
+                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-violet-100 to-purple-100 flex items-center justify-center flex-shrink-0">
+                    <Bot className="w-4 h-4 text-violet-600" />
+                  </div>
+                  <div className="max-w-[70%]">
+                    <div className="flex items-center gap-1.5 mb-1">
+                      <span className="text-xs font-medium text-gray-600">启小航</span>
+                      <Tag variant="purple" size="xs">AI</Tag>
+                    </div>
+                    <div className="bg-gray-100 text-gray-800 px-4 py-2.5 rounded-2xl rounded-bl-md">
+                      <p className="text-sm whitespace-pre-wrap break-words leading-relaxed">
+                        {'你好！👋 我是启小航 AI 助手。\n\n你可以试着问我问题，例如：\n• 如何找到适合我的岗位？\n• 平台有什么课程？\n• 如何预约导师？\n\n快试试吧！'}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* 游客消息列表 */}
+              <AnimatePresence initial={false}>
+                {guestMessages.map((msg) => (
+                  <motion.div
+                    key={msg.id}
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    <ChatBubble
+                      message={msg}
+                      isCurrentUser={msg.sender_role === 'user'}
+                    />
+                  </motion.div>
+                ))}
+              </AnimatePresence>
+
+              {/* 发送中指示器 */}
+              {guestSending && (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="flex items-start gap-2.5 mb-3"
+                >
+                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-violet-100 to-purple-100 flex items-center justify-center flex-shrink-0">
+                    <Bot className="w-4 h-4 text-violet-600" />
+                  </div>
+                  <div className="px-4 py-2.5 bg-gray-100 rounded-2xl rounded-bl-md">
+                    <div className="flex items-center gap-1.5">
+                      <div className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                      <div className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                      <div className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </div>
+
+            {/* 输入区域 / 登录提示 */}
+            {guestLimitReached ? (
+              <div className="border-t border-gray-100 p-6 bg-gradient-to-r from-primary-50/50 to-violet-50/50">
+                <div className="text-center">
+                  <p className="text-sm font-semibold text-gray-900 mb-1">体验次数已用完</p>
+                  <p className="text-xs text-gray-500 mb-4">登录后即可解锁完整功能</p>
+                  <div className="flex flex-wrap justify-center gap-3 mb-4">
+                    <div className="flex items-center gap-1.5 text-xs text-gray-600">
+                      <MessageCircle className="w-3.5 h-3.5 text-primary-500" />
+                      <span>无限对话</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 text-xs text-gray-600">
+                      <Headphones className="w-3.5 h-3.5 text-blue-500" />
+                      <span>专属客服</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 text-xs text-gray-600">
+                      <Shield className="w-3.5 h-3.5 text-green-500" />
+                      <span>隐私保护</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 text-xs text-gray-600">
+                      <Star className="w-3.5 h-3.5 text-amber-500" />
+                      <span>收藏记录</span>
+                    </div>
+                  </div>
+                  <Link
+                    to="/login?returnUrl=/chat"
+                    className="inline-flex items-center gap-2 px-6 py-2.5 bg-primary-600 text-white rounded-xl hover:bg-primary-700 transition-colors font-medium shadow-lg shadow-primary-600/20 text-sm"
+                  >
+                    <LogIn className="w-4 h-4" />
+                    登录 / 注册
+                  </Link>
+                </div>
+              </div>
+            ) : (
+              <MessageInput
+                onSend={handleGuestSend}
+                disabled={guestSending}
+                placeholder="输入消息体验对话..."
+                isSending={guestSending}
+              />
+            )}
+          </div>
         </motion.div>
       </div>
     );
@@ -505,9 +687,12 @@ export default function Chat() {
                       {(() => {
                         const sc = STATUS_CONFIG[currentConversation.status] || STATUS_CONFIG.active;
                         return (
-                          <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${sc.color}`}>
+                          <Tag
+                            variant={currentConversation.status === 'active' ? 'green' : currentConversation.status === 'pending' ? 'yellow' : 'gray'}
+                            size="xs"
+                          >
                             {sc.label}
-                          </span>
+                          </Tag>
                         );
                       })()}
                       {currentConversation.admin_nickname && (
@@ -546,13 +731,13 @@ export default function Chat() {
                     <div className="p-4 sm:p-6 space-y-1">
                       {/* 会话开始提示 */}
                       <div className="flex justify-center mb-4">
-                        <span className="text-[10px] text-gray-400 bg-gray-50 px-3 py-1 rounded-full">
+                        <Tag variant="gray" size="xs">
                           会话开始于 {new Date(currentConversation.created_at).toLocaleString('zh-CN')}
-                        </span>
+                        </Tag>
                       </div>
 
                       <AnimatePresence initial={false}>
-                        {messages.map((msg) => (
+                        {messages.map((msg, index) => (
                           <motion.div
                             key={msg.id}
                             initial={{ opacity: 0, y: 8 }}
@@ -562,6 +747,7 @@ export default function Chat() {
                             <ChatBubble
                               message={msg}
                               isCurrentUser={msg.sender_id === currentUserId}
+                              onResend={msg.localStatus === 'failed' ? () => handleResend(index) : undefined}
                             />
                           </motion.div>
                         ))}
@@ -607,39 +793,12 @@ export default function Chat() {
 
                 {/* 输入区域 */}
                 {currentConversation.status !== 'closed' ? (
-                  <div className="px-4 sm:px-6 py-3 border-t border-gray-100 bg-white">
-                    <div className="flex items-end gap-2">
-                      {/* 多行输入框 */}
-                      <div className="flex-1 relative">
-                        <textarea
-                          ref={inputRef}
-                          value={inputValue}
-                          onChange={handleInputChange}
-                          onKeyDown={handleKeyDown}
-                          placeholder="输入消息…（Ctrl+Enter 发送）"
-                          rows={1}
-                          className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-400 resize-none transition-all leading-relaxed"
-                          style={{ maxHeight: '120px' }}
-                        />
-                      </div>
-
-                      {/* 发送按钮 */}
-                      <button
-                        onClick={handleSend}
-                        disabled={!inputValue.trim() || isSending}
-                        className="flex-shrink-0 w-10 h-10 bg-primary-600 text-white rounded-xl flex items-center justify-center hover:bg-primary-700 disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-sm"
-                      >
-                        {isSending ? (
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                        ) : (
-                          <Send className="w-4 h-4" />
-                        )}
-                      </button>
-                    </div>
-                    <p className="text-[10px] text-gray-400 mt-1.5 text-right">
-                      按 Ctrl + Enter 快捷发送
-                    </p>
-                  </div>
+                  <MessageInput
+                    onSend={handleSend}
+                    disabled={isSending}
+                    placeholder="输入消息..."
+                    isSending={isSending}
+                  />
                 ) : (
                   /* 已关闭会话提示 */
                   <div className="px-4 sm:px-6 py-4 border-t border-gray-100 bg-gray-50 text-center">

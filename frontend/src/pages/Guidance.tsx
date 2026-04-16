@@ -29,8 +29,8 @@ const SERVICES = [
     title: '职业生涯规划',
     desc: '通过专业的测评工具结合导师经验，帮你理清职业发展方向，少走弯路。',
     icon: Target,
-    color: 'text-[#14b8a6]',
-    bgColor: 'bg-[#f0fdfa]',
+    color: 'text-primary-500',
+    bgColor: 'bg-primary-50',
     features: ['MBTI/霍兰德测评', '行业前景分析', '个人优劣势挖掘', '制定3-5年发展路径'],
     link: '/courses',
   }
@@ -65,7 +65,7 @@ export default function Guidance() {
         {/* Header */}
         <div className="mb-12 text-center max-w-2xl mx-auto">
           <h1 className="text-[36px] font-bold text-[#111827] flex items-center justify-center gap-3 mb-4">
-            <Briefcase className="w-10 h-10 text-[#14b8a6]" />
+            <Briefcase className="w-10 h-10 text-primary-500" />
             就业指导服务
           </h1>
           <p className="text-[16px] text-[#4b5563] leading-relaxed">
@@ -100,7 +100,7 @@ export default function Guidance() {
                 
                 <button
                   onClick={() => navigate(service.link)}
-                  className="w-full py-3.5 rounded-xl border-2 border-[#14b8a6] text-[#14b8a6] font-semibold text-[15px] group-hover:bg-[#14b8a6] group-hover:text-white transition-colors"
+                  className="w-full py-3.5 rounded-xl border-2 border-primary-500 text-primary-500 font-semibold text-[15px] group-hover:bg-primary-500 group-hover:text-white transition-colors"
                 >
                   立即预约
                 </button>
@@ -174,7 +174,7 @@ export default function Guidance() {
 
         {/* Banner */}
         <div className="bg-[#111827] rounded-[24px] overflow-hidden relative">
-          <div className="absolute inset-0 bg-gradient-to-r from-[#14b8a6]/20 to-transparent"></div>
+          <div className="absolute inset-0 bg-gradient-to-r from-primary-500/20 to-transparent"></div>
           <div className="relative z-10 p-10 md:p-14 flex flex-col md:flex-row items-center justify-between gap-8">
             <div className="text-white max-w-xl">
               <h2 className="text-[28px] md:text-[32px] font-bold mb-4">不确定适合什么岗位？</h2>
@@ -184,7 +184,7 @@ export default function Guidance() {
             </div>
             <button
               onClick={() => navigate('/courses')}
-              className="shrink-0 bg-[#14b8a6] hover:bg-[#0f766e] text-white px-8 py-4 rounded-full font-bold text-[16px] transition-colors flex items-center gap-2"
+              className="shrink-0 bg-primary-500 hover:bg-primary-700 text-white px-8 py-4 rounded-full font-bold text-[16px] transition-colors flex items-center gap-2"
             >
               开始免费测试 <ChevronRight className="w-5 h-5" />
             </button>

@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FileText, Eye, Clock, ChevronRight, Search, Loader2 } from 'lucide-react';
 import http from '@/api/http';
+import Tag from '@/components/ui/Tag';
 
 // 文章分类
 const CATEGORIES = ['全部', '校招指南', '简历技巧', '面试经验', '政策解读'];
@@ -176,11 +177,18 @@ export default function GuidanceArticles() {
                     {/* 内容 */}
                     <div className="p-5">
                       {/* 分类标签 */}
-                      <span className={`inline-block px-2.5 py-0.5 rounded-md text-xs font-medium border mb-3 ${
-                        categoryColors[article.category] || 'bg-gray-50 text-gray-600 border-gray-200'
-                      }`}>
+                      <Tag
+                        variant={
+                          article.category === '校招指南' ? 'blue' :
+                          article.category === '简历技巧' ? 'green' :
+                          article.category === '面试经验' ? 'purple' :
+                          article.category === '政策解读' ? 'yellow' : 'gray'
+                        }
+                        size="sm"
+                        className="mb-3"
+                      >
                         {article.category}
-                      </span>
+                      </Tag>
 
                       <h3 className="text-base font-bold text-gray-900 group-hover:text-primary-600 transition-colors line-clamp-2 mb-2">
                         {article.title}

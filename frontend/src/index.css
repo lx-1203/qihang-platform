@@ -95,3 +95,80 @@
     color: rgb(75, 85, 99) !important;
   }
 }
+
+/* ====== 全局焦点可见样式 ====== */
+*:focus-visible {
+  outline: 2px solid rgb(var(--color-primary-500));
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+/* 输入框和按钮自带焦点样式时不重复显示 */
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible,
+button:focus-visible {
+  outline-offset: 0;
+}
+
+/* ====== backdrop-blur 降级方案 ====== */
+@supports not (backdrop-filter: blur(1px)) {
+  .backdrop-blur-sm,
+  .backdrop-blur,
+  .backdrop-blur-md,
+  .backdrop-blur-lg {
+    background-color: rgba(255, 255, 255, 0.97) !important;
+  }
+}
+
+/* ====== Skip to Content ====== */
+.skip-to-content {
+  position: fixed;
+  top: -100%;
+  left: 1rem;
+  z-index: 9999;
+  padding: 0.5rem 1rem;
+  background-color: rgb(var(--color-primary-600));
+  color: white;
+  border-radius: var(--radius-md);
+  font-weight: 600;
+  font-size: 0.875rem;
+  transition: top var(--transition-fast);
+}
+.skip-to-content:focus {
+  top: 1rem;
+}
+
+/* ====== Shimmer 渐变扫光动画 ====== */
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* ====== 布局容器系统 ====== */
+@layer components {
+  /* 标准内容容器 — 1200px 最大宽度（C 端公开页面） */
+  .container-main {
+    @apply max-w-[1200px] mx-auto px-4 sm:px-6;
+  }
+  /* 窄内容容器 — 896px 最大宽度（详情页、个人中心） */
+  .container-narrow {
+    @apply max-w-4xl mx-auto px-4 sm:px-6;
+  }
+  /* 全宽容器 — 仅提供水平内边距 */
+  .container-full {
+    @apply w-full px-4 sm:px-6;
+  }
+}
+
+/* ====== 减少动画偏好 ====== */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

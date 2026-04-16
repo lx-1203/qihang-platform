@@ -1,14 +1,16 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { motion, AnimatePresence, type PanInfo } from 'framer-motion';
+import { motion, AnimatePresence, useMotionValue, type PanInfo } from 'framer-motion';
 import { MessageCircle, X, Send, HelpCircle, Calendar, Briefcase, Maximize2 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '@/store/auth';
 
 // ====== 悬浮客服按钮 "启小航" ======
-// 支持自由拖拽 + 位置持久化 + 边界约束
+// 支持自由拖拽 + 位置持久化 + 边界约束 + 边缘吸附
 
 const STORAGE_KEY = 'qihang-float-pos';
 const DRAG_THRESHOLD = 5; // 拖拽阈值(px)，低于此值视为点击
+const EDGE_PADDING = 16; // 边缘吸附时距屏幕边缘的距离(px)
+const BUTTON_SIZE = 56; // 按钮尺寸(px)
 
 const quickQuestions = [
   { text: '如何投递简历？', icon: Briefcase, link: '/jobs' },
@@ -35,13 +37,36 @@ function getSavedPosition(): { x: number; y: number } {
 // 限制位置不超出屏幕边界
 function clampPosition(x: number, y: number, elWidth = 56, elHeight = 56) {
   const maxX = window.innerWidth - elWidth - 24;  // 24px 边距
-  const maxY = window.innerHeight - elHeight - 24;
+  // 移动端底部安全距离：避免遮挡底部导航
+  const isMobile = window.innerWidth < 768;
+  const bottomPadding = isMobile ? 80 : 24;
+  const maxY = window.innerHeight - elHeight - bottomPadding;
   const minX = -(window.innerWidth - elWidth - 24); // 相对于 right-6 的偏移
   const minY = -(window.innerHeight - elHeight - 24);
   return {
     x: Math.max(minX, Math.min(0, x)), // x 为负值时向左移，0 为初始位置(right-6)
     y: Math.max(minY, Math.min(0, y)), // y 为负值时向上移，0 为初始位置(bottom-6)
   };
+}
+
+// 计算边缘吸附位置（吸附到最近的水平边缘）
+function snapToEdge(currentX: number, elWidth = BUTTON_SIZE): number {
+  // 按钮默认 fixed right-24px，x 偏移为负值代表向左移动
+  // 按钮在屏幕上的实际 X 位置 = window.innerWidth - 24(right-6) - elWidth + currentX 的反方向
+  // 因为 x 是从右侧的偏移量(负值向左)，实际屏幕 X = (window.innerWidth - 24 - elWidth) + currentX
+  const screenX = (window.innerWidth - 24 - elWidth) + currentX;
+  const centerX = screenX + elWidth / 2;
+  const screenMid = window.innerWidth / 2;
+
+  if (centerX < screenMid) {
+    // 吸附到左边缘：目标 screenX = EDGE_PADDING
+    // targetX = EDGE_PADDING - (window.innerWidth - 24 - elWidth)
+    return EDGE_PADDING - (window.innerWidth - 24 - elWidth);
+  } else {
+    // 吸附到右边缘：目标 screenX = window.innerWidth - EDGE_PADDING - elWidth
+    // targetX = (window.innerWidth - EDGE_PADDING - elWidth) - (window.innerWidth - 24 - elWidth) = 24 - EDGE_PADDING
+    return 24 - EDGE_PADDING; // 当 EDGE_PADDING=16 时为 8，接近原始位置
+  }
 }
 
 export default function FloatingService() {
@@ -52,6 +77,10 @@ export default function FloatingService() {
   const dragStartRef = useRef({ x: 0, y: 0, time: 0 });
   const navigate = useNavigate();
   const { isAuthenticated } = useAuthStore();
+
+  // 用于边缘吸附动画的 motion values
+  const motionX = useMotionValue(position.x);
+  const motionY = useMotionValue(position.y);
 
   // 点击外部关闭
   useEffect(() => {
@@ -85,19 +114,27 @@ export default function FloatingService() {
     setIsDragging(true);
   }, [position]);
 
-  // 拖拽结束：保存位置，区分点击和拖拽
+  // 拖拽结束：保存位置，区分点击和拖拽，边缘吸附
   const handleDragEnd = useCallback((_: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
     const totalOffset = Math.abs(info.offset.x) + Math.abs(info.offset.y);
     const elapsed = Date.now() - dragStartRef.current.time;
 
     // 计算新位置并限制边界
-    const newPos = clampPosition(
+    const clampedPos = clampPosition(
       dragStartRef.current.x + info.offset.x,
       dragStartRef.current.y + info.offset.y,
     );
 
+    // 边缘吸附：X 轴吸附到最近的水平边缘
+    const snappedX = snapToEdge(clampedPos.x);
+    const newPos = { x: snappedX, y: clampedPos.y };
+
     setPosition(newPos);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(newPos));
+
+    // 用 spring 动画平滑吸附到边缘
+    motionX.set(snappedX);
+    motionY.set(clampedPos.y);
 
     // 短距离 + 短时间 = 点击
     if (totalOffset < DRAG_THRESHOLD && elapsed < 200) {
@@ -106,7 +143,7 @@ export default function FloatingService() {
 
     // 延迟重置拖拽状态，防止触发 onClick
     requestAnimationFrame(() => setIsDragging(false));
-  }, []);
+  }, [motionX, motionY]);
 
   // 点击按钮（仅非拖拽时响应）
   const handleButtonClick = useCallback(() => {
@@ -133,7 +170,9 @@ export default function FloatingService() {
       dragElastic={0}
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
-      style={{ x: position.x, y: position.y }}
+      animate={{ x: position.x, y: position.y, opacity: isDragging ? 0.8 : 1 }}
+      transition={{ type: 'spring', stiffness: 300, damping: 25 }}
+      style={{ touchAction: 'manipulation' }}
       className="fixed bottom-6 right-6 z-[60]"
     >
       <AnimatePresence mode="wait">

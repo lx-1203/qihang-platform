@@ -1,6 +1,7 @@
 import { CheckCircle2, Clock, X, Award, Briefcase, FlaskConical, ThumbsUp } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
+import Tag from '@/components/ui/Tag';
 
 interface OfferData {
   id: string;
@@ -87,9 +88,9 @@ function CompactCard({ offer }: { offer: OfferData }) {
           <span className="font-semibold text-sm text-[#111827] truncate">
             {offer.school}
           </span>
-          <span className="inline-flex items-center gap-0.5 text-xs font-medium text-green-700 bg-green-50 rounded-full px-2 py-0.5">
+          <Tag variant="green" size="sm" className="gap-0.5">
             Offer <CheckCircle2 size={10} />
-          </span>
+          </Tag>
         </div>
         <p className="text-xs text-[#6b7280] truncate mt-0.5">
           {offer.program} · {offer.background}
@@ -99,19 +100,19 @@ function CompactCard({ offer }: { offer: OfferData }) {
       {/* Right: Score badges (hidden on mobile) */}
       <div className="hidden sm:flex items-center gap-2 flex-shrink-0">
         {offer.gpa && (
-          <span className="text-xs font-medium text-[#14b8a6] bg-teal-50 rounded-full px-2 py-0.5">
+          <Tag variant="primary" size="sm">
             GPA {offer.gpa}
-          </span>
+          </Tag>
         )}
         {offer.ielts && (
-          <span className="text-xs font-medium text-blue-600 bg-blue-50 rounded-full px-2 py-0.5">
+          <Tag variant="blue" size="sm">
             IELTS {offer.ielts}
-          </span>
+          </Tag>
         )}
         {offer.toefl && (
-          <span className="text-xs font-medium text-indigo-600 bg-indigo-50 rounded-full px-2 py-0.5">
+          <Tag variant="purple" size="sm">
             TOEFL {offer.toefl}
-          </span>
+          </Tag>
         )}
       </div>
 
@@ -142,14 +143,14 @@ function FullCard({ offer, index }: { offer: OfferData; index: number }) {
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
             <h3 className="font-bold text-base text-[#111827]">{offer.school}</h3>
-            <span className="inline-flex items-center gap-1 text-xs font-medium text-blue-700 bg-blue-50 rounded-full px-2 py-0.5">
+            <Tag variant="blue" size="sm" className="gap-1">
               {offer.country}
-            </span>
+            </Tag>
             {offer.scholarship && (
-              <span className="inline-flex items-center gap-1 text-xs font-medium text-amber-700 bg-amber-50 rounded-full px-2 py-0.5">
+              <Tag variant="orange" size="sm" className="gap-1">
                 <Award size={12} />
                 {offer.scholarship}
-              </span>
+              </Tag>
             )}
           </div>
           <p className="text-sm text-[#6b7280] mt-1">{offer.program}</p>
@@ -158,16 +159,13 @@ function FullCard({ offer, index }: { offer: OfferData; index: number }) {
 
       {/* Background + Tags */}
       <div className="flex items-center gap-2 flex-wrap">
-        <span className="text-xs font-medium text-white bg-[#14b8a6] rounded-full px-2.5 py-0.5">
+        <Tag variant="primary" size="sm" className="bg-primary-500 text-white border-primary-500">
           {offer.background}
-        </span>
+        </Tag>
         {offer.tags.map((tag) => (
-          <span
-            key={tag}
-            className="text-xs font-medium text-[#6b7280] bg-gray-100 rounded-full px-2 py-0.5"
-          >
+          <Tag key={tag} variant="gray" size="sm">
             {tag}
-          </span>
+          </Tag>
         ))}
       </div>
 

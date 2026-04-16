@@ -1,6 +1,7 @@
-import { useState, useRef, useCallback } from 'react';
-import { Upload, X, FileText, Image, Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
+import { useState, useRef, useCallback, useEffect } from 'react';
+import { Upload, X, FileText, Image, Loader2, CheckCircle2, AlertCircle, Clipboard } from 'lucide-react';
 import http from '@/api/http';
+import { compressImage } from '@/utils/imageCompress';
 
 // 上传文件类别
 type UploadCategory = 'avatar' | 'resume' | 'cover' | 'general';
@@ -19,7 +20,7 @@ interface FileItem {
   id: string;
   file: File;
   preview?: string;
-  status: 'pending' | 'uploading' | 'success' | 'error';
+  status: 'pending' | 'compressing' | 'uploading' | 'success' | 'error';
   progress: number;
   result?: UploadResult;
   error?: string;
@@ -82,6 +83,8 @@ export default function FileUpload({
   const [files, setFiles] = useState<FileItem[]>([]);
   const [isDragging, setIsDragging] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  // 拖拽计数器（防止子元素触发 dragleave 导致闪烁）
+  const dragCountRef = useRef(0);
 
   // 默认提示文字
   const defaultPlaceholder = category === 'avatar'
@@ -147,15 +150,36 @@ export default function FileUpload({
     }
   }, [files.length, maxFiles, maxSize, multiple, onError]);
 
-  // 上传单个文件
+  // 上传单个文件（含压缩）
   const uploadFile = async (fileItem: FileItem) => {
+    let fileToUpload = fileItem.file;
+
+    // 图片文件超过 2MB 时自动压缩
+    const COMPRESS_THRESHOLD = 2 * 1024 * 1024; // 2MB
+    if (fileToUpload.type.startsWith('image/') && fileToUpload.size > COMPRESS_THRESHOLD) {
+      setFiles((prev) =>
+        prev.map((f) => (f.id === fileItem.id ? { ...f, status: 'compressing' as const } : f))
+      );
+      try {
+        fileToUpload = await compressImage(fileToUpload, {
+          maxWidth: 1920,
+          maxHeight: 1080,
+          quality: 0.85,
+          sizeThreshold: COMPRESS_THRESHOLD,
+        });
+      } catch {
+        // 压缩失败则使用原文件继续上传
+        console.warn('图片压缩失败，使用原文件上传');
+      }
+    }
+
     setFiles((prev) =>
-      prev.map((f) => (f.id === fileItem.id ? { ...f, status: 'uploading', progress: 0 } : f))
+      prev.map((f) => (f.id === fileItem.id ? { ...f, file: fileToUpload, status: 'uploading', progress: 0 } : f))
     );
 
     try {
       const formData = new FormData();
-      formData.append('file', fileItem.file);
+      formData.append('file', fileToUpload);
       formData.append('category', category);
 
       const res = await http.post('/upload', formData, {
@@ -197,22 +221,63 @@ export default function FileUpload({
     });
   };
 
-  // 拖拽事件
+  // 拖拽事件（使用计数器防止子元素触发闪烁）
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const handleDragEnter = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragCountRef.current++;
     if (!disabled) setIsDragging(true);
   };
 
   const handleDragLeave = (e: React.DragEvent) => {
     e.preventDefault();
-    setIsDragging(false);
+    e.stopPropagation();
+    dragCountRef.current--;
+    if (dragCountRef.current === 0) setIsDragging(false);
   };
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
+    e.stopPropagation();
+    dragCountRef.current = 0;
     setIsDragging(false);
     if (!disabled) handleFiles(e.dataTransfer.files);
   };
+
+  // 粘贴上传：监听全局 paste 事件，从剪贴板提取图片
+  useEffect(() => {
+    if (disabled) return;
+
+    const handlePaste = (e: ClipboardEvent) => {
+      const items = e.clipboardData?.items;
+      if (!items) return;
+
+      const imageFiles: File[] = [];
+      for (let i = 0; i < items.length; i++) {
+        const item = items[i];
+        if (item.kind === 'file' && item.type.startsWith('image/')) {
+          const file = item.getAsFile();
+          if (file) imageFiles.push(file);
+        }
+      }
+
+      if (imageFiles.length > 0) {
+        e.preventDefault();
+        // 构造 FileList-like DataTransfer 并触发上传
+        const dt = new DataTransfer();
+        imageFiles.forEach((f) => dt.items.add(f));
+        handleFiles(dt.files);
+      }
+    };
+
+    document.addEventListener('paste', handlePaste);
+    return () => document.removeEventListener('paste', handlePaste);
+  }, [disabled, handleFiles]);
 
   return (
     <div className={`space-y-3 ${className}`}>
@@ -220,13 +285,23 @@ export default function FileUpload({
       <div
         onClick={() => !disabled && inputRef.current?.click()}
         onDragOver={handleDragOver}
+        onDragEnter={handleDragEnter}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
         className={`relative border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all
           ${disabled ? 'border-gray-200 bg-gray-50 cursor-not-allowed' : ''}
-          ${isDragging ? 'border-primary-500 bg-primary-50' : 'border-gray-300 hover:border-primary-400 hover:bg-gray-50'}
+          ${isDragging
+            ? 'border-primary-500 bg-primary-50 scale-[1.02] shadow-lg shadow-primary-100'
+            : 'border-gray-300 hover:border-primary-400 hover:bg-gray-50'}
         `}
       >
+        {/* 拖拽覆盖层 */}
+        {isDragging && (
+          <div className="absolute inset-0 rounded-xl bg-primary-50/80 flex flex-col items-center justify-center z-10 pointer-events-none">
+            <Upload className="w-12 h-12 text-primary-500 animate-bounce" />
+            <p className="text-sm font-semibold text-primary-700 mt-2">松开鼠标即可上传</p>
+          </div>
+        )}
         <input
           ref={inputRef}
           type="file"
@@ -242,6 +317,10 @@ export default function FileUpload({
         </p>
         <p className="text-xs text-gray-400 mt-2">
           支持 JPG、PNG、GIF、WEBP、PDF、DOC、DOCX
+        </p>
+        <p className="text-xs text-gray-400 mt-1 flex items-center justify-center gap-1">
+          <Clipboard size={12} />
+          也可以直接粘贴剪贴板中的图片
         </p>
       </div>
 
@@ -271,12 +350,21 @@ export default function FileUpload({
                 <p className="text-sm font-medium text-gray-900 truncate">{fileItem.file.name}</p>
                 <div className="flex items-center gap-2 text-xs text-gray-500 mt-0.5">
                   <span>{formatSize(fileItem.file.size)}</span>
+                  {fileItem.status === 'compressing' && (
+                    <span className="text-amber-600 font-medium">正在压缩...</span>
+                  )}
                   {fileItem.status === 'uploading' && <span>{fileItem.progress}%</span>}
                   {fileItem.status === 'error' && (
                     <span className="text-red-500">{fileItem.error}</span>
                   )}
                 </div>
-                {/* 进度条 */}
+                {/* 压缩进度提示 */}
+                {fileItem.status === 'compressing' && (
+                  <div className="w-full h-1 bg-amber-100 rounded-full mt-1.5 overflow-hidden">
+                    <div className="h-full bg-amber-400 rounded-full animate-pulse w-full" />
+                  </div>
+                )}
+                {/* 上传进度条 */}
                 {fileItem.status === 'uploading' && (
                   <div className="w-full h-1 bg-gray-200 rounded-full mt-1.5 overflow-hidden">
                     <div
@@ -289,6 +377,7 @@ export default function FileUpload({
 
               {/* 状态图标 */}
               <div className="flex-shrink-0">
+                {fileItem.status === 'compressing' && <Loader2 size={18} className="text-amber-500 animate-spin" />}
                 {fileItem.status === 'uploading' && <Loader2 size={18} className="text-primary-500 animate-spin" />}
                 {fileItem.status === 'success' && <CheckCircle2 size={18} className="text-green-500" />}
                 {fileItem.status === 'error' && <AlertCircle size={18} className="text-red-500" />}

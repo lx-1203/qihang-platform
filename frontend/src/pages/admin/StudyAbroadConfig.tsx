@@ -56,7 +56,7 @@ export default function StudyAbroadConfig() {
               </button>
               <button
                 onClick={handleSave}
-                className="flex items-center gap-2 px-6 py-2 bg-[#14b8a6] text-white rounded-xl font-semibold hover:bg-[#0f766e] transition-all shadow-lg shadow-[#14b8a6]/25"
+                className="flex items-center gap-2 px-6 py-2 bg-primary-500 text-white rounded-xl font-semibold hover:bg-primary-700 transition-all shadow-lg shadow-primary-500/25"
               >
                 {saved ? <CheckCircle2 className="w-4 h-4" /> : <Save className="w-4 h-4" />}
                 {saved ? '已保存' : '保存配置'}
@@ -84,7 +84,7 @@ export default function StudyAbroadConfig() {
                   onClick={() => setActiveTab(tab.id as any)}
                   className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium whitespace-nowrap transition-all ${
                     isActive
-                      ? 'bg-[#14b8a6] text-white shadow-md'
+                      ? 'bg-primary-500 text-white shadow-md'
                       : 'text-gray-600 hover:bg-gray-100'
                   }`}
                 >
@@ -122,7 +122,7 @@ export default function StudyAbroadConfig() {
                 >
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex items-center gap-3">
-                      <span className="w-8 h-8 bg-[#14b8a6] text-white rounded-lg flex items-center justify-center font-bold text-sm">
+                      <span className="w-8 h-8 bg-primary-500 text-white rounded-lg flex items-center justify-center font-bold text-sm">
                         {index + 1}
                       </span>
                       <span className="text-gray-500 text-sm">轮播 {index + 1}</span>
@@ -146,7 +146,7 @@ export default function StudyAbroadConfig() {
                             newSlides[index].title = e.target.value;
                             setHeroSlides(newSlides);
                           }}
-                          className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#14b8a6] focus:border-transparent"
+                          className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                         />
                       </div>
                       <div>
@@ -159,7 +159,7 @@ export default function StudyAbroadConfig() {
                             setHeroSlides(newSlides);
                           }}
                           rows={3}
-                          className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#14b8a6] focus:border-transparent"
+                          className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                         />
                       </div>
                       <div className="grid grid-cols-2 gap-4">
@@ -172,7 +172,7 @@ export default function StudyAbroadConfig() {
                               newSlides[index].tag = e.target.value;
                               setHeroSlides(newSlides);
                             }}
-                            className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#14b8a6] focus:border-transparent"
+                            className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                           />
                         </div>
                         <div>
@@ -184,7 +184,7 @@ export default function StudyAbroadConfig() {
                               newSlides[index].cta = e.target.value;
                               setHeroSlides(newSlides);
                             }}
-                            className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#14b8a6] focus:border-transparent"
+                            className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                           />
                         </div>
                       </div>
@@ -200,7 +200,7 @@ export default function StudyAbroadConfig() {
                               newSlides[index].image = e.target.value;
                               setHeroSlides(newSlides);
                             }}
-                            className="flex-1 px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#14b8a6] focus:border-transparent text-sm"
+                            className="flex-1 px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent text-sm"
                           />
                           <button className="px-4 py-2.5 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200">
                             <Upload className="w-4 h-4" />
@@ -249,7 +249,7 @@ export default function StudyAbroadConfig() {
                             newCards[index].title = e.target.value;
                             setServiceCards(newCards);
                           }}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#14b8a6] focus:border-transparent"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                         />
                       </div>
                       <div>
@@ -261,7 +261,7 @@ export default function StudyAbroadConfig() {
                             newCards[index].subtitle = e.target.value;
                             setServiceCards(newCards);
                           }}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#14b8a6] focus:border-transparent"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                         />
                       </div>
                     </div>
@@ -274,7 +274,7 @@ export default function StudyAbroadConfig() {
                           newCards[index].description = e.target.value;
                           setServiceCards(newCards);
                         }}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#14b8a6] focus:border-transparent"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                       />
                     </div>
                     <div>
@@ -286,7 +286,7 @@ export default function StudyAbroadConfig() {
                           newCards[index].image = e.target.value;
                           setServiceCards(newCards);
                         }}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#14b8a6] focus:border-transparent"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                       />
                     </div>
                     <div className="aspect-video bg-gray-100 rounded-lg overflow-hidden">
@@ -322,7 +322,7 @@ export default function StudyAbroadConfig() {
                 >
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex items-center gap-3">
-                      <span className="w-8 h-8 bg-[#14b8a6] text-white rounded-lg flex items-center justify-center font-bold text-sm">
+                      <span className="w-8 h-8 bg-primary-500 text-white rounded-lg flex items-center justify-center font-bold text-sm">
                         {index + 1}
                       </span>
                       <span className="text-gray-500 text-sm">故事 {index + 1}</span>

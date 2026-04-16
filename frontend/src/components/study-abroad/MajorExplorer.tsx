@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import Tag from '@/components/ui/Tag';
 import {
   Monitor,
   TrendingUp,
@@ -74,8 +75,8 @@ export default function MajorExplorer() {
     <section className="py-12">
       {/* 标题 */}
       <div className="flex items-center gap-3 mb-8">
-        <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-[#14b8a6]/10">
-          <Target className="text-[#14b8a6]" size={22} />
+        <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-primary-500/10">
+          <Target className="text-primary-500" size={22} />
         </div>
         <h2 className="text-2xl font-bold text-[#111827]">
           <span className="mr-1">🎯</span>探索专业方向
@@ -112,9 +113,9 @@ export default function MajorExplorer() {
                 <h3 className="text-base font-bold text-[#111827]">
                   {cat.category}
                 </h3>
-                <span className="ml-auto text-xs font-medium text-[#9ca3af] bg-gray-100 rounded-full px-2.5 py-0.5">
+                <Tag variant="gray" size="sm" className="ml-auto">
                   {cat.majors.length} 个专业
-                </span>
+                </Tag>
               </div>
 
               {/* 专业列表 */}
@@ -125,7 +126,7 @@ export default function MajorExplorer() {
                       to={`/study-abroad/programs?major=${encodeURIComponent(major.name)}`}
                       className="group flex items-center justify-between rounded-lg px-3 py-2 hover:bg-gray-50 transition-colors"
                     >
-                      <span className="flex items-center gap-1.5 text-sm text-[#111827] group-hover:text-[#14b8a6] transition-colors">
+                      <span className="flex items-center gap-1.5 text-sm text-[#111827] group-hover:text-primary-500 transition-colors">
                         {major.name}
                         {major.hot && (
                           <Flame
@@ -138,7 +139,7 @@ export default function MajorExplorer() {
                         {major.avgSalary}
                         <ChevronRight
                           size={14}
-                          className="opacity-0 group-hover:opacity-100 transition-opacity text-[#14b8a6]"
+                          className="opacity-0 group-hover:opacity-100 transition-opacity text-primary-500"
                         />
                       </span>
                     </Link>
@@ -150,7 +151,7 @@ export default function MajorExplorer() {
               {hasMore && (
                 <button
                   onClick={() => toggle(cat.category)}
-                  className="mt-3 text-sm font-medium text-[#14b8a6] hover:text-[#0f766e] transition-colors self-start flex items-center gap-1"
+                  className="mt-3 text-sm font-medium text-primary-500 hover:text-primary-700 transition-colors self-start flex items-center gap-1"
                 >
                   {isExpanded ? '收起' : '查看更多'}
                   <ChevronRight

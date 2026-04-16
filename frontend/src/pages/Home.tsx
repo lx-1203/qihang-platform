@@ -18,11 +18,15 @@ import { addSearchHistory } from '@/utils/searchHistory';
 import ServiceGrid from '@/components/ServiceGrid';
 import StudentStories from '@/components/StudentStories';
 import ProcessSteps from '@/components/ProcessSteps';
+import Tag from '@/components/ui/Tag';
 import CampusTimeline from '@/components/CampusTimeline';
 import SceneBanner from '@/components/SceneBanner';
 import { CardSkeleton } from '@/components/ui/Skeleton';
 import ErrorState from '@/components/ui/ErrorState';
 import { LazyImage } from '@/components/ui';
+import HeroValueProps from '@/components/HeroValueProps';
+import SocialProofWall from '@/components/SocialProofWall';
+import CountUp from '@/components/CountUp';
 
 // ====== JSON 配置导入 ======
 import homeConfig from '../data/home-ui-config.json';
@@ -41,7 +45,7 @@ export default function Home() {
   const navigate = useNavigate();
   const [currentSlide, setCurrentSlide] = useState(0);
   const [showGuide, setShowGuide] = useState(true);
-  const timerRef = useRef<ReturnType<typeof setInterval>>();
+  const timerRef = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
   const [homeSearch, setHomeSearch] = useState('');
 
   // API 数据状态
@@ -257,18 +261,31 @@ export default function Home() {
           </motion.div>
         )}
 
-        {/* ====== 平台数据 ====== */}
+        {/* ====== 平台数据（带 CountUp 动画） ====== */}
         <div className={`grid grid-cols-2 md:grid-cols-4 gap-4 ${isAuthenticated ? '' : '-mt-8 relative z-20 mb-8'}`}>
-          {platformStats.map((s, i) => (
+          {platformStats.map((s, i) => {
+            // 从统计值中提取数字和后缀（如 "10000+" → 10000 + "+"）
+            const numMatch = s.value.match(/^(\d+)/);
+            const numValue = numMatch ? parseInt(numMatch[1], 10) : 0;
+            const suffix = s.value.replace(/^\d+/, '');
+            return (
             <motion.div key={i} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }}
               className="bg-white rounded-xl p-5 text-center shadow-sm border border-gray-100"
             >
               <s.icon className="w-6 h-6 text-primary-600 mx-auto mb-2" />
-              <div className="text-2xl font-bold text-gray-900">{s.value}</div>
+              <div className="text-2xl font-bold text-gray-900">
+                {numValue > 0
+                  ? <CountUp end={numValue} suffix={suffix} duration={2000} className="text-2xl font-bold text-gray-900" />
+                  : s.value}
+              </div>
               <div className="text-xs text-gray-500 mt-0.5">{s.label}</div>
             </motion.div>
-          ))}
+            );
+          })}
         </div>
+
+        {/* ====== 核心价值锚点 ====== */}
+        <HeroValueProps />
 
         {/* ====== 快捷金刚区 ====== */}
         <div className="py-8">
@@ -341,7 +358,7 @@ export default function Home() {
                   </div>
                   <div className="flex gap-1.5 mt-3">
                     {(Array.isArray(job.tags) ? job.tags : []).map((t: string) => (
-                      <span key={t} className="text-[10px] px-2 py-0.5 bg-primary-50 text-primary-700 rounded-md font-medium">{t}</span>
+                      <Tag key={t} variant="primary" size="xs">{t}</Tag>
                     ))}
                   </div>
                 </Link>
@@ -398,7 +415,7 @@ export default function Home() {
                   </div>
                   <div className="flex gap-1.5">
                     {(Array.isArray(m.tags) ? m.tags : []).slice(0, 3).map((t: string) => (
-                      <span key={t} className="text-[10px] px-2 py-0.5 bg-gray-50 text-gray-600 rounded-md">{t}</span>
+                      <Tag key={t} variant="gray" size="xs">{t}</Tag>
                     ))}
                   </div>
                 </Link>
@@ -463,6 +480,20 @@ export default function Home() {
 
         {/* ====== 学员故事墙 ====== */}
         <StudentStories />
+
+        {/* ====== 社会证明 — 学员评价墙 ====== */}
+        <SocialProofWall />
+
+        {/* 查看更多成功案例入口 */}
+        <div className="text-center pb-4">
+          <Link
+            to="/success-cases"
+            className="inline-flex items-center gap-2 text-primary-600 hover:text-primary-700 font-medium text-sm transition-colors"
+          >
+            查看更多成功案例
+            <ArrowRight className="w-4 h-4" />
+          </Link>
+        </div>
 
         {/* ====== 求职流程步骤条 ====== */}
         <ProcessSteps />

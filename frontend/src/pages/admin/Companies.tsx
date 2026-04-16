@@ -6,6 +6,7 @@ import {
   ChevronLeft, ChevronRight
 } from 'lucide-react';
 import http from '@/api/http';
+import Tag from '@/components/ui/Tag';
 
 // ====== 企业资质审核 ======
 // 商业级要求：企业认证审核流程、审核记录留痕
@@ -108,9 +109,9 @@ export default function AdminCompanies() {
         <p className="text-gray-500 mt-1">
           审核企业注册资质，确保平台企业信息真实可靠
           {pendingCount > 0 && (
-            <span className="ml-2 px-2 py-0.5 bg-amber-100 text-amber-700 rounded-full text-xs font-medium">
+            <Tag variant="yellow" size="sm" className="ml-2">
               {pendingCount} 条待审核
-            </span>
+            </Tag>
           )}
         </p>
       </div>
@@ -184,10 +185,14 @@ export default function AdminCompanies() {
                   <div>
                     <div className="flex items-center gap-3">
                       <h3 className="text-lg font-bold text-gray-900">{company.company_name}</h3>
-                      <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium ${status.color}`}>
+                      <Tag
+                        variant={company.verify_status === 'pending' ? 'yellow' : company.verify_status === 'approved' ? 'green' : 'red'}
+                        size="sm"
+                        className="inline-flex items-center gap-1"
+                      >
                         <StatusIcon className="w-3.5 h-3.5" />
                         {status.label}
-                      </span>
+                      </Tag>
                     </div>
                     <p className="text-sm text-gray-500 mt-1">{company.description}</p>
                     <div className="flex flex-wrap items-center gap-4 mt-3 text-xs text-gray-500">

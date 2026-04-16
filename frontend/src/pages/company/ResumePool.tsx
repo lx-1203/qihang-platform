@@ -11,6 +11,7 @@ import ConfirmDialog from '@/components/ui/ConfirmDialog';
 import FeatureStatus from '@/components/FeatureStatus';
 import { CardSkeleton } from '../../components/ui/Skeleton';
 import ErrorState from '../../components/ui/ErrorState';
+import Tag from '@/components/ui/Tag';
 
 // ====== 企业端简历筛选池 (Kanban) ======
 // 商业级要求：五列看板、简历卡片、状态变更
@@ -31,12 +32,12 @@ interface ResumeCard {
   avatar: string;
 }
 
-const STATUS_CONFIG: Record<ResumeStatus, { label: string; color: string; bgCard: string; borderColor: string; headerBg: string; count_bg: string }> = {
-  pending:    { label: '待筛选', color: 'text-amber-700',  bgCard: 'bg-amber-50/50',  borderColor: 'border-amber-200', headerBg: 'bg-amber-50', count_bg: 'bg-amber-100 text-amber-700' },
-  viewed:     { label: '已查看', color: 'text-blue-700',   bgCard: 'bg-blue-50/50',   borderColor: 'border-blue-200',  headerBg: 'bg-blue-50',  count_bg: 'bg-blue-100 text-blue-700' },
-  interview:  { label: '面试中', color: 'text-purple-700', bgCard: 'bg-purple-50/50', borderColor: 'border-purple-200', headerBg: 'bg-purple-50', count_bg: 'bg-purple-100 text-purple-700' },
-  offered:    { label: '已录用', color: 'text-green-700',  bgCard: 'bg-green-50/50',  borderColor: 'border-green-200', headerBg: 'bg-green-50', count_bg: 'bg-green-100 text-green-700' },
-  rejected:   { label: '已淘汰', color: 'text-gray-500',   bgCard: 'bg-gray-50/50',   borderColor: 'border-gray-200',  headerBg: 'bg-gray-50',  count_bg: 'bg-gray-200 text-gray-600' },
+const STATUS_CONFIG: Record<ResumeStatus, { label: string; color: string; bgCard: string; borderColor: string; headerBg: string; count_bg: string; tagVariant: 'yellow' | 'blue' | 'purple' | 'green' | 'gray' }> = {
+  pending:    { label: '待筛选', color: 'text-amber-700',  bgCard: 'bg-amber-50/50',  borderColor: 'border-amber-200', headerBg: 'bg-amber-50', count_bg: 'bg-amber-100 text-amber-700', tagVariant: 'yellow' },
+  viewed:     { label: '已查看', color: 'text-blue-700',   bgCard: 'bg-blue-50/50',   borderColor: 'border-blue-200',  headerBg: 'bg-blue-50',  count_bg: 'bg-blue-100 text-blue-700', tagVariant: 'blue' },
+  interview:  { label: '面试中', color: 'text-purple-700', bgCard: 'bg-purple-50/50', borderColor: 'border-purple-200', headerBg: 'bg-purple-50', count_bg: 'bg-purple-100 text-purple-700', tagVariant: 'purple' },
+  offered:    { label: '已录用', color: 'text-green-700',  bgCard: 'bg-green-50/50',  borderColor: 'border-green-200', headerBg: 'bg-green-50', count_bg: 'bg-green-100 text-green-700', tagVariant: 'green' },
+  rejected:   { label: '已淘汰', color: 'text-gray-500',   bgCard: 'bg-gray-50/50',   borderColor: 'border-gray-200',  headerBg: 'bg-gray-50',  count_bg: 'bg-gray-200 text-gray-600', tagVariant: 'gray' },
 };
 
 const COLUMN_ORDER: ResumeStatus[] = ['pending', 'viewed', 'interview', 'offered', 'rejected'];
@@ -246,9 +247,9 @@ export default function CompanyResumePool() {
               <div className={`rounded-t-xl px-4 py-3 ${config.headerBg} border ${config.borderColor} border-b-0`}>
                 <div className="flex items-center justify-between">
                   <h3 className={`text-sm font-bold ${config.color}`}>{config.label}</h3>
-                  <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${config.count_bg}`}>
+                  <Tag variant={config.tagVariant} size="sm" className="font-bold">
                     {cards.length}
-                  </span>
+                  </Tag>
                 </div>
               </div>
 
@@ -288,13 +289,13 @@ export default function CompanyResumePool() {
                           {card.university} · {card.major}
                         </p>
                       </div>
-                      <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${
-                        card.degree === '博士' ? 'bg-red-50 text-red-600' :
-                        card.degree === '硕士' ? 'bg-purple-50 text-purple-600' :
-                        'bg-blue-50 text-blue-600'
-                      }`}>
+                      <Tag variant={
+                        card.degree === '博士' ? 'red' :
+                        card.degree === '硕士' ? 'purple' :
+                        'blue'
+                      } size="xs">
                         {card.degree}
-                      </span>
+                      </Tag>
                     </div>
 
                     {/* 投递职位 */}

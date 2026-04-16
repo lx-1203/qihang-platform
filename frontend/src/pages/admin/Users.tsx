@@ -10,6 +10,7 @@ import { TableSkeleton } from '../../components/ui/Skeleton';
 import ErrorState from '../../components/ui/ErrorState';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
 import { showToast } from '@/components/ui/ToastContainer';
+import Tag from '@/components/ui/Tag';
 
 // ====== 用户管理页面 ======
 // 商业级要求：RBAC四角色管控、状态管理、搜索筛选
@@ -25,11 +26,11 @@ interface UserRecord {
   created_at: string;
 }
 
-const ROLE_MAP: Record<string, { label: string; color: string }> = {
-  student: { label: '学生', color: 'bg-blue-100 text-blue-700' },
-  company: { label: '企业', color: 'bg-emerald-100 text-emerald-700' },
-  mentor: { label: '导师', color: 'bg-purple-100 text-purple-700' },
-  admin: { label: '管理员', color: 'bg-red-100 text-red-700' },
+const ROLE_MAP: Record<string, { label: string; color: string; tagVariant: 'blue' | 'green' | 'purple' | 'red' }> = {
+  student: { label: '学生', color: 'bg-blue-100 text-blue-700', tagVariant: 'blue' },
+  company: { label: '企业', color: 'bg-emerald-100 text-emerald-700', tagVariant: 'green' },
+  mentor: { label: '导师', color: 'bg-purple-100 text-purple-700', tagVariant: 'purple' },
+  admin: { label: '管理员', color: 'bg-red-100 text-red-700', tagVariant: 'red' },
 };
 
 export default function AdminUsers() {
@@ -239,9 +240,9 @@ export default function AdminUsers() {
                     </div>
                   </td>
                   <td className="px-6 py-4">
-                    <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${ROLE_MAP[user.role]?.color || 'bg-gray-100 text-gray-700'}`}>
+                    <Tag variant={ROLE_MAP[user.role]?.tagVariant || 'gray'} size="md">
                       {ROLE_MAP[user.role]?.label || user.role}
-                    </span>
+                    </Tag>
                   </td>
                   <td className="px-6 py-4 text-sm text-gray-600">{user.phone || '-'}</td>
                   <td className="px-6 py-4">

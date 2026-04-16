@@ -11,6 +11,7 @@ import http from '@/api/http';
 import { useAuthStore } from '@/store/auth';
 import OnboardingGuide from '@/components/OnboardingGuide';
 import FeatureStatus, { FeatureOverlay } from '@/components/FeatureStatus';
+import Tag from '@/components/ui/Tag';
 
 // ====== 企业端仪表盘 ======
 // 风格：蓝色专业招聘感，招聘漏斗为核心差异
@@ -52,9 +53,9 @@ export default function CompanyDashboardPage() {
     { name: '陈美琪', univ: '上海交大', major: '市场营销', job: '产品经理实习', time: '2小时前', status: '已邀约' },
     { name: '李伟', univ: '武汉大学', major: '电子信息', job: 'Java后端开发', time: '3小时前', status: '已查看' },
   ];
-  const statusColors: Record<string, string> = {
-    '待查看': 'bg-amber-100 text-amber-700', '已查看': 'bg-blue-100 text-blue-700',
-    '已邀约': 'bg-green-100 text-green-700', '已拒绝': 'bg-red-100 text-red-700',
+  const statusTagVariant: Record<string, 'yellow' | 'blue' | 'green' | 'red'> = {
+    '待查看': 'yellow', '已查看': 'blue',
+    '已邀约': 'green', '已拒绝': 'red',
   };
 
   // 热门岗位排行
@@ -184,9 +185,9 @@ export default function CompanyDashboardPage() {
                   </div>
                   <p className="text-xs text-gray-500 mt-0.5">投递: {app.job}</p>
                 </div>
-                <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full ${statusColors[app.status] || 'bg-gray-100 text-gray-500'}`}>
+                <Tag variant={statusTagVariant[app.status] || 'gray'} size="xs">
                   {app.status}
-                </span>
+                </Tag>
                 <span className="text-[11px] text-gray-400 hidden sm:inline">{app.time}</span>
                 <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-blue-500 transition-colors" />
               </motion.div>

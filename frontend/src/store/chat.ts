@@ -33,6 +33,7 @@ export interface ChatMessage {
   created_at: string;
   sender_name?: string;
   sender_avatar?: string;
+  localStatus?: 'sending' | 'sent' | 'failed';
 }
 
 // ====== Store 状态 ======
@@ -57,6 +58,7 @@ interface ChatState {
   createConversation: (type?: 'user_service' | 'ai_chat') => Promise<number | null>;
   selectConversation: (id: number) => Promise<void>;
   sendMessage: (content: string) => Promise<boolean>;
+  resendMessage: (messageIndex: number) => Promise<boolean>;
   markRead: (conversationId: number) => Promise<void>;
   closeConversation: (conversationId: number) => Promise<void>;
   startPolling: (conversationId: number) => void;
@@ -132,25 +134,107 @@ export const useChatStore = create<ChatState>((set, get) => ({
     }
   },
 
-  // 发送消息
+  // 发送消息（乐观更新）
   sendMessage: async (content: string) => {
     const { currentConversationId, isSending } = get();
     if (!currentConversationId || isSending || !content.trim()) return false;
 
     set({ isSending: true });
 
+    // 乐观插入：先在本地显示 sending 状态的消息
+    const tempId = -(Date.now()); // 负数临时 ID，避免与服务端 ID 冲突
+    const optimisticMsg: ChatMessage = {
+      id: tempId,
+      conversation_id: currentConversationId,
+      sender_id: 0, // 会在 ChatBubble 中通过 isCurrentUser 判断
+      sender_role: 'user',
+      content: content.trim(),
+      msg_type: 'text',
+      file_url: '',
+      is_read: 0,
+      created_at: new Date().toISOString(),
+      localStatus: 'sending',
+    };
+
+    set(state => ({
+      messages: [...state.messages, optimisticMsg],
+    }));
+
     try {
       const res = await chatApi.sendMessage(currentConversationId, content);
       if (res.data?.code === 200) {
         const newMsg = res.data.data as ChatMessage;
+        // 用服务端返回的真实消息替换临时消息
         set(state => ({
-          messages: [...state.messages, newMsg],
+          messages: state.messages.map(m =>
+            m.id === tempId ? { ...newMsg, localStatus: 'sent' as const } : m
+          ),
           lastMessageId: newMsg.id,
         }));
         return true;
       }
+      // 服务端返回非 200，标记失败
+      set(state => ({
+        messages: state.messages.map(m =>
+          m.id === tempId ? { ...m, localStatus: 'failed' as const } : m
+        ),
+      }));
     } catch (err) {
       console.error('[ChatStore] 发送消息失败:', err);
+      // 标记为失败
+      set(state => ({
+        messages: state.messages.map(m =>
+          m.id === tempId ? { ...m, localStatus: 'failed' as const } : m
+        ),
+      }));
+    } finally {
+      set({ isSending: false });
+    }
+    return false;
+  },
+
+  // 重发失败消息
+  resendMessage: async (messageIndex: number) => {
+    const { messages, currentConversationId } = get();
+    if (!currentConversationId) return false;
+
+    const failedMsg = messages[messageIndex];
+    if (!failedMsg || failedMsg.localStatus !== 'failed') return false;
+
+    // 标记为 sending
+    set(state => ({
+      messages: state.messages.map((m, i) =>
+        i === messageIndex ? { ...m, localStatus: 'sending' as const } : m
+      ),
+      isSending: true,
+    }));
+
+    try {
+      const res = await chatApi.sendMessage(currentConversationId, failedMsg.content);
+      if (res.data?.code === 200) {
+        const newMsg = res.data.data as ChatMessage;
+        // 用真实消息替换
+        set(state => ({
+          messages: state.messages.map((m, i) =>
+            i === messageIndex ? { ...newMsg, localStatus: 'sent' as const } : m
+          ),
+          lastMessageId: newMsg.id,
+        }));
+        return true;
+      }
+      // 非 200，恢复失败状态
+      set(state => ({
+        messages: state.messages.map((m, i) =>
+          i === messageIndex ? { ...m, localStatus: 'failed' as const } : m
+        ),
+      }));
+    } catch (err) {
+      console.error('[ChatStore] 重发消息失败:', err);
+      set(state => ({
+        messages: state.messages.map((m, i) =>
+          i === messageIndex ? { ...m, localStatus: 'failed' as const } : m
+        ),
+      }));
     } finally {
       set({ isSending: false });
     }

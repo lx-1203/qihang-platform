@@ -6,6 +6,7 @@ import {
   CheckCircle2, Globe, Users
 } from 'lucide-react';
 import { useToast } from '../../components/ui';
+import Tag from '@/components/ui/Tag';
 
 // ====== 公告类型 ======
 type AnnouncementStatus = 'draft' | 'published' | 'scheduled' | 'archived';
@@ -47,11 +48,11 @@ const MOCK_ANNOUNCEMENTS: Announcement[] = [
   },
 ];
 
-const STATUS_MAP: Record<AnnouncementStatus, { label: string; color: string; bg: string }> = {
-  draft: { label: '草稿', color: 'text-gray-600', bg: 'bg-gray-100' },
-  published: { label: '已发布', color: 'text-green-600', bg: 'bg-green-100' },
-  scheduled: { label: '定时发布', color: 'text-blue-600', bg: 'bg-blue-100' },
-  archived: { label: '已归档', color: 'text-gray-500', bg: 'bg-gray-50' },
+const STATUS_MAP: Record<AnnouncementStatus, { label: string; color: string; bg: string; tagVariant: 'gray' | 'green' | 'blue' }> = {
+  draft: { label: '草稿', color: 'text-gray-600', bg: 'bg-gray-100', tagVariant: 'gray' },
+  published: { label: '已发布', color: 'text-green-600', bg: 'bg-green-100', tagVariant: 'green' },
+  scheduled: { label: '定时发布', color: 'text-blue-600', bg: 'bg-blue-100', tagVariant: 'blue' },
+  archived: { label: '已归档', color: 'text-gray-500', bg: 'bg-gray-50', tagVariant: 'gray' },
 };
 
 const PRIORITY_MAP: Record<AnnouncementPriority, { label: string; color: string }> = {
@@ -265,9 +266,9 @@ export default function AdminAnnouncements() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-2 flex-wrap">
                       <h3 className="text-base font-bold text-gray-900">{announcement.title}</h3>
-                      <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${statusInfo.bg} ${statusInfo.color}`}>
+                      <Tag variant={statusInfo.tagVariant} size="sm">
                         {statusInfo.label}
-                      </span>
+                      </Tag>
                       {announcement.priority !== 'normal' && (
                         <span className={`text-xs font-medium ${priorityInfo.color}`}>
                           {announcement.priority === 'urgent' ? '🔴' : '🟡'} {priorityInfo.label}

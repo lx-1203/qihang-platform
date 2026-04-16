@@ -5,6 +5,7 @@ import {
   ChevronLeft, ChevronRight, X, Loader2,
 } from 'lucide-react';
 import http from '../../api/http';
+import Tag from '@/components/ui/Tag';
 
 // ====== 类型定义 ======
 
@@ -168,7 +169,7 @@ export default function AdminStudyAbroad() {
       {/* 页头 */}
       <div>
         <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-          <Globe className="w-7 h-7 text-[#14b8a6]" /> 留学数据管理
+          <Globe className="w-7 h-7 text-primary-500" /> 留学数据管理
         </h1>
         <p className="text-sm text-gray-500 mt-1">管理院校、项目、录取案例、时间线和顾问数据</p>
       </div>
@@ -181,7 +182,7 @@ export default function AdminStudyAbroad() {
             onClick={() => setActiveTab(tab.key)}
             className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
               activeTab === tab.key
-                ? 'bg-white text-[#14b8a6] shadow-sm'
+                ? 'bg-white text-primary-500 shadow-sm'
                 : 'text-gray-500 hover:text-gray-700'
             }`}
           >
@@ -200,12 +201,12 @@ export default function AdminStudyAbroad() {
             placeholder="搜索关键字..."
             value={keyword}
             onChange={(e) => { setKeyword(e.target.value); setPage(1); }}
-            className="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#14b8a6]/40"
+            className="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/40"
           />
         </div>
         <button
           onClick={openCreate}
-          className="flex items-center gap-1.5 px-4 py-2 bg-[#14b8a6] text-white rounded-lg text-sm font-medium hover:bg-[#0f766e] transition-colors"
+          className="flex items-center gap-1.5 px-4 py-2 bg-primary-500 text-white rounded-lg text-sm font-medium hover:bg-primary-700 transition-colors"
         >
           <Plus className="w-4 h-4" /> 新增
         </button>
@@ -230,7 +231,7 @@ export default function AdminStudyAbroad() {
               {loading ? (
                 <tr>
                   <td colSpan={99} className="text-center py-16">
-                    <Loader2 className="w-6 h-6 animate-spin mx-auto text-[#14b8a6]" />
+                    <Loader2 className="w-6 h-6 animate-spin mx-auto text-primary-500" />
                   </td>
                 </tr>
               ) : list.length === 0 ? (
@@ -333,7 +334,7 @@ export default function AdminStudyAbroad() {
                     <select
                       value={formData[field.key] || ''}
                       onChange={(e) => setFormData(prev => ({ ...prev, [field.key]: e.target.value }))}
-                      className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#14b8a6]/40"
+                      className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/40"
                     >
                       <option value="">请选择</option>
                       {(field.options || []).map((opt: any) => (
@@ -345,7 +346,7 @@ export default function AdminStudyAbroad() {
                       value={formData[field.key] || ''}
                       onChange={(e) => setFormData(prev => ({ ...prev, [field.key]: e.target.value }))}
                       rows={3}
-                      className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#14b8a6]/40 resize-none"
+                      className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/40 resize-none"
                     />
                   ) : (
                     <input
@@ -353,7 +354,7 @@ export default function AdminStudyAbroad() {
                       value={formData[field.key] || ''}
                       onChange={(e) => setFormData(prev => ({ ...prev, [field.key]: e.target.value }))}
                       placeholder={field.placeholder || ''}
-                      className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#14b8a6]/40"
+                      className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/40"
                     />
                   )}
                 </div>
@@ -370,7 +371,7 @@ export default function AdminStudyAbroad() {
               <button
                 onClick={handleSave}
                 disabled={saving}
-                className="flex items-center gap-1.5 px-5 py-2 bg-[#14b8a6] text-white rounded-lg text-sm font-medium hover:bg-[#0f766e] transition-colors disabled:opacity-50"
+                className="flex items-center gap-1.5 px-5 py-2 bg-primary-500 text-white rounded-lg text-sm font-medium hover:bg-primary-700 transition-colors disabled:opacity-50"
               >
                 {saving && <Loader2 className="w-4 h-4 animate-spin" />}
                 {editingItem ? '保存修改' : '确认创建'}
@@ -393,11 +394,9 @@ interface ColDef {
 
 function getColumns(tab: TabKey): ColDef[] {
   const statusBadge = (item: any) => (
-    <span className={`inline-flex px-2 py-0.5 rounded-full text-[11px] font-medium ${
-      item.status === 'active' ? 'bg-emerald-50 text-emerald-600' : 'bg-gray-100 text-gray-500'
-    }`}>
+    <Tag variant={item.status === 'active' ? 'green' : 'gray'} size="xs">
       {item.status === 'active' ? '上架' : '下架'}
-    </span>
+    </Tag>
   );
 
   switch (tab) {

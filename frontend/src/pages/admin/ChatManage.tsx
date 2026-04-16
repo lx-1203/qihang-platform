@@ -4,7 +4,8 @@ import {
   MessageSquare, Search, Send, Users, Clock,
   CheckCircle2, AlertCircle, CircleDot, RefreshCw,
   MessageCircle, CalendarDays, User, ChevronDown,
-  Loader2, Inbox
+  Loader2, Inbox, Zap, Mail, MailOpen, XCircle,
+  CheckSquare, Square, ChevronsUpDown
 } from 'lucide-react';
 import http from '@/api/http';
 import {
@@ -14,11 +15,12 @@ import {
   adminChatStats,
 } from '@/api/chat';
 import ChatBubble from '@/components/ChatBubble';
+import QuickReplies from '@/components/admin/QuickReplies';
 import type { ChatMessage, ChatConversation } from '@/store/chat';
 
 // ====== 管理员聊天管理页面 ======
 // 左右分栏：左侧会话列表 + 右侧消息详情
-// 支持筛选、搜索、回复、标记已读
+// 支持筛选、搜索、回复、标记已读、快捷回复、批量操作
 
 /** 聊天统计数据 */
 interface ChatStatsData {
@@ -26,6 +28,8 @@ interface ChatStatsData {
   active: number;
   pending: number;
   today: number;
+  unread: number;
+  messagesToday: number;
 }
 
 /** 状态筛选项 */
@@ -67,9 +71,34 @@ function relativeTime(dateStr: string | null): string {
   }
 }
 
+/** 计算等待时间（分钟）并返回等级 */
+function getWaitInfo(lastMessageAt: string | null, status: string): { text: string; level: 'red' | 'yellow' | 'gray' | 'none' } {
+  if (!lastMessageAt || status === 'closed') return { text: '', level: 'none' };
+  try {
+    const diff = Date.now() - new Date(lastMessageAt).getTime();
+    const mins = Math.floor(diff / 60000);
+    if (mins < 1) return { text: '<1分钟', level: 'gray' };
+
+    const hours = Math.floor(mins / 60);
+    let text: string;
+    if (hours >= 24) {
+      text = `${Math.floor(hours / 24)}天${hours % 24}时`;
+    } else if (hours >= 1) {
+      text = `${hours}时${mins % 60}分`;
+    } else {
+      text = `${mins}分钟`;
+    }
+
+    const level = mins > 5 ? 'red' : mins > 2 ? 'yellow' : 'gray';
+    return { text, level };
+  } catch {
+    return { text: '', level: 'none' };
+  }
+}
+
 export default function ChatManage() {
   // ====== 统计数据 ======
-  const [stats, setStats] = useState<ChatStatsData>({ total: 0, active: 0, pending: 0, today: 0 });
+  const [stats, setStats] = useState<ChatStatsData>({ total: 0, active: 0, pending: 0, today: 0, unread: 0, messagesToday: 0 });
   const [statsLoading, setStatsLoading] = useState(true);
 
   // ====== 会话列表 ======
@@ -92,6 +121,13 @@ export default function ChatManage() {
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const lastMsgIdRef = useRef(0);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // ====== 批量操作 ======
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+  const [batchLoading, setBatchLoading] = useState(false);
+
+  // ====== 快捷回复面板 ======
+  const [quickRepliesOpen, setQuickRepliesOpen] = useState(false);
 
   // 搜索防抖：300ms
   useEffect(() => {
@@ -261,6 +297,77 @@ export default function ChatManage() {
     }
   }, [handleSend]);
 
+  // ====== 快捷回复选中 → 填充到输入框 ======
+  const handleQuickReplySelect = useCallback((text: string) => {
+    setReplyText(text);
+  }, []);
+
+  // ====== 批量操作：勾选/取消 ======
+  const toggleSelection = useCallback((convId: number, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(convId)) {
+        next.delete(convId);
+      } else {
+        next.add(convId);
+      }
+      return next;
+    });
+  }, []);
+
+  const toggleSelectAll = useCallback(() => {
+    if (selectedIds.size === conversations.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(conversations.map(c => c.id)));
+    }
+  }, [selectedIds.size, conversations]);
+
+  // ====== 批量关闭 ======
+  const handleBatchClose = useCallback(async () => {
+    if (selectedIds.size === 0 || batchLoading) return;
+    setBatchLoading(true);
+    try {
+      await Promise.all(
+        Array.from(selectedIds).map(id =>
+          http.put(`/chat/conversations/${id}/close`).catch(() => {})
+        )
+      );
+      // 刷新数据
+      setSelectedIds(new Set());
+      fetchConversations();
+      fetchStats();
+    } catch (err) {
+      console.error('[ChatManage] 批量关闭失败:', err);
+    } finally {
+      setBatchLoading(false);
+    }
+  }, [selectedIds, batchLoading, fetchConversations, fetchStats]);
+
+  // ====== 批量标记已读 ======
+  const handleBatchMarkRead = useCallback(async () => {
+    if (selectedIds.size === 0 || batchLoading) return;
+    setBatchLoading(true);
+    try {
+      await Promise.all(
+        Array.from(selectedIds).map(id =>
+          adminMarkRead(id).catch(() => {})
+        )
+      );
+      // 更新本地未读数
+      setConversations(prev =>
+        prev.map(c => selectedIds.has(c.id) ? { ...c, unread_admin: 0 } : c)
+      );
+      setSelectedIds(new Set());
+      fetchStats();
+    } catch (err) {
+      console.error('[ChatManage] 批量标记已读失败:', err);
+    } finally {
+      setBatchLoading(false);
+    }
+  }, [selectedIds, batchLoading, fetchStats]);
+
   // ====== 初始化加载 ======
   useEffect(() => {
     fetchStats();
@@ -309,6 +416,22 @@ export default function ChatManage() {
       borderColor: 'border-l-blue-500',
       bg: 'bg-blue-50',
     },
+    {
+      label: '未读消息',
+      value: stats.unread,
+      icon: Mail,
+      color: 'text-red-600',
+      borderColor: 'border-l-red-500',
+      bg: 'bg-red-50',
+    },
+    {
+      label: '今日消息量',
+      value: stats.messagesToday,
+      icon: Zap,
+      color: 'text-purple-600',
+      borderColor: 'border-l-purple-500',
+      bg: 'bg-purple-50',
+    },
   ];
 
   return (
@@ -332,7 +455,7 @@ export default function ChatManage() {
       </div>
 
       {/* ====== 统计卡片 ====== */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
         {statCards.map((card, i) => (
           <motion.div
             key={card.label}
@@ -397,6 +520,18 @@ export default function ChatManage() {
         {/* ====== 左侧会话列表 ====== */}
         <div className="lg:col-span-4 xl:col-span-3 bg-white rounded-xl border border-gray-100 flex flex-col overflow-hidden">
           <div className="px-4 py-3 border-b border-gray-100 flex items-center gap-2">
+            {/* 全选复选框 */}
+            <button
+              onClick={toggleSelectAll}
+              className="flex-shrink-0 text-gray-400 hover:text-indigo-500 transition-colors"
+              title={selectedIds.size === conversations.length ? '取消全选' : '全选'}
+            >
+              {selectedIds.size > 0 && selectedIds.size === conversations.length ? (
+                <CheckSquare className="w-4 h-4 text-indigo-500" />
+              ) : (
+                <Square className="w-4 h-4" />
+              )}
+            </button>
             <Users className="w-4 h-4 text-gray-400" />
             <span className="text-sm font-medium text-gray-700">会话列表</span>
           </div>
@@ -428,6 +563,16 @@ export default function ChatManage() {
                   const isActive = conv.id === selectedId;
                   const badge = STATUS_BADGE[conv.status] || STATUS_BADGE.closed;
                   const hasUnread = (conv.unread_admin ?? 0) > 0;
+                  const isChecked = selectedIds.has(conv.id);
+                  const waitInfo = getWaitInfo(conv.last_message_at, conv.status);
+
+                  // 等待时间配色
+                  const waitColors: Record<string, string> = {
+                    red: 'text-red-500 bg-red-50',
+                    yellow: 'text-yellow-600 bg-yellow-50',
+                    gray: 'text-gray-400 bg-gray-50',
+                    none: '',
+                  };
 
                   return (
                     <motion.div
@@ -439,13 +584,25 @@ export default function ChatManage() {
                       transition={{ delay: idx * 0.02 }}
                       onClick={() => handleSelectConversation(conv)}
                       className={`
-                        flex items-start gap-3 px-4 py-3.5 cursor-pointer transition-colors border-b border-gray-50
+                        flex items-start gap-2 px-3 py-3.5 cursor-pointer transition-colors border-b border-gray-50
                         ${isActive
                           ? 'bg-indigo-50 border-l-2 border-l-indigo-500'
                           : 'hover:bg-gray-50 border-l-2 border-l-transparent'
                         }
                       `}
                     >
+                      {/* 复选框 */}
+                      <button
+                        onClick={(e) => toggleSelection(conv.id, e)}
+                        className="flex-shrink-0 mt-1 text-gray-300 hover:text-indigo-500 transition-colors"
+                      >
+                        {isChecked ? (
+                          <CheckSquare className="w-4 h-4 text-indigo-500" />
+                        ) : (
+                          <Square className="w-4 h-4" />
+                        )}
+                      </button>
+
                       {/* 头像 */}
                       <div className="relative flex-shrink-0">
                         {conv.user_avatar ? (
@@ -495,6 +652,16 @@ export default function ChatManage() {
                             </span>
                           </div>
                         </div>
+
+                        {/* 等待时间标签 */}
+                        {waitInfo.level !== 'none' && (
+                          <div className="mt-1.5">
+                            <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium ${waitColors[waitInfo.level]}`}>
+                              <Clock className="w-3 h-3" />
+                              等待 {waitInfo.text}
+                            </span>
+                          </div>
+                        )}
                       </div>
                     </motion.div>
                   );
@@ -502,6 +669,57 @@ export default function ChatManage() {
               </AnimatePresence>
             )}
           </div>
+
+          {/* ====== 批量操作浮动工具栏 ====== */}
+          <AnimatePresence>
+            {selectedIds.size > 0 && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 20 }}
+                transition={{ type: 'spring', stiffness: 300, damping: 25 }}
+                className="border-t border-gray-100 bg-white px-3 py-2.5"
+              >
+                <div className="flex items-center justify-between gap-2 mb-2">
+                  <span className="text-xs text-gray-500">
+                    已选 <span className="font-semibold text-indigo-600">{selectedIds.size}</span> 个会话
+                  </span>
+                  <button
+                    onClick={() => setSelectedIds(new Set())}
+                    className="text-[10px] text-gray-400 hover:text-gray-600 transition-colors"
+                  >
+                    取消选择
+                  </button>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={handleBatchClose}
+                    disabled={batchLoading}
+                    className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium text-white bg-red-500 hover:bg-red-600 rounded-lg transition-colors disabled:opacity-50"
+                  >
+                    {batchLoading ? (
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    ) : (
+                      <XCircle className="w-3.5 h-3.5" />
+                    )}
+                    批量关闭
+                  </button>
+                  <button
+                    onClick={handleBatchMarkRead}
+                    disabled={batchLoading}
+                    className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium text-white bg-indigo-500 hover:bg-indigo-600 rounded-lg transition-colors disabled:opacity-50"
+                  >
+                    {batchLoading ? (
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    ) : (
+                      <MailOpen className="w-3.5 h-3.5" />
+                    )}
+                    标记已读
+                  </button>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
 
         {/* ====== 右侧聊天详情 ====== */}
@@ -574,33 +792,64 @@ export default function ChatManage() {
 
               {/* 回复输入框 — 仅非关闭状态可回复 */}
               {selectedConv.status !== 'closed' ? (
-                <div className="px-5 py-3 border-t border-gray-100 bg-white">
-                  <div className="flex items-end gap-3">
-                    <textarea
-                      value={replyText}
-                      onChange={e => setReplyText(e.target.value)}
-                      onKeyDown={handleKeyDown}
-                      placeholder="输入回复内容... (Enter发送, Shift+Enter换行)"
-                      rows={2}
-                      className="flex-1 resize-none border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 transition-colors"
-                    />
+                <div className="border-t border-gray-100 bg-white">
+                  {/* 快捷回复折叠面板 */}
+                  <div className="px-5 pt-2 pb-0">
                     <button
-                      onClick={handleSend}
-                      disabled={!replyText.trim() || sending}
-                      className={`
-                        flex items-center justify-center w-10 h-10 rounded-xl transition-all flex-shrink-0
-                        ${replyText.trim() && !sending
-                          ? 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-sm shadow-indigo-200'
-                          : 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                        }
-                      `}
+                      onClick={() => setQuickRepliesOpen(!quickRepliesOpen)}
+                      className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-indigo-600 transition-colors py-1"
                     >
-                      {sending ? (
-                        <Loader2 className="w-4.5 h-4.5 animate-spin" />
-                      ) : (
-                        <Send className="w-4.5 h-4.5" />
-                      )}
+                      <ChevronsUpDown className="w-3.5 h-3.5" />
+                      快捷回复
+                      <span className="text-gray-300">|</span>
+                      <span className="text-gray-400">{quickRepliesOpen ? '收起' : '展开'}</span>
                     </button>
+                  </div>
+                  <AnimatePresence>
+                    {quickRepliesOpen && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: 'auto', opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.2, ease: 'easeInOut' }}
+                        className="overflow-hidden px-5"
+                      >
+                        <div className="pb-2 pt-1">
+                          <QuickReplies onSelect={handleQuickReplySelect} />
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+
+                  {/* 输入区 */}
+                  <div className="px-5 py-3">
+                    <div className="flex items-end gap-3">
+                      <textarea
+                        value={replyText}
+                        onChange={e => setReplyText(e.target.value)}
+                        onKeyDown={handleKeyDown}
+                        placeholder="输入回复内容... (Enter发送, Shift+Enter换行)"
+                        rows={2}
+                        className="flex-1 resize-none border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 transition-colors"
+                      />
+                      <button
+                        onClick={handleSend}
+                        disabled={!replyText.trim() || sending}
+                        className={`
+                          flex items-center justify-center w-10 h-10 rounded-xl transition-all flex-shrink-0
+                          ${replyText.trim() && !sending
+                            ? 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-sm shadow-indigo-200'
+                            : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                          }
+                        `}
+                      >
+                        {sending ? (
+                          <Loader2 className="w-4.5 h-4.5 animate-spin" />
+                        ) : (
+                          <Send className="w-4.5 h-4.5" />
+                        )}
+                      </button>
+                    </div>
                   </div>
                 </div>
               ) : (

@@ -8,6 +8,7 @@ import {
 import http from '@/api/http';
 import { CardSkeleton } from '../components/ui/Skeleton';
 import ErrorState from '../components/ui/ErrorState';
+import Tag from '@/components/ui/Tag';
 
 // ====== 导师列表页 ======
 
@@ -183,9 +184,9 @@ export default function Mentors() {
               {/* 标签 */}
               <div className="flex flex-wrap gap-2 mt-4">
                 {(mentor.expertise || []).slice(0, 4).map(tag => (
-                  <span key={tag} className="px-2.5 py-1 bg-primary-50 text-primary-700 rounded-lg text-xs font-medium">
+                  <Tag key={tag} variant="primary" size="md">
                     {tag}
-                  </span>
+                  </Tag>
                 ))}
               </div>
 

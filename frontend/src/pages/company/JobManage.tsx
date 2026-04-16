@@ -12,6 +12,7 @@ import http from '@/api/http';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
 import { TableSkeleton } from '../../components/ui/Skeleton';
 import ErrorState from '../../components/ui/ErrorState';
+import Tag from '@/components/ui/Tag';
 
 // ====== 企业端职位管理 ======
 // 商业级要求：CRUD 操作、状态切换、模态表单、搜索筛选
@@ -30,10 +31,10 @@ interface JobRecord {
   created_at: string;
 }
 
-const JOB_TYPE_COLORS: Record<string, string> = {
-  '全职': 'bg-blue-100 text-blue-700',
-  '实习': 'bg-green-100 text-green-700',
-  '兼职': 'bg-purple-100 text-purple-700',
+const JOB_TYPE_TAG_VARIANT: Record<string, 'blue' | 'green' | 'purple'> = {
+  '全职': 'blue',
+  '实习': 'green',
+  '兼职': 'purple',
 };
 
 export default function CompanyJobManage() {
@@ -320,9 +321,9 @@ export default function CompanyJobManage() {
                     <span className="text-sm text-primary-700 font-medium">{job.salary}</span>
                   </td>
                   <td className="px-6 py-4">
-                    <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${JOB_TYPE_COLORS[job.type] || 'bg-gray-100 text-gray-700'}`}>
+                    <Tag variant={JOB_TYPE_TAG_VARIANT[job.type] || 'gray'} size="md">
                       {job.type}
-                    </span>
+                    </Tag>
                   </td>
                   <td className="px-6 py-4">
                     <button

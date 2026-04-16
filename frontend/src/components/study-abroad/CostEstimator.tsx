@@ -11,6 +11,7 @@ import {
 import { motion } from 'framer-motion';
 import costsData from '../../data/study-abroad-costs.json';
 import countriesData from '../../data/study-abroad-countries.json';
+import Tag from '@/components/ui/Tag';
 
 // ---------- 类型定义 ----------
 
@@ -145,8 +146,8 @@ export default function CostEstimator() {
     <section className="py-12">
       {/* 标题 */}
       <div className="flex items-center gap-3 mb-8">
-        <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-[#14b8a6]/10">
-          <DollarSign className="text-[#14b8a6]" size={22} />
+        <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-primary-500/10">
+          <DollarSign className="text-primary-500" size={22} />
         </div>
         <h2 className="text-2xl font-bold text-[#111827]">
           <span className="mr-1">💰</span>费用估算器
@@ -170,7 +171,7 @@ export default function CostEstimator() {
             <select
               value={selectedCountry}
               onChange={(e) => setSelectedCountry(e.target.value)}
-              className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm text-[#111827] focus:outline-none focus:ring-2 focus:ring-[#14b8a6]/40 focus:border-[#14b8a6] transition"
+              className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm text-[#111827] focus:outline-none focus:ring-2 focus:ring-primary-500/40 focus:border-primary-500 transition"
             >
               {costs.map((c) => {
                 const basic = countries.find((co) => co.id === c.id);
@@ -191,7 +192,7 @@ export default function CostEstimator() {
             <select
               value={degreeType}
               onChange={(e) => setDegreeType(e.target.value as DegreeType)}
-              className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm text-[#111827] focus:outline-none focus:ring-2 focus:ring-[#14b8a6]/40 focus:border-[#14b8a6] transition"
+              className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm text-[#111827] focus:outline-none focus:ring-2 focus:ring-primary-500/40 focus:border-primary-500 transition"
             >
               <option value="undergraduate">本科 Undergraduate</option>
               <option value="master">硕士 Master</option>
@@ -207,7 +208,7 @@ export default function CostEstimator() {
             <select
               value={cityTier}
               onChange={(e) => setCityTier(e.target.value as 'tier1' | 'tier2')}
-              className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm text-[#111827] focus:outline-none focus:ring-2 focus:ring-[#14b8a6]/40 focus:border-[#14b8a6] transition"
+              className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm text-[#111827] focus:outline-none focus:ring-2 focus:ring-primary-500/40 focus:border-primary-500 transition"
             >
               <option value="tier1">
                 一线城市 ({countryData.living.tier1.city})
@@ -222,13 +223,13 @@ export default function CostEstimator() {
         {/* -------- 免学费提示 -------- */}
         {isFreeTuition && (
           <motion.div
-            className="flex items-start gap-3 rounded-xl bg-[#14b8a6]/5 border border-[#14b8a6]/20 px-4 py-3 mb-6"
+            className="flex items-start gap-3 rounded-xl bg-primary-500/5 border border-primary-500/20 px-4 py-3 mb-6"
             initial={{ opacity: 0, scale: 0.97 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.3 }}
           >
-            <GraduationCap className="text-[#14b8a6] flex-shrink-0 mt-0.5" size={20} />
-            <p className="text-sm text-[#14b8a6] font-medium">
+            <GraduationCap className="text-primary-500 flex-shrink-0 mt-0.5" size={20} />
+            <p className="text-sm text-primary-500 font-medium">
               🎓 {countryData.country}公立大学免学费，仅需支付注册费
             </p>
           </motion.div>
@@ -245,12 +246,12 @@ export default function CostEstimator() {
             transition={{ duration: 0.35, delay: 0.05 }}
           >
             <div className="flex items-center gap-2 mb-2">
-              <GraduationCap size={18} className="text-[#14b8a6]" />
+              <GraduationCap size={18} className="text-primary-500" />
               <span className="text-sm font-semibold text-[#111827]">学费</span>
               {isFreeTuition && (
-                <span className="ml-auto text-xs font-medium text-[#14b8a6] bg-[#14b8a6]/10 rounded-full px-2 py-0.5">
+                <Tag variant="primary" size="sm" className="ml-auto">
                   免学费
-                </span>
+                </Tag>
               )}
             </div>
             <p className="text-lg font-bold text-[#111827]">
@@ -275,7 +276,7 @@ export default function CostEstimator() {
             transition={{ duration: 0.35, delay: 0.1 }}
           >
             <div className="flex items-center gap-2 mb-2">
-              <Home size={18} className="text-[#14b8a6]" />
+              <Home size={18} className="text-primary-500" />
               <span className="text-sm font-semibold text-[#111827]">生活费</span>
               <span className="ml-auto text-xs text-[#9ca3af]">
                 {estimation.living.city}
@@ -301,7 +302,7 @@ export default function CostEstimator() {
             transition={{ duration: 0.35, delay: 0.15 }}
           >
             <div className="flex items-center gap-2 mb-2">
-              <Plane size={18} className="text-[#14b8a6]" />
+              <Plane size={18} className="text-primary-500" />
               <span className="text-sm font-semibold text-[#111827]">其他费用</span>
             </div>
             <ul className="space-y-1 text-sm text-[#6b7280]">
@@ -334,17 +335,17 @@ export default function CostEstimator() {
 
           {/* 年度总计 */}
           <motion.div
-            className="rounded-xl border-2 border-[#14b8a6]/30 bg-[#14b8a6]/5 p-4 flex flex-col justify-center"
+            className="rounded-xl border-2 border-primary-500/30 bg-primary-500/5 p-4 flex flex-col justify-center"
             initial={{ opacity: 0, y: 16 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.35, delay: 0.2 }}
           >
             <div className="flex items-center gap-2 mb-2">
-              <Calculator size={18} className="text-[#14b8a6]" />
+              <Calculator size={18} className="text-primary-500" />
               <span className="text-sm font-semibold text-[#111827]">年度总计（估算）</span>
             </div>
-            <p className="text-2xl font-extrabold text-[#14b8a6]">
+            <p className="text-2xl font-extrabold text-primary-500">
               ¥{fmtNum(estimation.totalCNY)}
             </p>
             <p className="text-xs text-[#9ca3af] mt-1">
@@ -372,7 +373,7 @@ export default function CostEstimator() {
         {countryBasic && countryBasic.scholarships.length > 0 && (
           <div>
             <div className="flex items-center gap-2 mb-3">
-              <Award size={18} className="text-[#14b8a6]" />
+              <Award size={18} className="text-primary-500" />
               <h3 className="text-sm font-semibold text-[#111827]">
                 {countryData.country}主要奖学金
               </h3>
@@ -390,7 +391,7 @@ export default function CostEstimator() {
                   <span className="font-medium text-[#111827] min-w-0 shrink-0">
                     {s.name}
                   </span>
-                  <span className="text-[#14b8a6] font-semibold whitespace-nowrap">
+                  <span className="text-primary-500 font-semibold whitespace-nowrap">
                     {s.amount}
                   </span>
                   <span className="text-[#9ca3af] text-xs sm:ml-auto">{s.desc}</span>

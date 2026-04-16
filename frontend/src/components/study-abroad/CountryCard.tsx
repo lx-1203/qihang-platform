@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { DollarSign, Globe, Shield, Home, ChevronRight, MapPin } from 'lucide-react';
 import { motion } from 'framer-motion';
+import Tag from '@/components/ui/Tag';
 
 interface CountryData {
   id: string;
@@ -46,7 +47,7 @@ export default function CountryCard({ country, variant }: CountryCardProps) {
         >
         {/* Gradient left border accent */}
         <div className="flex">
-          <div className="w-1.5 shrink-0 bg-gradient-to-b from-[#14b8a6] to-[#0f766e]" />
+          <div className="w-1.5 shrink-0 bg-gradient-to-b from-primary-500 to-primary-700" />
 
           <div className="flex-1 p-6 md:p-8">
             {/* Header: flag + name + HOT badge + desc */}
@@ -56,9 +57,9 @@ export default function CountryCard({ country, variant }: CountryCardProps) {
                 <div className="flex items-center gap-2 mb-1">
                   <h3 className="text-xl font-bold text-[#111827]">{country.name}</h3>
                   {country.hot && (
-                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-red-50 text-red-500 border border-red-100">
+                    <Tag variant="red" size="sm" className="font-semibold">
                       HOT
-                    </span>
+                    </Tag>
                   )}
                 </div>
                 <p className="text-sm text-[#6b7280] leading-relaxed">{country.desc}</p>
@@ -74,8 +75,8 @@ export default function CountryCard({ country, variant }: CountryCardProps) {
                     key={item.key}
                     className="flex items-start gap-3 p-3 rounded-xl bg-gray-50"
                   >
-                    <div className="w-9 h-9 rounded-lg bg-[#14b8a6]/10 flex items-center justify-center shrink-0">
-                      <Icon className="w-4.5 h-4.5 text-[#14b8a6]" size={18} />
+                    <div className="w-9 h-9 rounded-lg bg-primary-500/10 flex items-center justify-center shrink-0">
+                      <Icon className="w-4.5 h-4.5 text-primary-500" size={18} />
                     </div>
                     <div className="min-w-0">
                       <p className="text-xs text-[#9ca3af] mb-0.5">{item.label}</p>
@@ -93,17 +94,18 @@ export default function CountryCard({ country, variant }: CountryCardProps) {
               <div className="flex flex-wrap items-center gap-2">
                 <MapPin className="w-4 h-4 text-[#9ca3af] shrink-0" size={16} />
                 {country.topUniversities.slice(0, 5).map((uni) => (
-                  <span
+                  <Tag
                     key={uni}
-                    className="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-medium bg-gray-100 text-[#6b7280]"
+                    variant="gray"
+                    size="md"
                   >
                     {uni}
-                  </span>
+                  </Tag>
                 ))}
               </div>
 
               <span
-                className="inline-flex items-center gap-1 text-sm font-medium text-[#14b8a6] group-hover:text-[#0f766e] transition-colors shrink-0"
+                className="inline-flex items-center gap-1 text-sm font-medium text-primary-500 group-hover:text-primary-700 transition-colors shrink-0"
               >
                 查看全部 {country.projectCount} 个项目
                 <ChevronRight
@@ -140,16 +142,16 @@ export default function CountryCard({ country, variant }: CountryCardProps) {
                 {country.name}
               </h4>
               {country.hot && (
-                <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-red-50 text-red-500 border border-red-100">
+                <Tag variant="red" size="xs" className="font-semibold">
                   HOT
-                </span>
+                </Tag>
               )}
             </div>
           </div>
         </div>
 
         {/* Project count */}
-        <p className="text-sm font-medium text-[#14b8a6] mb-2">
+        <p className="text-sm font-medium text-primary-500 mb-2">
           {country.projectCount} 个硕士项目
         </p>
 

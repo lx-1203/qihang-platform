@@ -6,6 +6,7 @@ import {
   TrendingUp, Target, Clock, BarChart3, Lightbulb, Shield
 } from 'lucide-react';
 import { motion } from 'framer-motion';
+import Tag from '@/components/ui/Tag';
 
 // ====== Mock 数据（后续全部由后台接口提供，禁止前端写死） ======
 
@@ -147,30 +148,30 @@ export default function BackgroundBoost() {
 
         {/* 面包屑 */}
         <div className="flex items-center gap-2 text-[13px] text-[#9ca3af] mb-4">
-          <Link to="/study-abroad" className="hover:text-[#14b8a6] transition-colors">留学</Link>
+          <Link to="/study-abroad" className="hover:text-primary-500 transition-colors">留学</Link>
           <ChevronRight className="w-3.5 h-3.5" />
           <span className="text-[#4b5563]">背景提升</span>
         </div>
 
         {/* Hero */}
         <div className="bg-[#111827] rounded-[24px] overflow-hidden relative mb-12">
-          <div className="absolute inset-0 bg-gradient-to-r from-[#14b8a6]/20 via-transparent to-purple-500/10" />
-          <div className="absolute top-0 right-0 w-80 h-80 bg-[#14b8a6]/10 rounded-full blur-3xl" />
+          <div className="absolute inset-0 bg-gradient-to-r from-primary-500/20 via-transparent to-purple-500/10" />
+          <div className="absolute top-0 right-0 w-80 h-80 bg-primary-500/10 rounded-full blur-3xl" />
           <div className="absolute bottom-0 left-0 w-60 h-60 bg-purple-500/10 rounded-full blur-3xl" />
           <div className="relative z-10 p-10 md:p-16">
             <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-8">
               <div className="max-w-2xl">
                 <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/20 backdrop-blur-md text-white border border-white/20 text-[13px] font-medium mb-6">
-                  <Sparkles className="w-4 h-4 text-[#14b8a6]" /> 六大维度 · 全方位背景提升
+                  <Sparkles className="w-4 h-4 text-primary-500" /> 六大维度 · 全方位背景提升
                 </div>
                 <h1 className="text-[32px] md:text-[44px] font-bold text-white mb-4 leading-tight">
-                  让你的申请 <span className="text-[#14b8a6]">脱颖而出</span>
+                  让你的申请 <span className="text-primary-500">脱颖而出</span>
                 </h1>
                 <p className="text-[16px] md:text-[18px] text-gray-300 leading-relaxed mb-8">
                   实习 · 科研 · 论文 · 竞赛 · 志愿者 · 语言，六大维度全面提升软实力，已帮助 <span className="text-white font-bold">3,200+</span> 名学员斩获世界名校 Offer。
                 </p>
                 <div className="flex flex-wrap gap-3">
-                  <button className="bg-[#14b8a6] text-white px-8 py-3.5 rounded-xl font-bold hover:bg-[#0f766e] transition-colors shadow-lg shadow-[#14b8a6]/20 flex items-center gap-2">
+                  <button className="bg-primary-500 text-white px-8 py-3.5 rounded-xl font-bold hover:bg-primary-700 transition-colors shadow-lg shadow-primary-500/20 flex items-center gap-2">
                     <MessageCircle className="w-4 h-4" /> 免费评估背景
                   </button>
                   <button className="bg-white/20 backdrop-blur text-white px-8 py-3.5 rounded-xl font-bold hover:bg-white/30 transition-colors border border-white/20 flex items-center gap-2">
@@ -209,10 +210,10 @@ export default function BackgroundBoost() {
                 transition={{ delay: idx * 0.1 }}
                 className="relative bg-white rounded-2xl p-6 border border-gray-100 shadow-sm text-center"
               >
-                <div className="w-12 h-12 bg-[#f0fdfa] rounded-2xl flex items-center justify-center mx-auto mb-3">
-                  <step.icon className="w-6 h-6 text-[#14b8a6]" />
+                <div className="w-12 h-12 bg-primary-50 rounded-2xl flex items-center justify-center mx-auto mb-3">
+                  <step.icon className="w-6 h-6 text-primary-500" />
                 </div>
-                <div className="text-[11px] text-[#14b8a6] font-bold mb-1">STEP {step.step}</div>
+                <div className="text-[11px] text-primary-500 font-bold mb-1">STEP {step.step}</div>
                 <h3 className="text-[16px] font-bold text-[#111827] mb-1">{step.title}</h3>
                 <p className="text-[13px] text-[#6b7280]">{step.desc}</p>
                 {idx < PROCESS_STEPS.length - 1 && (
@@ -285,7 +286,17 @@ export default function BackgroundBoost() {
                               <div className="flex items-center gap-2 mb-1">
                                 <span className="text-[13px] font-bold text-[#111827]">{c.name}</span>
                                 <span className="text-[11px] text-[#9ca3af]">{c.school}</span>
-                                <span className={`text-[10px] font-bold ${service.color} ${service.bg} px-1.5 py-0.5 rounded`}>{c.highlight}</span>
+                                <Tag
+                                  variant={
+                                    service.color.includes('blue') ? 'blue' :
+                                    service.color.includes('purple') ? 'purple' :
+                                    service.color.includes('green') ? 'green' :
+                                    service.color.includes('amber') ? 'yellow' :
+                                    service.color.includes('rose') ? 'red' :
+                                    service.color.includes('sky') ? 'blue' : 'gray'
+                                  }
+                                  size="xs"
+                                >{c.highlight}</Tag>
                               </div>
                               <p className="text-[12px] text-[#6b7280]">{c.result}</p>
                             </div>
@@ -312,10 +323,10 @@ export default function BackgroundBoost() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: idx * 0.08 }}
-                className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 text-center hover:shadow-md hover:border-[#14b8a6]/30 transition-all"
+                className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 text-center hover:shadow-md hover:border-primary-500/30 transition-all"
               >
-                <div className="w-12 h-12 bg-[#f0fdfa] rounded-2xl flex items-center justify-center mx-auto mb-3">
-                  <g.icon className="w-6 h-6 text-[#14b8a6]" />
+                <div className="w-12 h-12 bg-primary-50 rounded-2xl flex items-center justify-center mx-auto mb-3">
+                  <g.icon className="w-6 h-6 text-primary-500" />
                 </div>
                 <h3 className="text-[15px] font-bold text-[#111827] mb-1">{g.title}</h3>
                 <p className="text-[13px] text-[#6b7280]">{g.desc}</p>
@@ -325,9 +336,9 @@ export default function BackgroundBoost() {
         </div>
 
         {/* 联动说明 */}
-        <div className="bg-gradient-to-r from-[#f0fdfa] to-white rounded-[24px] border border-[#ccfbf1] p-8 md:p-10 mb-14">
+        <div className="bg-gradient-to-r from-primary-50 to-white rounded-[24px] border border-primary-100 p-8 md:p-10 mb-14">
           <h2 className="text-[22px] font-bold text-[#111827] mb-4 flex items-center gap-2">
-            <Globe className="w-6 h-6 text-[#14b8a6]" /> 业务联动
+            <Globe className="w-6 h-6 text-primary-500" /> 业务联动
           </h2>
           <p className="text-[15px] text-[#6b7280] mb-6">背景提升服务与平台旗下实习、创赛、保研等业务深度联动，享受跨业务专属优惠</p>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -336,12 +347,12 @@ export default function BackgroundBoost() {
               { title: '创赛辅导 × 留学', desc: '竞赛获奖经历让你的申请更有竞争力，尤其商科方向加分显著', link: '/entrepreneurship', icon: Trophy, tag: '商科推荐' },
               { title: '保研 × 留学双保险', desc: '同时准备保研和留学，双通道保底，确保拿到满意的升学结果', link: '/postgrad', icon: GraduationCap, tag: '双保险' },
             ].map((item, idx) => (
-              <Link key={idx} to={item.link} className="bg-white rounded-xl p-5 border border-gray-100 shadow-sm hover:shadow-md hover:border-[#14b8a6]/30 transition-all group">
+              <Link key={idx} to={item.link} className="bg-white rounded-xl p-5 border border-gray-100 shadow-sm hover:shadow-md hover:border-primary-500/30 transition-all group">
                 <div className="flex items-center justify-between mb-3">
-                  <item.icon className="w-8 h-8 text-[#14b8a6]" />
-                  <span className="text-[11px] font-bold text-[#14b8a6] bg-[#f0fdfa] px-2 py-0.5 rounded border border-[#ccfbf1]">{item.tag}</span>
+                  <item.icon className="w-8 h-8 text-primary-500" />
+                  <Tag variant="primary" size="xs" className="font-bold">{item.tag}</Tag>
                 </div>
-                <h3 className="text-[16px] font-bold text-[#111827] mb-1 group-hover:text-[#14b8a6] transition-colors">{item.title}</h3>
+                <h3 className="text-[16px] font-bold text-[#111827] mb-1 group-hover:text-primary-500 transition-colors">{item.title}</h3>
                 <p className="text-[13px] text-[#6b7280]">{item.desc}</p>
               </Link>
             ))}
@@ -353,7 +364,7 @@ export default function BackgroundBoost() {
           <div className="max-w-lg mx-auto">
             <h2 className="text-[24px] font-bold text-[#111827] mb-3">不确定需要哪些背景提升？</h2>
             <p className="text-[15px] text-[#6b7280] mb-6">资深留学顾问免费评估你的现有背景，根据目标院校定制专属提升方案，让每一分努力都花在刀刃上</p>
-            <button className="bg-[#14b8a6] text-white px-10 py-4 rounded-xl font-bold text-[16px] hover:bg-[#0f766e] transition-colors shadow-lg shadow-[#14b8a6]/20 flex items-center gap-2 mx-auto">
+            <button className="bg-primary-500 text-white px-10 py-4 rounded-xl font-bold text-[16px] hover:bg-primary-700 transition-colors shadow-lg shadow-primary-500/20 flex items-center gap-2 mx-auto">
               <MessageCircle className="w-5 h-5" /> 免费咨询
             </button>
             <p className="text-[12px] text-[#9ca3af] mt-4 flex items-center justify-center gap-1">

@@ -12,6 +12,7 @@ import OnboardingGuide from '@/components/OnboardingGuide';
 import { FeatureOverlay } from '@/components/FeatureStatus';
 import { showToast } from '@/components/ui/ToastContainer';
 import { useAuthStore } from '@/store/auth';
+import Tag from '@/components/ui/Tag';
 
 // ====== 导师端仪表盘 ======
 // 风格：绿色温暖教学感，今日日程为核心差异
@@ -94,9 +95,9 @@ export default function MentorDashboardPage() {
               <div>
                 <div className="flex items-center gap-2">
                   <h1 className="text-xl font-bold">{displayName}，欢迎回到工作台！</h1>
-                  <span className="bg-white/20 text-[10px] font-bold px-2 py-0.5 rounded-full border border-white/30">
+                  <Tag variant="green" size="xs" className="bg-white/20 border-white/30 text-white">
                     <CheckCircle2 className="w-3 h-3 inline mr-0.5" />已认证
-                  </span>
+                  </Tag>
                 </div>
                 <p className="text-sm text-emerald-100 mt-1">
                   评分 <b className="text-white">{stats.rating}</b> <Star className="w-3 h-3 inline text-amber-300 fill-amber-300" /> ·
@@ -179,7 +180,7 @@ export default function MentorDashboardPage() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
                         <span className="text-sm font-bold">{item.student}</span>
-                        <span className="text-[11px] px-2 py-0.5 rounded-full bg-white/80 font-medium">{item.status}</span>
+                        <Tag variant="gray" size="xs" className="bg-white/80">{item.status}</Tag>
                       </div>
                       <p className="text-xs opacity-70 mt-0.5">{item.service}</p>
                     </div>
@@ -256,10 +257,10 @@ export default function MentorDashboardPage() {
                       <span className="flex items-center gap-1"><Users className="w-3 h-3" /> {c.students}</span>
                       <span className="flex items-center gap-1"><Star className="w-3 h-3 text-amber-400 fill-amber-400" /> {c.rating}</span>
                     </div>
-                    <span className="text-[10px] bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-medium mt-2 inline-block">已上线</span>
+                    <Tag variant="green" size="xs" className="mt-2">已上线</Tag>
                   </>
                 ) : (
-                  <span className="text-[10px] bg-gray-200 text-gray-500 px-2 py-0.5 rounded-full font-medium">草稿</span>
+                  <Tag variant="gray" size="xs">草稿</Tag>
                 )}
               </motion.div>
             ))}

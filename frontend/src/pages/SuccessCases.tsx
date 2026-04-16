@@ -5,8 +5,7 @@ import {
   Trophy, Briefcase, GraduationCap, Globe, Rocket,
   Quote, ArrowRight, TrendingUp, Users, Star, Filter
 } from 'lucide-react';
-
-// ====== 筛选分类 ======
+import Tag from '@/components/ui/Tag';
 const CATEGORIES = [
   { key: 'all', label: '全部', icon: Star },
   { key: 'job', label: '求职成功', icon: Briefcase },
@@ -205,7 +204,7 @@ export default function SuccessCases() {
   return (
     <div className="min-h-screen bg-[#f9fafb] pb-16">
       {/* ====== Hero 渐变头部 ====== */}
-      <div className="relative overflow-hidden bg-gradient-to-br from-[#0f766e] via-[#14b8a6] to-[#2dd4bf]">
+      <div className="relative overflow-hidden bg-gradient-to-br from-primary-700 via-primary-500 to-primary-400">
         {/* 装饰性背景元素 */}
         <div className="absolute top-10 right-10 w-80 h-80 bg-white/5 rounded-full blur-3xl" />
         <div className="absolute -bottom-20 -left-20 w-96 h-96 bg-white/5 rounded-full blur-3xl" />
@@ -349,12 +348,13 @@ export default function SuccessCases() {
                 {/* 标签列表 */}
                 <div className="flex flex-wrap gap-1.5">
                   {item.tags.map((tag) => (
-                    <span
+                    <Tag
                       key={tag}
-                      className="text-[11px] px-2.5 py-1 bg-gray-50 text-gray-500 rounded-md font-medium"
+                      variant="gray"
+                      size="md"
                     >
                       {tag}
-                    </span>
+                    </Tag>
                   ))}
                 </div>
               </div>
@@ -373,8 +373,8 @@ export default function SuccessCases() {
         {/* ====== CTA 行动号召区域 ====== */}
         <div className="bg-[#111827] rounded-[24px] overflow-hidden relative">
           {/* 装饰性渐变 */}
-          <div className="absolute inset-0 bg-gradient-to-r from-[#14b8a6]/20 to-transparent" />
-          <div className="absolute top-0 right-0 w-80 h-80 bg-[#14b8a6]/10 rounded-full blur-3xl" />
+          <div className="absolute inset-0 bg-gradient-to-r from-primary-500/20 to-transparent" />
+          <div className="absolute top-0 right-0 w-80 h-80 bg-primary-500/10 rounded-full blur-3xl" />
 
           <div className="relative z-10 p-10 md:p-14 text-center">
             <motion.div
@@ -384,11 +384,11 @@ export default function SuccessCases() {
               transition={{ duration: 0.5 }}
             >
               <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 backdrop-blur-md text-white/80 border border-white/10 text-sm font-medium mb-6">
-                <Rocket className="w-4 h-4 text-[#14b8a6]" /> 开启你的成功之旅
+                <Rocket className="w-4 h-4 text-primary-500" /> 开启你的成功之旅
               </div>
               <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
                 你也可以成为下一个
-                <span className="text-[#14b8a6]">成功案例</span>
+                <span className="text-primary-500">成功案例</span>
               </h2>
               <p className="text-base text-gray-300 max-w-xl mx-auto mb-8 leading-relaxed">
                 无论你是准备求职、考研、留学还是创业，启航平台都有专业的导师和完善的资源助你一臂之力。
@@ -397,7 +397,7 @@ export default function SuccessCases() {
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <Link
                   to="/register"
-                  className="inline-flex items-center justify-center gap-2 bg-[#14b8a6] hover:bg-[#0f766e] text-white px-8 py-3.5 rounded-xl font-bold transition-colors shadow-lg shadow-[#14b8a6]/20"
+                  className="inline-flex items-center justify-center gap-2 bg-primary-500 hover:bg-primary-700 text-white px-8 py-3.5 rounded-xl font-bold transition-colors shadow-lg shadow-primary-500/20"
                 >
                   免费注册，开始启航
                   <ArrowRight className="w-4 h-4" />

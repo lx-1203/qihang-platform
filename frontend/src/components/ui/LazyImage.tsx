@@ -105,9 +105,14 @@ export default function LazyImage({
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className={`absolute inset-0 bg-gradient-to-r from-primary-100 via-primary-200 to-primary-100 animate-pulse flex items-center justify-center ${
+          className={`absolute inset-0 flex items-center justify-center ${
             isCircle ? 'rounded-full' : 'rounded-lg'
           }`}
+          style={{
+            background: 'linear-gradient(90deg, rgb(var(--color-primary-100)) 0%, rgb(var(--color-primary-200)) 50%, rgb(var(--color-primary-100)) 100%)',
+            backgroundSize: '200% 100%',
+            animation: 'shimmer 1.5s ease-in-out infinite',
+          }}
         >
           {placeholder ? (
             <img src={placeholder} alt="" className="w-8 h-8 opacity-50" />

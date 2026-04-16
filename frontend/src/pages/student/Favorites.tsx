@@ -11,6 +11,7 @@ import http from '@/api/http';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
 import { ListSkeleton } from '../../components/ui/Skeleton';
 import ErrorState from '../../components/ui/ErrorState';
+import Tag from '@/components/ui/Tag';
 
 // ====== 我的收藏 ======
 // 分 Tab 查看收藏的职位/课程/导师，支持取消收藏
@@ -261,11 +262,12 @@ export default function Favorites() {
               >
                 <tab.icon className="w-4 h-4" />
                 {tab.label}
-                <span className={`px-2 py-0.5 rounded-full text-xs ${
-                  isActive ? 'bg-primary-100 text-primary-600' : 'bg-gray-100 text-gray-500'
-                }`}>
+                <Tag
+                  variant={isActive ? 'primary' : 'gray'}
+                  size="sm"
+                >
                   {tabCounts[tab.key]}
-                </span>
+                </Tag>
                 {isActive && (
                   <motion.div
                     layoutId="favTab"
@@ -329,13 +331,13 @@ export default function Favorites() {
                             <MapPin className="w-3 h-3" /> {job.location}
                           </span>
                           <span className="text-primary-600 font-medium">{job.salary}</span>
-                          <span className="px-2 py-0.5 bg-gray-100 rounded text-xs">{job.jobType}</span>
+                          <Tag variant="gray" size="sm">{job.jobType}</Tag>
                         </div>
                         <div className="flex flex-wrap gap-1.5 mt-3">
                           {job.tags.map(tag => (
-                            <span key={tag} className="px-2 py-0.5 bg-primary-50 text-primary-600 rounded text-xs font-medium">
+                            <Tag key={tag} variant="primary" size="sm">
                               {tag}
-                            </span>
+                            </Tag>
                           ))}
                         </div>
                       </div>
@@ -381,9 +383,9 @@ export default function Favorites() {
                     {/* 封面占位 */}
                     <div className="h-36 bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center relative">
                       <GraduationCap className="w-12 h-12 text-white/50" />
-                      <span className="absolute top-3 left-3 px-2 py-0.5 bg-white/20 backdrop-blur-sm text-white text-xs rounded-full">
+                      <Tag variant="gray" size="sm" className="absolute top-3 left-3 bg-white/20 backdrop-blur-sm text-white border-transparent">
                         {course.category}
-                      </span>
+                      </Tag>
                       {/* 取消收藏按钮 */}
                       <button
                         onClick={() => setDeleteTarget({ id: course.favoriteId, name: course.title, type: 'courses' })}
@@ -466,9 +468,9 @@ export default function Favorites() {
                     {/* 专长标签 */}
                     <div className="flex flex-wrap gap-1.5 mt-3">
                       {mentor.specialty.map(tag => (
-                        <span key={tag} className="px-2 py-0.5 bg-primary-50 text-primary-600 rounded text-xs font-medium">
+                        <Tag key={tag} variant="primary" size="sm">
                           {tag}
-                        </span>
+                        </Tag>
                       ))}
                     </div>
 

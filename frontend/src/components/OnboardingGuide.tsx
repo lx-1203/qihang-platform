@@ -8,6 +8,7 @@ import {
   Video, Users, BarChart, Star, Rocket,
   GraduationCap, MessageCircle, Award, Zap
 } from 'lucide-react';
+import Tag from '@/components/ui/Tag';
 
 // ====== 新手引导教程组件 ======
 // 根据角色展示不同的操作流程引导
@@ -305,11 +306,12 @@ export default function OnboardingGuide({ role, inline = false }: OnboardingGuid
                   <h4 className={`text-sm font-bold ${completed.has(idx) ? 'text-gray-400 line-through' : 'text-gray-900'}`}>
                     {step.title}
                   </h4>
-                  <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${
-                    completed.has(idx) ? 'bg-green-100 text-green-600' : 'bg-white/80 text-gray-500'
-                  }`}>
+                  <Tag
+                    variant={completed.has(idx) ? 'green' : 'gray'}
+                    size="xs"
+                  >
                     {completed.has(idx) ? '已完成' : `${idx + 1}/${steps.length}`}
-                  </span>
+                  </Tag>
                 </div>
                 <p className="text-xs text-gray-500 mt-1 leading-relaxed">{step.desc}</p>
                 {!completed.has(idx) && step.tips && (

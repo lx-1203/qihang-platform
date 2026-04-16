@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { MapPin, Clock, Star, Globe, TrendingUp, Award, GraduationCap, Sparkles } from 'lucide-react';
 import { motion } from 'framer-motion';
+import Tag from '@/components/ui/Tag';
 
 interface ProgramData {
   id: number;
@@ -87,9 +88,9 @@ export default function ProgramCard({ program, university, mode }: ProgramCardPr
                 <h4 className="text-sm font-semibold text-[#111827] truncate">
                   {university.school}
                 </h4>
-                <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-[#14b8a6]/10 text-[#14b8a6] shrink-0">
+                <Tag variant="primary" size="xs" className="shrink-0 rounded">
                   QS {university.ranking}
-                </span>
+                </Tag>
               </div>
               <p className="text-xs text-[#9ca3af] truncate">{university.schoolEn}</p>
             </div>
@@ -110,16 +111,16 @@ export default function ProgramCard({ program, university, mode }: ProgramCardPr
           </div>
 
           {/* Tuition */}
-          <p className="text-base font-bold text-[#14b8a6] mb-3">
+          <p className="text-base font-bold text-primary-500 mb-3">
             {program.tuitionCNY}
           </p>
 
           {/* First tag badge */}
           {program.tags.length > 0 && (
-            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-orange-50 text-orange-500 border border-orange-100 mb-3">
+            <Tag variant="orange" size="xs" className="font-semibold mb-3">
               <Sparkles className="w-3 h-3 mr-1" size={12} />
               {program.tags[0]}
-            </span>
+            </Tag>
           )}
 
           {/* Admission rate bar */}
@@ -127,7 +128,7 @@ export default function ProgramCard({ program, university, mode }: ProgramCardPr
             <div className="flex items-center justify-between text-[10px] text-[#9ca3af] mb-1.5">
               <span>
                 平台录取{' '}
-                <span className="font-semibold text-[#14b8a6]">{program.admittedCount}</span> 人
+                <span className="font-semibold text-primary-500">{program.admittedCount}</span> 人
               </span>
               <span>
                 申请{' '}
@@ -136,7 +137,7 @@ export default function ProgramCard({ program, university, mode }: ProgramCardPr
             </div>
             <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden">
               <motion.div
-                className="h-full rounded-full bg-gradient-to-r from-[#14b8a6] to-[#0f766e]"
+                className="h-full rounded-full bg-gradient-to-r from-primary-500 to-primary-700"
                 initial={{ width: 0 }}
                 whileInView={{ width: `${admissionRate}%` }}
                 viewport={{ once: true }}
@@ -180,9 +181,9 @@ export default function ProgramCard({ program, university, mode }: ProgramCardPr
                   <h4 className="text-base font-bold text-[#111827] truncate">
                     {university.school}
                   </h4>
-                  <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-bold bg-[#14b8a6]/10 text-[#14b8a6] shrink-0">
+                  <Tag variant="primary" size="sm" className="shrink-0 rounded-md font-bold">
                     QS {university.ranking}
-                  </span>
+                  </Tag>
                 </div>
                 <p className="text-xs text-[#9ca3af] mb-2">{university.schoolEn}</p>
                 <h5 className="text-sm font-semibold text-[#111827]">{program.name}</h5>
@@ -193,12 +194,9 @@ export default function ProgramCard({ program, university, mode }: ProgramCardPr
             {/* Tags */}
             <div className="flex flex-wrap gap-1.5 mb-3">
               {program.tags.map((tag) => (
-                <span
-                  key={tag}
-                  className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-[#14b8a6]/5 text-[#14b8a6] border border-[#14b8a6]/10"
-                >
+                <Tag key={tag} variant="primary" size="xs">
                   {tag}
-                </span>
+                </Tag>
               ))}
             </div>
 
@@ -226,7 +224,7 @@ export default function ProgramCard({ program, university, mode }: ProgramCardPr
               <span>{program.duration}</span>
             </div>
             <div>
-              <p className="text-lg font-bold text-[#14b8a6]">{program.tuitionCNY}</p>
+              <p className="text-lg font-bold text-primary-500">{program.tuitionCNY}</p>
               <p className="text-[10px] text-[#9ca3af]">{program.tuition}</p>
             </div>
             <div className="flex items-center gap-1.5">
@@ -249,8 +247,8 @@ export default function ProgramCard({ program, university, mode }: ProgramCardPr
         {/* Bottom stats bar */}
         <div className="border-t border-gray-100 px-5 md:px-6 py-3 grid grid-cols-2 md:grid-cols-4 gap-3">
           <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-lg bg-[#14b8a6]/10 flex items-center justify-center">
-              <Star className="w-3.5 h-3.5 text-[#14b8a6]" size={14} />
+            <div className="w-7 h-7 rounded-lg bg-primary-500/10 flex items-center justify-center">
+              <Star className="w-3.5 h-3.5 text-primary-500" size={14} />
             </div>
             <div>
               <p className="text-[10px] text-[#9ca3af]">GPA 要求</p>
@@ -258,8 +256,8 @@ export default function ProgramCard({ program, university, mode }: ProgramCardPr
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-lg bg-[#14b8a6]/10 flex items-center justify-center">
-              <Globe className="w-3.5 h-3.5 text-[#14b8a6]" size={14} />
+            <div className="w-7 h-7 rounded-lg bg-primary-500/10 flex items-center justify-center">
+              <Globe className="w-3.5 h-3.5 text-primary-500" size={14} />
             </div>
             <div>
               <p className="text-[10px] text-[#9ca3af]">授课语言</p>
@@ -267,8 +265,8 @@ export default function ProgramCard({ program, university, mode }: ProgramCardPr
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-lg bg-[#14b8a6]/10 flex items-center justify-center">
-              <TrendingUp className="w-3.5 h-3.5 text-[#14b8a6]" size={14} />
+            <div className="w-7 h-7 rounded-lg bg-primary-500/10 flex items-center justify-center">
+              <TrendingUp className="w-3.5 h-3.5 text-primary-500" size={14} />
             </div>
             <div>
               <p className="text-[10px] text-[#9ca3af]">就业率</p>
@@ -276,8 +274,8 @@ export default function ProgramCard({ program, university, mode }: ProgramCardPr
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-lg bg-[#14b8a6]/10 flex items-center justify-center">
-              <Award className="w-3.5 h-3.5 text-[#14b8a6]" size={14} />
+            <div className="w-7 h-7 rounded-lg bg-primary-500/10 flex items-center justify-center">
+              <Award className="w-3.5 h-3.5 text-primary-500" size={14} />
             </div>
             <div>
               <p className="text-[10px] text-[#9ca3af]">平均年薪</p>

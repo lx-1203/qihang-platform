@@ -73,6 +73,7 @@ export default function Footer() {
       title: t('footer.user_service'),
       links: [
         { name: t('footer.help_center'), url: '/help' },
+        { name: '成功案例', url: '/success-cases' },
         { name: t('footer.appeal'), url: '/appeal' },
         { name: t('footer.report_center'), url: '/report' },
       ],

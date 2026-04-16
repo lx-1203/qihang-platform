@@ -8,6 +8,7 @@ import http from '@/api/http';
 import FileUpload from '@/components/ui/FileUpload';
 import MarkdownEditor from '@/components/admin/MarkdownEditor';
 import { showToast } from '@/components/ui/ToastContainer';
+import Tag from '@/components/ui/Tag';
 
 type ArticleItem = {
   id: number;
@@ -277,9 +278,9 @@ export default function AdminArticles() {
                     </div>
                   </td>
                   <td className="px-6 py-4">
-                    <span className="px-2 py-0.5 bg-primary-50 text-primary-700 rounded text-xs font-medium">
+                    <Tag variant="primary" size="sm">
                       {article.category}
-                    </span>
+                    </Tag>
                   </td>
                   <td className="px-6 py-4 text-sm text-gray-600">{article.author}</td>
                   <td className="px-6 py-4 text-sm text-gray-500">{article.view_count}</td>

@@ -7,6 +7,7 @@ import {
   AlertTriangle, FileText, Image, AlertCircle
 } from 'lucide-react';
 import http from '@/api/http';
+import Tag from '@/components/ui/Tag';
 
 // ====== 平台设置（站点配置管理 + 审计日志） ======
 // 商业级要求：
@@ -262,7 +263,7 @@ export default function AdminSettings() {
                           <div className="flex-1 min-w-0 mr-4">
                             <div className="flex items-center gap-2">
                               <p className="text-sm font-medium text-gray-900">{cfg.label}</p>
-                              <span className="text-[10px] px-1.5 py-0.5 bg-gray-100 text-gray-500 rounded font-mono">{cfg.config_key}</span>
+                              <Tag variant="gray" size="xs" className="font-mono">{cfg.config_key}</Tag>
                               {cfg.config_type === 'color' && (
                                 <span className="w-4 h-4 rounded-full border border-gray-300" style={{ backgroundColor: cfg.config_value }} />
                               )}

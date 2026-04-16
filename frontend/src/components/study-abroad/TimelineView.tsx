@@ -4,6 +4,7 @@ import { Calendar, Clock, AlertTriangle, Video, Lightbulb, ChevronRight } from '
 import { motion } from 'framer-motion';
 import timelineData from '../../data/study-abroad-timeline.json';
 import http from '../../api/http';
+import Tag from '@/components/ui/Tag';
 
 interface TimelineEvent {
   id: string;
@@ -23,6 +24,13 @@ const typeColors: Record<string, { dot: string; bg: string; text: string; border
   live: { dot: 'bg-purple-500', bg: 'bg-purple-50', text: 'text-purple-600', border: 'border-purple-100' },
   event: { dot: 'bg-amber-500', bg: 'bg-amber-50', text: 'text-amber-600', border: 'border-amber-100' },
   tips: { dot: 'bg-green-500', bg: 'bg-green-50', text: 'text-green-600', border: 'border-green-100' },
+};
+
+const typeTagVariant: Record<string, 'red' | 'purple' | 'orange' | 'green'> = {
+  deadline: 'red',
+  live: 'purple',
+  event: 'orange',
+  tips: 'green',
 };
 
 function getTypeIcon(type: string) {
@@ -135,7 +143,7 @@ export default function TimelineView() {
     <section className="space-y-6">
       {/* Section header */}
       <div className="flex items-center gap-2">
-        <Calendar size={22} className="text-[#14b8a6]" />
+        <Calendar size={22} className="text-primary-500" />
         <h2 className="text-xl font-bold text-[#111827]">
           重要时间节点
         </h2>
@@ -148,7 +156,7 @@ export default function TimelineView() {
           onClick={() => setSelectedMonth(null)}
           className={`snap-center min-w-[80px] flex flex-col items-center justify-center rounded-xl px-3 py-2 text-sm font-medium transition-all flex-shrink-0 ${
             selectedMonth === null
-              ? 'bg-[#14b8a6] text-white shadow-sm'
+              ? 'bg-primary-500 text-white shadow-sm'
               : 'bg-gray-100 text-[#6b7280] hover:bg-gray-200'
           }`}
         >
@@ -171,7 +179,7 @@ export default function TimelineView() {
               onClick={() => setSelectedMonth(monthKey)}
               className={`snap-center min-w-[80px] flex flex-col items-center justify-center rounded-xl px-3 py-2 text-sm font-medium transition-all flex-shrink-0 ${
                 isActive
-                  ? 'bg-[#14b8a6] text-white shadow-sm'
+                  ? 'bg-primary-500 text-white shadow-sm'
                   : 'bg-gray-100 text-[#6b7280] hover:bg-gray-200'
               }`}
             >
@@ -221,9 +229,7 @@ export default function TimelineView() {
                       <div className="flex-1 min-w-0">
                         {/* Type badge + date */}
                         <div className="flex items-center gap-2 mb-1.5 flex-wrap">
-                          <span
-                            className={`inline-flex items-center gap-1 text-[11px] font-medium ${colors.bg} ${colors.text} rounded-full px-2 py-0.5`}
-                          >
+                          <Tag variant={typeTagVariant[event.type] || 'orange'} size="xs" className="gap-1">
                             {getTypeIcon(event.type)}
                             {event.type === 'deadline'
                               ? '截止日期'
@@ -232,7 +238,7 @@ export default function TimelineView() {
                                 : event.type === 'event'
                                   ? '事件'
                                   : '提示'}
-                          </span>
+                          </Tag>
                           <span className="text-xs font-semibold text-[#111827]">
                             {event.date}
                           </span>
@@ -252,12 +258,9 @@ export default function TimelineView() {
                         {event.tags.length > 0 && (
                           <div className="flex items-center gap-1.5 mt-2 flex-wrap">
                             {event.tags.map((tag) => (
-                              <span
-                                key={tag}
-                                className="text-[10px] font-medium text-[#9ca3af] bg-gray-50 rounded px-1.5 py-0.5"
-                              >
+                              <Tag key={tag} variant="gray" size="xs" className="rounded">
                                 {tag}
-                              </span>
+                              </Tag>
                             ))}
                           </div>
                         )}
@@ -267,7 +270,7 @@ export default function TimelineView() {
                       {event.link && (
                         <ChevronRight
                           size={16}
-                          className="text-[#9ca3af] group-hover:text-[#14b8a6] transition-colors flex-shrink-0 mt-1"
+                          className="text-[#9ca3af] group-hover:text-primary-500 transition-colors flex-shrink-0 mt-1"
                         />
                       )}
                     </div>

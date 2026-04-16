@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import http from '@/api/http';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
+import Tag from '@/components/ui/Tag';
 
 // ====== 通知中心 ======
 // 商业级要求：统一通知管理、已读/未读状态、分类筛选
@@ -234,9 +235,16 @@ export default function NotificationCenter() {
                         {notif.is_read === 0 && (
                           <span className="w-2 h-2 bg-red-500 rounded-full flex-shrink-0" />
                         )}
-                        <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${typeInfo.bg} ${typeInfo.color}`}>
+                        <Tag
+                          variant={
+                            notif.type === 'appointment' ? 'blue' :
+                            notif.type === 'resume' ? 'green' :
+                            notif.type === 'system' ? 'purple' : 'yellow'
+                          }
+                          size="xs"
+                        >
                           {typeInfo.label}
-                        </span>
+                        </Tag>
                       </div>
                       <p className="text-sm text-gray-600 mt-1 leading-relaxed">{notif.content}</p>
                       <div className="flex items-center gap-4 mt-3">

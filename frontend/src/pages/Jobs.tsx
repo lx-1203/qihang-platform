@@ -14,6 +14,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import http from "@/api/http";
 import { addSearchHistory } from "@/utils/searchHistory";
 import ErrorState from "@/components/ui/ErrorState";
+import Tag from "@/components/ui/Tag";
 
 // ====== 岗位列表页 ======
 // 数据全部从 /api/jobs 获取，筛选项由接口返回
@@ -220,7 +221,7 @@ export default function Jobs() {
                           )}
                         </div>
                         {item.type === 'company' && (
-                          <span className="text-xs text-primary-500 bg-primary-50 px-2 py-0.5 rounded-full">企业</span>
+                          <Tag variant="primary" size="sm">企业</Tag>
                         )}
                       </button>
                     ))}
@@ -412,9 +413,9 @@ export default function Jobs() {
                         >
                           {job.title}
                           {job.urgent ? (
-                            <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-red-50 text-red-600 border border-red-100">
+                            <Tag variant="red" size="xs">
                               急招
-                            </span>
+                            </Tag>
                           ) : null}
                         </Link>
                         <span className="text-xl font-bold text-orange-500 whitespace-nowrap ml-4">
@@ -441,12 +442,13 @@ export default function Jobs() {
 
                       <div className="flex flex-wrap gap-2">
                         {(Array.isArray(job.tags) ? job.tags : []).map((tag: string, idx: number) => (
-                          <span
+                          <Tag
                             key={idx}
-                            className="bg-gray-50 text-gray-600 px-2.5 py-1 rounded-md text-xs border border-gray-100"
+                            variant="gray"
+                            size="md"
                           >
                             {tag}
-                          </span>
+                          </Tag>
                         ))}
                       </div>
                     </div>

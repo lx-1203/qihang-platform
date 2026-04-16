@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import http from '@/api/http';
 import { showToast } from '@/components/ui/ToastContainer';
+import TagComponent from '@/components/ui/Tag';
 
 // 人才数据结构（匹配后端 /api/company/talent 返回）
 interface TalentItem {
@@ -296,14 +297,13 @@ export default function TalentSearch() {
                   {/* 匹配度评分 */}
                   {talent._matchScore > 0 && (
                     <div className="mt-2 text-center">
-                      <div className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold ${
-                        talent._matchScore >= 60 ? 'bg-green-100 text-green-700' :
-                        talent._matchScore >= 30 ? 'bg-yellow-100 text-yellow-700' :
-                        'bg-gray-100 text-gray-600'
-                      }`}>
-                        <TrendingUp size={10} />
+                      <TagComponent
+                        variant={talent._matchScore >= 60 ? 'green' : talent._matchScore >= 30 ? 'yellow' : 'gray'}
+                        size="xs"
+                      >
+                        <TrendingUp size={10} className="inline mr-0.5" />
                         {talent._matchScore}%
-                      </div>
+                      </TagComponent>
                     </div>
                   )}
                 </div>
@@ -313,10 +313,10 @@ export default function TalentSearch() {
                   <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3">
                     <h3 className="text-lg font-bold text-gray-900">{talent.nickname || '未设置昵称'}</h3>
                     {talent.job_intention && (
-                      <span className="inline-flex items-center gap-1 px-3 py-1 bg-primary-50 text-primary-700 rounded-full text-xs font-medium w-fit">
+                      <TagComponent variant="primary" size="md" className="inline-flex items-center gap-1 w-fit">
                         <Briefcase size={12} />
                         {talent.job_intention}
-                      </span>
+                      </TagComponent>
                     )}
                   </div>
 
@@ -351,9 +351,9 @@ export default function TalentSearch() {
                   {talent.skills && (
                     <div className="flex flex-wrap gap-1.5 mb-3">
                       {parseSkills(talent.skills).slice(0, 6).map((skill, idx) => (
-                        <span key={idx} className="px-2 py-0.5 bg-gray-100 text-gray-600 rounded text-xs">
+                        <TagComponent key={idx} variant="gray" size="sm">
                           {skill}
-                        </span>
+                        </TagComponent>
                       ))}
                     </div>
                   )}

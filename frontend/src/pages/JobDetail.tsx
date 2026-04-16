@@ -11,12 +11,13 @@ import {
   AlertCircle,
   Send,
   Eye,
-  Tag,
+  Tag as TagIcon,
   Heart,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuthStore } from '@/store/auth';
 import http from '@/api/http';
+import TagComponent from '@/components/ui/Tag';
 
 /** 职位详情数据类型 */
 interface JobData {
@@ -345,14 +346,14 @@ export default function JobDetail() {
               <div className="flex flex-wrap items-center gap-3 mb-2">
                 <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">{job.title}</h1>
                 {job.urgent && (
-                  <span className="bg-red-50 text-red-600 border border-red-200 px-2.5 py-0.5 rounded-full text-xs font-semibold">
+                  <TagComponent variant="red" size="sm">
                     急聘
-                  </span>
+                  </TagComponent>
                 )}
                 {job.status && job.status !== 'active' && (
-                  <span className="bg-gray-100 text-gray-500 border border-gray-200 px-2.5 py-0.5 rounded-full text-xs font-semibold">
+                  <TagComponent variant="gray" size="sm">
                     已下线
-                  </span>
+                  </TagComponent>
                 )}
               </div>
               <p className="text-lg text-gray-600 mb-4">{job.company_name}</p>
@@ -366,13 +367,17 @@ export default function JobDetail() {
                   <MapPin className="w-4 h-4" />
                   {job.location}
                 </span>
-                <span className={`flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium border ${typeColor(job.type)}`}>
+                <TagComponent
+                  variant={job.type === '校招' ? 'blue' : job.type === '实习' ? 'green' : 'orange'}
+                  size="sm"
+                  className="flex items-center gap-1.5"
+                >
                   <Briefcase className="w-3.5 h-3.5" />
                   {job.type}
-                </span>
+                </TagComponent>
                 {job.category && (
                   <span className="flex items-center gap-1.5">
-                    <Tag className="w-4 h-4" />
+                    <TagIcon className="w-4 h-4" />
                     {job.category}
                   </span>
                 )}
@@ -433,12 +438,13 @@ export default function JobDetail() {
               className="mt-6 flex flex-wrap gap-2"
             >
               {job.tags.map((tag, index) => (
-                <span
+                <TagComponent
                   key={index}
-                  className="bg-primary-50 text-primary-700 px-3 py-1 rounded-full text-sm font-medium"
+                  variant="primary"
+                  size="md"
                 >
                   {tag}
-                </span>
+                </TagComponent>
               ))}
             </motion.div>
           )}

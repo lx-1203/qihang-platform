@@ -1,5 +1,6 @@
-import { Bot, ShieldCheck, Info } from 'lucide-react';
+import { Bot, ShieldCheck, Info, Check, CheckCheck, Clock, AlertCircle } from 'lucide-react';
 import type { ChatMessage } from '@/store/chat';
+import Tag from '@/components/ui/Tag';
 
 // ====== 聊天气泡组件 ======
 // 根据 sender_role 决定气泡方向和颜色
@@ -7,10 +8,11 @@ import type { ChatMessage } from '@/store/chat';
 interface ChatBubbleProps {
   message: ChatMessage;
   isCurrentUser: boolean;
+  onResend?: () => void;
 }
 
-export default function ChatBubble({ message, isCurrentUser }: ChatBubbleProps) {
-  const { sender_role, content, msg_type, created_at, sender_name } = message;
+export default function ChatBubble({ message, isCurrentUser, onResend }: ChatBubbleProps) {
+  const { sender_role, content, msg_type, created_at, sender_name, localStatus, is_read } = message;
 
   // 系统通知 — 居中显示
   if (sender_role === 'system' || msg_type === 'system_notice') {
@@ -29,12 +31,38 @@ export default function ChatBubble({ message, isCurrentUser }: ChatBubbleProps) 
     return (
       <div className="flex justify-end mb-3">
         <div className="max-w-[70%]">
-          <div className="bg-primary-500 text-white px-4 py-2.5 rounded-2xl rounded-br-md shadow-sm">
+          <div className={`px-4 py-2.5 rounded-2xl rounded-br-md shadow-sm ${
+            localStatus === 'failed'
+              ? 'bg-primary-400 text-white'
+              : 'bg-primary-500 text-white'
+          }`}>
             <p className="text-sm whitespace-pre-wrap break-words leading-relaxed">{content}</p>
           </div>
-          <p className="text-[10px] text-gray-400 mt-1 text-right">
-            {formatTime(created_at)}
-          </p>
+          <div className="flex items-center justify-end gap-1 mt-1">
+            <p className="text-[10px] text-gray-400">
+              {formatTime(created_at)}
+            </p>
+            {/* 消息状态指示器 */}
+            {localStatus === 'sending' && (
+              <Clock className="w-3 h-3 text-gray-400" />
+            )}
+            {localStatus === 'sent' && is_read !== 1 && (
+              <Check className="w-3 h-3 text-gray-400" />
+            )}
+            {(!localStatus || localStatus === 'sent') && is_read === 1 && (
+              <CheckCheck className="w-3 h-3 text-primary-500" />
+            )}
+            {localStatus === 'failed' && (
+              <button
+                onClick={onResend}
+                className="inline-flex items-center gap-0.5 text-red-500 hover:text-red-600 transition-colors"
+                title="点击重发"
+              >
+                <AlertCircle className="w-3 h-3" />
+                <span className="text-[10px] font-medium">点击重发</span>
+              </button>
+            )}
+          </div>
         </div>
       </div>
     );
@@ -50,7 +78,7 @@ export default function ChatBubble({ message, isCurrentUser }: ChatBubbleProps) 
         <div className="max-w-[70%]">
           <div className="flex items-center gap-1.5 mb-1">
             <span className="text-xs font-medium text-gray-600">启小航</span>
-            <span className="text-[10px] px-1.5 py-0.5 bg-violet-50 text-violet-600 rounded-full font-medium">AI</span>
+            <Tag variant="purple" size="xs">AI</Tag>
           </div>
           <div className="bg-gray-100 text-gray-800 px-4 py-2.5 rounded-2xl rounded-bl-md">
             <p className="text-sm whitespace-pre-wrap break-words leading-relaxed">{content}</p>
@@ -71,7 +99,7 @@ export default function ChatBubble({ message, isCurrentUser }: ChatBubbleProps) 
         <div className="max-w-[70%]">
           <div className="flex items-center gap-1.5 mb-1">
             <span className="text-xs font-medium text-gray-600">{sender_name || '客服'}</span>
-            <span className="text-[10px] px-1.5 py-0.5 bg-blue-50 text-blue-600 rounded-full font-medium">客服</span>
+            <Tag variant="blue" size="xs">客服</Tag>
           </div>
           <div className="bg-blue-50 text-blue-900 px-4 py-2.5 rounded-2xl rounded-bl-md border border-blue-100">
             <p className="text-sm whitespace-pre-wrap break-words leading-relaxed">{content}</p>

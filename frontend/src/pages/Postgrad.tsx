@@ -15,7 +15,7 @@ export default function Postgrad() {
         {/* Header */}
         <div className="flex flex-col md:flex-row items-center justify-between bg-white rounded-[24px] p-8 md:p-12 mb-12 shadow-sm border border-gray-100">
           <div className="max-w-xl mb-8 md:mb-0">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#f0fdfa] text-[#14b8a6] text-[14px] font-medium mb-4 border border-[#ccfbf1]">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary-50 text-primary-500 text-[14px] font-medium mb-4 border border-primary-100">
               <GraduationCap className="w-4 h-4" /> 升学深造指南
             </div>
             <h1 className="text-[36px] font-bold text-[#111827] mb-4">考研 / 保研 / 留学</h1>
@@ -23,7 +23,7 @@ export default function Postgrad() {
               汇集全网最全的升学资讯、学长学姐真实经验贴、院校专业分析报告，助你顺利迈向人生的下一个台阶。
             </p>
             <div className="flex flex-wrap gap-4">
-              <button className="bg-[#14b8a6] text-white px-6 py-3 rounded-xl font-medium hover:bg-[#0f766e] transition-colors">
+              <button className="bg-primary-500 text-white px-6 py-3 rounded-xl font-medium hover:bg-primary-700 transition-colors">
                 获取备考资料
               </button>
               <button className="bg-white text-[#111827] border border-gray-200 px-6 py-3 rounded-xl font-medium hover:bg-gray-50 transition-colors">
@@ -39,15 +39,15 @@ export default function Postgrad() {
         {/* Section: Timeline */}
         <div className="mb-16">
           <h2 className="text-[24px] font-bold text-[#111827] mb-8 flex items-center gap-2">
-            <Clock className="w-6 h-6 text-[#14b8a6]" /> 2025考研全年规划时间轴
+            <Clock className="w-6 h-6 text-primary-500" /> 2025考研全年规划时间轴
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             {TIMELINES.map((item, idx) => (
-              <div key={idx} className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm relative overflow-hidden group hover:border-[#14b8a6] transition-colors">
-                <div className="text-[14px] font-bold text-[#14b8a6] mb-2">{item.month}</div>
+              <div key={idx} className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm relative overflow-hidden group hover:border-primary-500 transition-colors">
+                <div className="text-[14px] font-bold text-primary-500 mb-2">{item.month}</div>
                 <h3 className="text-[18px] font-bold text-[#111827] mb-3">{item.title}</h3>
                 <p className="text-[14px] text-[#6b7280] leading-relaxed">{item.desc}</p>
-                <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-bl from-[#14b8a6]/10 to-transparent rounded-bl-3xl"></div>
+                <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-bl from-primary-500/10 to-transparent rounded-bl-3xl"></div>
               </div>
             ))}
           </div>

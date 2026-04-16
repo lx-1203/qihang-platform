@@ -7,8 +7,9 @@ import DevFloatButton from '../components/DevFloatButton';
 export default function MainLayout() {
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
+      <a href="#main-content" className="skip-to-content">跳转到主要内容</a>
       <Navbar />
-      <main className="flex-grow">
+      <main id="main-content" className="flex-grow">
         <Outlet />
       </main>
       <Footer />

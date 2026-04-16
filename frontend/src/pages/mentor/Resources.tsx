@@ -6,6 +6,7 @@ import {
   ChevronDown, Filter, BookOpen
 } from 'lucide-react';
 import { useToast } from '../../components/ui';
+import Tag from '@/components/ui/Tag';
 
 // ====== 资料类型 ======
 type ResourceType = 'document' | 'video' | 'link' | 'image';
@@ -55,11 +56,11 @@ const TYPE_ICONS: Record<ResourceType, typeof FileText> = {
   image: Image,
 };
 
-const TYPE_COLORS: Record<ResourceType, { text: string; bg: string }> = {
-  document: { text: 'text-blue-600', bg: 'bg-blue-50' },
-  video: { text: 'text-purple-600', bg: 'bg-purple-50' },
-  link: { text: 'text-teal-600', bg: 'bg-teal-50' },
-  image: { text: 'text-amber-600', bg: 'bg-amber-50' },
+const TYPE_COLORS: Record<ResourceType, { text: string; bg: string; tagVariant: 'blue' | 'purple' | 'primary' | 'orange' }> = {
+  document: { text: 'text-blue-600', bg: 'bg-blue-50', tagVariant: 'blue' },
+  video: { text: 'text-purple-600', bg: 'bg-purple-50', tagVariant: 'purple' },
+  link: { text: 'text-teal-600', bg: 'bg-teal-50', tagVariant: 'primary' },
+  image: { text: 'text-amber-600', bg: 'bg-amber-50', tagVariant: 'orange' },
 };
 
 export default function MentorResources() {
@@ -220,9 +221,9 @@ export default function MentorResources() {
                       </div>
                     </div>
                     <div className="flex flex-wrap items-center gap-3 mt-3 text-xs text-gray-400">
-                      <span className={`px-2 py-0.5 rounded-full ${colors.bg} ${colors.text} font-medium`}>
+                      <Tag variant={colors.tagVariant} size="sm">
                         {resource.category}
-                      </span>
+                      </Tag>
                       {resource.size && (
                         <span className="flex items-center gap-1">
                           <File className="w-3 h-3" />

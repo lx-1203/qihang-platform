@@ -9,6 +9,7 @@ import http from '@/api/http';
 import { ListSkeleton } from '../../components/ui/Skeleton';
 import ErrorState from '../../components/ui/ErrorState';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
+import Tag from '@/components/ui/Tag';
 
 // ====== 导师预约管理页 ======
 // 预约列表、筛选标签、确认/拒绝/完成操作
@@ -83,10 +84,10 @@ const mockAppointments: Appointment[] = [
 ];
 
 const statusConfig = {
-  pending: { label: '待确认', color: 'bg-orange-50 text-orange-700 border-orange-200', icon: AlertCircle, dotColor: 'bg-orange-500' },
-  confirmed: { label: '已确认', color: 'bg-blue-50 text-blue-700 border-blue-200', icon: CalendarCheck, dotColor: 'bg-blue-500' },
-  completed: { label: '已完成', color: 'bg-green-50 text-green-700 border-green-200', icon: CheckCircle, dotColor: 'bg-green-500' },
-  cancelled: { label: '已取消', color: 'bg-gray-100 text-gray-600 border-gray-200', icon: CalendarX, dotColor: 'bg-gray-400' },
+  pending: { label: '待确认', color: 'bg-orange-50 text-orange-700 border-orange-200', icon: AlertCircle, dotColor: 'bg-orange-500', tagVariant: 'orange' as const },
+  confirmed: { label: '已确认', color: 'bg-blue-50 text-blue-700 border-blue-200', icon: CalendarCheck, dotColor: 'bg-blue-500', tagVariant: 'blue' as const },
+  completed: { label: '已完成', color: 'bg-green-50 text-green-700 border-green-200', icon: CheckCircle, dotColor: 'bg-green-500', tagVariant: 'green' as const },
+  cancelled: { label: '已取消', color: 'bg-gray-100 text-gray-600 border-gray-200', icon: CalendarX, dotColor: 'bg-gray-400', tagVariant: 'gray' as const },
 };
 
 const filterTabs: { key: AppointmentStatus; label: string }[] = [
@@ -263,11 +264,9 @@ export default function MentorAppointments() {
               >
                 {tab.label}
                 {statusCounts[tab.key] > 0 && (
-                  <span className={`ml-1.5 px-1.5 py-0.5 rounded-full text-xs ${
-                    activeTab === tab.key ? 'bg-primary-100 text-primary-700' : 'bg-gray-200 text-gray-600'
-                  }`}>
+                  <Tag variant={activeTab === tab.key ? 'primary' : 'gray'} size="xs" className="ml-1.5">
                     {statusCounts[tab.key]}
-                  </span>
+                  </Tag>
                 )}
               </button>
             ))}
@@ -330,9 +329,9 @@ export default function MentorAppointments() {
                         <div className="flex items-center gap-2 mb-1">
                           <h4 className="font-bold text-gray-900">{apt.studentName}</h4>
                           <span className="text-xs text-gray-500">({apt.studentSchool})</span>
-                          <span className={`px-2 py-0.5 rounded-full text-xs font-medium border ${cfg.color}`}>
+                          <Tag variant={cfg.tagVariant} size="sm">
                             {cfg.label}
-                          </span>
+                          </Tag>
                         </div>
                         <p className="text-sm text-gray-700 font-medium mb-1">{apt.service}</p>
                         <div className="flex items-center gap-4 text-sm text-gray-500">

@@ -3,6 +3,7 @@ import { BookOpen, Search, Play, Users, Star, ChevronRight, Loader2 } from 'luci
 import { Link } from 'react-router-dom';
 import http from '@/api/http';
 import ErrorState from '../components/ui/ErrorState';
+import Tag from '@/components/ui/Tag';
 
 // ====== 课程列表页 ======
 // 数据从 /api/courses 获取，不再使用硬编码 mock
@@ -68,7 +69,7 @@ export default function Courses() {
         <div className="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-4">
           <div>
             <h1 className="text-[32px] font-bold text-[#111827] flex items-center gap-2">
-              <BookOpen className="w-8 h-8 text-[#14b8a6]" />
+              <BookOpen className="w-8 h-8 text-primary-500" />
               干货资料库
             </h1>
             <p className="text-[16px] text-[#4b5563] mt-2">海量免费干货视频，系统性提升你的求职硬实力</p>
@@ -82,7 +83,7 @@ export default function Courses() {
               value={searchInput}
               onChange={e => setSearchInput(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && handleSearch()}
-              className="w-full pl-4 pr-10 py-2.5 bg-white border border-gray-200 rounded-xl text-sm text-[#111827] focus:outline-none focus:ring-2 focus:ring-[#14b8a6] focus:border-transparent transition-all shadow-sm"
+              className="w-full pl-4 pr-10 py-2.5 bg-white border border-gray-200 rounded-xl text-sm text-[#111827] focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all shadow-sm"
             />
             <button onClick={handleSearch} className="absolute right-3 top-1/2 -translate-y-1/2">
               <Search className="w-5 h-5 text-gray-400 hover:text-primary-600 transition-colors" />
@@ -99,7 +100,7 @@ export default function Courses() {
                 onClick={() => handleCategoryChange(cat)}
                 className={`px-4 py-1.5 rounded-full text-[14px] font-medium transition-colors ${
                   activeCategory === cat
-                    ? 'bg-[#14b8a6] text-white'
+                    ? 'bg-primary-500 text-white'
                     : 'bg-gray-100 text-[#4b5563] hover:bg-gray-200'
                 }`}
               >
@@ -153,7 +154,7 @@ export default function Courses() {
                       </div>
                     )}
                     <div className="absolute inset-0 bg-black/20 group-hover:bg-black/40 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
-                      <div className="w-12 h-12 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center text-[#14b8a6] shadow-lg pl-1">
+                      <div className="w-12 h-12 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center text-primary-500 shadow-lg pl-1">
                         <Play size={24} fill="currentColor" />
                       </div>
                     </div>
@@ -166,21 +167,21 @@ export default function Courses() {
 
                   {/* Content */}
                   <div className="p-4 flex-grow flex flex-col">
-                    <h3 className="text-[16px] font-bold text-[#111827] line-clamp-2 leading-snug group-hover:text-[#14b8a6] transition-colors mb-2">
+                    <h3 className="text-[16px] font-bold text-[#111827] line-clamp-2 leading-snug group-hover:text-primary-500 transition-colors mb-2">
                       {course.title}
                     </h3>
 
                     <div className="flex flex-wrap gap-1.5 mb-3">
                       {(Array.isArray(course.tags) ? course.tags : []).slice(0, 3).map((tag: string, idx: number) => (
-                        <span key={idx} className="bg-[#f3f4f6] text-[#6b7280] px-1.5 py-0.5 rounded text-[11px]">
+                        <Tag key={idx} variant="gray" size="xs">
                           {tag}
-                        </span>
+                        </Tag>
                       ))}
                     </div>
 
                     <div className="mt-auto pt-3 border-t border-gray-100 flex items-center justify-between text-[13px] text-[#9ca3af]">
                       <div className="flex items-center gap-1.5">
-                        <div className="w-5 h-5 rounded-full bg-[#14b8a6] text-white flex items-center justify-center text-[10px] font-bold">
+                        <div className="w-5 h-5 rounded-full bg-primary-500 text-white flex items-center justify-center text-[10px] font-bold">
                           {(course.mentor || course.mentor_name || '导')[0]}
                         </div>
                         <span className="font-medium text-[#4b5563] truncate max-w-[100px]">

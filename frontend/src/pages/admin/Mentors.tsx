@@ -5,6 +5,7 @@ import {
   Star, Award, MapPin, ChevronLeft, ChevronRight
 } from 'lucide-react';
 import http from '@/api/http';
+import Tag from '@/components/ui/Tag';
 
 // ====== 导师资质审核 ======
 // 商业级要求：导师认证审核、资质验证
@@ -101,9 +102,9 @@ export default function AdminMentors() {
         <p className="text-gray-500 mt-1">
           审核导师认证资质，保障辅导服务质量
           {pendingCount > 0 && (
-            <span className="ml-2 px-2 py-0.5 bg-amber-100 text-amber-700 rounded-full text-xs font-medium">
+            <Tag variant="yellow" size="sm" className="ml-2">
               {pendingCount} 条待审核
-            </span>
+            </Tag>
           )}
         </p>
       </div>
@@ -179,10 +180,14 @@ export default function AdminMentors() {
                   <div>
                     <div className="flex items-center gap-3">
                       <h3 className="text-lg font-bold text-gray-900">{mentor.name}</h3>
-                      <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium ${status.color}`}>
+                      <Tag
+                        variant={mentor.verify_status === 'pending' ? 'yellow' : mentor.verify_status === 'approved' ? 'green' : 'red'}
+                        size="sm"
+                        className="inline-flex items-center gap-1"
+                      >
                         <StatusIcon className="w-3.5 h-3.5" />
                         {status.label}
-                      </span>
+                      </Tag>
                       {mentor.rating > 0 && (
                         <span className="flex items-center gap-1 text-amber-500 text-sm">
                           <Star className="w-4 h-4 fill-current" />
@@ -194,7 +199,7 @@ export default function AdminMentors() {
                     <p className="text-sm text-gray-500 mt-1">{mentor.bio}</p>
                     <div className="flex flex-wrap gap-2 mt-3">
                       {(mentor.expertise || []).map(tag => (
-                        <span key={tag} className="px-2 py-0.5 bg-purple-50 text-purple-600 rounded text-xs font-medium">{tag}</span>
+                        <Tag key={tag} variant="purple" size="sm">{tag}</Tag>
                       ))}
                     </div>
                     <p className="text-sm text-gray-500 mt-2">辅导定价：<span className="text-primary-600 font-bold">{mentor.price}</span> 元/次</p>

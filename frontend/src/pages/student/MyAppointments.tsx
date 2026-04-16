@@ -9,6 +9,7 @@ import http from '@/api/http';
 import { ListSkeleton } from '../../components/ui/Skeleton';
 import ErrorState from '../../components/ui/ErrorState';
 import { showToast } from '@/components/ui/ToastContainer';
+import Tag from '@/components/ui/Tag';
 
 // ====== 我的预约（导师预约管理） ======
 // 预约列表、状态筛选、完成后评价（星级+文本）
@@ -263,9 +264,12 @@ export default function MyAppointments() {
                         </div>
                       </div>
                       {/* 状态标签 */}
-                      <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${config.bg} ${config.color} flex-shrink-0`}>
+                      <Tag
+                        variant={app.status === 'upcoming' ? 'primary' : app.status === 'completed' ? 'green' : 'gray'}
+                        size="md"
+                      >
                         {config.label}
-                      </span>
+                      </Tag>
                     </div>
 
                     {/* 详细信息 */}
@@ -284,7 +288,7 @@ export default function MyAppointments() {
                         <DollarSign className="w-3 h-3" />
                         <span className="text-primary-600 font-medium">¥{app.fee}</span>
                       </span>
-                      <span className="px-2 py-0.5 bg-gray-100 text-gray-600 rounded text-xs">{app.serviceType}</span>
+                      <Tag variant="gray" size="sm">{app.serviceType}</Tag>
                     </div>
 
                     {/* 已完成的 → 评价区域 */}

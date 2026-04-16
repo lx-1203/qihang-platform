@@ -420,7 +420,7 @@ export default function StudyAbroadPrograms() {
         {/* ====== 页面头部 ====== */}
         <div className="mb-6">
           <div className="flex items-center gap-2 text-[13px] text-[#9ca3af] mb-4">
-            <Link to="/study-abroad" className="hover:text-[#14b8a6] transition-colors">
+            <Link to="/study-abroad" className="hover:text-primary-500 transition-colors">
               留学
             </Link>
             <ChevronRight className="w-3.5 h-3.5" />
@@ -429,7 +429,7 @@ export default function StudyAbroadPrograms() {
           <div className="flex items-center justify-between flex-wrap gap-4">
             <div>
               <h1 className="text-[30px] font-bold text-[#111827] flex items-center gap-3 mb-2">
-                <GraduationCap className="w-8 h-8 text-[#14b8a6]" /> 院校与项目库
+                <GraduationCap className="w-8 h-8 text-primary-500" /> 院校与项目库
               </h1>
               <p className="text-[15px] text-[#6b7280]">
                 覆盖全球{' '}
@@ -441,11 +441,11 @@ export default function StudyAbroadPrograms() {
             {/* 快捷统计 */}
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-1.5 text-[13px] text-[#6b7280]">
-                <Building2 className="w-4 h-4 text-[#14b8a6]" />
+                <Building2 className="w-4 h-4 text-primary-500" />
                 <span className="font-bold text-[#111827]">{totalUniversities}</span> 合作院校
               </div>
               <div className="flex items-center gap-1.5 text-[13px] text-[#6b7280]">
-                <Users className="w-4 h-4 text-[#14b8a6]" />
+                <Users className="w-4 h-4 text-primary-500" />
                 <span className="font-bold text-[#111827]">
                   {totalAdmitted.toLocaleString()}
                 </span>{' '}
@@ -466,7 +466,7 @@ export default function StudyAbroadPrograms() {
                 placeholder="搜索院校、项目名称（如 Imperial、计算机、商业分析）..."
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
-                className="w-full pl-11 pr-4 py-3 bg-[#f9fafb] border border-gray-200 rounded-xl text-[14px] text-[#111827] focus:outline-none focus:ring-2 focus:ring-[#14b8a6] focus:border-transparent focus:bg-white placeholder-[#9ca3af] transition-all"
+                className="w-full pl-11 pr-4 py-3 bg-[#f9fafb] border border-gray-200 rounded-xl text-[14px] text-[#111827] focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent focus:bg-white placeholder-[#9ca3af] transition-all"
               />
             </div>
             {/* 筛选按钮 */}
@@ -474,14 +474,14 @@ export default function StudyAbroadPrograms() {
               onClick={() => setShowFilters(!showFilters)}
               className={`flex items-center justify-center gap-2 px-5 py-3 rounded-xl font-medium text-[14px] transition-colors shrink-0 ${
                 showFilters || activeFiltersCount > 0
-                  ? 'bg-[#14b8a6] text-white'
+                  ? 'bg-primary-500 text-white'
                   : 'bg-[#f3f4f6] text-[#4b5563] hover:bg-gray-200'
               }`}
             >
               <SlidersHorizontal className="w-4 h-4" />
               高级筛选
               {activeFiltersCount > 0 && (
-                <span className="w-5 h-5 bg-white text-[#14b8a6] rounded-full text-[11px] font-bold flex items-center justify-center">
+                <span className="w-5 h-5 bg-white text-primary-500 rounded-full text-[11px] font-bold flex items-center justify-center">
                   {activeFiltersCount}
                 </span>
               )}
@@ -511,7 +511,7 @@ export default function StudyAbroadPrograms() {
                           onClick={() => setSelectedCountry(c.id)}
                           className={`px-3 py-1.5 rounded-lg text-[13px] font-medium transition-all ${
                             selectedCountry === c.id
-                              ? 'bg-[#14b8a6] text-white shadow-sm'
+                              ? 'bg-primary-500 text-white shadow-sm'
                               : 'bg-[#f3f4f6] text-[#4b5563] hover:bg-gray-200'
                           }`}
                         >
@@ -536,7 +536,7 @@ export default function StudyAbroadPrograms() {
                           onClick={() => setSelectedMajor(m)}
                           className={`px-3 py-1.5 rounded-lg text-[13px] font-medium transition-all ${
                             selectedMajor === m
-                              ? 'bg-[#14b8a6] text-white shadow-sm'
+                              ? 'bg-primary-500 text-white shadow-sm'
                               : 'bg-[#f3f4f6] text-[#4b5563] hover:bg-gray-200'
                           }`}
                         >
@@ -558,7 +558,7 @@ export default function StudyAbroadPrograms() {
                           onClick={() => setSelectedRanking(r)}
                           className={`px-3 py-1.5 rounded-lg text-[13px] font-medium transition-all ${
                             selectedRanking === r
-                              ? 'bg-[#14b8a6] text-white shadow-sm'
+                              ? 'bg-primary-500 text-white shadow-sm'
                               : 'bg-[#f3f4f6] text-[#4b5563] hover:bg-gray-200'
                           }`}
                         >
@@ -580,7 +580,7 @@ export default function StudyAbroadPrograms() {
                           onClick={() => setSelectedDegree(d)}
                           className={`px-3 py-1.5 rounded-lg text-[13px] font-medium transition-all ${
                             selectedDegree === d
-                              ? 'bg-[#14b8a6] text-white shadow-sm'
+                              ? 'bg-primary-500 text-white shadow-sm'
                               : 'bg-[#f3f4f6] text-[#4b5563] hover:bg-gray-200'
                           }`}
                         >
@@ -610,7 +610,7 @@ export default function StudyAbroadPrograms() {
           <span className="text-[14px] text-[#6b7280]">
             共找到 <span className="font-bold text-[#111827]">{filtered.length}</span> 个项目
             {activeFiltersCount > 0 && (
-              <span className="text-[#14b8a6] ml-2">({activeFiltersCount} 个筛选条件)</span>
+              <span className="text-primary-500 ml-2">({activeFiltersCount} 个筛选条件)</span>
             )}
           </span>
           <div className="flex items-center gap-2">
@@ -618,7 +618,7 @@ export default function StudyAbroadPrograms() {
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
-              className="text-[13px] text-[#4b5563] bg-white border border-gray-200 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-[#14b8a6] cursor-pointer"
+              className="text-[13px] text-[#4b5563] bg-white border border-gray-200 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-primary-500 cursor-pointer"
             >
               <option value="ranking">按 QS 排名</option>
               <option value="deadline">按截止日期</option>
@@ -648,7 +648,7 @@ export default function StudyAbroadPrograms() {
             <p className="text-[14px] text-[#9ca3af] mb-4">尝试调整筛选条件或搜索关键词</p>
             <button
               onClick={clearAllFilters}
-              className="text-[14px] text-[#14b8a6] font-medium hover:underline"
+              className="text-[14px] text-primary-500 font-medium hover:underline"
             >
               清除所有筛选条件
             </button>
@@ -662,7 +662,7 @@ export default function StudyAbroadPrograms() {
               <button
                 onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                 disabled={currentPage === 1}
-                className="px-4 h-10 rounded-xl bg-white text-[#6b7280] border border-gray-200 hover:border-[#14b8a6] hover:text-[#14b8a6] text-[14px] font-medium transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1"
+                className="px-4 h-10 rounded-xl bg-white text-[#6b7280] border border-gray-200 hover:border-primary-500 hover:text-primary-500 text-[14px] font-medium transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1"
               >
                 <ChevronLeft className="w-4 h-4" /> 上一页
               </button>
@@ -678,8 +678,8 @@ export default function StudyAbroadPrograms() {
                     onClick={() => setCurrentPage(page as number)}
                     className={`w-10 h-10 rounded-xl text-[14px] font-medium transition-colors ${
                       currentPage === page
-                        ? 'bg-[#14b8a6] text-white shadow-sm'
-                        : 'bg-white text-[#6b7280] border border-gray-200 hover:border-[#14b8a6] hover:text-[#14b8a6]'
+                        ? 'bg-primary-500 text-white shadow-sm'
+                        : 'bg-white text-[#6b7280] border border-gray-200 hover:border-primary-500 hover:text-primary-500'
                     }`}
                   >
                     {page}
@@ -690,7 +690,7 @@ export default function StudyAbroadPrograms() {
               <button
                 onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
                 disabled={currentPage === totalPages}
-                className="px-4 h-10 rounded-xl bg-white text-[#6b7280] border border-gray-200 hover:border-[#14b8a6] hover:text-[#14b8a6] text-[14px] font-medium transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1"
+                className="px-4 h-10 rounded-xl bg-white text-[#6b7280] border border-gray-200 hover:border-primary-500 hover:text-primary-500 text-[14px] font-medium transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1"
               >
                 下一页 <ChevronRight className="w-4 h-4" />
               </button>
@@ -706,7 +706,7 @@ export default function StudyAbroadPrograms() {
               资深留学顾问根据你的背景，一对一定制选校方案
             </p>
           </div>
-          <button className="bg-[#14b8a6] text-white px-8 py-3.5 rounded-xl font-bold hover:bg-[#0f766e] transition-colors shadow-lg shadow-[#14b8a6]/20 flex items-center gap-2 shrink-0">
+          <button className="bg-primary-500 text-white px-8 py-3.5 rounded-xl font-bold hover:bg-primary-700 transition-colors shadow-lg shadow-primary-500/20 flex items-center gap-2 shrink-0">
             <Sparkles className="w-4 h-4" /> 免费选校评估
           </button>
         </div>

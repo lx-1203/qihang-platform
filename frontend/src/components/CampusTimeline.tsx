@@ -5,6 +5,7 @@ import {
   FileText, RefreshCw, Mail, PartyPopper,
   Calendar,
 } from 'lucide-react';
+import Tag from '@/components/ui/Tag';
 
 // ====== 校招日历时间轴 ======
 
@@ -132,9 +133,16 @@ export default function CampusTimeline() {
                     {/* 日期 */}
                     <span className="text-sm font-bold text-gray-900">{event.date}</span>
                     {/* 类型标签 */}
-                    <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${config.badge}`}>
+                    <Tag
+                      variant={
+                        event.type === 'deadline' ? 'red' :
+                        event.type === 'event' ? 'blue' :
+                        event.type === 'live' ? 'green' : 'yellow'
+                      }
+                      size="xs"
+                    >
                       {config.label}
-                    </span>
+                    </Tag>
                   </div>
                   <h4 className="text-base font-bold text-gray-900 group-hover:text-primary-600 transition-colors mb-1">
                     {event.title}

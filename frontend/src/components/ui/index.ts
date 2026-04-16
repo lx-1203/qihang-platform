@@ -37,3 +37,6 @@ export { default as FileUpload } from './FileUpload';
 
 // 标签
 export { default as Tag } from './Tag';
+
+// 卡片
+export { default as Card } from './Card';

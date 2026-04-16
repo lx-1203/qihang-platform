@@ -5,6 +5,7 @@ import {
   MoreVertical, Trash2, Loader2
 } from 'lucide-react';
 import http from '@/api/http';
+import Tag from '@/components/ui/Tag';
 
 // ====== 职位+课程内容管理 ======
 // 数据从 /api/admin/jobs 和 /api/admin/courses 获取
@@ -215,10 +216,10 @@ export default function AdminContent() {
                   </td>
                   <td className="px-6 py-4 text-sm text-gray-600">{job.company_name}</td>
                   <td className="px-6 py-4">
-                    <span className={`px-2 py-0.5 rounded text-xs font-medium ${
-                      job.type === '校招' ? 'bg-blue-100 text-blue-700' :
-                      job.type === '实习' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'
-                    }`}>{job.type}</span>
+                    <Tag
+                      variant={job.type === '校招' ? 'blue' : job.type === '实习' ? 'green' : 'gray'}
+                      size="sm"
+                    >{job.type}</Tag>
                   </td>
                   <td className="px-6 py-4 text-sm text-gray-600 font-medium">{job.salary}</td>
                   <td className="px-6 py-4">
@@ -272,7 +273,7 @@ export default function AdminContent() {
                   </td>
                   <td className="px-6 py-4 text-sm text-gray-600">{course.mentor_name}</td>
                   <td className="px-6 py-4">
-                    <span className="px-2 py-0.5 bg-purple-100 text-purple-700 rounded text-xs font-medium">{course.category}</span>
+                    <Tag variant="purple" size="sm">{course.category}</Tag>
                   </td>
                   <td className="px-6 py-4 text-sm text-gray-500">{course.views >= 10000 ? `${(course.views / 10000).toFixed(1)}万` : course.views}</td>
                   <td className="px-6 py-4 text-sm text-amber-600 font-medium">{course.rating || '-'}</td>

@@ -6,6 +6,7 @@ import { useAuthStore } from '@/store/auth';
 import { useConfigStore } from '@/store/config';
 import http from '@/api/http';
 import { getSearchHistory, addSearchHistory, clearSearchHistory } from '@/utils/searchHistory';
+import Tag from '@/components/ui/Tag';
 
 // ====== 顶部导航栏（认证感知 + 通知铃铛 + 配置驱动品牌） ======
 
@@ -44,6 +45,7 @@ export default function Navbar() {
     { path: '/postgrad', label: '考研保研' },
     { path: '/entrepreneurship', label: '创新创业' },
     { path: '/study-abroad', label: '留学申请' },
+    { path: '/success-cases', label: '成功案例' },
   ];
 
   // 获取未读通知数 + 30s 轮询（6.1）
@@ -181,6 +183,7 @@ export default function Navbar() {
     '/postgrad': () => import('../pages/Postgrad'),
     '/entrepreneurship': () => import('../pages/Entrepreneurship'),
     '/study-abroad': () => import('../pages/StudyAbroad'),
+    '/success-cases': () => import('../pages/SuccessCases'),
   };
 
   const handlePrefetch = useCallback((path: string) => {
@@ -204,7 +207,7 @@ export default function Navbar() {
               {brandLogo ? (
                 <img src={brandLogo} alt={brandName} className={`${isScrolled ? 'h-7' : 'h-8'} mr-2 transition-all duration-300`} />
               ) : (
-                <div className={`${isScrolled ? 'w-7 h-7' : 'w-8 h-8'} bg-[#14b8a6] rounded-lg flex items-center justify-center text-white font-bold text-xl mr-2 shadow-sm transition-all duration-300`}>
+                <div className={`${isScrolled ? 'w-7 h-7' : 'w-8 h-8'} bg-primary-500 rounded-lg flex items-center justify-center text-white font-bold text-xl mr-2 shadow-sm transition-all duration-300`}>
                   {brandName.charAt(0)}
                 </div>
               )}
@@ -224,14 +227,14 @@ export default function Navbar() {
                     to={item.path}
                     onMouseEnter={() => handlePrefetch(item.path)}
                     className={`relative px-3 py-4 transition-colors ${
-                      isActive ? 'text-[#14b8a6] font-bold' : 'text-[#4b5563] hover:text-[#111827] font-medium'
+                      isActive ? 'text-primary-500 font-bold' : 'text-[#4b5563] hover:text-[#111827] font-medium'
                     }`}
                   >
                     {item.label}
                     {isActive && (
                       <motion.div
                         layoutId="navbar-indicator"
-                        className="absolute bottom-2 left-0 right-0 h-[3px] bg-[#14b8a6] rounded-full mx-3"
+                        className="absolute bottom-2 left-0 right-0 h-[3px] bg-primary-500 rounded-full mx-3"
                         transition={{
                           type: "spring",
                           stiffness: 500,
@@ -265,13 +268,13 @@ export default function Navbar() {
                 onChange={e => setNavSearch(e.target.value)}
                 onKeyDown={handleSearchKeyDown}
                 onFocus={handleSearchFocus}
-                className={`${isScrolled ? 'w-[360px]' : 'w-[200px]'} pl-4 pr-10 py-1.5 bg-[#f3f4f6] border border-transparent rounded-full text-sm text-[#111827] focus:outline-none focus:ring-2 focus:ring-[#14b8a6] focus:bg-white placeholder-[#9ca3af] transition-all duration-300`}
+                className={`${isScrolled ? 'w-[360px]' : 'w-[200px]'} pl-4 pr-10 py-1.5 bg-[#f3f4f6] border border-transparent rounded-full text-sm text-[#111827] focus:outline-none focus:ring-2 focus:ring-primary-500 focus:bg-white placeholder-[#9ca3af] transition-all duration-300`}
               />
               <div
                 className="absolute right-3 top-1/2 -translate-y-1/2"
                 onClick={handleNavSearch}
               >
-                <Search className="h-4 w-4 text-[#9ca3af] cursor-pointer hover:text-[#14b8a6] transition-colors" />
+                <Search className="h-4 w-4 text-[#9ca3af] cursor-pointer hover:text-primary-500 transition-colors" />
               </div>
 
               {/* 搜索历史下拉 */}
@@ -314,7 +317,7 @@ export default function Navbar() {
                 {/* 通知铃铛 */}
                 <Link
                   to="/notifications"
-                  className="relative p-2 text-gray-500 hover:text-[#14b8a6] transition-colors rounded-lg hover:bg-gray-50"
+                  className="relative p-2 text-gray-500 hover:text-primary-500 transition-colors rounded-lg hover:bg-gray-50"
                   aria-label={unreadCount > 0 ? `通知，${unreadCount}条未读` : '通知'}
                 >
                   <Bell className="w-5 h-5" />
@@ -392,9 +395,9 @@ export default function Navbar() {
                             <Bell className="w-4 h-4 text-gray-400" />
                             我的消息
                             {unreadCount > 0 && (
-                              <span className="ml-auto px-1.5 py-0.5 bg-red-100 text-red-600 text-[10px] font-medium rounded-full">
+                              <Tag variant="red" size="xs" className="ml-auto">
                                 {unreadCount}
-                              </span>
+                              </Tag>
                             )}
                           </Link>
                         </div>
@@ -415,7 +418,7 @@ export default function Navbar() {
               </>
             ) : (
               <div className="flex items-center gap-3 sm:gap-4 pl-2 border-l border-gray-200">
-                <Link to="/login" className="flex items-center gap-1.5 text-[#4b5563] text-sm font-medium hover:text-[#14b8a6] whitespace-nowrap transition-colors">
+                <Link to="/login" className="flex items-center gap-1.5 text-[#4b5563] text-sm font-medium hover:text-primary-500 whitespace-nowrap transition-colors">
                   <UserCircle className="w-5 h-5" />
                   登录 / 注册
                 </Link>
@@ -542,9 +545,9 @@ export default function Navbar() {
                   <Bell className="w-4 h-4 text-gray-400" />
                   我的消息
                   {unreadCount > 0 && (
-                    <span className="ml-auto px-1.5 py-0.5 bg-red-100 text-red-600 text-[10px] font-medium rounded-full">
+                    <Tag variant="red" size="xs" className="ml-auto">
                       {unreadCount}
-                    </span>
+                    </Tag>
                   )}
                 </Link>
                 <button

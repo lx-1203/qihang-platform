@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { Star, Clock, BookOpen, Users, Play, ArrowLeft, Heart, Share2, Loader2, AlertCircle, Tag, BarChart3 } from 'lucide-react';
+import { Star, Clock, BookOpen, Users, Play, ArrowLeft, Heart, Share2, Loader2, AlertCircle, Tag as TagIcon, BarChart3 } from 'lucide-react';
+import TagComponent from '@/components/ui/Tag';
 import { motion } from 'framer-motion';
 import http from '@/api/http';
 import { useAuthStore } from '@/store/auth';
@@ -208,13 +209,16 @@ export default function CourseDetail() {
               className="flex-1 flex flex-col"
             >
               <div className="flex items-start gap-3 mb-4">
-                <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${difficulty.color}`}>
+                <TagComponent
+                  variant={course.difficulty === 'beginner' ? 'green' : course.difficulty === 'intermediate' ? 'blue' : 'purple'}
+                  size="md"
+                >
                   {difficulty.label}
-                </span>
+                </TagComponent>
                 {course.category && (
-                  <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
+                  <TagComponent variant="gray" size="md">
                     {course.category}
-                  </span>
+                  </TagComponent>
                 )}
               </div>
 
@@ -256,10 +260,10 @@ export default function CourseDetail() {
               {course.tags && course.tags.length > 0 && (
                 <div className="flex flex-wrap gap-2 mb-6">
                   {course.tags.map((tag, index) => (
-                    <span key={index} className="inline-flex items-center gap-1 px-3 py-1 bg-primary-50 text-primary-700 rounded-full text-xs font-medium">
-                      <Tag size={12} />
+                    <TagComponent key={index} variant="primary" size="md" className="inline-flex items-center gap-1">
+                      <TagIcon size={12} />
                       {tag}
-                    </span>
+                    </TagComponent>
                   ))}
                 </div>
               )}
