@@ -14,8 +14,8 @@ const services = [
     desc: 'AI智能岗位推荐',
     detail: '基于你的专业、技能和求职偏好，智能匹配最适合的岗位',
     icon: Target,
-    gradient: 'from-blue-500 to-blue-600',
-    bg: 'bg-blue-50',
+    gradient: 'from-violet-500 to-purple-600',
+    bg: 'bg-violet-50',
     link: '/jobs',
   },
   {
@@ -23,8 +23,8 @@ const services = [
     desc: '500+合作企业免中介',
     detail: '直接对接企业HR，省去中间环节，高效投递',
     icon: Building2,
-    gradient: 'from-teal-500 to-teal-600',
-    bg: 'bg-teal-50',
+    gradient: 'from-indigo-500 to-blue-600',
+    bg: 'bg-indigo-50',
     link: '/jobs',
   },
   {
@@ -32,8 +32,8 @@ const services = [
     desc: '行业导师实时预约',
     detail: '来自BAT/TMD一线大厂的行业导师，一对一深度辅导',
     icon: Users,
-    gradient: 'from-purple-500 to-purple-600',
-    bg: 'bg-purple-50',
+    gradient: 'from-fuchsia-500 to-pink-600',
+    bg: 'bg-fuchsia-50',
     link: '/mentors',
   },
   {
@@ -41,7 +41,7 @@ const services = [
     desc: '干货满满随时学习',
     detail: '简历撰写、面试技巧、职业规划等精品课程免费学',
     icon: BookOpen,
-    gradient: 'from-amber-500 to-amber-600',
+    gradient: 'from-amber-400 to-orange-500',
     bg: 'bg-amber-50',
     link: '/courses',
   },
@@ -50,7 +50,7 @@ const services = [
     desc: '逐句打磨高转化率',
     detail: '资深HR逐句精修你的简历，提升面试邀约率200%+',
     icon: FileEdit,
-    gradient: 'from-rose-500 to-rose-600',
+    gradient: 'from-rose-400 to-red-500',
     bg: 'bg-rose-50',
     link: '/mentors',
   },
@@ -59,8 +59,8 @@ const services = [
     desc: '真实还原全流程复盘',
     detail: '1v1模拟真实面试场景，录像复盘+逐题点评+话术优化',
     icon: Mic,
-    gradient: 'from-indigo-500 to-indigo-600',
-    bg: 'bg-indigo-50',
+    gradient: 'from-cyan-400 to-primary-500',
+    bg: 'bg-cyan-50',
     link: '/mentors',
   },
   {
@@ -68,8 +68,8 @@ const services = [
     desc: '投递进度实时通知',
     detail: '简历投递状态实时更新，已读/筛选/面试全程可追踪',
     icon: BarChart3,
-    gradient: 'from-cyan-500 to-cyan-600',
-    bg: 'bg-cyan-50',
+    gradient: 'from-emerald-400 to-green-500',
+    bg: 'bg-emerald-50',
     link: '/guidance',
   },
   {
@@ -77,8 +77,8 @@ const services = [
     desc: '5000+学员拿到Offer',
     detail: '真实学员成功故事，从迷茫到拿到心仪Offer的完整路径',
     icon: Trophy,
-    gradient: 'from-emerald-500 to-emerald-600',
-    bg: 'bg-emerald-50',
+    gradient: 'from-lime-400 to-yellow-500',
+    bg: 'bg-lime-50',
     link: '/guidance',
   },
 ];
@@ -133,7 +133,7 @@ export default function ServiceGrid() {
       <div className="text-center mt-10">
         <Link
           to="/guidance"
-          className="inline-flex items-center gap-2 rounded-full px-8 py-3 border-2 border-primary-600 text-primary-600 font-semibold hover:bg-primary-600 hover:text-white transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg"
+          className="inline-flex items-center gap-2 rounded-full px-10 py-3.5 bg-gradient-to-r from-violet-600 to-purple-600 text-white font-bold hover:from-violet-500 hover:to-purple-500 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-xl hover:shadow-violet-500/30"
         >
           了解全部平台服务与特色
           <ArrowRight className="w-4 h-4" />

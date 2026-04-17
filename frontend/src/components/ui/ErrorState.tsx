@@ -1,5 +1,6 @@
 import { AlertTriangle, RefreshCw, Database } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { useReducedMotion } from '@/hooks/useReducedMotion';
 
 interface ErrorStateProps {
   /** 错误消息 */
@@ -26,6 +27,8 @@ export default function ErrorState({
   className = '',
   compact = false,
 }: ErrorStateProps) {
+  const prefersReduced = useReducedMotion();
+  const fadeTransition = prefersReduced ? { duration: 0 } : undefined;
   // compact 变体：行内小尺寸错误提示
   if (compact) {
     return (
@@ -45,6 +48,7 @@ export default function ErrorState({
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
+      transition={fadeTransition}
       className={`flex flex-col items-center justify-center py-16 px-4 ${className}`}
     >
       <div className="w-16 h-16 rounded-full bg-red-50 flex items-center justify-center mb-4">

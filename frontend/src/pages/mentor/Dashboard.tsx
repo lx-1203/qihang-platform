@@ -83,7 +83,7 @@ export default function MentorDashboardPage() {
     <div className="space-y-6">
       {/* ====== 导师欢迎区 —— 绿色温暖教学风格 ====== */}
       <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}
-        className="bg-gradient-to-r from-emerald-500 via-teal-600 to-emerald-600 rounded-2xl p-6 text-white relative overflow-hidden"
+        className="bg-gradient-to-r from-emerald-500 via-primary-600 to-emerald-600 rounded-2xl p-6 text-white relative overflow-hidden"
       >
         <div className="absolute top-0 right-0 w-48 h-48 bg-white/10 rounded-full blur-3xl" />
         <div className="relative z-10">
@@ -241,14 +241,14 @@ export default function MentorDashboardPage() {
         <div className="bg-white rounded-xl p-5 border border-gray-100">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-sm font-bold text-gray-900 flex items-center gap-2">
-              <Video className="w-4 h-4 text-teal-600" /> 我的课程
+              <Video className="w-4 h-4 text-primary-600" /> 我的课程
             </h3>
             <Link to="/mentor/courses" className="text-xs text-emerald-600 hover:underline">管理课程</Link>
           </div>
           <div className="grid grid-cols-2 gap-3">
             {courses.map((c, i) => (
               <motion.div key={i} initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: i * 0.1 }}
-                className={`rounded-xl p-4 border ${c.status === 'draft' ? 'border-dashed border-gray-300 bg-gray-50' : 'border-gray-100 bg-gradient-to-br from-emerald-50 to-teal-50'}`}
+                className={`rounded-xl p-4 border ${c.status === 'draft' ? 'border-dashed border-gray-300 bg-gray-50' : 'border-gray-100 bg-gradient-to-br from-emerald-50 to-primary-50'}`}
               >
                 <h4 className="text-sm font-bold text-gray-900 mb-2">{c.title}</h4>
                 {c.status === 'active' ? (
@@ -278,7 +278,7 @@ export default function MentorDashboardPage() {
                 <div className="flex-1 h-6 bg-gray-100 rounded-full overflow-hidden">
                   <motion.div initial={{ width: 0 }} animate={{ width: `${(s.count / serviceMax) * 100}%` }}
                     transition={{ delay: 0.5 + i * 0.1 }}
-                    className="h-full bg-gradient-to-r from-emerald-500 to-teal-400 rounded-full flex items-center justify-end pr-2"
+                    className="h-full bg-gradient-to-r from-emerald-500 to-primary-400 rounded-full flex items-center justify-end pr-2"
                   >
                     <span className="text-[10px] font-bold text-white">{s.count}</span>
                   </motion.div>

@@ -51,6 +51,10 @@ const AdminSettings = lazy(() => import('../pages/admin/Settings'));
 const AdminStudyAbroad = lazy(() => import('../pages/admin/StudyAbroad'));
 const AdminStudyAbroadConfig = lazy(() => import('../pages/admin/StudyAbroadConfig'));
 const AdminHomeConfig = lazy(() => import('../pages/admin/HomeConfig'));
+const PostgradConfig = lazy(() => import('../pages/admin/PostgradConfig'));
+const EntrepreneurshipConfig = lazy(() => import('../pages/admin/EntrepreneurshipConfig'));
+const BackgroundBoostConfig = lazy(() => import('../pages/admin/BackgroundBoostConfig'));
+const SuccessCasesConfig = lazy(() => import('../pages/admin/SuccessCasesConfig'));
 const AdminThemeConfig = lazy(() => import('../pages/admin/ThemeConfig'));
 const AdminAnnouncements = lazy(() => import('../pages/admin/Announcements'));
 const AdminChatManage = lazy(() => import('../pages/admin/ChatManage'));
@@ -76,7 +80,7 @@ const MentorResources = lazy(() => import('../pages/mentor/Resources'));
 // eslint-disable-next-line react-refresh/only-export-components
 const LoadingFallback = () => (
   <div className="flex items-center justify-center min-h-screen">
-    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-500"></div>
+    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500"></div>
   </div>
 );
 
@@ -331,6 +335,22 @@ export const router = createBrowserRouter([
       {
         path: 'home-config',
         element: <Suspense fallback={<LoadingFallback />}><AdminHomeConfig /></Suspense>
+      },
+      {
+        path: 'postgrad-config',
+        element: <Suspense fallback={<LoadingFallback />}><PostgradConfig /></Suspense>
+      },
+      {
+        path: 'entrepreneurship-config',
+        element: <Suspense fallback={<LoadingFallback />}><EntrepreneurshipConfig /></Suspense>
+      },
+      {
+        path: 'backgroundboost-config',
+        element: <Suspense fallback={<LoadingFallback />}><BackgroundBoostConfig /></Suspense>
+      },
+      {
+        path: 'successcases-config',
+        element: <Suspense fallback={<LoadingFallback />}><SuccessCasesConfig /></Suspense>
       },
       {
         path: 'theme-config',

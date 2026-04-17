@@ -141,7 +141,7 @@ export default function ProgramCard({ program, university, mode }: ProgramCardPr
                 initial={{ width: 0 }}
                 whileInView={{ width: `${admissionRate}%` }}
                 viewport={{ once: true }}
-                transition={{ duration: 0.8, ease: 'easeOut', delay: 0.2 }}
+                transition={{ duration: 0.4, ease: 'easeOut', delay: 0.15 }}
               />
             </div>
           </div>

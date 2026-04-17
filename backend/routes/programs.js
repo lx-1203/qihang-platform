@@ -72,19 +72,22 @@ router.get('/', async (req, res) => {
     );
 
     res.json({
-      programs: parsed,
-      total,
-      page: Number(page),
-      pageSize: Number(pageSize),
-      filters: {
-        categories: categories.map(c => c.category),
-        degrees: degrees.map(d => d.degree),
-        regions: regions.map(r => r.region),
+      code: 200,
+      data: {
+        programs: parsed,
+        total,
+        page: Number(page),
+        pageSize: Number(pageSize),
+        filters: {
+          categories: categories.map(c => c.category),
+          degrees: degrees.map(d => d.degree),
+          regions: regions.map(r => r.region),
+        },
       },
     });
   } catch (err) {
     console.error('获取专业列表失败:', err);
-    res.status(500).json({ error: '服务器内部错误' });
+    res.status(500).json({ code: 500, message: '服务器内部错误' });
   }
 });
 
@@ -120,10 +123,10 @@ router.get('/:id', async (req, res) => {
     program.tags = typeof program.tags === 'string' ? JSON.parse(program.tags) : (program.tags || []);
     program.career_paths = typeof program.career_paths === 'string' ? JSON.parse(program.career_paths) : (program.career_paths || []);
 
-    res.json(program);
+    res.json({ code: 200, data: program });
   } catch (err) {
     console.error('获取专业详情失败:', err);
-    res.status(500).json({ error: '服务器内部错误' });
+    res.status(500).json({ code: 500, message: '服务器内部错误' });
   }
 });
 

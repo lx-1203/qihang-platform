@@ -10,7 +10,7 @@
       "id": "slide-1",
       "title": "你的职业发展，\n从启航开始",
       "subtitle": "连接梦想与机遇，助力每一位大学生迈向理想职业",
-      "gradient": "from-teal-600 via-emerald-700 to-teal-800",
+      "gradient": "from-violet-600 via-purple-600 to-indigo-700",
       "cta": "开始探索",
       "ctaLink": "/jobs"
     },
@@ -18,7 +18,7 @@
       "id": "slide-2",
       "title": "大咖导师\n1对1辅导",
       "subtitle": "简历精修、模拟面试、职业规划，帮你拿到心仪Offer",
-      "gradient": "from-blue-600 via-indigo-700 to-blue-800",
+      "gradient": "from-indigo-500 via-blue-600 to-cyan-700",
       "cta": "找导师",
       "ctaLink": "/mentors"
     },
@@ -26,7 +26,7 @@
       "id": "slide-3",
       "title": "留学 · 考研 · 创业\n一站全覆盖",
       "subtitle": "无论你选择哪条路，我们都为你保驾护航",
-      "gradient": "from-purple-600 via-violet-700 to-purple-800",
+      "gradient": "from-fuchsia-500 via-pink-600 to-rose-700",
       "cta": "了解更多",
       "ctaLink": "/study-abroad"
     }
@@ -38,32 +38,32 @@
       "desc": "名企实习/校招",
       "icon": "Briefcase",
       "link": "/jobs",
-      "color": "text-blue-600",
-      "bg": "bg-gradient-to-br from-blue-50 to-blue-100/50"
+      "color": "text-indigo-600",
+      "bg": "bg-gradient-to-br from-indigo-50 to-indigo-100/70"
     },
     {
       "label": "大咖1v1",
       "desc": "导师辅导预约",
       "icon": "MessageCircle",
       "link": "/mentors",
-      "color": "text-teal-600",
-      "bg": "bg-gradient-to-br from-teal-50 to-teal-100/50"
+      "color": "text-violet-600",
+      "bg": "bg-gradient-to-br from-violet-50 to-violet-100/70"
     },
     {
       "label": "干货资料库",
       "desc": "免费课程学习",
       "icon": "BookOpen",
       "link": "/courses",
-      "color": "text-amber-600",
-      "bg": "bg-gradient-to-br from-amber-50 to-amber-100/50"
+      "color": "text-amber-500",
+      "bg": "bg-gradient-to-br from-amber-50 to-orange-100/70"
     },
     {
       "label": "留学申请",
       "desc": "院校评估/文书",
       "icon": "Globe",
       "link": "/study-abroad",
-      "color": "text-purple-600",
-      "bg": "bg-gradient-to-br from-purple-50 to-purple-100/50",
+      "color": "text-fuchsia-600",
+      "bg": "bg-gradient-to-br from-fuchsia-50 to-pink-100/70",
       "badge": "new"
     },
     {
@@ -71,15 +71,15 @@
       "desc": "择校/备考策略",
       "icon": "GraduationCap",
       "link": "/postgrad",
-      "color": "text-rose-600",
-      "bg": "bg-gradient-to-br from-rose-50 to-rose-100/50"
+      "color": "text-rose-500",
+      "bg": "bg-gradient-to-br from-rose-50 to-red-100/70"
     }
   ],
 
   "courseColors": [
-    "from-teal-400 to-emerald-500",
-    "from-blue-400 to-indigo-500",
-    "from-purple-400 to-violet-500",
+    "from-violet-400 to-purple-500",
+    "from-indigo-400 to-blue-500",
+    "from-fuchsia-400 to-pink-500",
     "from-amber-400 to-orange-500"
   ],
 
@@ -156,5 +156,57 @@
         "数据化运营提升辅导质量"
       ]
     }
-  ]
+  ],
+
+  "textResources": {
+    "hero": {
+      "registerBtn": "免费注册",
+      "searchPlaceholder": "搜索岗位、课程、导师..."
+    },
+    "welcome": {
+      "title": "欢迎回来，{nickname}！",
+      "subtitle": "继续你的求职之旅",
+      "avatarFallback": "用",
+      "guideTitle": "快速上手指南",
+      "quickActions": [
+        { "label": "我的投递", "link": "/student/applications" },
+        { "label": "我的预约", "link": "/student/appointments" },
+        { "label": "我的收藏", "link": "/student/favorites" }
+      ]
+    },
+    "sections": {
+      "jobs": {
+        "titleAuth": "为你推荐 — 热门岗位",
+        "titleGuest": "热门校招岗位",
+        "viewMore": "查看更多",
+        "errorState": "岗位数据加载失败",
+        "emptyState": "暂无在招岗位",
+        "browseAll": "浏览全部职位 →",
+        "companyFallback": "企"
+      },
+      "mentors": {
+        "title": "大咖导师推荐",
+        "viewMore": "查看更多",
+        "errorState": "导师数据加载失败",
+        "emptyState": "暂无认证导师",
+        "browseAll": "浏览全部导师 →",
+        "mentorFallback": "导"
+      },
+      "courses": {
+        "title": "免费课程精选",
+        "viewMore": "查看更多",
+        "errorState": "课程数据加载失败",
+        "emptyState": "暂无课程",
+        "browseAll": "浏览全部课程 →"
+      },
+      "successCases": {
+        "viewMore": "查看更多成功案例"
+      },
+      "valueProposition": {
+        "title": "一个平台，三方受益",
+        "subtitle": "启航平台连接学生、企业、导师，让每一方都获得价值",
+        "ctaText": "立即开始你的求职之旅"
+      }
+    }
+  }
 }

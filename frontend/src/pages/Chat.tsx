@@ -409,12 +409,12 @@ export default function Chat() {
           style={{ minHeight: 'calc(100vh - 260px)' }}
         >
           {/* 左侧：FAQ 列表 */}
-          <div className="lg:col-span-2 bg-white rounded-2xl shadow-sm border border-gray-100 p-6 overflow-y-auto" style={{ maxHeight: 'calc(100vh - 260px)' }}>
+          <div className="lg:col-span-2 bg-white rounded-2xl shadow-sm border border-gray-100 p-6 overflow-y-auto max-h-[calc(100vh-260px)]">
             <FAQList />
           </div>
 
           {/* 右侧：体验对话区 */}
-          <div className="lg:col-span-3 bg-white rounded-2xl shadow-sm border border-gray-100 flex flex-col overflow-hidden" style={{ maxHeight: 'calc(100vh - 260px)' }}>
+          <div className="lg:col-span-3 bg-white rounded-2xl shadow-sm border border-gray-100 flex flex-col overflow-hidden max-h-[calc(100vh-260px)]">
             {/* 对话头部 */}
             <div className="px-4 sm:px-6 py-3 border-b border-gray-100 flex items-center gap-3">
               <div className="w-9 h-9 rounded-full bg-gradient-to-br from-violet-100 to-purple-100 flex items-center justify-center flex-shrink-0">
@@ -525,7 +525,9 @@ export default function Chat() {
                   </div>
                   <Link
                     to="/login?returnUrl=/chat"
-                    className="inline-flex items-center gap-2 px-6 py-2.5 bg-primary-600 text-white rounded-xl hover:bg-primary-700 transition-colors font-medium shadow-lg shadow-primary-600/20 text-sm"
+                    className="inline-flex items-center gap-2 px-8 py-3 bg-gradient-to-r from-violet-500 to-purple-600 text-white rounded-xl
+                      hover:from-violet-400 hover:to-purple-500 transition-colors font-bold shadow-lg shadow-violet-500/25 text-sm
+                      active:scale-[0.97] focus-visible:ring-2 focus-visible:ring-violet-400/50 focus-visible:outline-none"
                   >
                     <LogIn className="w-4 h-4" />
                     登录 / 注册
@@ -568,8 +570,7 @@ export default function Chat() {
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.05 }}
-        className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden"
-        style={{ height: 'calc(100vh - 220px)', minHeight: '500px' }}
+        className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden h-[calc(100vh-220px)] min-h-[500px]"
       >
         <div className="flex h-full">
           {/* ====== 左侧：会话列表 ====== */}
@@ -584,7 +585,10 @@ export default function Chat() {
               <button
                 onClick={handleCreateConversation}
                 disabled={creating}
-                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-primary-600 text-white rounded-xl hover:bg-primary-700 disabled:opacity-60 transition-all text-sm font-medium shadow-sm"
+                className="w-full flex items-center justify-center gap-2 px-5 py-3 bg-gradient-to-r from-violet-500 to-purple-600 text-white rounded-xl
+                  hover:from-violet-400 hover:to-purple-500 disabled:opacity-60 transition-all text-sm font-bold shadow-lg shadow-violet-500/25
+                  hover:shadow-xl hover:-translate-y-0.5
+                  active:scale-[0.97] focus-visible:ring-2 focus-visible:ring-violet-400/50 focus-visible:outline-none"
               >
                 {creating ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
@@ -806,7 +810,9 @@ export default function Chat() {
                     <button
                       onClick={handleCreateConversation}
                       disabled={creating}
-                      className="mt-2 inline-flex items-center gap-1.5 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-60 transition-colors text-xs font-medium"
+                      className="mt-2 inline-flex items-center gap-1.5 px-5 py-2.5 bg-gradient-to-r from-violet-500 to-purple-600 text-white rounded-lg
+                        hover:from-violet-400 hover:to-purple-500 disabled:opacity-60 transition-colors text-xs font-bold
+                        active:scale-[0.97] focus-visible:ring-2 focus-visible:ring-violet-400/50 focus-visible:outline-none"
                     >
                       {creating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />}
                       新建会话
@@ -833,7 +839,9 @@ export default function Chat() {
                   <button
                     onClick={handleCreateConversation}
                     disabled={creating}
-                    className="inline-flex items-center gap-2 px-5 py-2.5 bg-primary-600 text-white rounded-xl hover:bg-primary-700 disabled:opacity-60 transition-all text-sm font-medium shadow-lg shadow-primary-600/20"
+                    className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-violet-500 to-purple-600 text-white rounded-xl
+                      hover:from-violet-400 hover:to-purple-500 disabled:opacity-60 transition-all text-sm font-bold shadow-lg shadow-violet-500/25
+                      hover:shadow-xl active:scale-[0.97] focus-visible:ring-2 focus-visible:ring-violet-400/50 focus-visible:outline-none"
                   >
                     {creating ? (
                       <Loader2 className="w-4 h-4 animate-spin" />

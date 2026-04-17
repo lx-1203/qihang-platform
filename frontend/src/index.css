@@ -4,23 +4,23 @@
 
 /* ====== 设计令牌 — CSS 变量 ====== */
 :root {
-  /* 品牌色（RGB 值，配合 Tailwind alpha 通道使用） */
-  --color-primary-50: 240 253 250;
-  --color-primary-100: 204 251 241;
-  --color-primary-200: 153 246 228;
-  --color-primary-300: 94 234 212;
-  --color-primary-400: 45 212 191;
-  --color-primary-500: 20 184 166;
-  --color-primary-600: 13 148 136;
-  --color-primary-700: 15 118 110;
-  --color-primary-800: 17 94 89;
-  --color-primary-900: 19 78 74;
+  /* 品牌色（湖绿 Teal 系列 — 专业、清新、现代） */
+  --color-primary-50: 240 253 250;    /* 最浅湖绿 */
+  --color-primary-100: 204 251 241;   /* 浅湖绿 */
+  --color-primary-200: 153 246 228;   /* 淡湖绿 */
+  --color-primary-300: 94 234 212;    /* 中浅湖绿 */
+  --color-primary-400: 45 212 191;    /* 中湖绿 */
+  --color-primary-500: 20 184 166;    /* 主品牌色 — 湖绿 #14b8a6 */
+  --color-primary-600: 13 148 136;    /* 深湖绿 */
+  --color-primary-700: 15 118 110;    /* 更深湖绿 */
+  --color-primary-800: 17 94 89;      /* 深青绿 */
+  --color-primary-900: 19 78 74;      /*最深青绿 */
 
-  /* 辅助色 */
-  --color-accent: 249 115 22;       /* 活力橙 #f97316 */
-  --color-success: 34 197 94;       /* 成功绿 #22c55e */
-  --color-warning: 234 179 8;       /* 警告黄 #eab308 */
-  --color-danger: 239 68 68;        /* 危险红 #ef4444 */
+  /* 辅助色（高饱和度、鲜明易识别） */
+  --color-accent: 251 146 60;        /* 活力橙 #fb923c — 更亮更暖 */
+  --color-success: 34 197 94;        /* 成功绿 #22c55e — 保持鲜亮 */
+  --color-warning: 250 204 21;       /* 警告黄 #facc15 — 更明亮 */
+  --color-danger: 244 63 94;         /* 危险红 #f43f5e — 更鲜艳 */
 
   /* 社交媒体品牌色（备用，优先使用 Tailwind 语义化类名） */
   --color-social-instagram: 225 48 108;    /* Instagram #e1306c → pink-500 */
@@ -34,11 +34,12 @@
   --radius-xl: 1rem;       /* 16px — 大卡片、模态框 */
   --radius-2xl: 1.5rem;    /* 24px — 特殊容器 */
 
-  /* 阴影 */
-  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
-  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.04);
-  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.06);
+  /* 阴影（湖绿色调、更有层次感） */
+  --shadow-sm: 0 1px 3px 0 rgba(20, 184, 166, 0.08), 0 1px 2px -1px rgba(0, 0, 0, 0.04);
+  --shadow-md: 0 4px 8px -2px rgba(20, 184, 166, 0.12), 0 2px 4px -2px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 10px 20px -5px rgba(20, 184, 166, 0.15), 0 6px 10px -4px rgba(0, 0, 0, 0.08);
+  --shadow-xl: 0 20px 40px -10px rgba(20, 184, 166, 0.18), 0 10px 16px -6px rgba(0, 0, 0, 0.1);
+  --shadow-2xl: 0 25px 50px -12px rgba(20, 184, 166, 0.25);
 
   /* 间距（基于 4px 网格） */
   --spacing-xs: 0.25rem;   /* 4px */
@@ -163,6 +164,15 @@ button:focus-visible {
   /* 全宽容器 — 仅提供水平内边距 */
   .container-full {
     @apply w-full px-4 sm:px-6;
+  }
+
+  /* 隐藏滚动条（保留滚动功能）— 用于横向滚动的金刚区、标签栏等 */
+  .scrollbar-hide {
+    -ms-overflow-style: none;  /* IE & Edge */
+    scrollbar-width: none;     /* Firefox */
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;             /* Chrome, Safari, Opera */
   }
 }
 

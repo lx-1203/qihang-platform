@@ -58,15 +58,18 @@ router.get('/', async (req, res) => {
     const regions = regionRows.map(r => r.region);
 
     res.json({
-      universities: parsed,
-      total,
-      page: Number(page),
-      pageSize: Number(pageSize),
-      filters: { regions },
+      code: 200,
+      data: {
+        universities: parsed,
+        total,
+        page: Number(page),
+        pageSize: Number(pageSize),
+        filters: { regions },
+      },
     });
   } catch (err) {
     console.error('获取院校列表失败:', err);
-    res.status(500).json({ error: '服务器内部错误' });
+    res.status(500).json({ code: 500, message: '服务器内部错误' });
   }
 });
 
@@ -102,12 +105,15 @@ router.get('/:id', async (req, res) => {
     }));
 
     res.json({
-      ...university,
-      programs: parsedPrograms,
+      code: 200,
+      data: {
+        ...university,
+        programs: parsedPrograms,
+      },
     });
   } catch (err) {
     console.error('获取院校详情失败:', err);
-    res.status(500).json({ error: '服务器内部错误' });
+    res.status(500).json({ code: 500, message: '服务器内部错误' });
   }
 });
 
@@ -138,10 +144,10 @@ router.get('/:id/programs', async (req, res) => {
       career_paths: typeof p.career_paths === 'string' ? JSON.parse(p.career_paths) : (p.career_paths || []),
     }));
 
-    res.json({ programs: parsed, total: parsed.length });
+    res.json({ code: 200, data: { programs: parsed, total: parsed.length } });
   } catch (err) {
     console.error('获取院校专业列表失败:', err);
-    res.status(500).json({ error: '服务器内部错误' });
+    res.status(500).json({ code: 500, message: '服务器内部错误' });
   }
 });
 

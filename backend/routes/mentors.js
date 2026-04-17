@@ -55,14 +55,17 @@ router.get('/', async (req, res) => {
     }));
 
     res.json({
-      mentors: parsedMentors,
-      nextCursor,
-      hasMore: nextCursor !== null,
-      limit: pageLimit,
+      code: 200,
+      data: {
+        mentors: parsedMentors,
+        nextCursor,
+        hasMore: nextCursor !== null,
+        limit: pageLimit,
+      },
     });
   } catch (err) {
     console.error('获取导师列表失败:', err);
-    res.status(500).json({ error: '服务器内部错误' });
+    res.status(500).json({ code: 500, message: '服务器内部错误' });
   }
 });
 
@@ -83,10 +86,10 @@ router.get('/:id', async (req, res) => {
     mentor.available_time = typeof mentor.available_time === 'string' ? JSON.parse(mentor.available_time) : (mentor.available_time || []);
     mentor.rating = String(mentor.rating);
 
-    res.json(mentor);
+    res.json({ code: 200, data: mentor });
   } catch (err) {
     console.error('获取导师详情失败:', err);
-    res.status(500).json({ error: '服务器内部错误' });
+    res.status(500).json({ code: 500, message: '服务器内部错误' });
   }
 });
 

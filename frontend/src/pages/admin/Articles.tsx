@@ -1,14 +1,16 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import {
   Search, FileText, Plus, Edit, Trash2, Eye, EyeOff,
-  MoreVertical, Loader2, Save, X
+  MoreVertical, Loader2, Save, X,
+  ArrowUpDown, ArrowUp, ArrowDown
 } from 'lucide-react';
 import http from '@/api/http';
 import FileUpload from '@/components/ui/FileUpload';
 import MarkdownEditor from '@/components/admin/MarkdownEditor';
 import { showToast } from '@/components/ui/ToastContainer';
 import Tag from '@/components/ui/Tag';
+import ConfirmDialog from '@/components/ui/ConfirmDialog';
 
 type ArticleItem = {
   id: number;
@@ -47,6 +49,13 @@ export default function AdminArticles() {
     status: 'draft' as const,
   });
   const [saving, setSaving] = useState(false);
+
+  // 排序状态
+  const [sortField, setSortField] = useState<string>('created_at');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+
+  // 删除确认对话框
+  const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; articleId: number | null }>({ open: false, articleId: null });
 
   const fetchArticles = async (keyword = '', cat = '全部', stat = '') => {
     setLoading(true);
@@ -130,16 +139,22 @@ export default function AdminArticles() {
   };
 
   const handleDelete = async (id: number) => {
-    if (!confirm('确定要删除这篇文章吗？')) return;
-    
+    // 打开确认对话框
+    setDeleteDialog({ open: true, articleId: id });
+    setActionMenu(null);
+  };
+
+  // 确认删除
+  const confirmDelete = async () => {
+    if (deleteDialog.articleId === null) return;
     try {
-      await http.delete(`/admin/articles/${id}`);
+      await http.delete(`/admin/articles/${deleteDialog.articleId}`);
       showToast({ type: 'success', title: '文章删除成功' });
       fetchArticles(search, category, status);
     } catch {
       showToast({ type: 'error', title: '删除失败，请重试' });
     }
-    setActionMenu(null);
+    setDeleteDialog({ open: false, articleId: null });
   };
 
   const handleToggleStatus = async (article: ArticleItem) => {
@@ -162,6 +177,38 @@ export default function AdminArticles() {
   const formatDate = (dateStr: string) => {
     const d = new Date(dateStr);
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  };
+
+  // 排序处理
+  const handleSort = (field: string) => {
+    if (sortField === field) {
+      setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortOrder('asc');
+    }
+  };
+
+  // 排序后的文章列表
+  const sortedArticles = useMemo(() => {
+    if (!sortField) return articles;
+    return [...articles].sort((a, b) => {
+      let aVal = a[sortField as keyof ArticleItem];
+      let bVal = b[sortField as keyof ArticleItem];
+      if (typeof aVal === 'string') aVal = aVal.toLowerCase();
+      if (typeof bVal === 'string') bVal = bVal.toLowerCase();
+      if (aVal < bVal) return sortOrder === 'asc' ? -1 : 1;
+      if (aVal > bVal) return sortOrder === 'asc' ? 1 : -1;
+      return 0;
+    });
+  }, [articles, sortField, sortOrder]);
+
+  // 排序图标
+  const SortIcon = ({ field }: { field: string }) => {
+    if (sortField !== field) return <ArrowUpDown className="w-3.5 h-3.5 text-gray-400" />;
+    return sortOrder === 'asc'
+      ? <ArrowUp className="w-3.5 h-3.5 text-indigo-600" />
+      : <ArrowDown className="w-3.5 h-3.5 text-indigo-600" />;
   };
 
   return (
@@ -243,17 +290,42 @@ export default function AdminArticles() {
           <table className="w-full">
             <thead>
               <tr className="bg-gray-50 border-b border-gray-100">
-                <th className="text-left px-6 py-3.5 text-xs font-medium text-gray-500 uppercase">文章</th>
-                <th className="text-left px-6 py-3.5 text-xs font-medium text-gray-500 uppercase">分类</th>
+                <th
+                  className="text-left px-6 py-3.5 text-xs font-medium text-gray-500 uppercase cursor-pointer hover:text-gray-700 select-none"
+                  onClick={() => handleSort('title')}
+                >
+                  <div className="flex items-center gap-1">文章 <SortIcon field="title" /></div>
+                </th>
+                <th
+                  className="text-left px-6 py-3.5 text-xs font-medium text-gray-500 uppercase cursor-pointer hover:text-gray-700 select-none"
+                  onClick={() => handleSort('category')}
+                >
+                  <div className="flex items-center gap-1">分类 <SortIcon field="category" /></div>
+                </th>
                 <th className="text-left px-6 py-3.5 text-xs font-medium text-gray-500 uppercase">作者</th>
-                <th className="text-left px-6 py-3.5 text-xs font-medium text-gray-500 uppercase">浏览</th>
-                <th className="text-left px-6 py-3.5 text-xs font-medium text-gray-500 uppercase">状态</th>
-                <th className="text-left px-6 py-3.5 text-xs font-medium text-gray-500 uppercase">创建时间</th>
+                <th
+                  className="text-left px-6 py-3.5 text-xs font-medium text-gray-500 uppercase cursor-pointer hover:text-gray-700 select-none"
+                  onClick={() => handleSort('view_count')}
+                >
+                  <div className="flex items-center gap-1">浏览 <SortIcon field="view_count" /></div>
+                </th>
+                <th
+                  className="text-left px-6 py-3.5 text-xs font-medium text-gray-500 uppercase cursor-pointer hover:text-gray-700 select-none"
+                  onClick={() => handleSort('status')}
+                >
+                  <div className="flex items-center gap-1">状态 <SortIcon field="status" /></div>
+                </th>
+                <th
+                  className="text-left px-6 py-3.5 text-xs font-medium text-gray-500 uppercase cursor-pointer hover:text-gray-700 select-none"
+                  onClick={() => handleSort('created_at')}
+                >
+                  <div className="flex items-center gap-1">创建时间 <SortIcon field="created_at" /></div>
+                </th>
                 <th className="text-right px-6 py-3.5 text-xs font-medium text-gray-500 uppercase">操作</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {articles.map((article, i) => (
+              {sortedArticles.map((article, i) => (
                 <motion.tr
                   key={article.id}
                   initial={{ opacity: 0 }}
@@ -469,6 +541,17 @@ export default function AdminArticles() {
           </div>
         </div>
       )}
+
+      {/* 删除确认对话框 */}
+      <ConfirmDialog
+        open={deleteDialog.open}
+        title="确定要删除这篇文章吗？"
+        description="删除后无法恢复，请谨慎操作。"
+        variant="danger"
+        confirmText="确认删除"
+        onConfirm={confirmDelete}
+        onCancel={() => setDeleteDialog({ open: false, articleId: null })}
+      />
     </div>
   );
 }

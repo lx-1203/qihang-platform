@@ -41,7 +41,7 @@ const INDUSTRY_PRESETS = [
 const CAREER_GOALS = [
   { label: '求职就业', icon: Briefcase, color: 'text-blue-600', bg: 'bg-blue-50' },
   { label: '考研深造', icon: GraduationCap, color: 'text-purple-600', bg: 'bg-purple-50' },
-  { label: '出国留学', icon: Globe, color: 'text-teal-600', bg: 'bg-teal-50' },
+  { label: '出国留学', icon: Globe, color: 'text-primary-600', bg: 'bg-primary-50' },
   { label: '考公考编', icon: BookOpen, color: 'text-amber-600', bg: 'bg-amber-50' },
   { label: '创业创新', icon: Lightbulb, color: 'text-rose-600', bg: 'bg-rose-50' },
   { label: '自由职业', icon: Star, color: 'text-green-600', bg: 'bg-green-50' },
@@ -506,7 +506,7 @@ export default function StudentPortrait() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
-            className="bg-gradient-to-br from-primary-500 to-teal-600 rounded-xl p-6 text-white"
+            className="bg-gradient-to-br from-primary-500 to-primary-600 rounded-xl p-6 text-white"
           >
             <h3 className="font-bold mb-3 flex items-center gap-2">
               <Sparkles className="w-5 h-5" />
@@ -533,7 +533,7 @@ export default function StudentPortrait() {
                           className="h-full bg-white rounded-full"
                           initial={{ width: 0 }}
                           animate={{ width: `${pct}%` }}
-                          transition={{ duration: 0.8, ease: 'easeOut' }}
+                          transition={{ duration: 0.4, ease: 'easeOut' }}
                         />
                       </div>
                     </div>

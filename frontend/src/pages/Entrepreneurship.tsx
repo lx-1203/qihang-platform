@@ -1,14 +1,24 @@
 import { Lightbulb, Rocket, Trophy, Users, Zap, ExternalLink, ChevronRight } from 'lucide-react';
 import Tag from '@/components/ui/Tag';
+import { useConfigStore } from '@/store/config';
 
-const COMPETITIONS = [
-  { id: 1, name: '“挑战杯”全国大学生课外学术科技作品竞赛', level: '国家级', status: '报名中', deadline: '2024-05-30', tags: ['学术研究', '科技创新'] },
-  { id: 2, name: '中国国际“互联网+”大学生创新创业大赛', level: '国家级', status: '即将开始', deadline: '2024-06-15', tags: ['创业项目', '商业计划'] },
-  { id: 3, name: '全国大学生电子商务“创新、创意及创业”挑战赛', level: '国家级', status: '进行中', deadline: '2024-04-20', tags: ['电商', '三创'] },
-  { id: 4, name: '全国大学生数学建模竞赛', level: '国家级', status: '报名中', deadline: '2024-09-01', tags: ['算法', '数据分析'] }
-];
+// 默认配置（当后端不可用时使用）
+const DEFAULT_ENTREPRENEURSHIP_CONFIG = {
+  competitions: [
+    { id: 1, name: '"挑战杯"全国大学生课外学术科技作品竞赛', level: '国家级', status: '报名中', deadline: '2024-05-30', tags: ['学术研究', '科技创新'] },
+    { id: 2, name: '中国国际"互联网+"大学生创新创业大赛', level: '国家级', status: '即将开始', deadline: '2024-06-15', tags: ['创业项目', '商业计划'] },
+    { id: 3, name: '全国大学生电子商务"创新、创意及创业"挑战赛', level: '国家级', status: '进行中', deadline: '2024-04-20', tags: ['电商', '三创'] },
+    { id: 4, name: '全国大学生数学建模竞赛', level: '国家级', status: '报名中', deadline: '2024-09-01', tags: ['算法', '数据分析'] }
+  ],
+  heroTitle: '点燃你的创业梦',
+  heroDesc: '寻找志同道合的合伙人，获取专业的创业指导，参与顶级赛事，对接天使投资。让每一个疯狂的想法都有机会改变世界。'
+};
 
 export default function Entrepreneurship() {
+  const entrepreneurshipConfig = useConfigStore(s => s.getJson('entrepreneurship_page_config', DEFAULT_ENTREPRENEURSHIP_CONFIG));
+  const COMPETITIONS = entrepreneurshipConfig.competitions || DEFAULT_ENTREPRENEURSHIP_CONFIG.competitions;
+  const heroTitle = entrepreneurshipConfig.heroTitle || DEFAULT_ENTREPRENEURSHIP_CONFIG.heroTitle;
+  const heroDesc = entrepreneurshipConfig.heroDesc || DEFAULT_ENTREPRENEURSHIP_CONFIG.heroDesc;
   return (
     <div className="min-h-screen bg-gray-50 pt-8 pb-16">
       <div className="container-main">
@@ -23,10 +33,10 @@ export default function Entrepreneurship() {
               <Rocket className="w-4 h-4 text-primary-500" /> 激发无限潜能
             </div>
             <h1 className="text-[36px] md:text-[48px] font-bold text-white mb-4 leading-tight">
-              点燃你的<span className="text-primary-500">创业梦</span>
+              {heroTitle}
             </h1>
             <p className="text-[16px] md:text-[18px] text-gray-300 leading-relaxed mb-8">
-              寻找志同道合的合伙人，获取专业的创业指导，参与顶级赛事，对接天使投资。让每一个疯狂的想法都有机会改变世界。
+              {heroDesc}
             </p>
             <div className="flex gap-4">
               <button className="bg-primary-500 text-white px-8 py-3.5 rounded-xl font-bold hover:bg-primary-700 transition-colors shadow-lg shadow-primary-500/20">

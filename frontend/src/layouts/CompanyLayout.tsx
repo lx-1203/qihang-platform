@@ -14,6 +14,7 @@ import {
   X
 } from 'lucide-react';
 import DevFloatButton from '../components/DevFloatButton';
+import { useAuthStore } from '../store/auth';
 
 const SIDEBAR_NAV = [
   { name: '企业总览', href: '/company/dashboard', icon: Building2 },
@@ -26,6 +27,7 @@ const SIDEBAR_NAV = [
 export default function CompanyLayout() {
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const { user } = useAuthStore();
 
   // 路由切换时关闭移动端侧边栏
   useEffect(() => {
@@ -126,7 +128,7 @@ export default function CompanyLayout() {
       {/* 主内容区 */}
       <main className="flex-1 md:ml-64 flex flex-col min-h-screen">
         {/* 顶部导航 */}
-        <header className="h-16 bg-white border-b border-gray-200 sticky top-0 z-10 flex items-center justify-between px-4 md:px-8">
+        <header className="h-16 bg-white border-b border-gray-200 sticky top-0 z-10 flex items-center justify-between px-4 md:px-8 shadow-sm">
           <div className="flex items-center gap-3">
             <button
               onClick={() => setSidebarOpen(true)}
@@ -150,9 +152,9 @@ export default function CompanyLayout() {
               <Mail className="w-6 h-6" />
             </button>
             <div className="flex items-center gap-3 pl-4 md:pl-6 border-l border-gray-200">
-              <img src="https://images.unsplash.com/photo-1611162617474-5b21e879e113?w=100&h=100&fit=crop" alt="Company Logo" className="w-8 h-8 rounded-md border border-gray-200 object-cover" />
+              <img src={user?.avatar || 'https://images.unsplash.com/photo-1611162617474-5b21e879e113?w=100&h=100&fit=crop'} alt="Company Logo" className="w-8 h-8 rounded-md border border-gray-200 object-cover" />
               <div className="hidden sm:flex flex-col">
-                <span className="text-sm font-bold text-gray-900 leading-tight">字节跳动 HR</span>
+                <span className="text-sm font-bold text-gray-900 leading-tight">{user?.name || '企业用户'}</span>
                 <span className="text-xs text-gray-500">已认证</span>
               </div>
             </div>
@@ -160,7 +162,7 @@ export default function CompanyLayout() {
         </header>
 
         {/* 路由占位符 */}
-        <div className="p-4 md:p-8 flex-1 overflow-auto bg-slate-50">
+        <div className="p-4 md:p-8 flex-1 overflow-auto bg-gray-50">
           <Outlet />
         </div>
       </main>

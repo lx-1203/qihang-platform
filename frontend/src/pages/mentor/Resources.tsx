@@ -59,7 +59,7 @@ const TYPE_ICONS: Record<ResourceType, typeof FileText> = {
 const TYPE_COLORS: Record<ResourceType, { text: string; bg: string; tagVariant: 'blue' | 'purple' | 'primary' | 'orange' }> = {
   document: { text: 'text-blue-600', bg: 'bg-blue-50', tagVariant: 'blue' },
   video: { text: 'text-purple-600', bg: 'bg-purple-50', tagVariant: 'purple' },
-  link: { text: 'text-teal-600', bg: 'bg-teal-50', tagVariant: 'primary' },
+  link: { text: 'text-primary-600', bg: 'bg-primary-50', tagVariant: 'primary' },
   image: { text: 'text-amber-600', bg: 'bg-amber-50', tagVariant: 'orange' },
 };
 

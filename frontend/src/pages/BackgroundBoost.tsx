@@ -7,141 +7,153 @@ import {
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import Tag from '@/components/ui/Tag';
+import { useConfigStore } from '@/store/config';
 
-// ====== Mock 数据（后续全部由后台接口提供，禁止前端写死） ======
+// 默认配置（当后端不可用时使用）
+const DEFAULT_BG_BOOST_CONFIG = {
+  services: [
+    {
+      id: 1, title: '实习内推', icon: 'Briefcase', color: 'text-blue-500', bg: 'bg-blue-50', border: 'border-blue-100',
+      gradientFrom: 'from-blue-500', gradientTo: 'to-blue-600',
+      description: '大厂/外企/券商核心岗位实习机会，助力留学申请与职业发展',
+      features: [
+        '字节跳动、腾讯、阿里、美团等头部互联网',
+        '四大会计师事务所 (PwC/Deloitte/EY/KPMG) 核心岗位',
+        '中金、中信、高盛、摩根士丹利等券商投行实习',
+        'PTA 远程实习可选，时间灵活，适合在校学生',
+        '微软、Google、Amazon 等外企实习（海外方向）',
+        '内推成功率 85%+，部分岗位可免笔试'
+      ],
+      link: '/jobs', linkLabel: '查看实习岗位',
+      stats: { count: '500+', label: '可选岗位' },
+      cases: [
+        { name: '小王', school: '双非大三', result: '通过平台内推入职字节跳动后端实习', highlight: '双非逆袭' },
+        { name: '小李', school: '211金融', result: '拿到中金投行部暑期实习offer', highlight: '一次通过' },
+      ]
+    },
+    {
+      id: 2, title: '科研项目', icon: 'FlaskConical', color: 'text-purple-500', bg: 'bg-purple-50', border: 'border-purple-100',
+      gradientFrom: 'from-purple-500', gradientTo: 'to-purple-600',
+      description: '海内外知名教授带队科研课题，获取推荐信与科研成果',
+      features: [
+        'MIT/Stanford/Oxford/Cambridge 等海外教授课题',
+        '国内清华/北大/浙大/复旦等985高校实验室直推',
+        '覆盖 CS/商科/工科/社科/生物医学等12+方向',
+        '可产出 SCI/SSCI 论文或研究报告',
+        '优秀学员可获教授亲笔推荐信',
+        '远程+线下混合模式，灵活安排'
+      ],
+      link: '/study-abroad', linkLabel: '咨询科研项目',
+      stats: { count: '120+', label: '在研课题' },
+      cases: [
+        { name: '小张', school: '985 CS', result: '参与MIT教授NLP课题，发表ACL Workshop论文', highlight: '顶会论文' },
+        { name: '小陈', school: '211经济', result: '参与Oxford教授行为经济学课题，获推荐信', highlight: '强推荐信' },
+      ]
+    },
+    {
+      id: 3, title: '论文发表', icon: 'FileText', color: 'text-green-500', bg: 'bg-green-50', border: 'border-green-100',
+      gradientFrom: 'from-green-500', gradientTo: 'to-green-600',
+      description: 'SCI/SSCI/EI/CPCI 期刊论文写作指导与发表辅助',
+      features: [
+        '一对一论文选题与研究框架设计指导',
+        '数据分析方法辅导（SPSS/Python/R/Stata）',
+        '论文写作润色与投稿全流程支持',
+        '支持 SCI/SSCI/EI/CPCI/核心期刊等多级别',
+        '提供发表周期保障（3-6个月内见刊）',
+        '学术道德合规，保证原创性'
+      ],
+      link: '/study-abroad', linkLabel: '咨询论文发表',
+      stats: { count: '95%', label: '发表率' },
+      cases: [
+        { name: '小赵', school: '211 CS', result: '首篇SCI论文3个月内成功发表', highlight: 'SCI收录' },
+        { name: '小刘', school: '985金融', result: '发表SSCI论文，成功申请LSE金融硕士', highlight: '助力名校' },
+      ]
+    },
+    {
+      id: 4, title: '商赛/创赛', icon: 'Trophy', color: 'text-amber-500', bg: 'bg-amber-50', border: 'border-amber-100',
+      gradientFrom: 'from-amber-500', gradientTo: 'to-amber-600',
+      description: '国际商赛、创新创业竞赛组队与辅导，斩获含金量高的奖项',
+      features: [
+        '挑战杯/互联网+/创青春 等国家级赛事辅导',
+        'HULT Prize/KWHS/Diamond Challenge 国际商赛',
+        'MCM/ICM 美国大学生数学建模竞赛',
+        '专业导师全程辅导（赛前集训+赛中指导）',
+        '智能组队匹配服务，跨校跨专业组队',
+        '历年获奖案例库参考'
+      ],
+      link: '/entrepreneurship', linkLabel: '查看赛事信息',
+      stats: { count: '80%', label: '获奖率' },
+      cases: [
+        { name: '团队Alpha', school: '跨校组队', result: '获HULT Prize中国赛区冠军', highlight: '国际金奖' },
+        { name: '团队Beta', school: '985联队', result: '互联网+省级金奖，国赛铜奖', highlight: '国家级奖项' },
+      ]
+    },
+    {
+      id: 5, title: '社会实践', icon: 'Heart', color: 'text-rose-500', bg: 'bg-rose-50', border: 'border-rose-100',
+      gradientFrom: 'from-rose-500', gradientTo: 'to-rose-600',
+      description: '支教、志愿者、公益项目推荐，展现社会责任感与领导力',
+      features: [
+        '国际志愿者项目（泰国/柬埔寨/坦桑尼亚/尼泊尔）',
+        '乡村支教公益活动（云南/贵州/甘肃等）',
+        '环保/海洋保护类实践项目',
+        '联合国 SDGs 可持续发展目标相关项目',
+        '可获权威志愿时长证明与推荐信',
+        '项目周期 1-4 周，假期灵活安排'
+      ],
+      link: '/study-abroad', linkLabel: '咨询实践项目',
+      stats: { count: '50+', label: '合作项目' },
+      cases: [
+        { name: '小孙', school: '211英语', result: '参加柬埔寨志愿者项目，文书素材出彩', highlight: '文书亮点' },
+        { name: '小钱', school: '985环境', result: '参加海洋保护项目，获联合国环境署证书', highlight: 'UN证书' },
+      ]
+    },
+    {
+      id: 6, title: '语言提升', icon: 'BookOpen', color: 'text-sky-500', bg: 'bg-sky-50', border: 'border-sky-100',
+      gradientFrom: 'from-sky-500', gradientTo: 'to-sky-600',
+      description: '雅思/托福/GRE/GMAT 一对一培训与小班课程',
+      features: [
+        '一对一名师精讲课程（海归/教龄10年+）',
+        '真题模拟考场与精准批改',
+        '写作精批与口语一对一陪练',
+        '签约保分班可选（未达目标退费）',
+        '覆盖雅思/托福/GRE/GMAT/日语N1-N2',
+        'AI智能诊断学习弱点，个性化提分方案'
+      ],
+      link: '/study-abroad', linkLabel: '咨询语言课程',
+      stats: { count: '7.0+', label: '平均雅思' },
+      cases: [
+        { name: '小周', school: '211大三', result: '雅思从5.5提升至7.5，两个月见效', highlight: '提分2.0' },
+        { name: '小吴', school: '985大二', result: 'GRE 首考328，verbal 162', highlight: '一次高分' },
+      ]
+    },
+  ],
 
-const SERVICES = [
-  {
-    id: 1, title: '实习内推', icon: Briefcase, color: 'text-blue-500', bg: 'bg-blue-50', border: 'border-blue-100',
-    gradientFrom: 'from-blue-500', gradientTo: 'to-blue-600',
-    description: '大厂/外企/券商核心岗位实习机会，助力留学申请与职业发展',
-    features: [
-      '字节跳动、腾讯、阿里、美团等头部互联网',
-      '四大会计师事务所 (PwC/Deloitte/EY/KPMG) 核心岗位',
-      '中金、中信、高盛、摩根士丹利等券商投行实习',
-      'PTA 远程实习可选，时间灵活，适合在校学生',
-      '微软、Google、Amazon 等外企实习（海外方向）',
-      '内推成功率 85%+，部分岗位可免笔试'
-    ],
-    link: '/jobs', linkLabel: '查看实习岗位',
-    stats: { count: '500+', label: '可选岗位' },
-    cases: [
-      { name: '小王', school: '双非大三', result: '通过平台内推入职字节跳动后端实习', highlight: '双非逆袭' },
-      { name: '小李', school: '211金融', result: '拿到中金投行部暑期实习offer', highlight: '一次通过' },
-    ]
-  },
-  {
-    id: 2, title: '科研项目', icon: FlaskConical, color: 'text-purple-500', bg: 'bg-purple-50', border: 'border-purple-100',
-    gradientFrom: 'from-purple-500', gradientTo: 'to-purple-600',
-    description: '海内外知名教授带队科研课题，获取推荐信与科研成果',
-    features: [
-      'MIT/Stanford/Oxford/Cambridge 等海外教授课题',
-      '国内清华/北大/浙大/复旦等985高校实验室直推',
-      '覆盖 CS/商科/工科/社科/生物医学等12+方向',
-      '可产出 SCI/SSCI 论文或研究报告',
-      '优秀学员可获教授亲笔推荐信',
-      '远程+线下混合模式，灵活安排'
-    ],
-    link: '/study-abroad', linkLabel: '咨询科研项目',
-    stats: { count: '120+', label: '在研课题' },
-    cases: [
-      { name: '小张', school: '985 CS', result: '参与MIT教授NLP课题，发表ACL Workshop论文', highlight: '顶会论文' },
-      { name: '小陈', school: '211经济', result: '参与Oxford教授行为经济学课题，获推荐信', highlight: '强推荐信' },
-    ]
-  },
-  {
-    id: 3, title: '论文发表', icon: FileText, color: 'text-green-500', bg: 'bg-green-50', border: 'border-green-100',
-    gradientFrom: 'from-green-500', gradientTo: 'to-green-600',
-    description: 'SCI/SSCI/EI/CPCI 期刊论文写作指导与发表辅助',
-    features: [
-      '一对一论文选题与研究框架设计指导',
-      '数据分析方法辅导（SPSS/Python/R/Stata）',
-      '论文写作润色与投稿全流程支持',
-      '支持 SCI/SSCI/EI/CPCI/核心期刊等多级别',
-      '提供发表周期保障（3-6个月内见刊）',
-      '学术道德合规，保证原创性'
-    ],
-    link: '/study-abroad', linkLabel: '咨询论文发表',
-    stats: { count: '95%', label: '发表率' },
-    cases: [
-      { name: '小赵', school: '211 CS', result: '首篇SCI论文3个月内成功发表', highlight: 'SCI收录' },
-      { name: '小刘', school: '985金融', result: '发表SSCI论文，成功申请LSE金融硕士', highlight: '助力名校' },
-    ]
-  },
-  {
-    id: 4, title: '商赛/创赛', icon: Trophy, color: 'text-amber-500', bg: 'bg-amber-50', border: 'border-amber-100',
-    gradientFrom: 'from-amber-500', gradientTo: 'to-amber-600',
-    description: '国际商赛、创新创业竞赛组队与辅导，斩获含金量高的奖项',
-    features: [
-      '挑战杯/互联网+/创青春 等国家级赛事辅导',
-      'HULT Prize/KWHS/Diamond Challenge 国际商赛',
-      'MCM/ICM 美国大学生数学建模竞赛',
-      '专业导师全程辅导（赛前集训+赛中指导）',
-      '智能组队匹配服务，跨校跨专业组队',
-      '历年获奖案例库参考'
-    ],
-    link: '/entrepreneurship', linkLabel: '查看赛事信息',
-    stats: { count: '80%', label: '获奖率' },
-    cases: [
-      { name: '团队Alpha', school: '跨校组队', result: '获HULT Prize中国赛区冠军', highlight: '国际金奖' },
-      { name: '团队Beta', school: '985联队', result: '互联网+省级金奖，国赛铜奖', highlight: '国家级奖项' },
-    ]
-  },
-  {
-    id: 5, title: '社会实践', icon: Heart, color: 'text-rose-500', bg: 'bg-rose-50', border: 'border-rose-100',
-    gradientFrom: 'from-rose-500', gradientTo: 'to-rose-600',
-    description: '支教、志愿者、公益项目推荐，展现社会责任感与领导力',
-    features: [
-      '国际志愿者项目（泰国/柬埔寨/坦桑尼亚/尼泊尔）',
-      '乡村支教公益活动（云南/贵州/甘肃等）',
-      '环保/海洋保护类实践项目',
-      '联合国 SDGs 可持续发展目标相关项目',
-      '可获权威志愿时长证明与推荐信',
-      '项目周期 1-4 周，假期灵活安排'
-    ],
-    link: '/study-abroad', linkLabel: '咨询实践项目',
-    stats: { count: '50+', label: '合作项目' },
-    cases: [
-      { name: '小孙', school: '211英语', result: '参加柬埔寨志愿者项目，文书素材出彩', highlight: '文书亮点' },
-      { name: '小钱', school: '985环境', result: '参加海洋保护项目，获联合国环境署证书', highlight: 'UN证书' },
-    ]
-  },
-  {
-    id: 6, title: '语言提升', icon: BookOpen, color: 'text-sky-500', bg: 'bg-sky-50', border: 'border-sky-100',
-    gradientFrom: 'from-sky-500', gradientTo: 'to-sky-600',
-    description: '雅思/托福/GRE/GMAT 一对一培训与小班课程',
-    features: [
-      '一对一名师精讲课程（海归/教龄10年+）',
-      '真题模拟考场与精准批改',
-      '写作精批与口语一对一陪练',
-      '签约保分班可选（未达目标退费）',
-      '覆盖雅思/托福/GRE/GMAT/日语N1-N2',
-      'AI智能诊断学习弱点，个性化提分方案'
-    ],
-    link: '/study-abroad', linkLabel: '咨询语言课程',
-    stats: { count: '7.0+', label: '平均雅思' },
-    cases: [
-      { name: '小周', school: '211大三', result: '雅思从5.5提升至7.5，两个月见效', highlight: '提分2.0' },
-      { name: '小吴', school: '985大二', result: 'GRE 首考328，verbal 162', highlight: '一次高分' },
-    ]
-  },
-];
+  processSteps: [
+    { step: 1, title: '免费评估', desc: '专业顾问一对一评估你的背景，找出短板', icon: Target },
+    { step: 2, title: '定制方案', desc: '根据目标院校和专业，定制专属提升方案', icon: FileText },
+    { step: 3, title: '执行提升', desc: '全程跟踪，辅导老师+班主任双重督导', icon: TrendingUp },
+    { step: 4, title: '成果收获', desc: '获取实习证明/论文/推荐信/获奖证书', icon: Award },
+  ],
 
-const PROCESS_STEPS = [
-  { step: 1, title: '免费评估', desc: '专业顾问一对一评估你的背景，找出短板', icon: Target },
-  { step: 2, title: '定制方案', desc: '根据目标院校和专业，定制专属提升方案', icon: FileText },
-  { step: 3, title: '执行提升', desc: '全程跟踪，辅导老师+班主任双重督导', icon: TrendingUp },
-  { step: 4, title: '成果收获', desc: '获取实习证明/论文/推荐信/获奖证书', icon: Award },
-];
+  guarantees: [
+    { title: '效果保障', desc: '签约服务，未达效果可退费', icon: Shield },
+    { title: '导师资源', desc: '全球500+名校导师资源库', icon: Users },
+    { title: '一站式服务', desc: '评估-方案-执行-验收闭环管理', icon: BarChart3 },
+    { title: '隐私保护', desc: '严格保护学员个人信息', icon: Lightbulb },
+  ],
+};
 
-const GUARANTEES = [
-  { title: '效果保障', desc: '签约服务，未达效果可退费', icon: Shield },
-  { title: '导师资源', desc: '全球500+名校导师资源库', icon: Users },
-  { title: '一站式服务', desc: '评估-方案-执行-验收闭环管理', icon: BarChart3 },
-  { title: '隐私保护', desc: '严格保护学员个人信息', icon: Lightbulb },
-];
+// 图标名称映射
+const ICON_MAP: Record<string, any> = {
+  Briefcase, FlaskConical, FileText, Trophy, Heart, BookOpen,
+  Target, TrendingUp, Award, Shield, Users, BarChart3, Lightbulb,
+};
 
 export default function BackgroundBoost() {
+  const bgBoostConfig = useConfigStore(s => s.getJson('background_boost_page_config', DEFAULT_BG_BOOST_CONFIG));
+  const SERVICES = bgBoostConfig.services || DEFAULT_BG_BOOST_CONFIG.services;
+  const PROCESS_STEPS = bgBoostConfig.processSteps || DEFAULT_BG_BOOST_CONFIG.processSteps;
+  const GUARANTEES = bgBoostConfig.guarantees || DEFAULT_BG_BOOST_CONFIG.guarantees;
   return (
     <div className="min-h-screen bg-gray-50 pt-6 pb-16">
       <div className="container-main">
@@ -211,7 +223,7 @@ export default function BackgroundBoost() {
                 className="relative bg-white rounded-2xl p-6 border border-gray-100 shadow-sm text-center"
               >
                 <div className="w-12 h-12 bg-primary-50 rounded-2xl flex items-center justify-center mx-auto mb-3">
-                  <step.icon className="w-6 h-6 text-primary-500" />
+                  {(() => { const IconComp = ICON_MAP[step.icon] || Target; return <IconComp className="w-6 h-6 text-primary-500" />; })()}
                 </div>
                 <div className="text-[11px] text-primary-500 font-bold mb-1">STEP {step.step}</div>
                 <h3 className="text-[16px] font-bold text-gray-900 mb-1">{step.title}</h3>
@@ -326,7 +338,7 @@ export default function BackgroundBoost() {
                 className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 text-center hover:shadow-md hover:border-primary-500/30 transition-all"
               >
                 <div className="w-12 h-12 bg-primary-50 rounded-2xl flex items-center justify-center mx-auto mb-3">
-                  <g.icon className="w-6 h-6 text-primary-500" />
+                  {(() => { const IconComp = ICON_MAP[g.icon] || Shield; return <IconComp className="w-6 h-6 text-primary-500" />; })()}
                 </div>
                 <h3 className="text-[15px] font-bold text-gray-900 mb-1">{g.title}</h3>
                 <p className="text-[13px] text-gray-500">{g.desc}</p>

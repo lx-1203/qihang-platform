@@ -3,10 +3,14 @@ import { motion } from 'framer-motion';
 import {
   Search, CheckCircle, XCircle, Clock, Eye,
   Building2, Globe, MapPin, Users as UsersIcon,
-  ChevronLeft, ChevronRight
+  ChevronLeft, ChevronRight, Loader2
 } from 'lucide-react';
 import http from '@/api/http';
 import Tag from '@/components/ui/Tag';
+import { TableSkeleton } from '../../components/ui/Skeleton';
+import ErrorState from '../../components/ui/ErrorState';
+import ConfirmDialog from '@/components/ui/ConfirmDialog';
+import { showToast } from '@/components/ui/ToastContainer';
 
 // ====== 企业资质审核 ======
 // 商业级要求：企业认证审核流程、审核记录留痕
@@ -42,6 +46,8 @@ export default function AdminCompanies() {
   const pageSize = 10;
   const [reviewModal, setReviewModal] = useState<CompanyRecord | null>(null);
   const [reviewRemark, setReviewRemark] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const mockCompanies: CompanyRecord[] = [
     { id: 1, user_id: 3, company_name: '字节跳动', industry: '互联网/科技', scale: '10000人以上', description: '全球化科技公司，旗下产品包括抖音、TikTok等', logo: '', website: 'https://www.bytedance.com', address: '北京市海淀区', verify_status: 'approved', verify_remark: '', created_at: '2026-03-10', email: 'hr@bytedance.com' },
@@ -60,6 +66,7 @@ export default function AdminCompanies() {
   async function fetchCompanies() {
     try {
       setLoading(true);
+      setError(null);
       const res = await http.get('/admin/companies', {
         params: { page, pageSize, status: statusFilter, keyword: search }
       });
@@ -82,16 +89,26 @@ export default function AdminCompanies() {
     if (search) filtered = filtered.filter(c => c.company_name.includes(search));
     setCompanies(filtered);
     setTotal(filtered.length);
+    setError(null);
   }
 
   async function handleReview(companyId: number, status: 'approved' | 'rejected') {
     try {
       await http.put(`/admin/companies/${companyId}/verify`, { status, remark: reviewRemark });
+      showToast({
+        type: status === 'approved' ? 'success' : 'warning',
+        title: status === 'approved' ? '企业审核已通过' : '企业审核已驳回',
+        message: reviewRemark ? `备注：${reviewRemark}` : undefined
+      });
     } catch {
       // 模拟
       setCompanies(prev => prev.map(c =>
         c.id === companyId ? { ...c, verify_status: status, verify_remark: reviewRemark } : c
       ));
+      showToast({
+        type: status === 'approved' ? 'success' : 'warning',
+        title: status === 'approved' ? '企业审核已通过' : '企业审核已驳回'
+      });
     }
     setReviewModal(null);
     setReviewRemark('');
@@ -100,6 +117,17 @@ export default function AdminCompanies() {
 
   const totalPages = Math.ceil(total / pageSize);
   const pendingCount = mockCompanies.filter(c => c.verify_status === 'pending').length;
+
+  if (loading) return <div className="space-y-6"><TableSkeleton rows={6} cols={4} /></div>;
+  if (error) return (
+    <div className="space-y-6">
+      <ErrorState
+        message={error}
+        onRetry={() => { setError(null); fetchCompanies(); }}
+        onLoadMockData={() => { applyMock(); }}
+      />
+    </div>
+  );
 
   return (
     <div className="space-y-6">

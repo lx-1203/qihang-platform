@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { useToast } from '../../components/ui';
 import Tag from '@/components/ui/Tag';
+import ConfirmDialog from '@/components/ui/ConfirmDialog';
 
 // ====== 公告类型 ======
 type AnnouncementStatus = 'draft' | 'published' | 'scheduled' | 'archived';
@@ -75,6 +76,9 @@ export default function AdminAnnouncements() {
   const [filterStatus, setFilterStatus] = useState<AnnouncementStatus | 'all'>('all');
   const [showEditor, setShowEditor] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
+
+  // 删除确认对话框
+  const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; announcementId: number | null }>({ open: false, announcementId: null });
 
   // 编辑表单
   const [form, setForm] = useState({
@@ -150,8 +154,16 @@ export default function AdminAnnouncements() {
   };
 
   const handleDelete = (id: number) => {
-    setAnnouncements(prev => prev.filter(a => a.id !== id));
+    // 打开确认对话框
+    setDeleteDialog({ open: true, announcementId: id });
+  };
+
+  // 确认删除
+  const confirmDelete = () => {
+    if (deleteDialog.announcementId === null) return;
+    setAnnouncements(prev => prev.filter(a => a.id !== deleteDialog.announcementId));
     toast.success('公告已删除');
+    setDeleteDialog({ open: false, announcementId: null });
   };
 
   const togglePublish = (id: number) => {
@@ -442,6 +454,17 @@ export default function AdminAnnouncements() {
           </>
         )}
       </AnimatePresence>
+
+      {/* 删除确认对话框 */}
+      <ConfirmDialog
+        open={deleteDialog.open}
+        title="确定要删除这条公告吗？"
+        description="删除后无法恢复，请谨慎操作。"
+        variant="danger"
+        confirmText="确认删除"
+        onConfirm={confirmDelete}
+        onCancel={() => setDeleteDialog({ open: false, announcementId: null })}
+      />
     </div>
   );
 }

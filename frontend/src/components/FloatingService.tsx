@@ -182,7 +182,7 @@ export default function FloatingService() {
             className="w-80 bg-white rounded-2xl shadow-2xl overflow-hidden border border-gray-100"
           >
             {/* 顶部渐变条 */}
-            <div className="bg-gradient-to-r from-primary-500 to-teal-600 px-5 py-4 flex items-center justify-between">
+            <div className="bg-gradient-to-r from-primary-500 to-primary-600 px-5 py-4 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
                   <MessageCircle className="w-4 h-4 text-white" />
@@ -263,7 +263,7 @@ export default function FloatingService() {
             className="relative flex flex-col items-center cursor-grab active:cursor-grabbing"
             aria-label="打开客服助手"
           >
-            <div className="w-14 h-14 rounded-full bg-gradient-to-br from-primary-500 to-teal-600 shadow-lg flex items-center justify-center hover:shadow-xl transition-shadow">
+            <div className="w-14 h-14 rounded-full bg-gradient-to-br from-primary-500 to-primary-600 shadow-lg flex items-center justify-center hover:shadow-xl transition-shadow">
               <MessageCircle className="w-6 h-6 text-white" />
               {/* 呼吸光圈 */}
               <span className="absolute inset-0 rounded-full bg-primary-400/30 animate-ping" style={{ animationDuration: '3s' }} />

@@ -1,13 +1,23 @@
 import { GraduationCap, Globe, Clock, ChevronRight, Award } from 'lucide-react';
+import { useConfigStore } from '@/store/config';
 
-const TIMELINES = [
-  { month: '3月-5月', title: '基础复习阶段', desc: '确定目标院校和专业，搜集考研大纲和真题，开始英语和专业课基础轮复习。' },
-  { month: '6月-8月', title: '强化提高阶段', desc: '暑期黄金复习期，各科全面展开，参加辅导班或集中刷题，攻克重难点。' },
-  { month: '9月-10月', title: '报名与冲刺阶段', desc: '关注招生简章，完成网上报名。政治开始复习，进行全真模拟训练。' },
-  { month: '11月-12月', title: '考前押题与心态调整', desc: '背诵核心考点，查漏补缺，调整作息规律，保持良好心态迎接初试。' }
-];
+// 默认配置（当后端不可用时使用）
+const DEFAULT_POSTGRAD_CONFIG = {
+  timelines: [
+    { month: '3月-5月', title: '基础复习阶段', desc: '确定目标院校和专业，搜集考研大纲和真题，开始英语和专业课基础轮复习。' },
+    { month: '6月-8月', title: '强化提高阶段', desc: '暑期黄金复习期，各科全面展开，参加辅导班或集中刷题，攻克重难点。' },
+    { month: '9月-10月', title: '报名与冲刺阶段', desc: '关注招生简章，完成网上报名。政治开始复习，进行全真模拟训练。' },
+    { month: '11月-12月', title: '考前押题与心态调整', desc: '背诵核心考点，查漏补缺，调整作息规律，保持良好心态迎接初试。' }
+  ],
+  heroTitle: '考研 / 保研 / 留学',
+  heroDesc: '汇集全网最全的升学资讯、学长学姐真实经验贴、院校专业分析报告，助你顺利迈向人生的下一个台阶。'
+};
 
 export default function Postgrad() {
+  const postgradConfig = useConfigStore(s => s.getJson('postgrad_page_config', DEFAULT_POSTGRAD_CONFIG));
+  const TIMELINES = postgradConfig.timelines || DEFAULT_POSTGRAD_CONFIG.timelines;
+  const heroTitle = postgradConfig.heroTitle || DEFAULT_POSTGRAD_CONFIG.heroTitle;
+  const heroDesc = postgradConfig.heroDesc || DEFAULT_POSTGRAD_CONFIG.heroDesc;
   return (
     <div className="min-h-screen bg-gray-50 pt-8 pb-16">
       <div className="container-main">
@@ -18,9 +28,9 @@ export default function Postgrad() {
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary-50 text-primary-500 text-[14px] font-medium mb-4 border border-primary-100">
               <GraduationCap className="w-4 h-4" /> 升学深造指南
             </div>
-            <h1 className="text-[36px] font-bold text-gray-900 mb-4">考研 / 保研 / 留学</h1>
+            <h1 className="text-[36px] font-bold text-gray-900 mb-4">{heroTitle}</h1>
             <p className="text-[16px] text-gray-600 leading-relaxed mb-6">
-              汇集全网最全的升学资讯、学长学姐真实经验贴、院校专业分析报告，助你顺利迈向人生的下一个台阶。
+              {heroDesc}
             </p>
             <div className="flex flex-wrap gap-4">
               <button className="bg-primary-500 text-white px-6 py-3 rounded-xl font-medium hover:bg-primary-700 transition-colors">

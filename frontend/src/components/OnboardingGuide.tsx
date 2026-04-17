@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -9,6 +9,7 @@ import {
   MessageCircle, Zap
 } from 'lucide-react';
 import Tag from '@/components/ui/Tag';
+import { useReducedMotion } from '@/hooks/useReducedMotion';
 
 // ====== 新手引导教程组件 ======
 // 根据角色展示不同的操作流程引导
@@ -25,6 +26,19 @@ interface GuideStep {
   link?: string;
   linkText?: string;
   tips?: string[];
+  /** 气泡模式：目标元素选择器 */
+  targetSelector?: string;
+  /** 气泡模式：气泡位置 */
+  position?: 'top' | 'bottom' | 'left' | 'right';
+}
+
+/** 气泡引导步骤配置 */
+export interface BubbleGuideStep {
+  target: string;
+  title: string;
+  content: string;
+  position?: 'top' | 'bottom' | 'left' | 'right';
+  icon?: typeof User;
 }
 
 const ROLE_GUIDES: Record<GuideRole, { welcome: string; subtitle: string; steps: GuideStep[] }> = {
@@ -56,8 +70,8 @@ const ROLE_GUIDES: Record<GuideRole, { welcome: string; subtitle: string; steps:
         title: '第三步：预约导师辅导',
         desc: '找到擅长你目标领域的导师，预约1对1辅导，获得专业指导。',
         icon: MessageCircle,
-        color: 'text-teal-600',
-        bg: 'bg-teal-50',
+        color: 'text-primary-600',
+        bg: 'bg-primary-50',
         link: '/mentors',
         linkText: '去找导师',
         tips: ['查看导师评价和擅长方向', '预约前准备好你的问题', '辅导结束后记得给导师评价'],
@@ -189,16 +203,8 @@ const ROLE_GUIDES: Record<GuideRole, { welcome: string; subtitle: string; steps:
         link: '/admin/dashboard',
         linkText: '查看数据',
         tips: ['关注日注册量和周活跃趋势', '异常数据波动需及时排查'],
-      },
-      {
-        title: '资质审核',
-        desc: '审核企业认证和导师入驻申请，确保平台内容和人员质量。',
-        icon: Shield,
-        color: 'text-amber-600',
-        bg: 'bg-amber-50',
-        link: '/admin/companies',
-        linkText: '去审核',
-        tips: ['企业审核需验证营业执照真实性', '导师审核需验证从业经历', '驳回时务必填写具体原因'],
+        targetSelector: '[data-guide="stats-cards"]',
+        position: 'bottom',
       },
       {
         title: '用户管理',
@@ -209,9 +215,11 @@ const ROLE_GUIDES: Record<GuideRole, { welcome: string; subtitle: string; steps:
         link: '/admin/users',
         linkText: '管理用户',
         tips: ['可按角色筛选查看', '禁用账号前确认违规事实'],
+        targetSelector: '[data-guide="role-distribution"]',
+        position: 'top',
       },
       {
-        title: '内容管理',
+        title: '内容审核',
         desc: '管理平台上的职位和课程内容，确保信息合规、真实有效。',
         icon: Video,
         color: 'text-green-600',
@@ -219,9 +227,11 @@ const ROLE_GUIDES: Record<GuideRole, { welcome: string; subtitle: string; steps:
         link: '/admin/content',
         linkText: '管理内容',
         tips: ['定期清理过期的职位信息', '审核课程内容是否符合平台规范'],
+        targetSelector: '[data-guide="pending-actions"]',
+        position: 'left',
       },
       {
-        title: '平台设置',
+        title: '设置配置',
         desc: '管理站点配置、品牌信息、SEO设置，查看操作审计日志。',
         icon: Settings,
         color: 'text-red-600',
@@ -229,6 +239,8 @@ const ROLE_GUIDES: Record<GuideRole, { welcome: string; subtitle: string; steps:
         link: '/admin/settings',
         linkText: '去设置',
         tips: ['修改配置后实时生效，请谨慎操作', '定期查看审计日志排查异常'],
+        targetSelector: '[data-guide="audit-log"]',
+        position: 'right',
       },
     ],
   },
@@ -238,30 +250,121 @@ interface OnboardingGuideProps {
   role: GuideRole;
   /** 是否以内嵌卡片形式展示（而非弹窗） */
   inline?: boolean;
+  /** 是否使用气泡式引导模式（定位到页面元素） */
+  bubbleMode?: boolean;
+  /** 外部控制是否显示 */
+  forceShow?: boolean;
 }
 
-export default function OnboardingGuide({ role, inline = false }: OnboardingGuideProps) {
+export default function OnboardingGuide({ role, inline = false, bubbleMode = false, forceShow }: OnboardingGuideProps) {
   const storageKey = `qihang_onboarding_${role}`;
   const [visible, setVisible] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
   const [completed, setCompleted] = useState<Set<number>>(new Set());
+  const [bubblePos, setBubblePos] = useState<{ top: number; left: number } | null>(null);
+  const targetRef = useRef<HTMLElement | null>(null);
+  const prefersReduced = useReducedMotion();
+
+  // 根据用户动画偏好选择过渡配置
+  const modalTransition = prefersReduced
+    ? { duration: 0 }
+    : { type: 'spring' as const, stiffness: 300, damping: 30 };
+  const bubbleTransition = prefersReduced
+    ? { duration: 0 }
+    : { type: 'spring' as const, stiffness: 300, damping: 25 };
+  const stepTransition = prefersReduced
+    ? { duration: 0 }
+    : { duration: 0.2 };
 
   const guide = ROLE_GUIDES[role];
   const steps = guide.steps;
 
-  useEffect(() => {
-    // 首次访问自动显示
-    if (!inline) {
-      const seen = localStorage.getItem(storageKey);
-      if (!seen) {
-        setVisible(true);
-      }
+  // 计算气泡位置
+  const updateBubblePosition = useCallback((stepIndex: number) => {
+    const step = steps[stepIndex];
+    if (!step?.targetSelector) {
+      setBubblePos(null);
+      return;
     }
-  }, [role, inline, storageKey]);
+
+    // 先清理旧目标元素的高亮样式（安全网）
+    if (targetRef.current) {
+      targetRef.current.style.boxShadow = '';
+      targetRef.current.style.position = '';
+      targetRef.current.style.zIndex = '';
+      targetRef.current = null;
+    }
+
+    const target = document.querySelector(step.targetSelector) as HTMLElement | null;
+    if (!target) {
+      setBubblePos(null);
+      return;
+    }
+
+    targetRef.current = target;
+    const rect = target.getBoundingClientRect();
+
+    // 高亮目标元素
+    target.style.boxShadow = '0 0 0 3px rgba(99, 102, 241, 0.4), 0 0 20px rgba(99, 102, 241, 0.2)';
+    target.style.position = 'relative';
+    target.style.zIndex = '9992';
+
+    let top = 0;
+    let left = 0;
+    const position = step.position || 'bottom';
+
+    switch (position) {
+      case 'top':
+        top = rect.top - 120 + window.scrollY;
+        left = rect.left + rect.width / 2 - 140 + window.scrollX;
+        break;
+      case 'bottom':
+        top = rect.bottom + 16 + window.scrollY;
+        left = rect.left + rect.width / 2 - 140 + window.scrollX;
+        break;
+      case 'left':
+        top = rect.top + rect.height / 2 - 60 + window.scrollY;
+        left = rect.left - 320 + window.scrollX;
+        break;
+      case 'right':
+        top = rect.top + rect.height / 2 - 60 + window.scrollY;
+        left = rect.right + 16 + window.scrollX;
+        break;
+    }
+
+    setBubblePos({ top, left });
+  }, [steps]);
+
+  useEffect(() => {
+    if (inline) return;
+
+    // 首次访问或强制显示
+    const seen = localStorage.getItem(storageKey);
+    if (!seen || forceShow) {
+      setVisible(true);
+    }
+  }, [role, inline, storageKey, forceShow]);
+
+  // 气泡模式下更新位置
+  useEffect(() => {
+    if (visible && bubbleMode && bubblePos === null) {
+      // 延迟一帧确保 DOM 已渲染
+      requestAnimationFrame(() => {
+        updateBubblePosition(currentStep);
+      });
+    }
+  }, [visible, bubbleMode, currentStep, bubblePos, updateBubblePosition]);
 
   function handleClose() {
     setVisible(false);
     localStorage.setItem(storageKey, 'true');
+    // 清除高亮
+    if (targetRef.current) {
+      targetRef.current.style.boxShadow = '';
+      targetRef.current.style.position = '';
+      targetRef.current.style.zIndex = '';
+    }
+    setBubblePos(null);
   }
 
   function handleReset() {
@@ -269,10 +372,142 @@ export default function OnboardingGuide({ role, inline = false }: OnboardingGuid
     setCurrentStep(0);
     setCompleted(new Set());
     setVisible(true);
+    if (bubbleMode) {
+      setBubblePos(null);
+    }
   }
 
   function markDone(idx: number) {
     setCompleted(prev => new Set(prev).add(idx));
+  }
+
+  // 气泡模式：定位到页面元素的分步引导
+  if (bubbleMode && visible) {
+    const step = steps[currentStep];
+    return (
+      <>
+        {/* 遮罩层 */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={prefersReduced ? { duration: 0 } : { duration: 0.2 }}
+          className="fixed inset-0 bg-black/30 z-[9990]"
+          onClick={handleClose}
+        />
+
+        {/* 气泡提示卡片 */}
+        {bubblePos && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.8 }}
+            transition={bubbleTransition}
+            className="fixed z-[9991] w-[300px] bg-white rounded-xl shadow-2xl border border-indigo-100 overflow-hidden"
+            style={{ top: bubblePos.top, left: bubblePos.left }}
+          >
+            {/* 箭头指示器 - 根据 position 动态定位 */}
+            {(() => {
+              const pos = step?.position || 'bottom';
+              // 根据气泡相对于目标的位置，决定箭头指向目标的反方向
+              const arrowStyles: Record<string, string> = {
+                top: 'absolute w-3 h-3 bg-white border-l border-t border-indigo-100 rotate-45 -bottom-1.5 left-1/2 -translate-x-1/2',      // 气泡在上方，箭头朝下
+                bottom: 'absolute w-3 h-3 bg-white border-l border-t border-indigo-100 rotate-45 -top-1.5 left-1/2 -translate-x-1/2',   // 气泡在下方，箭头朝上
+                left: 'absolute w-3 h-3 bg-white border-l border-t border-indigo-100 rotate-45 -right-1.5 top-1/2 -translate-y-1/2',    // 气泡在左方，箭头朝右
+                right: 'absolute w-3 h-3 bg-white border-l border-t border-indigo-100 rotate-45 -left-1.5 top-1/2 -translate-y-1/2',    // 气泡在右方，箭头朝左
+              };
+              return <div className={arrowStyles[pos] || arrowStyles.bottom} />;
+            })()}
+
+            {/* 内容区 */}
+            <div className="p-4">
+              <div className={`w-10 h-10 ${step?.bg || 'bg-indigo-50'} rounded-lg flex items-center justify-center mb-3`}>
+                {step && <step.icon className={`w-5 h-5 ${step.color}`} />}
+              </div>
+              <h4 className="text-sm font-bold text-gray-900 mb-1">
+                {step?.title} ({currentStep + 1}/{steps.length})
+              </h4>
+              <p className="text-xs text-gray-600 leading-relaxed mb-3">{step?.desc}</p>
+
+              {step?.link && (
+                <Link
+                  to={step.link}
+                  onClick={handleClose}
+                  className="inline-flex items-center gap-1 text-xs font-medium text-indigo-600 hover:text-indigo-700"
+                >
+                  {step.linkText} <ChevronRight className="w-3 h-3" />
+                </Link>
+              )}
+            </div>
+
+            {/* 底部导航 */}
+            <div className="border-t border-gray-100 px-4 py-2.5 flex items-center justify-between bg-gray-50">
+              <button
+                onClick={() => {
+                  if (currentStep > 0) {
+                    // 清除旧高亮
+                    if (targetRef.current) {
+                      targetRef.current.style.boxShadow = '';
+                      targetRef.current.style.position = '';
+                      targetRef.current.style.zIndex = '';
+                    }
+                    setCurrentStep(prev => prev - 1);
+                    setBubblePos(null);
+                  }
+                }}
+                disabled={currentStep === 0}
+                className="text-xs text-gray-500 hover:text-gray-900 disabled:opacity-30"
+              >
+                <ChevronLeft className="w-3 h-3 inline mr-0.5" /> 上一步
+              </button>
+              {currentStep < steps.length - 1 ? (
+                <button
+                  onClick={() => {
+                    // 清除旧高亮
+                    if (targetRef.current) {
+                      targetRef.current.style.boxShadow = '';
+                      targetRef.current.style.position = '';
+                      targetRef.current.style.zIndex = '';
+                    }
+                    setCurrentStep(prev => prev + 1);
+                    setBubblePos(null);
+                  }}
+                  className="text-xs font-medium text-indigo-600 hover:text-indigo-700"
+                >
+                  下一步 <ChevronRight className="w-3 h-3 inline ml-0.5" />
+                </button>
+              ) : (
+                <button
+                  onClick={handleClose}
+                  className="text-xs font-medium bg-indigo-600 text-white px-3 py-1 rounded-md hover:bg-indigo-700"
+                >
+                  完成
+                </button>
+              )}
+            </div>
+          </motion.div>
+        )}
+
+        {/* 关闭按钮 */}
+        <motion.button
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={prefersReduced ? { duration: 0 } : undefined}
+          onClick={handleClose}
+          className="fixed top-6 right-6 z-[9992] w-8 h-8 bg-white/90 backdrop-blur rounded-full flex items-center justify-center shadow-lg hover:bg-white transition-colors"
+        >
+          <X className="w-4 h-4 text-gray-600" />
+        </motion.button>
+
+        {/* 跳过按钮 */}
+        <button
+          onClick={handleClose}
+          className="fixed bottom-8 left-1/2 -translate-x-1/2 z-[9991] text-xs text-white/70 hover:text-white underline"
+        >
+          跳过引导
+        </button>
+      </>
+    );
   }
 
   // 内嵌模式：直接渲染步骤卡片列表
@@ -280,11 +515,11 @@ export default function OnboardingGuide({ role, inline = false }: OnboardingGuid
     return (
       <div className="space-y-3">
         {steps.map((step, idx) => (
-          <motion.div
-            key={idx}
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: idx * 0.08 }}
+            <motion.div
+              key={idx}
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={prefersReduced ? { duration: 0 } : { delay: idx * 0.08 }}
             className={`rounded-xl border p-4 transition-all ${
               completed.has(idx)
                 ? 'bg-gray-50 border-gray-200 opacity-60'
@@ -357,11 +592,12 @@ export default function OnboardingGuide({ role, inline = false }: OnboardingGuid
     <>
       {/* 触发按钮 — 教程已关闭时显示 */}
       {!visible && (
-        <motion.button
-          initial={{ opacity: 0, scale: 0.8 }}
-          animate={{ opacity: 1, scale: 1 }}
+          <motion.button
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={prefersReduced ? { duration: 0 } : undefined}
           onClick={handleReset}
-          className="fixed bottom-8 left-1/2 -translate-x-1/2 z-[9998] bg-gradient-to-r from-primary-500 to-teal-500 text-white px-5 py-3 rounded-full shadow-lg hover:shadow-xl flex items-center gap-2 text-sm font-medium transition-shadow"
+          className="fixed bottom-8 left-1/2 -translate-x-1/2 z-[9998] bg-gradient-to-r from-primary-500 to-primary-500 text-white px-5 py-3 rounded-full shadow-lg hover:shadow-xl flex items-center gap-2 text-sm font-medium transition-shadow"
           title="重新查看引导教程"
         >
           <Rocket className="w-4 h-4" />
@@ -376,6 +612,7 @@ export default function OnboardingGuide({ role, inline = false }: OnboardingGuid
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
+              transition={prefersReduced ? { duration: 0 } : undefined}
               className="fixed inset-0 bg-black/40 z-[9990]"
               onClick={handleClose}
             />
@@ -383,7 +620,7 @@ export default function OnboardingGuide({ role, inline = false }: OnboardingGuid
               initial={{ opacity: 0, y: 40, scale: 0.95 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 40, scale: 0.95 }}
-              transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+              transition={modalTransition}
               className="fixed inset-x-4 top-[10%] md:inset-auto md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:w-[580px] z-[9991] bg-white rounded-2xl shadow-2xl overflow-hidden max-h-[80vh] flex flex-col"
             >
               {/* 头部 */}
@@ -392,7 +629,7 @@ export default function OnboardingGuide({ role, inline = false }: OnboardingGuid
                   <X className="w-5 h-5" />
                 </button>
                 <div className="flex items-center gap-3 mb-2">
-                  <div className="w-10 h-10 bg-gradient-to-br from-primary-400 to-teal-400 rounded-xl flex items-center justify-center">
+                  <div className="w-10 h-10 bg-gradient-to-br from-primary-400 to-primary-400 rounded-xl flex items-center justify-center">
                     <Rocket className="w-5 h-5 text-white" />
                   </div>
                   <div>
@@ -422,7 +659,7 @@ export default function OnboardingGuide({ role, inline = false }: OnboardingGuid
                     initial={{ opacity: 0, x: 20 }}
                     animate={{ opacity: 1, x: 0 }}
                     exit={{ opacity: 0, x: -20 }}
-                    transition={{ duration: 0.2 }}
+                    transition={stepTransition}
                   >
                     {(() => {
                       const step = steps[currentStep];

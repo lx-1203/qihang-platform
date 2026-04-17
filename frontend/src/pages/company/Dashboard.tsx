@@ -142,7 +142,7 @@ export default function CompanyDashboardPage() {
                 <motion.div
                   initial={{ width: 0 }}
                   animate={{ width: f.width }}
-                  transition={{ delay: 0.3 + i * 0.15, duration: 0.6 }}
+                  transition={{ delay: 0.2 + i * 0.12, duration: 0.4 }}
                   className={`h-full bg-gradient-to-r ${f.color} rounded-lg flex items-center justify-end pr-3`}
                 >
                   <span className="text-sm font-bold text-white">{f.count}</span>

@@ -1,6 +1,10 @@
-import { useState } from 'react';
-import { Save, Plus, Trash2, Eye, CheckCircle2, ArrowRight } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Save, Plus, Trash2, Eye, CheckCircle2, ArrowRight, Loader2, AlertTriangle } from 'lucide-react';
 import { motion } from 'framer-motion';
+import http from '@/api/http';
+import { useToast } from '@/components/ui';
+import { useConfigStore } from '@/store/config';
+import { Skeleton, CardSkeleton } from '@/components/ui/Skeleton';
 import homeConfig from '../../data/home-ui-config.json';
 
 type HeroSlide = typeof homeConfig.heroSlides[0];
@@ -8,14 +12,81 @@ type QuickEntry = typeof homeConfig.quickEntries[0];
 type ValueSection = typeof homeConfig.valueSections[0];
 
 export default function HomeConfig() {
+  const toast = useToast();
+  const refreshConfig = useConfigStore((s) => s.fetchConfigs);
   const [activeTab, setActiveTab] = useState<'hero' | 'entries' | 'colors' | 'values'>('hero');
   const [heroSlides, setHeroSlides] = useState<HeroSlide[]>(homeConfig.heroSlides);
   const [quickEntries, setQuickEntries] = useState<QuickEntry[]>(homeConfig.quickEntries);
   const [courseColors, setCourseColors] = useState<string[]>(homeConfig.courseColors);
   const [valueSections, setValueSections] = useState<ValueSection[]>(homeConfig.valueSections);
   const [saved, setSaved] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [deleteConfirm, setDeleteConfirm] = useState<{ type: string; index: number } | null>(null);
 
-  const handleSave = () => {
+  // 从后端加载配置
+  useEffect(() => {
+    async function loadConfig() {
+      try {
+        setLoading(true);
+        const res = await http.get('/config/public');
+        if (res.data?.code === 200 && res.data.data) {
+          const configs = res.data.data;
+          // 尝试从后端配置中获取首页UI配置
+          if (configs.home_ui_config) {
+            try {
+              const parsedConfig = typeof configs.home_ui_config === 'string'
+                ? JSON.parse(configs.home_ui_config)
+                : configs.home_ui_config;
+              if (parsedConfig.heroSlides) setHeroSlides(parsedConfig.heroSlides);
+              if (parsedConfig.quickEntries) setQuickEntries(parsedConfig.quickEntries);
+              if (parsedConfig.courseColors) setCourseColors(parsedConfig.courseColors);
+              if (parsedConfig.valueSections) setValueSections(parsedConfig.valueSections);
+            } catch {
+              toast.warning('配置解析失败', '使用默认配置');
+            }
+          }
+        }
+      } catch {
+        toast.info('使用本地默认配置', '无法连接服务器，当前使用内置默认值');
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadConfig();
+  }, []);
+
+  const handleSave = async () => {
+    if (saving) return;
+
+    // 表单验证
+    if (heroSlides.length === 0) {
+      toast.error('验证失败', '至少需要保留一个轮播项');
+      return;
+    }
+    if (quickEntries.length === 0) {
+      toast.error('验证失败', '至少需要保留一个快捷入口');
+      return;
+    }
+
+    // 验证必填字段
+    for (let i = 0; i < heroSlides.length; i++) {
+      if (!heroSlides[i].title.trim()) {
+        toast.error('验证失败', `轮播 #${i + 1} 的标题不能为空`);
+        setActiveTab('hero');
+        return;
+      }
+    }
+    for (let i = 0; i < quickEntries.length; i++) {
+      if (!quickEntries[i].label.trim()) {
+        toast.error('验证失败', `入口 #${i + 1} 的标签不能为空`);
+        setActiveTab('entries');
+        return;
+      }
+    }
+
+    setSaving(true);
+
     const newConfig = {
       ...homeConfig,
       heroSlides,
@@ -28,12 +99,28 @@ export default function HomeConfig() {
       },
     };
 
-    console.log('=== 首页配置已保存 ===');
-    console.log(JSON.stringify(newConfig, null, 2));
-    console.log('====================');
+    try {
+      // 调用后端批量更新接口
+      const res = await http.post('/config/batch', {
+        configs: {
+          'home_ui_config': JSON.stringify(newConfig),
+        },
+      });
 
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
+      if (res.data?.code === 200) {
+        toast.success('保存成功', '首页配置已更新，刷新页面后可见变更');
+        setSaved(true);
+        // 刷新配置 store
+        await refreshConfig();
+        setTimeout(() => setSaved(false), 2000);
+      } else {
+        toast.error('保存失败', res.data?.message || '请稍后重试');
+      }
+    } catch {
+      toast.error('网络错误', '无法连接到服务器，请检查网络连接');
+    } finally {
+      setSaving(false);
+    }
   };
 
   const tabs = [
@@ -45,6 +132,27 @@ export default function HomeConfig() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* 加载状态 */}
+      {loading && (
+        <div className="max-w-[1600px] mx-auto px-4 sm:px-6 py-8 space-y-4">
+          <Skeleton className="h-8 w-64" />
+          <Skeleton className="h-4 w-96" />
+          <div className="flex gap-2 mt-4">
+            {[1, 2, 3, 4].map((i) => (
+              <Skeleton key={i} className="h-10 w-24" />
+            ))}
+          </div>
+          <div className="grid gap-4 mt-6">
+            {[1, 2, 3].map((i) => (
+              <CardSkeleton key={i} />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* 主内容 */}
+      {!loading && (
+      <>
       {/* 顶部工具栏 */}
       <div className="sticky top-0 z-20 bg-white border-b border-gray-200 shadow-sm">
         <div className="max-w-[1600px] mx-auto px-4 sm:px-6 py-4">
@@ -59,10 +167,17 @@ export default function HomeConfig() {
                 <Eye className="w-4 h-4" /> 预览首页
               </a>
               <button onClick={handleSave}
-                className={`flex items-center gap-2 px-5 py-2 rounded-lg text-sm font-bold transition-all ${
+                disabled={saving}
+                className={`flex items-center gap-2 px-5 py-2 rounded-lg text-sm font-bold transition-all disabled:opacity-60 disabled:cursor-not-allowed ${
                   saved ? 'bg-green-500 text-white' : 'bg-primary-600 text-white hover:bg-primary-700'
                 }`}>
-                {saved ? <><CheckCircle2 className="w-4 h-4" /> 已保存</> : <><Save className="w-4 h-4" /> 保存配置</>}
+                {saving ? (
+                  <><Loader2 className="w-4 h-4 animate-spin" /> 保存中...</>
+                ) : saved ? (
+                  <><CheckCircle2 className="w-4 h-4" /> 已保存</>
+                ) : (
+                  <><Save className="w-4 h-4" /> 保存配置</>
+                )}
               </button>
             </div>
           </div>
@@ -92,7 +207,7 @@ export default function HomeConfig() {
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-sm font-bold text-gray-900">轮播 #{idx + 1}</h3>
                   {heroSlides.length > 1 && (
-                    <button onClick={() => setHeroSlides(heroSlides.filter((_, i) => i !== idx))}
+                    <button onClick={() => setDeleteConfirm({ type: 'hero', index: idx })}
                       className="text-red-400 hover:text-red-600 transition-colors"><Trash2 className="w-4 h-4" /></button>
                   )}
                 </div>
@@ -152,7 +267,7 @@ export default function HomeConfig() {
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-sm font-bold text-gray-900">入口 #{idx + 1}: {entry.label}</h3>
                   {quickEntries.length > 1 && (
-                    <button onClick={() => setQuickEntries(quickEntries.filter((_, i) => i !== idx))}
+                    <button onClick={() => setDeleteConfirm({ type: 'entry', index: idx })}
                       className="text-red-400 hover:text-red-600 transition-colors"><Trash2 className="w-4 h-4" /></button>
                   )}
                 </div>
@@ -198,7 +313,7 @@ export default function HomeConfig() {
                   <input value={color} onChange={e => { const arr = [...courseColors]; arr[idx] = e.target.value; setCourseColors(arr); }}
                     className="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-sm font-mono focus:ring-2 focus:ring-primary-500 focus:border-transparent" />
                   {courseColors.length > 1 && (
-                    <button onClick={() => setCourseColors(courseColors.filter((_, i) => i !== idx))}
+                    <button onClick={() => setDeleteConfirm({ type: 'color', index: idx })}
                       className="text-red-400 hover:text-red-600 transition-colors"><Trash2 className="w-4 h-4" /></button>
                   )}
                 </div>
@@ -252,6 +367,55 @@ export default function HomeConfig() {
         )}
 
       </div>
+
+      {/* 删除确认对话框 */}
+      {deleteConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-white rounded-xl p-6 max-w-md w-full mx-4 shadow-xl"
+          >
+            <div className="flex items-start gap-3 mb-4">
+              <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0">
+                <AlertTriangle className="w-5 h-5 text-red-600" />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-gray-900">确认删除</h3>
+                <p className="text-sm text-gray-500 mt-1">
+                  确定要删除此项吗？此操作无法撤销。
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-3 mt-6">
+              <button
+                onClick={() => setDeleteConfirm(null)}
+                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+              >
+                取消
+              </button>
+              <button
+                onClick={() => {
+                  if (deleteConfirm.type === 'hero') {
+                    setHeroSlides(heroSlides.filter((_, i) => i !== deleteConfirm.index));
+                  } else if (deleteConfirm.type === 'entry') {
+                    setQuickEntries(quickEntries.filter((_, i) => i !== deleteConfirm.index));
+                  } else if (deleteConfirm.type === 'color') {
+                    setCourseColors(courseColors.filter((_, i) => i !== deleteConfirm.index));
+                  }
+                  toast.success('已删除', '项目已被移除');
+                  setDeleteConfirm(null);
+                }}
+                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 transition-colors"
+              >
+                确认删除
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
+      </>
+      )}
     </div>
   );
 }

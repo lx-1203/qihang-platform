@@ -164,7 +164,7 @@ export default function TimelineView() {
           <span>全部</span>
           <span
             className={`text-xs mt-0.5 rounded-full px-1.5 ${
-              selectedMonth === null ? 'text-teal-100' : 'text-gray-400'
+              selectedMonth === null ? 'text-primary-100' : 'text-gray-400'
             }`}
           >
             {events.length}
@@ -187,7 +187,7 @@ export default function TimelineView() {
               <span>{formatMonthLabel(monthKey)}</span>
               <span
                 className={`text-xs mt-0.5 rounded-full px-1.5 ${
-                  isActive ? 'text-teal-100' : 'text-gray-400'
+                  isActive ? 'text-primary-100' : 'text-gray-400'
                 }`}
               >
                 {count}

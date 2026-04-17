@@ -13,7 +13,7 @@ const stories = [
     year: '2024届',
     quote: '从迷茫的应届生到字节产品经理，一切都值得。',
     content: '大三时我对未来毫无规划，偶然注册了启航平台。通过简历精修服务，我的简历从石沉大海到收到5家面试邀请；1v1模拟面试让我克服了紧张，最终同时拿到字节、美团、快手3个Offer。',
-    gradient: 'from-teal-500 to-emerald-600',
+    gradient: 'from-primary-500 to-emerald-600',
     initial: '李',
   },
   {

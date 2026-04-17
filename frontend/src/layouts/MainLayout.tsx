@@ -3,6 +3,7 @@ import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import FloatingService from '../components/FloatingService';
 import DevFloatButton from '../components/DevFloatButton';
+import PageTransition from '../components/ui/PageTransition';
 
 export default function MainLayout() {
   return (
@@ -10,7 +11,7 @@ export default function MainLayout() {
       <a href="#main-content" className="skip-to-content">跳转到主要内容</a>
       <Navbar />
       <main id="main-content" className="flex-grow">
-        <Outlet />
+        <PageTransition />
       </main>
       <Footer />
       <FloatingService />

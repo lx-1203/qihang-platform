@@ -279,5 +279,50 @@
       "value": "94.7%",
       "icon": "Target"
     }
-  ]
+  ],
+
+  "constants": {
+    "heroSlideInterval": 5000,
+    "quoteSlideInterval": 6000,
+    "heroMinHeightMobile": 480,
+    "heroMinHeightDesktop": 540,
+    "quoteMinHeightMobile": 320,
+    "quoteMinHeightDesktop": 360,
+    "serviceCardHeight": 200
+  },
+
+  "textResources": {
+    "hero": {
+      "offerBtnText": "查看 Offer 榜"
+    },
+    "sidebar": {
+      "consultantTitle": "资深留学顾问",
+      "consultantCta": "预约免费咨询",
+      "evaluatedCount": "12,400+"
+    },
+    "articles": {
+      "title": "热门资讯",
+      "viewMore": "查看更多"
+    },
+    "stories": {
+      "title": "他们的故事，也是你的未来",
+      "subtitle": "真实学员的申请历程与成长蜕变",
+      "viewMore": "查看更多学员故事"
+    },
+    "services": {
+      "title": "八大维度背景提升",
+      "subtitle": "八大维度全面提升申请竞争力 · 与旗下实习/创赛/保研业务深度联动",
+      "viewAll": "了解全部"
+    },
+    "cta": {
+      "aiBadge": "AI 智能选校",
+      "title": "3 分钟获取专属选校报告",
+      "description": "输入你的 GPA、语言成绩、本科院校，AI 自动匹配冲刺校 / 匹配校 / 保底校，生成可视化选校方案。",
+      "servedStudents": "10,000+",
+      "satisfactionRate": "98%",
+      "btnText": "免费智能选校",
+      "floatingCta": "免费预约留学咨询",
+      "floatingSubtitle": "资深顾问 · 1v1 规划"
+    }
+  }
 }

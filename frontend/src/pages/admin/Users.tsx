@@ -1,9 +1,10 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import {
   Search, Filter, MoreVertical,
   Shield, Ban, CheckCircle, XCircle,
-  ChevronLeft, ChevronRight, Download
+  ChevronLeft, ChevronRight, Download,
+  ArrowUpDown, ArrowUp, ArrowDown, Trash2
 } from 'lucide-react';
 import http from '@/api/http';
 import { TableSkeleton } from '../../components/ui/Skeleton';
@@ -47,6 +48,14 @@ export default function AdminUsers() {
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const abortControllerRef = useRef<AbortController | null>(null);
   const [confirmDialog, setConfirmDialog] = useState<{ open: boolean; userId: number | null; action: string }>({ open: false, userId: null, action: '' });
+
+  // 排序状态
+  const [sortField, setSortField] = useState<string>('created_at');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+
+  // 批量操作状态
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+  const [batchAction, setBatchAction] = useState<{ open: boolean; action: string }>({ open: false, action: '' });
 
   // 模拟数据
   const mockUsers: UserRecord[] = [
@@ -123,14 +132,80 @@ export default function AdminUsers() {
   async function toggleUserStatus(userId: number, currentStatus: number) {
     try {
       await http.put(`/admin/users/${userId}/status`, { status: currentStatus === 1 ? 0 : 1 });
+      showToast({ type: 'success', title: currentStatus === 1 ? '用户已禁用' : '用户已启用' });
       fetchUsers();
     } catch {
       // 模拟切换
       setUsers(prev => prev.map(u => u.id === userId ? { ...u, status: currentStatus === 1 ? 0 : 1 } : u));
+      showToast({ type: 'success', title: currentStatus === 1 ? '用户已禁用' : '用户已启用' });
     }
     setActionMenu(null);
     setConfirmDialog({ open: false, userId: null, action: '' });
   }
+
+  // 排序处理
+  const handleSort = (field: string) => {
+    if (sortField === field) {
+      setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortOrder('asc');
+    }
+  };
+
+  // 排序后的用户列表
+  const sortedUsers = useMemo(() => {
+    if (!sortField) return users;
+    return [...users].sort((a, b) => {
+      let aVal = a[sortField as keyof UserRecord];
+      let bVal = b[sortField as keyof UserRecord];
+      if (typeof aVal === 'string') aVal = aVal.toLowerCase();
+      if (typeof bVal === 'string') bVal = bVal.toLowerCase();
+      if (aVal < bVal) return sortOrder === 'asc' ? -1 : 1;
+      if (aVal > bVal) return sortOrder === 'asc' ? 1 : -1;
+      return 0;
+    });
+  }, [users, sortField, sortOrder]);
+
+  // 排序图标
+  const SortIcon = ({ field }: { field: string }) => {
+    if (sortField !== field) return <ArrowUpDown className="w-3.5 h-3.5 text-gray-400" />;
+    return sortOrder === 'asc'
+      ? <ArrowUp className="w-3.5 h-3.5 text-indigo-600" />
+      : <ArrowDown className="w-3.5 h-3.5 text-indigo-600" />;
+  };
+
+  // 批量选择
+  const toggleSelectUser = (userId: number) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(userId)) next.delete(userId); else next.add(userId);
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedIds.size === sortedUsers.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(sortedUsers.map(u => u.id)));
+    }
+  };
+
+  // 批量禁用
+  const handleBatchBan = async () => {
+    try {
+      await Promise.all(Array.from(selectedIds).map(id =>
+        http.put(`/admin/users/${id}/status`, { status: 0 }).catch(() => {})
+      ));
+      showToast({ type: 'success', title: `已批量禁用 ${selectedIds.size} 个用户` });
+      setSelectedIds(new Set());
+      setBatchAction({ open: false, action: '' });
+      fetchUsers();
+    } catch {
+      showToast({ type: 'error', title: '批量操作失败，请重试' });
+    }
+  };
 
   const totalPages = Math.ceil(total / pageSize);
 
@@ -208,27 +283,96 @@ export default function AdminUsers() {
 
       {/* 用户列表 */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        {/* 批量操作工具栏 */}
+        {selectedIds.size > 0 && (
+          <div className="flex items-center justify-between px-6 py-3 bg-indigo-50 border-b border-indigo-100">
+            <span className="text-sm text-indigo-700 font-medium">
+              已选择 {selectedIds.size} 个用户
+            </span>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setBatchAction({ open: true, action: 'ban' })}
+                className="px-3 py-1.5 bg-red-600 text-white text-sm rounded-lg hover:bg-red-700 transition-colors flex items-center gap-1"
+              >
+                <Ban className="w-4 h-4" />
+                批量禁用
+              </button>
+              <button
+                onClick={() => setSelectedIds(new Set())}
+                className="px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                取消选择
+              </button>
+            </div>
+          </div>
+        )}
+
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
               <tr className="bg-gray-50 border-b border-gray-100">
-                <th className="text-left px-6 py-3.5 text-xs font-medium text-gray-500 uppercase tracking-wider">用户</th>
-                <th className="text-left px-6 py-3.5 text-xs font-medium text-gray-500 uppercase tracking-wider">角色</th>
+                <th className="text-left px-6 py-3.5 w-12">
+                  <input
+                    type="checkbox"
+                    checked={selectedIds.size === sortedUsers.length && sortedUsers.length > 0}
+                    onChange={toggleSelectAll}
+                    className="w-4 h-4 text-indigo-600 rounded border-gray-300 focus:ring-indigo-500"
+                  />
+                </th>
+                <th
+                  className="text-left px-6 py-3.5 text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:text-gray-700 select-none"
+                  onClick={() => handleSort('nickname')}
+                >
+                  <div className="flex items-center gap-1">
+                    用户 <SortIcon field="nickname" />
+                  </div>
+                </th>
+                <th
+                  className="text-left px-6 py-3.5 text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:text-gray-700 select-none"
+                  onClick={() => handleSort('role')}
+                >
+                  <div className="flex items-center gap-1">
+                    角色 <SortIcon field="role" />
+                  </div>
+                </th>
                 <th className="text-left px-6 py-3.5 text-xs font-medium text-gray-500 uppercase tracking-wider">手机号</th>
-                <th className="text-left px-6 py-3.5 text-xs font-medium text-gray-500 uppercase tracking-wider">状态</th>
-                <th className="text-left px-6 py-3.5 text-xs font-medium text-gray-500 uppercase tracking-wider">注册时间</th>
+                <th
+                  className="text-left px-6 py-3.5 text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:text-gray-700 select-none"
+                  onClick={() => handleSort('status')}
+                >
+                  <div className="flex items-center gap-1">
+                    状态 <SortIcon field="status" />
+                  </div>
+                </th>
+                <th
+                  className="text-left px-6 py-3.5 text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:text-gray-700 select-none"
+                  onClick={() => handleSort('created_at')}
+                >
+                  <div className="flex items-center gap-1">
+                    注册时间 <SortIcon field="created_at" />
+                  </div>
+                </th>
                 <th className="text-right px-6 py-3.5 text-xs font-medium text-gray-500 uppercase tracking-wider">操作</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {users.map((user, i) => (
+              {sortedUsers.map((user, i) => (
                 <motion.tr
                   key={user.id}
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ delay: i * 0.03 }}
-                  className="hover:bg-gray-50 transition-colors"
+                  className={`hover:bg-gray-50 transition-colors ${selectedIds.has(user.id) ? 'bg-indigo-50/50' : ''}`}
                 >
+                  <td className="px-6 py-4">
+                    <input
+                      type="checkbox"
+                      checked={selectedIds.has(user.id)}
+                      onChange={() => toggleSelectUser(user.id)}
+                      className="w-4 h-4 text-indigo-600 rounded border-gray-300 focus:ring-indigo-500"
+                      onClick={e => e.stopPropagation()}
+                    />
+                  </td>
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-3">
                       <div className="w-9 h-9 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center font-bold text-sm">
@@ -331,6 +475,17 @@ export default function AdminUsers() {
           }
         }}
         onCancel={() => setConfirmDialog({ open: false, userId: null, action: '' })}
+      />
+
+      {/* 批量操作确认弹窗 */}
+      <ConfirmDialog
+        open={batchAction.open}
+        title={`确定要批量禁用 ${selectedIds.size} 个用户吗？`}
+        description="禁用后这些用户将无法登录平台，此操作不可逆。"
+        variant="danger"
+        confirmText={`确认禁用 ${selectedIds.size} 个用户`}
+        onConfirm={handleBatchBan}
+        onCancel={() => setBatchAction({ open: false, action: '' })}
       />
     </div>
   );

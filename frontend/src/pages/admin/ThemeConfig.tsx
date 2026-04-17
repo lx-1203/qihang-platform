@@ -1,7 +1,10 @@
-import { useState } from 'react';
-import { Palette, Circle, Square, Sun, Save, RotateCcw, Eye } from 'lucide-react';
+import { useState, useCallback, useEffect } from 'react';
+import { Palette, Circle, Square, Sun, Save, RotateCcw, Eye, Loader2 } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { useToast } from '../../components/ui';
+import http from '@/api/http';
+import { useToast } from '@/components/ui';
+import { useConfigStore } from '@/store/config';
+import { Skeleton } from '@/components/ui/Skeleton';
 
 // 预设品牌色方案
 const PRESET_COLORS = [
@@ -38,22 +41,156 @@ const TABS: { key: TabKey; label: string; icon: typeof Palette }[] = [
 
 export default function ThemeConfig() {
   const toast = useToast();
+  const refreshConfig = useConfigStore((s) => s.fetchConfigs);
   const [activeTab, setActiveTab] = useState<TabKey>('color');
   const [selectedColor, setSelectedColor] = useState(0);
   const [customColor, setCustomColor] = useState('#14b8a6');
   const [selectedRadius, setSelectedRadius] = useState(1);
   const [selectedShadow, setSelectedShadow] = useState(1);
+  const [saving, setSaving] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   const currentColor = PRESET_COLORS[selectedColor]?.value || customColor;
 
-  const handleSave = () => {
+  // 从后端加载已保存的主题配置
+  useEffect(() => {
+    async function loadThemeConfig() {
+      try {
+        const res = await http.get('/config/public');
+        if (res.data?.code === 200 && res.data.data) {
+          const configs = res.data.data;
+          if (configs.theme_brand_color) {
+            const savedColor = configs.theme_brand_color;
+            const presetIdx = PRESET_COLORS.findIndex(c => c.value === savedColor);
+            if (presetIdx >= 0) {
+              setSelectedColor(presetIdx);
+              setCustomColor(savedColor);
+            } else {
+              setSelectedColor(-1);
+              setCustomColor(savedColor);
+            }
+          }
+          if (configs.theme_radius) {
+            try {
+              const radiusConfig = typeof configs.theme_radius === 'string'
+                ? JSON.parse(configs.theme_radius)
+                : configs.theme_radius;
+              const radiusIdx = RADIUS_PRESETS.findIndex(
+                r => r.sm === radiusConfig.sm && r.md === radiusConfig.md
+              );
+              if (radiusIdx >= 0) setSelectedRadius(radiusIdx);
+            } catch { /* 解析失败使用默认值 */ }
+          }
+          if (configs.theme_shadow) {
+            try {
+              const shadowConfig = typeof configs.theme_shadow === 'string'
+                ? JSON.parse(configs.theme_shadow)
+                : configs.theme_shadow;
+              const shadowIdx = SHADOW_PRESETS.findIndex(
+                s => s.sm === shadowConfig.sm && s.md === shadowConfig.md
+              );
+              if (shadowIdx >= 0) setSelectedShadow(shadowIdx);
+            } catch { /* 解析失败使用默认值 */ }
+          }
+        }
+      } catch {
+        toast.info('使用默认主题', '无法连接服务器，当前使用默认主题配置');
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadThemeConfig();
+  }, []);
+
+  // 实时更新 CSS 变量（预览效果）
+  const updateCSSVariables = useCallback((color?: string, radiusIdx?: number, shadowIdx?: number) => {
+    const root = document.documentElement;
+
+    // 更新品牌色
+    if (color) {
+      root.style.setProperty('--color-primary', color);
+      // 更新 Tailwind primary 色的 RGB 值用于透明度变体
+      const hex = color.replace('#', '');
+      const r = parseInt(hex.substring(0, 2), 16);
+      const g = parseInt(hex.substring(2, 4), 16);
+      const b = parseInt(hex.substring(4, 6), 16);
+      root.style.setProperty('--color-primary-rgb', `${r} ${g} ${b}`);
+    }
+
+    // 更新圆角变量
+    if (radiusIdx !== undefined) {
+      const preset = RADIUS_PRESETS[radiusIdx];
+      root.style.setProperty('--radius-sm', preset.sm);
+      root.style.setProperty('--radius-md', preset.md);
+      root.style.setProperty('--radius-lg', preset.lg);
+      root.style.setProperty('--radius-xl', preset.xl);
+    }
+
+    // 更新阴影变量
+    if (shadowIdx !== undefined) {
+      const preset = SHADOW_PRESETS[shadowIdx];
+      root.style.setProperty('--shadow-sm', preset.sm);
+      root.style.setProperty('--shadow-md', preset.md);
+      root.style.setProperty('--shadow-lg', preset.lg);
+    }
+  }, []);
+
+  // 颜色变化时实时预览
+  const handleColorChange = (color: number | string) => {
+    if (typeof color === 'number') {
+      setSelectedColor(color);
+      setCustomColor(PRESET_COLORS[color].value);
+      updateCSSVariables(PRESET_COLORS[color].value);
+    } else {
+      setSelectedColor(-1);
+      setCustomColor(color);
+      updateCSSVariables(color);
+    }
+  };
+
+  // 圆角变化时实时预览
+  const handleRadiusChange = (idx: number) => {
+    setSelectedRadius(idx);
+    updateCSSVariables(undefined, idx, undefined);
+  };
+
+  // 阴影变化时实时预览
+  const handleShadowChange = (idx: number) => {
+    setSelectedShadow(idx);
+    updateCSSVariables(undefined, undefined, idx);
+  };
+
+  const handleSave = async () => {
+    if (saving) return;
+    setSaving(true);
+
     const config = {
       brandColor: currentColor,
       radius: RADIUS_PRESETS[selectedRadius],
       shadow: SHADOW_PRESETS[selectedShadow],
     };
-    console.log('🎨 主题配置已保存:', JSON.stringify(config, null, 2));
-    toast.success('主题配置已保存', '配置已输出到控制台，后续可对接后端 API');
+
+    try {
+      const res = await http.post('/config/batch', {
+        configs: {
+          'theme_brand_color': currentColor,
+          'theme_radius': JSON.stringify(RADIUS_PRESETS[selectedRadius]),
+          'theme_shadow': JSON.stringify(SHADOW_PRESETS[selectedShadow]),
+        },
+      });
+
+      if (res.data?.code === 200) {
+        toast.success('保存成功', '主题配置已更新，全局样式已生效');
+        // 刷新配置 store
+        await refreshConfig();
+      } else {
+        toast.error('保存失败', res.data?.message || '请稍后重试');
+      }
+    } catch {
+      toast.error('网络错误', '无法连接到服务器，请检查网络连接');
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleReset = () => {
@@ -61,11 +198,31 @@ export default function ThemeConfig() {
     setCustomColor('#14b8a6');
     setSelectedRadius(1);
     setSelectedShadow(1);
+    // 重置CSS变量到默认值
+    updateCSSVariables('#14b8a6', 1, 1);
     toast.info('已恢复默认主题');
   };
 
+  // 加载状态
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 p-8">
+        <Skeleton className="h-8 w-48 mb-2" />
+        <Skeleton className="h-4 w-80 mb-8" />
+        <div className="grid grid-cols-3 gap-6">
+          <div className="col-span-2">
+            <Skeleton className="h-96 w-full rounded-xl" />
+          </div>
+          <div>
+            <Skeleton className="h-64 w-full rounded-xl" />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="max-w-5xl mx-auto space-y-6">
+    <div className="min-h-screen bg-gray-50 p-6">
       {/* 页头 */}
       <div className="flex items-center justify-between">
         <div>
@@ -82,10 +239,14 @@ export default function ThemeConfig() {
           </button>
           <button
             onClick={handleSave}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors text-sm font-medium"
+            disabled={saving}
+            className="inline-flex items-center gap-2 px-4 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors text-sm font-medium disabled:opacity-60 disabled:cursor-not-allowed"
           >
-            <Save className="w-4 h-4" />
-            保存配置
+            {saving ? (
+              <><Loader2 className="w-4 h-4 animate-spin" /> 保存中...</>
+            ) : (
+              <><Save className="w-4 h-4" /> 保存配置</>
+            )}
           </button>
         </div>
       </div>
@@ -122,7 +283,7 @@ export default function ThemeConfig() {
                       {PRESET_COLORS.map((color, idx) => (
                         <button
                           key={color.value}
-                          onClick={() => { setSelectedColor(idx); setCustomColor(color.value); }}
+                          onClick={() => handleColorChange(idx)}
                           className={`flex items-center gap-3 p-3 rounded-lg border-2 transition-all ${
                             selectedColor === idx
                               ? 'border-gray-900 bg-gray-50'
@@ -145,13 +306,13 @@ export default function ThemeConfig() {
                       <input
                         type="color"
                         value={customColor}
-                        onChange={(e) => { setCustomColor(e.target.value); setSelectedColor(-1); }}
+                        onChange={(e) => handleColorChange(e.target.value)}
                         className="w-12 h-12 rounded-lg cursor-pointer border border-gray-300"
                       />
                       <input
                         type="text"
                         value={customColor}
-                        onChange={(e) => { setCustomColor(e.target.value); setSelectedColor(-1); }}
+                        onChange={(e) => handleColorChange(e.target.value)}
                         className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm font-mono"
                         placeholder="#14b8a6"
                       />
@@ -168,7 +329,7 @@ export default function ThemeConfig() {
                     {RADIUS_PRESETS.map((preset, idx) => (
                       <button
                         key={preset.name}
-                        onClick={() => setSelectedRadius(idx)}
+                        onClick={() => handleRadiusChange(idx)}
                         className={`p-4 border-2 rounded-lg transition-all text-left ${
                           selectedRadius === idx
                             ? 'border-primary-500 bg-primary-50'
@@ -205,7 +366,7 @@ export default function ThemeConfig() {
                     {SHADOW_PRESETS.map((preset, idx) => (
                       <button
                         key={preset.name}
-                        onClick={() => setSelectedShadow(idx)}
+                        onClick={() => handleShadowChange(idx)}
                         className={`p-4 border-2 rounded-lg transition-all ${
                           selectedShadow === idx
                             ? 'border-primary-500 bg-primary-50'

@@ -1,6 +1,10 @@
-import { useState } from 'react';
-import { Save, Image, RefreshCw, Plus, Trash2, Upload, Eye, CheckCircle2 } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Save, Image, RefreshCw, Plus, Trash2, Upload, Eye, CheckCircle2, Loader2, AlertTriangle } from 'lucide-react';
 import { motion } from 'framer-motion';
+import http from '@/api/http';
+import { useToast } from '@/components/ui';
+import { useConfigStore } from '@/store/config';
+import { Skeleton, CardSkeleton } from '@/components/ui/Skeleton';
 import uiConfig from '../../data/study-abroad-ui-config.json';
 
 type HeroSlide = typeof uiConfig.heroSlides[0];
@@ -9,14 +13,81 @@ type StudentStory = typeof uiConfig.studentStories[0];
 type NewcomerQuote = typeof uiConfig.newcomerQuotes[0];
 
 export default function StudyAbroadConfig() {
+  const toast = useToast();
+  const refreshConfig = useConfigStore((s) => s.fetchConfigs);
   const [activeTab, setActiveTab] = useState<'hero' | 'services' | 'stories' | 'quotes'>('hero');
   const [heroSlides, setHeroSlides] = useState<HeroSlide[]>(uiConfig.heroSlides);
   const [serviceCards, setServiceCards] = useState<ServiceCard[]>(uiConfig.serviceCards);
   const [studentStories, setStudentStories] = useState<StudentStory[]>(uiConfig.studentStories);
   const [newcomerQuotes, setNewcomerQuotes] = useState<NewcomerQuote[]>(uiConfig.newcomerQuotes);
   const [saved, setSaved] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [deleteConfirm, setDeleteConfirm] = useState<{ type: string; index: number } | null>(null);
 
-  const handleSave = () => {
+  // 从后端加载配置
+  useEffect(() => {
+    async function loadConfig() {
+      try {
+        setLoading(true);
+        const res = await http.get('/config/public');
+        if (res.data?.code === 200 && res.data.data) {
+          const configs = res.data.data;
+          // 尝试从后端配置中获取留学UI配置
+          if (configs.study_abroad_ui_config) {
+            try {
+              const parsedConfig = typeof configs.study_abroad_ui_config === 'string'
+                ? JSON.parse(configs.study_abroad_ui_config)
+                : configs.study_abroad_ui_config;
+              if (parsedConfig.heroSlides) setHeroSlides(parsedConfig.heroSlides);
+              if (parsedConfig.serviceCards) setServiceCards(parsedConfig.serviceCards);
+              if (parsedConfig.studentStories) setStudentStories(parsedConfig.studentStories);
+              if (parsedConfig.newcomerQuotes) setNewcomerQuotes(parsedConfig.newcomerQuotes);
+            } catch {
+              toast.warning('配置解析失败', '使用默认配置');
+            }
+          }
+        }
+      } catch {
+        toast.info('使用本地默认配置', '无法连接服务器，当前使用内置默认值');
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadConfig();
+  }, []);
+
+  const handleSave = async () => {
+    if (saving) return;
+
+    // 表单验证
+    if (heroSlides.length === 0) {
+      toast.error('验证失败', '至少需要保留一个轮播图');
+      return;
+    }
+    if (serviceCards.length === 0) {
+      toast.error('验证失败', '至少需要保留一个服务卡片');
+      return;
+    }
+
+    // 验证必填字段
+    for (let i = 0; i < heroSlides.length; i++) {
+      if (!heroSlides[i].title.trim()) {
+        toast.error('验证失败', `轮播图 #${i + 1} 的标题不能为空`);
+        setActiveTab('hero');
+        return;
+      }
+    }
+    for (let i = 0; i < serviceCards.length; i++) {
+      if (!serviceCards[i].title.trim()) {
+        toast.error('验证失败', `服务卡片 #${i + 1} 的标题不能为空`);
+        setActiveTab('services');
+        return;
+      }
+    }
+
+    setSaving(true);
+
     const newConfig = {
       ...uiConfig,
       heroSlides,
@@ -28,17 +99,54 @@ export default function StudyAbroadConfig() {
         lastUpdated: new Date().toISOString().split('T')[0]
       }
     };
-    
-    console.log('=== 保存的配置 ===');
-    console.log(JSON.stringify(newConfig, null, 2));
-    console.log('================');
-    
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
+
+    try {
+      // 调用后端批量更新接口
+      const res = await http.post('/config/batch', {
+        configs: {
+          'study_abroad_ui_config': JSON.stringify(newConfig),
+        },
+      });
+
+      if (res.data?.code === 200) {
+        toast.success('保存成功', '留学板块配置已更新，刷新页面后可见变更');
+        setSaved(true);
+        // 刷新配置 store
+        await refreshConfig();
+        setTimeout(() => setSaved(false), 2000);
+      } else {
+        toast.error('保存失败', res.data?.message || '请稍后重试');
+      }
+    } catch {
+      toast.error('网络错误', '无法连接到服务器，请检查网络连接');
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* 加载状态 */}
+      {loading && (
+        <div className="max-w-[1600px] mx-auto px-4 sm:px-6 py-8 space-y-4">
+          <Skeleton className="h-8 w-64" />
+          <Skeleton className="h-4 w-96" />
+          <div className="flex gap-2 mt-4">
+            {[1, 2, 3, 4].map((i) => (
+              <Skeleton key={i} className="h-10 w-28" />
+            ))}
+          </div>
+          <div className="grid gap-4 mt-6">
+            {[1, 2, 3].map((i) => (
+              <CardSkeleton key={i} />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* 主内容 */}
+      {!loading && (
+      <>
       {/* 顶部工具栏 */}
       <div className="sticky top-0 z-20 bg-white border-b border-gray-200 shadow-sm">
         <div className="max-w-[1600px] mx-auto px-4 sm:px-6 py-4">
@@ -56,10 +164,16 @@ export default function StudyAbroadConfig() {
               </button>
               <button
                 onClick={handleSave}
-                className="flex items-center gap-2 px-6 py-2 bg-primary-500 text-white rounded-xl font-semibold hover:bg-primary-700 transition-all shadow-lg shadow-primary-500/25"
+                disabled={saving}
+                className="flex items-center gap-2 px-6 py-2 bg-primary-500 text-white rounded-xl font-semibold hover:bg-primary-700 transition-all shadow-lg shadow-primary-500/25 disabled:opacity-60 disabled:cursor-not-allowed"
               >
-                {saved ? <CheckCircle2 className="w-4 h-4" /> : <Save className="w-4 h-4" />}
-                {saved ? '已保存' : '保存配置'}
+                {saving ? (
+                  <><Loader2 className="w-4 h-4 animate-spin" /> 保存中...</>
+                ) : saved ? (
+                  <><CheckCircle2 className="w-4 h-4" /> 已保存</>
+                ) : (
+                  <><Save className="w-4 h-4" /> 保存配置</>
+                )}
               </button>
             </div>
           </div>
@@ -128,7 +242,7 @@ export default function StudyAbroadConfig() {
                       <span className="text-gray-500 text-sm">轮播 {index + 1}</span>
                     </div>
                     <button
-                      onClick={() => setHeroSlides(heroSlides.filter((_, i) => i !== index))}
+                      onClick={() => setDeleteConfirm({ type: 'hero', index: index })}
                       className="text-red-500 hover:text-red-600 p-1"
                     >
                       <Trash2 className="w-5 h-5" />
@@ -328,7 +442,7 @@ export default function StudyAbroadConfig() {
                       <span className="text-gray-500 text-sm">故事 {index + 1}</span>
                     </div>
                     <button
-                      onClick={() => setStudentStories(studentStories.filter((_, i) => i !== index))}
+                      onClick={() => setDeleteConfirm({ type: 'story', index: index })}
                       className="text-red-500 hover:text-red-600"
                     >
                       <Trash2 className="w-5 h-5" />
@@ -492,7 +606,7 @@ export default function StudyAbroadConfig() {
                   <div className="flex items-start justify-between mb-4">
                     <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">寄语 {index + 1}</span>
                     <button
-                      onClick={() => setNewcomerQuotes(newcomerQuotes.filter((_, i) => i !== index))}
+                      onClick={() => setDeleteConfirm({ type: 'quote', index: index })}
                       className="text-red-500 hover:text-red-600"
                     >
                       <Trash2 className="w-5 h-5" />
@@ -561,6 +675,55 @@ export default function StudyAbroadConfig() {
           </div>
         )}
       </div>
+
+      {/* 删除确认对话框 */}
+      {deleteConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-white rounded-xl p-6 max-w-md w-full mx-4 shadow-xl"
+          >
+            <div className="flex items-start gap-3 mb-4">
+              <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0">
+                <AlertTriangle className="w-5 h-5 text-red-600" />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-gray-900">确认删除</h3>
+                <p className="text-sm text-gray-500 mt-1">
+                  确定要删除此项吗？此操作无法撤销。
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-3 mt-6">
+              <button
+                onClick={() => setDeleteConfirm(null)}
+                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+              >
+                取消
+              </button>
+              <button
+                onClick={() => {
+                  if (deleteConfirm.type === 'hero') {
+                    setHeroSlides(heroSlides.filter((_, i) => i !== deleteConfirm.index));
+                  } else if (deleteConfirm.type === 'story') {
+                    setStudentStories(studentStories.filter((_, i) => i !== deleteConfirm.index));
+                  } else if (deleteConfirm.type === 'quote') {
+                    setNewcomerQuotes(newcomerQuotes.filter((_, i) => i !== deleteConfirm.index));
+                  }
+                  toast.success('已删除', '项目已被移除');
+                  setDeleteConfirm(null);
+                }}
+                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 transition-colors"
+              >
+                确认删除
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
+      </>
+      )}
     </div>
   );
 }

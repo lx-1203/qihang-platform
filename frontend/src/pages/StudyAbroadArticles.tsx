@@ -7,19 +7,57 @@ import {
 } from 'lucide-react';
 import TagComponent from '@/components/ui/Tag';
 import { motion } from 'framer-motion';
+import { useConfigStore } from '@/store/config';
 
-// ====== 数据导入（从 JSON 读取，管理员可通过配置页修改） ======
-import articlesData from '../data/study-abroad-articles.json';
-
-const FEATURED_ARTICLE = articlesData.featured;
-const ARTICLES = articlesData.articles;
-const HOT_TOPICS = articlesData.hotTopics;
-const CATEGORIES = ['全部', ...Array.from(new Set(ARTICLES.map((a: { category: string }) => a.category)))];
+// 默认配置（当后端不可用时使用）
+const DEFAULT_STUDY_ABROAD_ARTICLES_CONFIG = {
+  _meta: { version: "1.0", lastUpdated: "2026-04-14", description: "留学资讯文章数据" },
+  featured: {
+    id: 100,
+    title: "2026 Fall 留学申请全攻略：从选校到拿Offer，一文搞定",
+    category: "申请指南",
+    cover: "https://images.unsplash.com/photo-1523050854058-8df90110c9f1?w=1200&q=80",
+    excerpt: "从确定留学目标到最终拿到Offer，这篇万字长文涵盖了选校策略、材料准备、文书写作、面试技巧、签证办理的完整流程。无论你是大一刚开始规划，还是大三即将申请，都能从中找到适合自己阶段的行动指南。",
+    views: 15600, likes: 892, date: "2026-04-01",
+    author: "启航留学研究院", readTime: "25 min", tags: ["精华", "必读"]
+  },
+  articles: [
+    { id: 1, title: "2026 Fall 英国G5申请时间线与完整材料清单", category: "申请指南", cover: "https://images.unsplash.com/photo-1526129318478-62ed807ebdf9?w=400&q=80", excerpt: "详细梳理牛津、剑桥、IC、LSE、UCL五所G5院校的申请开放时间、截止日期、所需材料及注意事项，助你提前规划，从容应对。", views: 8420, likes: 456, date: "2026-03-25", author: "启航留学编辑部", readTime: "8 min", tags: ["英国", "G5"] },
+    { id: 2, title: "雅思7.0到7.5的备考突破：三个月逆袭经验分享", category: "语言考试", cover: "https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?w=400&q=80", excerpt: "从6.5到7.5，分享听说读写四科的备考策略、高效刷题方法、核心资料推荐和考场实战技巧。三个月逆袭不是梦！", views: 6180, likes: 378, date: "2026-03-22", author: "学员 小王 · 雅思7.5", readTime: "6 min", tags: ["雅思", "经验"] },
+    { id: 3, title: "港三新二 商科跨专业申请全流程分享（双非背景）", category: "就读分享", cover: "https://images.unsplash.com/photo-1536599018102-9f803c029e12?w=400&q=80", excerpt: "双非本科英语专业，如何成功跨申香港大学商业分析硕士？从GMAT备考、实习规划到文书策略，分享拿到HKU、NUS、NTU三枚Offer的完整经历。", views: 12560, likes: 723, date: "2026-03-20", author: "学员 小李 · HKU BA", readTime: "12 min", tags: ["双非", "跨专业", "港三"] },
+    { id: 4, title: "留学文书PS/SOP写作万能框架与常见避坑指南", category: "文书写作", cover: "https://images.unsplash.com/photo-1455390582262-044cdead277a?w=400&q=80", excerpt: "个人陈述怎么写？开头如何吸引招生官？如何展示学术热情和职业规划？附G5/港三/新国立通用的万能段落结构模板和真实案例解析。", views: 15230, likes: 891, date: "2026-03-18", author: "文书导师 Sarah · 前Oxford招生官", readTime: "10 min", tags: ["文书", "PS", "模板"] },
+    { id: 5, title: "澳洲八大2026年入学最新申请要求汇总", category: "院校解析", cover: "https://images.unsplash.com/photo-1523482580672-f109ba8cb9be?w=400&q=80", excerpt: "悉尼大学、墨尔本大学、UNSW、ANU等八大名校2026年最新GPA要求、语言要求、专业变化及学费调整一站汇总。", views: 4890, likes: 267, date: "2026-03-15", author: "启航留学编辑部", readTime: "7 min", tags: ["澳洲", "八大"] },
+    { id: 6, title: "英国Tier 4学生签证申请全攻略（2026最新版）", category: "签证办理", cover: "https://images.unsplash.com/photo-1569154941061-e23b9475ef1?w=400&q=80", excerpt: "从拿到CAS到签证递交，TB检测预约、资金证明准备、签证中心选择、面签模拟等全流程详解，附签证材料清单下载。", views: 7340, likes: 412, date: "2026-03-12", author: "签证顾问 Jenny · 10年经验", readTime: "9 min", tags: ["签证", "英国"] },
+    { id: 7, title: "CSC国家留学基金委奖学金申请指南与成功案例", category: "奖学金", cover: "https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=400&q=80", excerpt: "国家公派留学如何申请？哪些学校有CSC合作项目？申请时间线、材料准备、面试技巧和3位成功获奖学员的经验分享。", views: 9100, likes: 534, date: "2026-03-10", author: "启航留学研究院", readTime: "8 min", tags: ["CSC", "奖学金", "公派"] },
+    { id: 8, title: "2026暑期海外名校夏令营项目汇总与申请建议", category: "夏令营/活动", cover: "https://images.unsplash.com/photo-1517486808906-6ca8b3f04846?w=400&q=80", excerpt: "牛津、剑桥、MIT、Stanford、UCLA等名校2026暑期项目开放申请！费用、时长、申请条件全汇总，提升背景的绝佳机会。", views: 5670, likes: 321, date: "2026-03-08", author: "启航留学编辑部", readTime: "6 min", tags: ["夏校", "暑期项目"] },
+    { id: 9, title: "托福100+备考经验：阅读听力满分，口语突破24", category: "语言考试", cover: "https://images.unsplash.com/photo-1434030216411-0b793f4b4173?w=400&q=80", excerpt: "从首考85到二刷108，分享TPO高效刷题法、阅读速读技巧、听力笔记方法、口语模板和写作高分句型。", views: 7890, likes: 445, date: "2026-03-05", author: "学员 小张 · 托福108", readTime: "8 min", tags: ["托福", "高分"] },
+    { id: 10, title: "GRE 325+备考攻略：verbal提分秘诀与数学满分技巧", category: "语言考试", cover: "https://images.unsplash.com/photo-1513475382585-d06e58bcb0e0?w=400&q=80", excerpt: "两个月从310到328！分享GRE verbal核心词汇记忆法、阅读理解策略、填空秒杀技巧和写作模板。", views: 5340, likes: 298, date: "2026-03-02", author: "学员 小赵 · GRE 328", readTime: "7 min", tags: ["GRE", "高分"] },
+    { id: 11, title: "帝国理工 vs UCL vs 爱丁堡：CS硕士三校横评", category: "院校解析", cover: "https://images.unsplash.com/photo-1607237138185-eedd9c632b0b?w=400&q=80", excerpt: "从课程设置、录取难度、就业前景、生活成本四个维度全面对比英国三所顶尖CS硕士项目，帮你做出最优选择。", views: 11200, likes: 678, date: "2026-02-28", author: "启航留学研究院", readTime: "15 min", tags: ["CS", "选校", "对比"] },
+    { id: 12, title: "美国F1签证面签全攻略：高频问题与回答模板", category: "签证办理", cover: "https://images.unsplash.com/photo-1551434678-e076c223a692?w=400&q=80", excerpt: "整理50+个F1签证高频面签问题，附中英文回答模板。涵盖学习计划、资金证明、回国计划等敏感问题的回答策略。", views: 6780, likes: 389, date: "2026-02-25", author: "签证顾问 David · 美签专家", readTime: "10 min", tags: ["F1签证", "美国", "面签"] }
+  ],
+  hotTopics: [
+    { label: "2026 Fall时间线", count: 156 },
+    { label: "G5申请", count: 128 },
+    { label: "雅思7.0+", count: 112 },
+    { label: "跨专业申请", count: 98 },
+    { label: "PS文书写作", count: 87 },
+    { label: "港三新二", count: 76 },
+    { label: "双非逆袭", count: 65 },
+    { label: "CSC奖学金", count: 54 }
+  ]
+};
 
 export default function StudyAbroadArticles() {
+  const studyAbroadConfig = useConfigStore(s => s.getJson('study_abroad_articles_config', DEFAULT_STUDY_ABROAD_ARTICLES_CONFIG));
+  const FEATURED_ARTICLE = studyAbroadConfig.featured || DEFAULT_STUDY_ABROAD_ARTICLES_CONFIG.featured;
+  const ARTICLES = studyAbroadConfig.articles || DEFAULT_STUDY_ABROAD_ARTICLES_CONFIG.articles;
+  const HOT_TOPICS = studyAbroadConfig.hotTopics || DEFAULT_STUDY_ABROAD_ARTICLES_CONFIG.hotTopics;
   const [selectedCategory, setSelectedCategory] = useState('全部');
   const [searchKeyword, setSearchKeyword] = useState('');
   const [sortBy, setSortBy] = useState<'latest' | 'popular'>('latest');
+
+  // 动态生成分类列表
+  const CATEGORIES = ['全部', ...Array.from(new Set(ARTICLES.map((a: { category: string }) => a.category)))];
 
   const filtered = ARTICLES.filter((a) => {
     if (selectedCategory !== '全部' && a.category !== selectedCategory) return false;

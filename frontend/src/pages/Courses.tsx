@@ -3,12 +3,21 @@ import { BookOpen, Search, Play, Users, Star, ChevronRight, Loader2 } from 'luci
 import { Link } from 'react-router-dom';
 import http from '@/api/http';
 import ErrorState from '../components/ui/ErrorState';
+import EmptyState from '../components/ui/EmptyState';
+import { ListSkeleton } from '../components/ui/Skeleton';
 import Tag from '@/components/ui/Tag';
+import coursesConfig from '@/data/courses-config.json';
 
 // ====== 课程列表页 ======
-// 数据从 /api/courses 获取，不再使用硬编码 mock
+// 数据从 /api/courses 获取，分类和文案从 courses-config.json 配置文件读取
 
-const CATEGORIES = ['全部', '求职指导', '面试技巧', '简历制作', '行业解析', '考研保研', '体制内备考', '技能提升'];
+const {
+  categories: CATEGORIES,
+  pageMeta,
+  emptyState: emptyStateConfig,
+  errorMessages,
+  ui,
+} = coursesConfig;
 
 interface CourseItem {
   id: number;
@@ -31,7 +40,7 @@ export default function Courses() {
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const pageSize = 20;
+  const pageSize = ui.pageSize || 20;
 
   const fetchCourses = useCallback(async () => {
     setLoading(true);
@@ -48,10 +57,10 @@ export default function Courses() {
         setTotal(data.total || 0);
         setError(null);
       } else {
-        setError('获取课程数据失败，服务器返回异常');
+        setError(errorMessages.fetchFailed);
       }
     } catch {
-      setError('网络请求失败，请检查网络连接后重试');
+      setError(errorMessages.networkError);
     } finally {
       setLoading(false);
     }
@@ -71,6 +80,13 @@ export default function Courses() {
     setPage(1);
   };
 
+  const handleClearFilters = () => {
+    setActiveCategory('全部');
+    setKeyword('');
+    setSearchInput('');
+    setPage(1);
+  };
+
   const hasMore = total > page * pageSize;
 
   return (
@@ -82,20 +98,22 @@ export default function Courses() {
           <div>
             <h1 className="text-[32px] font-bold text-gray-900 flex items-center gap-2">
               <BookOpen className="w-8 h-8 text-primary-500" />
-              干货资料库
+              {pageMeta.title}
             </h1>
-            <p className="text-[16px] text-gray-600 mt-2">海量免费干货视频，系统性提升你的求职硬实力</p>
+            <p className="text-[16px] text-gray-600 mt-2">{pageMeta.subtitle}</p>
           </div>
 
           {/* Search Bar */}
           <div className="relative w-full md:w-[320px]">
             <input
               type="text"
-              placeholder="搜索干货资料..."
+              placeholder={pageMeta.searchPlaceholder}
               value={searchInput}
               onChange={e => setSearchInput(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && handleSearch()}
-              className="w-full pl-4 pr-10 py-2.5 bg-white border border-gray-200 rounded-xl text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all shadow-sm"
+              className="w-full pl-4 pr-10 py-2.5 bg-white border border-gray-200 rounded-xl text-sm text-gray-900
+                focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500
+                transition-all duration-200 shadow-sm"
             />
             <button onClick={handleSearch} className="absolute right-3 top-1/2 -translate-y-1/2">
               <Search className="w-5 h-5 text-gray-400 hover:text-primary-600 transition-colors" />
@@ -110,11 +128,11 @@ export default function Courses() {
               <button
                 key={cat}
                 onClick={() => handleCategoryChange(cat)}
-                className={`px-4 py-1.5 rounded-full text-[14px] font-medium transition-colors ${
-                  activeCategory === cat
-                    ? 'bg-primary-500 text-white'
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                }`}
+                className={`px-5 py-2 rounded-full text-[14px] font-bold transition-all duration-200 ${
+                activeCategory === cat
+                  ? 'bg-gradient-to-r from-violet-500 to-purple-600 text-white shadow-lg shadow-violet-500/30'
+                  : 'bg-gray-100 text-gray-600 hover:bg-violet-50 hover:text-violet-700 border-2 border-transparent hover:border-violet-200 active:scale-[0.97] focus-visible:ring-2 focus-visible:ring-violet-400/30 focus-visible:outline-none'
+              }`}
               >
                 {cat}
               </button>
@@ -124,28 +142,21 @@ export default function Courses() {
 
         {/* Course Grid */}
         {loading && page === 1 ? (
-          <div className="flex justify-center py-20">
-            <Loader2 className="w-8 h-8 text-primary-600 animate-spin" />
-          </div>
+          <ListSkeleton count={8} />
         ) : !loading && error && courses.length === 0 ? (
           <ErrorState
             message={error}
             onRetry={() => { setPage(1); fetchCourses(); }}
           />
         ) : courses.length === 0 && !loading ? (
-          <div className="bg-white rounded-2xl p-12 text-center border border-gray-100 shadow-sm">
-            <div className="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4 text-gray-400">
-              <BookOpen size={32} />
-            </div>
-            <h3 className="text-lg font-bold text-gray-900 mb-2">暂无课程</h3>
-            <p className="text-gray-500 mb-6">尝试更换分类或搜索关键词</p>
-            <button
-              onClick={() => { setActiveCategory('全部'); setKeyword(''); setSearchInput(''); setPage(1); }}
-              className="bg-primary-50 text-primary-700 px-6 py-2 rounded-lg font-medium hover:bg-primary-100 transition-colors"
-            >
-              清除筛选
-            </button>
-          </div>
+          <EmptyState
+            icon={BookOpen}
+            variant="noData"
+            title={emptyStateConfig.title}
+            description={emptyStateConfig.description}
+            actionText={emptyStateConfig.actionText}
+            onAction={handleClearFilters}
+          />
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
             {courses.map((course) => (
@@ -161,7 +172,7 @@ export default function Courses() {
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                       />
                     ) : (
-                      <div className="w-full h-full bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center">
+                      <div className="w-full h-full bg-gradient-to-br from-violet-500 via-purple-600 to-indigo-600 flex items-center justify-center">
                         <BookOpen className="w-12 h-12 text-white/60" />
                       </div>
                     )}
@@ -227,10 +238,13 @@ export default function Courses() {
             <button
               onClick={() => setPage(p => p + 1)}
               disabled={loading}
-              className="px-6 py-2.5 border border-gray-300 text-gray-600 font-medium rounded-full hover:bg-gray-50 transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-6 py-2.5 border border-gray-300 text-gray-600 font-medium rounded-full
+                hover:bg-gray-50 hover:border-gray-400 transition-all flex items-center gap-2
+                disabled:opacity-50 disabled:cursor-not-allowed
+                active:scale-[0.97] focus-visible:ring-2 focus-visible:ring-primary-400/30 focus-visible:outline-none"
             >
               {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
-              加载更多干货 <ChevronRight size={16} />
+              {ui.loadMoreText} <ChevronRight size={16} />
             </button>
           </div>
         )}
@@ -243,7 +257,7 @@ export default function Courses() {
         {/* 总数提示 */}
         {!loading && courses.length > 0 && (
           <p className="text-center text-gray-400 text-sm mt-6">
-            共 {total} 门课程
+            {ui.totalTemplate.replace('{total}', String(total))}
           </p>
         )}
       </div>

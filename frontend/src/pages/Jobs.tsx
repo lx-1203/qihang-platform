@@ -8,16 +8,26 @@ import {
   Filter,
   Sparkles,
   ChevronDown,
-  Loader2,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import http from "@/api/http";
 import { addSearchHistory } from "@/utils/searchHistory";
 import ErrorState from "@/components/ui/ErrorState";
+import EmptyState from "@/components/ui/EmptyState";
 import Tag from "@/components/ui/Tag";
+import { CardSkeleton } from '@/components/ui/Skeleton';
+import jobsConfig from '@/data/jobs-config.json';
 
 // ====== 岗位列表页 ======
-// 数据全部从 /api/jobs 获取，筛选项由接口返回
+// 数据全部从 /api/jobs 获取，筛选项由接口返回，热门搜索和文案从 jobs-config.json 配置文件读取
+
+const {
+  pageMeta,
+  hotSearchTags,
+  emptyState: emptyStateConfig,
+  errorMessages,
+  ui,
+} = jobsConfig;
 
 interface JobItem {
   id: number;
@@ -134,7 +144,7 @@ export default function Jobs() {
         }
       }
     } catch {
-      setError('职位数据加载失败，请稍后重试');
+      setError(errorMessages.fetchFailed);
       if (import.meta.env.DEV) console.error('[DEV] Jobs API 失败');
     } finally {
       setLoading(false);
@@ -170,20 +180,24 @@ export default function Jobs() {
   return (
     <div className="bg-gray-50 min-h-screen">
       {/* 1. 顶部搜索区域 */}
-      <section className="bg-gray-900 text-white py-16 lg:py-24 relative overflow-hidden">
-        <div className="absolute top-0 left-0 w-full h-full overflow-hidden opacity-20 pointer-events-none">
+      <section className="bg-gradient-to-br from-indigo-950 via-purple-900 to-violet-950 text-white py-16 lg:py-24 relative overflow-hidden">
+        {/* 鲜亮装饰元素 */}
+        <div className="absolute top-0 left-0 w-full h-full overflow-hidden opacity-30 pointer-events-none">
           <svg className="absolute w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
             <path d="M0,100 L100,0 L100,100 Z" fill="url(#gradJob)" />
             <defs>
               <linearGradient id="gradJob" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" style={{ stopColor: "#14b8a6", stopOpacity: 1 }} />
-                <stop offset="100%" style={{ stopColor: "#0f766e", stopOpacity: 0 }} />
+                <stop offset="0%" style={{ stopColor: "#8b5cf6", stopOpacity: 1 }} />
+                <stop offset="100%" style={{ stopColor: "#7c3aed", stopOpacity: 0.3 }} />
               </linearGradient>
             </defs>
           </svg>
         </div>
+        {/* 光晕装饰 */}
+        <div className="absolute -top-20 -right-20 w-[500px] h-[500px] bg-violet-500/20 rounded-full blur-3xl" />
+        <div className="absolute -bottom-20 -left-20 w-[400px] h-[400px] bg-fuchsia-500/15 rounded-full blur-3xl" />
 
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+        <div className="container-main relative z-10">
           <div className="text-center max-w-3xl mx-auto mb-10">
             <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-6">
               发现你的下一个心仪岗位
@@ -255,7 +269,10 @@ export default function Jobs() {
             </div>
             <button
               onClick={handleSearch}
-              className="bg-primary-600 hover:bg-primary-500 text-white px-8 py-3.5 rounded-xl font-bold transition-colors w-full sm:w-auto shrink-0 shadow-md"
+              className="bg-gradient-to-r from-violet-500 to-purple-600 hover:from-violet-400 hover:to-purple-500 text-white px-10 py-3.5 rounded-xl font-bold
+                transition-all w-full sm:w-auto shrink-0 shadow-xl shadow-violet-500/30
+                hover:shadow-2xl hover:shadow-violet-500/40 hover:-translate-y-0.5 active:scale-[0.97]
+                focus-visible:ring-2 focus-visible:ring-violet-400/50 focus-visible:outline-none"
             >
               搜索岗位
             </button>
@@ -263,7 +280,7 @@ export default function Jobs() {
 
           <div className="max-w-4xl mx-auto mt-6 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
             <span className="text-primary-200">热门搜索：</span>
-            {["产品经理", "Java", "数据分析", "运营实习", "校招"].map(tag => (
+            {hotSearchTags.map(tag => (
               <button
                 key={tag}
                 onClick={() => { setSearchInput(tag); setKeyword(tag); setPage(1); }}
@@ -277,7 +294,7 @@ export default function Jobs() {
       </section>
 
       {/* 2. 岗位列表与筛选区 */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 flex flex-col lg:flex-row gap-8">
+      <section className="container-main py-12 flex flex-col lg:flex-row gap-8">
         {/* 左侧筛选 */}
         <div className="w-full lg:w-64 shrink-0 space-y-8">
           <div className="lg:hidden flex items-center justify-between bg-white p-4 rounded-xl shadow-sm border border-gray-100">
@@ -395,8 +412,10 @@ export default function Jobs() {
           </div>
 
           {loading ? (
-            <div className="flex justify-center py-20">
-              <Loader2 className="w-8 h-8 text-primary-600 animate-spin" />
+            <div className="space-y-4">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <CardSkeleton key={i} className="p-6" />
+              ))}
             </div>
           ) : error ? (
             <ErrorState
@@ -415,7 +434,9 @@ export default function Jobs() {
                   exit={{ opacity: 0, scale: 0.95 }}
                   transition={{ duration: 0.2 }}
                   onClick={() => navigate(`/jobs/${job.id}`)}
-                  className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-lg hover:border-primary-200 transition-all group cursor-pointer"
+                  className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100
+                    hover:shadow-lg hover:border-primary-200 hover:-translate-y-0.5
+                    active:scale-[0.98] transition-all group cursor-pointer"
                 >
                   <div className="flex flex-col sm:flex-row gap-6">
                     <div className="flex-1">
@@ -500,34 +521,21 @@ export default function Jobs() {
                 </motion.div>
               ))
             ) : (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className="bg-white rounded-2xl p-12 text-center border border-gray-100 shadow-sm"
-              >
-                <div className="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4 text-gray-400">
-                  <Search size={32} />
-                </div>
-                <h3 className="text-lg font-bold text-gray-900 mb-2">
-                  未找到匹配的职位
-                </h3>
-                <p className="text-gray-500 mb-6">
-                  尝试减少筛选条件或更换搜索关键词
-                </p>
-                <button
-                  onClick={() => {
-                    setActiveType("全部");
-                    setActiveLocation("全国");
-                    setActiveCategory("全部");
-                    setKeyword("");
-                    setSearchInput("");
-                    setPage(1);
-                  }}
-                  className="bg-primary-50 text-primary-700 px-6 py-2 rounded-lg font-medium hover:bg-primary-100 transition-colors"
-                >
-                  清除所有筛选条件
-                </button>
-              </motion.div>
+              <EmptyState
+                icon={Search}
+                variant="noSearch"
+                title={emptyStateConfig.title}
+                description={emptyStateConfig.description}
+                actionText={emptyStateConfig.actionText}
+                onAction={() => {
+                  setActiveType("全部");
+                  setActiveLocation("全国");
+                  setActiveCategory("全部");
+                  setKeyword("");
+                  setSearchInput("");
+                  setPage(1);
+                }}
+              />
             )}
           </AnimatePresence>
           )}
@@ -536,7 +544,9 @@ export default function Jobs() {
           {!loading && total > 0 && (
             <div className="flex justify-center items-center gap-2 mt-8">
               <button
-                className="p-2 rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 hover:text-gray-900 disabled:opacity-50"
+                className="p-2 rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 hover:text-gray-900
+                  disabled:opacity-50 active:scale-[0.95] transition-all
+                  focus-visible:ring-2 focus-visible:ring-primary-400/30 focus-visible:outline-none"
                 disabled={page <= 1}
                 onClick={() => setPage(p => Math.max(1, p - 1))}
               >
@@ -557,10 +567,10 @@ export default function Jobs() {
                   <button
                     key={pNum}
                     onClick={() => setPage(pNum)}
-                    className={`w-10 h-10 rounded-lg font-medium ${
+                    className={`w-10 h-10 rounded-lg font-medium transition-all ${
                       page === pNum
                         ? "bg-primary-600 text-white shadow-sm"
-                        : "border border-gray-200 text-gray-700 hover:bg-gray-50"
+                        : "border border-gray-200 text-gray-700 hover:bg-gray-50 active:scale-[0.95] focus-visible:ring-2 focus-visible:ring-primary-400/30 focus-visible:outline-none"
                     }`}
                   >
                     {pNum}
@@ -571,7 +581,9 @@ export default function Jobs() {
                 <span className="text-gray-400 mx-2">...</span>
               )}
               <button
-                className="p-2 rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 hover:text-gray-900 disabled:opacity-50"
+                className="p-2 rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 hover:text-gray-900
+                  disabled:opacity-50 active:scale-[0.95] transition-all
+                  focus-visible:ring-2 focus-visible:ring-primary-400/30 focus-visible:outline-none"
                 disabled={page >= totalPages}
                 onClick={() => setPage(p => Math.min(totalPages, p + 1))}
               >

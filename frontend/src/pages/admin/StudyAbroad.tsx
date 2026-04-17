@@ -6,6 +6,10 @@ import {
 } from 'lucide-react';
 import http from '../../api/http';
 import Tag from '@/components/ui/Tag';
+import ConfirmDialog from '@/components/ui/ConfirmDialog';
+import { showToast } from '@/components/ui/ToastContainer';
+import ErrorState from '../../components/ui/ErrorState';
+import EmptyState from '../../components/ui/EmptyState';
 
 // ====== 类型定义 ======
 
@@ -25,17 +29,6 @@ const TABS: TabDef[] = [
   { key: 'consultants', label: '顾问', icon: Users },
 ];
 
-// ====== 通用 Toast ======
-function showToast(msg: string, type: 'success' | 'error' = 'success') {
-  const el = document.createElement('div');
-  el.className = `fixed top-6 left-1/2 -translate-x-1/2 z-[9999] px-6 py-3 rounded-xl text-sm font-medium text-white shadow-lg transition-all ${
-    type === 'success' ? 'bg-emerald-500' : 'bg-red-500'
-  }`;
-  el.textContent = msg;
-  document.body.appendChild(el);
-  setTimeout(() => { el.style.opacity = '0'; setTimeout(() => el.remove(), 300); }, 2500);
-}
-
 // ====== 组件 ======
 
 export default function AdminStudyAbroad() {
@@ -50,6 +43,12 @@ export default function AdminStudyAbroad() {
   const [formData, setFormData] = useState<Record<string, string | number>>({});
   const [saving, setSaving] = useState(false);
   const [universityOptions, setUniversityOptions] = useState<{ id: number; name: string }[]>([]);
+
+  // 删除确认对话框
+  const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; itemId: number | null }>({ open: false, itemId: null });
+
+  // 错误状态
+  const [error, setError] = useState<string | null>(null);
 
   const pageSize = 15;
 
@@ -67,14 +66,17 @@ export default function AdminStudyAbroad() {
   // ---------- 加载数据 ----------
   const fetchList = useCallback(async () => {
     setLoading(true);
+    setError(null);
     try {
       const params: Record<string, string | number> = { page, pageSize };
       if (keyword) params.keyword = keyword;
       const res = await http.get(apiPath(activeTab), { params });
       setList(res.data.data?.list || []);
       setTotal(res.data.data?.total || 0);
-    } catch {
-      showToast('加载数据失败', 'error');
+    } catch (err: unknown) {
+      const axiosErr = err as { response?: { data?: { message?: string } } };
+      setError(axiosErr.response?.data?.message || '加载数据失败');
+      showToast({ type: 'error', title: '加载数据失败' });
     } finally {
       setLoading(false);
     }
@@ -121,30 +123,37 @@ export default function AdminStudyAbroad() {
       const data = preparePayload(activeTab, formData);
       if (editingItem) {
         await http.put(`${apiPath(activeTab)}/${editingItem.id}`, data);
-        showToast('更新成功');
+        showToast({ type: 'success', title: '更新成功' });
       } else {
         await http.post(apiPath(activeTab), data);
-        showToast('创建成功');
+        showToast({ type: 'success', title: '创建成功' });
       }
       setShowModal(false);
       fetchList();
     } catch (err: unknown) {
       const axiosErr = err as { response?: { data?: { message?: string } } };
-      showToast(axiosErr.response?.data?.message || '操作失败', 'error');
+      showToast({ type: 'error', title: axiosErr.response?.data?.message || '操作失败' });
     } finally {
       setSaving(false);
     }
   };
 
   const handleDelete = async (id: number) => {
-    if (!confirm('确定要删除此条数据吗？')) return;
+    // 打开确认对话框
+    setDeleteDialog({ open: true, itemId: id });
+  };
+
+  // 确认删除
+  const confirmDelete = async () => {
+    if (deleteDialog.itemId === null) return;
     try {
-      await http.delete(`${apiPath(activeTab)}/${id}`);
-      showToast('删除成功');
+      await http.delete(`${apiPath(activeTab)}/${deleteDialog.itemId}`);
+      showToast({ type: 'success', title: '删除成功' });
       fetchList();
     } catch {
-      showToast('删除失败', 'error');
+      showToast({ type: 'error', title: '删除失败' });
     }
+    setDeleteDialog({ open: false, itemId: null });
   };
 
   const handleToggleStatus = async (item: Record<string, unknown>) => {
@@ -155,10 +164,10 @@ export default function AdminStudyAbroad() {
       } else {
         await http.put(`${apiPath(activeTab)}/${item.id}`, { status: newStatus });
       }
-      showToast(`已${newStatus === 'active' ? '上架' : '下架'}`);
+      showToast({ type: 'success', title: `已${newStatus === 'active' ? '上架' : '下架'}` });
       fetchList();
     } catch {
-      showToast('状态切换失败', 'error');
+      showToast({ type: 'error', title: '状态切换失败' });
     }
   };
 
@@ -214,7 +223,16 @@ export default function AdminStudyAbroad() {
         <span className="text-xs text-gray-400 ml-auto">共 {total} 条</span>
       </div>
 
+      {/* 错误状态 */}
+      {error && (
+        <ErrorState
+          message={error}
+          onRetry={() => { setError(null); fetchList(); }}
+        />
+      )}
+
       {/* 数据表格 */}
+      {!error && (
       <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
@@ -232,12 +250,21 @@ export default function AdminStudyAbroad() {
               {loading ? (
                 <tr>
                   <td colSpan={99} className="text-center py-16">
-                    <Loader2 className="w-6 h-6 animate-spin mx-auto text-primary-500" />
+                    <div className="flex flex-col items-center gap-3">
+                      <Loader2 className="w-8 h-8 animate-spin text-primary-500" />
+                      <span className="text-sm text-gray-500">加载中...</span>
+                    </div>
                   </td>
                 </tr>
               ) : list.length === 0 ? (
                 <tr>
-                  <td colSpan={99} className="text-center py-16 text-gray-400">暂无数据</td>
+                  <td colSpan={99} className="text-center py-16">
+                    <EmptyState
+                      icon={activeTab === 'universities' ? GraduationCap : activeTab === 'programs' ? Globe : Award}
+                      title="暂无数据"
+                      description={`点击"新增"按钮创建${TABS.find(t => t.key === activeTab)?.label}数据`}
+                    />
+                  </td>
                 </tr>
               ) : (
                 list.map((item) => (
@@ -308,6 +335,7 @@ export default function AdminStudyAbroad() {
           </div>
         )}
       </div>
+      )}
 
       {/* Modal 弹窗 */}
       {showModal && (
@@ -381,6 +409,17 @@ export default function AdminStudyAbroad() {
           </div>
         </div>
       )}
+
+      {/* 删除确认对话框 */}
+      <ConfirmDialog
+        open={deleteDialog.open}
+        title="确定要删除此条数据吗？"
+        description="删除后无法恢复，请谨慎操作。"
+        variant="danger"
+        confirmText="确认删除"
+        onConfirm={confirmDelete}
+        onCancel={() => setDeleteDialog({ open: false, itemId: null })}
+      />
     </div>
   );
 }

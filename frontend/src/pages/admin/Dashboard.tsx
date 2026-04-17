@@ -5,7 +5,7 @@ import {
   Users, Briefcase, BookOpen, Building2, Award, Calendar,
   Shield, ShieldCheck, AlertTriangle, TrendingUp, TrendingDown,
   Activity, Database, Clock, Server, HardDrive,
-  ChevronRight, Eye
+  ChevronRight, Eye, Rocket
 } from 'lucide-react';
 import http from '@/api/http';
 import { useAuthStore } from '@/store/auth';
@@ -24,6 +24,8 @@ export default function AdminDashboard() {
     todayRegister: 23, todayResume: 67, weekActive: 3842,
     pendingCompanies: 5, pendingMentors: 3, pendingReports: 2,
   });
+  const [showGuide, setShowGuide] = useState(false);
+  const isFirstVisit = !localStorage.getItem('qihang_onboarding_admin');
 
   const today = new Date();
   const dateStr = `${today.getFullYear()}年${today.getMonth() + 1}月${today.getDate()}日`;
@@ -34,7 +36,9 @@ export default function AdminDashboard() {
       try {
         const res = await http.get('/admin/stats');
         if (res.data?.code === 200 && res.data.data) setStats(prev => ({ ...prev, ...res.data.data }));
-      } catch { /* 使用默认 mock */ }
+      } catch {
+        if (import.meta.env.DEV) console.warn('[AdminDashboard] Stats API 加载失败，使用默认 mock 数据');
+      }
     })();
   }, []);
 
@@ -60,7 +64,7 @@ export default function AdminDashboard() {
   const platformCards = [
     { label: '总注册用户', value: stats.totalUsers.toLocaleString(), change: '+12.5%', up: true, icon: Users, color: 'text-purple-600', bg: 'bg-purple-50', border: 'border-purple-100' },
     { label: '在线职位', value: stats.onlineJobs.toString(), change: '+8.3%', up: true, icon: Briefcase, color: 'text-blue-600', bg: 'bg-blue-50', border: 'border-blue-100' },
-    { label: '课程总数', value: stats.totalCourses.toString(), change: '+5.1%', up: true, icon: BookOpen, color: 'text-teal-600', bg: 'bg-teal-50', border: 'border-teal-100' },
+    { label: '课程总数', value: stats.totalCourses.toString(), change: '+5.1%', up: true, icon: BookOpen, color: 'text-primary-600', bg: 'bg-primary-50', border: 'border-primary-100' },
     { label: '合作企业', value: stats.totalCompanies.toString(), change: '+15.2%', up: true, icon: Building2, color: 'text-indigo-600', bg: 'bg-indigo-50', border: 'border-indigo-100' },
     { label: '认证导师', value: stats.certifiedMentors.toString(), change: '+6.8%', up: true, icon: Award, color: 'text-emerald-600', bg: 'bg-emerald-50', border: 'border-emerald-100' },
     { label: '预约辅导', value: stats.totalAppointments.toLocaleString(), change: '+22.1%', up: true, icon: Calendar, color: 'text-amber-600', bg: 'bg-amber-50', border: 'border-amber-100' },
@@ -115,7 +119,7 @@ export default function AdminDashboard() {
       </motion.div>
 
       {/* ====== 平台数据 6卡 ====== */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4" data-guide="stats-cards">
         {platformCards.map((card, i) => (
           <motion.div key={i} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
             className={`${card.bg} rounded-xl p-4 border ${card.border}`}
@@ -134,7 +138,7 @@ export default function AdminDashboard() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* 待办审核 + 系统状态 */}
-        <div className="space-y-4">
+        <div className="space-y-4" data-guide="pending-actions">
           <h3 className="text-sm font-bold text-gray-900 flex items-center gap-2">
             <AlertTriangle className="w-4 h-4 text-amber-500" /> 待办事项
           </h3>
@@ -187,7 +191,7 @@ export default function AdminDashboard() {
                 <div key={i} className="flex-1 flex flex-col items-center gap-1">
                   <span className="text-[10px] text-gray-500 font-medium">{v}</span>
                   <motion.div initial={{ height: 0 }} animate={{ height: `${(v / regMax) * 100}%` }}
-                    transition={{ delay: i * 0.1, duration: 0.5 }}
+                    transition={{ delay: i * 0.08, duration: 0.35 }}
                     className="w-full bg-gradient-to-t from-indigo-600 to-indigo-400 rounded-md min-h-[4px]"
                   />
                   <span className="text-[10px] text-gray-400">{['一', '二', '三', '四', '五', '六', '日'][i]}</span>
@@ -195,7 +199,7 @@ export default function AdminDashboard() {
               ))}
             </div>
           </div>
-          <div className="bg-white rounded-xl p-5 border border-gray-100">
+          <div className="bg-white rounded-xl p-5 border border-gray-100" data-guide="role-distribution">
             <h3 className="text-sm font-bold text-gray-900 mb-4 flex items-center gap-2">
               <Users className="w-4 h-4 text-purple-500" /> 用户角色分布
             </h3>
@@ -221,15 +225,15 @@ export default function AdminDashboard() {
         </div>
 
         {/* 审计日志 */}
-        <div className="bg-white rounded-xl p-5 border border-gray-100">
+        <div className="bg-white rounded-xl p-5 border border-gray-100" data-guide="audit-log">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-sm font-bold text-gray-900 flex items-center gap-2">
               <Eye className="w-4 h-4 text-indigo-500" /> 操作审计日志
             </h3>
             <div className="flex items-center gap-3">
-              <FeatureStatus status="dev" label="实时审计日志" />
-              <Link to="/admin/settings" className="text-xs text-indigo-600 hover:underline">查看全部</Link>
-            </div>
+                <FeatureStatus status="dev" label="实时审计日志" linkTo="/admin/settings" />
+                <Link to="/admin/settings" className="text-xs text-indigo-600 hover:underline">查看全部</Link>
+              </div>
           </div>
           <div className="space-y-4">
             {auditLogs.map((log, i) => (
@@ -270,7 +274,23 @@ export default function AdminDashboard() {
         ))}
       </div>
 
-      <OnboardingGuide role="admin" />
+      {/* 引导组件 - 气泡模式 + 首次访问自动触发 */}
+      <OnboardingGuide role="admin" bubbleMode forceShow={isFirstVisit || showGuide} />
+
+      {/* 引导触发按钮（非首次访问时显示） */}
+      {!isFirstVisit && (
+        <motion.button
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 1 }}
+          onClick={() => setShowGuide(true)}
+          className="fixed bottom-8 right-8 z-[9997] bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-4 py-2.5 rounded-full shadow-lg hover:shadow-xl flex items-center gap-2 text-sm font-medium transition-all hover:scale-105"
+          title="重新查看引导教程"
+        >
+          <Rocket className="w-4 h-4" />
+          使用引导
+        </motion.button>
+      )}
     </div>
   );
 }

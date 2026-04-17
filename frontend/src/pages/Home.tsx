@@ -22,6 +22,7 @@ import CampusTimeline from '@/components/CampusTimeline';
 import SceneBanner from '@/components/SceneBanner';
 import { CardSkeleton } from '@/components/ui/Skeleton';
 import ErrorState from '@/components/ui/ErrorState';
+import EmptyState from '@/components/ui/EmptyState';
 import { LazyImage } from '@/components/ui';
 import HeroValueProps from '@/components/HeroValueProps';
 import SocialProofWall from '@/components/SocialProofWall';
@@ -35,6 +36,9 @@ const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
   Briefcase, MessageCircle, BookOpen, Globe, GraduationCap,
   Building2, Award, Users, FileText,
 };
+
+// ====== 文案配置快捷访问 ======
+const t = homeConfig.textResources;
 
 // ====== 首页 ======
 // 学生为主的门户首页，登录后展示个性化推荐和引导
@@ -154,11 +158,11 @@ export default function Home() {
   return (
     <div>
       {/* ====== Hero 轮播 ====== */}
-      <div className="relative h-[400px] md:h-[480px] overflow-hidden">
+      <div className="relative h-[360px] sm:h-[400px] md:h-[480px] overflow-hidden">
         <AnimatePresence mode="wait">
           <motion.div key={currentSlide}
             initial={{ opacity: 0, scale: 1.05 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }}
-            transition={{ duration: 0.6 }}
+            transition={{ duration: 0.35 }}
             className={`absolute inset-0 bg-gradient-to-br ${slides[currentSlide].bg}`}
           >
             <div className="absolute inset-0 bg-black/20" />
@@ -198,7 +202,7 @@ export default function Home() {
                     focus-visible:ring-2 focus-visible:ring-white/30 focus-visible:outline-none
                     transition-all duration-300"
                 >
-                  免费注册
+                  {t.hero.registerBtn}
                 </Link>
               </div>
             </motion.div>
@@ -208,7 +212,7 @@ export default function Home() {
           <div className="mt-8 max-w-xl">
             <div className="relative">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-              <input type="text" placeholder="搜索岗位、课程、导师..."
+              <input type="text" placeholder={t.hero.searchPlaceholder}
                 value={homeSearch}
                 onChange={e => setHomeSearch(e.target.value)}
                 onKeyDown={e => {
@@ -217,7 +221,9 @@ export default function Home() {
                     navigate(`/jobs?keyword=${encodeURIComponent(homeSearch.trim())}`);
                   }
                 }}
-                className="w-full pl-12 pr-4 py-3.5 rounded-xl bg-white/95 backdrop-blur-sm text-gray-900 placeholder-gray-400 focus:ring-2 focus:ring-white/50 outline-none shadow-lg text-sm"
+                className="w-full pl-12 pr-4 py-3.5 rounded-xl bg-white/95 backdrop-blur-sm text-gray-900 placeholder-gray-400
+                  focus:ring-2 focus:ring-white/50 focus:bg-white outline-none shadow-lg text-sm
+                  transition-all duration-200"
               />
             </div>
           </div>
@@ -238,28 +244,24 @@ export default function Home() {
         {/* ====== 登录后个性化区域 ====== */}
         {isAuthenticated && user && (
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-            className="bg-gradient-to-r from-primary-50 to-teal-50 rounded-2xl p-6 border border-primary-100 -mt-8 relative z-20 shadow-sm mb-8"
+            className="bg-gradient-to-r from-primary-50 to-primary-50 rounded-2xl p-6 border border-primary-100 -mt-8 relative z-20 shadow-sm mb-8"
           >
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 bg-primary-600 rounded-full flex items-center justify-center text-white font-bold text-lg">
-                  {user.nickname?.[0] || '用'}
+                  {user.nickname?.[0] || t.welcome.avatarFallback}
                 </div>
                 <div>
-                  <h2 className="text-lg font-bold text-gray-900">欢迎回来，{user.nickname}！</h2>
-                  <p className="text-sm text-gray-500">继续你的求职之旅</p>
+                  <h2 className="text-lg font-bold text-gray-900">{t.welcome.title.replace('{nickname}', user.nickname || '')}</h2>
+                  <p className="text-sm text-gray-500">{t.welcome.subtitle}</p>
                 </div>
               </div>
               <div className="flex gap-2">
-                {[
-                  { label: '我的投递', link: '/student/applications', icon: FileText },
-                  { label: '我的预约', link: '/student/appointments', icon: Calendar },
-                  { label: '我的收藏', link: '/student/favorites', icon: Heart },
-                ].map((a, i) => (
+                {t.welcome.quickActions.map((a, i) => (
                   <Link key={i} to={a.link}
                     className="flex items-center gap-1.5 bg-white px-3 py-2 rounded-lg text-xs font-medium text-gray-700 transition-all duration-200 border border-gray-200 hover:bg-primary-50 hover:text-primary-700 hover:border-primary-200 hover:shadow-sm active:scale-[0.96] touch-manipulation focus-visible:ring-2 focus-visible:ring-primary-500/30 focus-visible:outline-none"
                   >
-                    <a.icon className="w-3.5 h-3.5" /> {a.label}
+                    <FileText className="w-3.5 h-3.5" /> {a.label}
                   </Link>
                 ))}
               </div>
@@ -271,7 +273,7 @@ export default function Home() {
                 className="flex items-center gap-2 text-sm font-medium text-primary-700 hover:text-primary-800 mb-3 transition-colors"
               >
                 <Sparkles className="w-4 h-4" />
-                快速上手指南
+                {t.welcome.guideTitle}
                 {showGuide ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
               </button>
               {showGuide && <OnboardingGuide role="student" inline />}
@@ -311,7 +313,7 @@ export default function Home() {
 
         {/* ====== 快捷金刚区 ====== */}
         <div className="py-8">
-          <div className="flex items-center gap-4 overflow-x-auto pb-2">
+          <div className="flex items-center gap-4 overflow-x-auto pb-2 scrollbar-hide">
             {quickEntries.map((e, i) => (
               <Link key={i} to={e.link} className="flex-shrink-0 focus-visible:outline-none">
                 <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: i * 0.08 }}
@@ -346,10 +348,10 @@ export default function Home() {
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
               <Briefcase className="w-5 h-5 text-primary-600" />
-              {isAuthenticated ? '为你推荐 — 热门岗位' : '热门校招岗位'}
+              {isAuthenticated ? t.sections.jobs.titleAuth : t.sections.jobs.titleGuest}
             </h2>
             <Link to="/jobs" className="text-sm text-primary-600 font-medium hover:underline flex items-center gap-1">
-              查看更多 <ArrowRight className="w-4 h-4" />
+              {t.sections.jobs.viewMore} <ArrowRight className="w-4 h-4" />
             </Link>
           </div>
           {dataLoading ? (
@@ -357,13 +359,16 @@ export default function Home() {
               {[0,1,2,3].map(i => <CardSkeleton key={i} />)}
             </div>
           ) : jobsError ? (
-            <ErrorState message="岗位数据加载失败" onRetry={retryJobs} />
+            <ErrorState message={t.sections.jobs.errorState} onRetry={retryJobs} />
           ) : hotJobs.length === 0 ? (
-            <div className="text-center py-12">
-              <Briefcase className="w-10 h-10 text-gray-300 mx-auto mb-3" />
-              <p className="text-gray-400 mb-3">暂无在招岗位</p>
-              <Link to="/jobs" className="text-primary-500 text-sm hover:underline">浏览全部职位 →</Link>
-            </div>
+            <EmptyState
+              icon={Briefcase}
+              variant="noData"
+              title={t.sections.jobs.emptyState}
+              description=""
+              actionText={t.sections.jobs.browseAll}
+              onAction={() => navigate('/jobs')}
+            />
           ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {hotJobs.map((job, i) => (
@@ -371,7 +376,7 @@ export default function Home() {
                 <Link to={`/jobs/${job.id}`} className="block bg-white rounded-xl p-5 border border-gray-100 cursor-pointer transition-all duration-300 hover:shadow-lg hover:-translate-y-1 hover:border-primary-200 active:scale-[0.98] touch-manipulation focus-visible:ring-2 focus-visible:ring-primary-500/30 focus-visible:outline-none group">
                   <div className="flex items-start justify-between mb-3">
                     <div className="w-10 h-10 bg-gray-100 rounded-xl flex items-center justify-center text-sm font-bold text-gray-600">
-                      {(job.company_name || '企')[0]}
+                      {(job.company_name || t.sections.jobs.companyFallback)[0]}
                     </div>
                     <ArrowRight className="w-4 h-4 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity" />
                   </div>
@@ -397,10 +402,10 @@ export default function Home() {
         <section className="pb-10">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
-              <Users className="w-5 h-5 text-primary-600" /> 大咖导师推荐
+              <Users className="w-5 h-5 text-primary-600" /> {t.sections.mentors.title}
             </h2>
             <Link to="/mentors" className="text-sm text-primary-600 font-medium hover:underline flex items-center gap-1">
-              查看更多 <ArrowRight className="w-4 h-4" />
+              {t.sections.mentors.viewMore} <ArrowRight className="w-4 h-4" />
             </Link>
           </div>
           {dataLoading ? (
@@ -408,13 +413,16 @@ export default function Home() {
               {[0,1,2,3].map(i => <CardSkeleton key={i} />)}
             </div>
           ) : mentorsError ? (
-            <ErrorState message="导师数据加载失败" onRetry={retryMentors} />
+            <ErrorState message={t.sections.mentors.errorState} onRetry={retryMentors} />
           ) : hotMentors.length === 0 ? (
-            <div className="text-center py-12">
-              <Users className="w-10 h-10 text-gray-300 mx-auto mb-3" />
-              <p className="text-gray-400 mb-3">暂无认证导师</p>
-              <Link to="/mentors" className="text-primary-500 text-sm hover:underline">浏览全部导师 →</Link>
-            </div>
+            <EmptyState
+              icon={Users}
+              variant="noData"
+              title={t.sections.mentors.emptyState}
+              description=""
+              actionText={t.sections.mentors.browseAll}
+              onAction={() => navigate('/mentors')}
+            />
           ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {hotMentors.map((m, i) => (
@@ -425,7 +433,7 @@ export default function Home() {
                       <LazyImage src={m.avatar} alt={m.name} variant="avatar" className="w-12 h-12 border border-gray-100" />
                     ) : (
                       <div className="w-12 h-12 rounded-xl bg-primary-100 flex items-center justify-center text-primary-700 font-bold">
-                        {(m.name || '导')[0]}
+                        {(m.name || t.sections.mentors.mentorFallback)[0]}
                       </div>
                     )}
                     <div className="flex-1 min-w-0">
@@ -455,10 +463,10 @@ export default function Home() {
         <section className="pb-10">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
-              <BookOpen className="w-5 h-5 text-primary-600" /> 免费课程精选
+              <BookOpen className="w-5 h-5 text-primary-600" /> {t.sections.courses.title}
             </h2>
             <Link to="/courses" className="text-sm text-primary-600 font-medium hover:underline flex items-center gap-1">
-              查看更多 <ArrowRight className="w-4 h-4" />
+              {t.sections.courses.viewMore} <ArrowRight className="w-4 h-4" />
             </Link>
           </div>
           {dataLoading ? (
@@ -466,13 +474,16 @@ export default function Home() {
               {[0,1,2,3].map(i => <CardSkeleton key={i} />)}
             </div>
           ) : coursesError ? (
-            <ErrorState message="课程数据加载失败" onRetry={retryCourses} />
+            <ErrorState message={t.sections.courses.errorState} onRetry={retryCourses} />
           ) : hotCourses.length === 0 ? (
-            <div className="text-center py-12">
-              <BookOpen className="w-10 h-10 text-gray-300 mx-auto mb-3" />
-              <p className="text-gray-400 mb-3">暂无课程</p>
-              <Link to="/courses" className="text-primary-500 text-sm hover:underline">浏览全部课程 →</Link>
-            </div>
+            <EmptyState
+              icon={BookOpen}
+              variant="noData"
+              title={t.sections.courses.emptyState}
+              description=""
+              actionText={t.sections.courses.browseAll}
+              onAction={() => navigate('/courses')}
+            />
           ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {hotCourses.map((c, i) => (
@@ -519,7 +530,7 @@ export default function Home() {
             to="/success-cases"
             className="inline-flex items-center gap-2 text-primary-600 hover:text-primary-700 font-medium text-sm transition-colors"
           >
-            查看更多成功案例
+            {t.sections.successCases.viewMore}
             <ArrowRight className="w-4 h-4" />
           </Link>
         </div>
@@ -532,8 +543,8 @@ export default function Home() {
 
         {/* ====== 平台价值说明 ====== */}
         <section className="pb-16">
-          <h2 className="text-xl font-bold text-gray-900 text-center mb-2">一个平台，三方受益</h2>
-          <p className="text-sm text-gray-500 text-center mb-8">启航平台连接学生、企业、导师，让每一方都获得价值</p>
+          <h2 className="text-xl font-bold text-gray-900 text-center mb-2">{t.sections.valueProposition.title}</h2>
+          <p className="text-sm text-gray-500 text-center mb-8">{t.sections.valueProposition.subtitle}</p>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {homeConfig.valueSections.map((item: { icon: string; bg: string; border: string; gradientFrom: string; gradientTo: string; color: string; role: string; points: string[] }, i: number) => {
               const IconComp = ICON_MAP[item.icon] || GraduationCap;
@@ -569,7 +580,7 @@ export default function Home() {
                 focus-visible:ring-2 focus-visible:ring-primary-400/50 focus-visible:outline-none
                 transition-all duration-300"
             >
-              立即开始你的求职之旅
+              {t.sections.valueProposition.ctaText}
               <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform duration-200" />
             </Link>
           </div>

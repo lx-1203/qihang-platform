@@ -1,6 +1,7 @@
 import { useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AlertTriangle, Trash2, Info, Loader2, X } from 'lucide-react';
+import { useReducedMotion } from '@/hooks/useReducedMotion';
 
 // 确认弹窗变体配置
 const variantConfig = {
@@ -66,6 +67,13 @@ export default function ConfirmDialog({
   const config = variantConfig[variant];
   const Icon = config.icon;
   const finalConfirmText = confirmText || config.confirmText;
+  const prefersReduced = useReducedMotion();
+
+  // 根据用户动画偏好选择过渡配置
+  const overlayTransition = prefersReduced ? { duration: 0 } : { duration: 0.15 };
+  const dialogTransition = prefersReduced
+    ? { duration: 0 }
+    : { type: 'spring' as const, stiffness: 400, damping: 30 };
 
   // ESC 键关闭
   const handleKeyDown = useCallback(
@@ -87,7 +95,7 @@ export default function ConfirmDialog({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.15 }}
+            transition={overlayTransition}
             className="absolute inset-0 bg-black/40 backdrop-blur-[2px]"
             onClick={loading ? undefined : onCancel}
           />
@@ -97,7 +105,7 @@ export default function ConfirmDialog({
             initial={{ opacity: 0, scale: 0.9, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.9, y: 20 }}
-            transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+            transition={dialogTransition}
             className="relative w-full max-w-sm mx-4 bg-white rounded-2xl shadow-2xl overflow-hidden"
           >
             {/* 关闭按钮 */}

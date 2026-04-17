@@ -7,7 +7,10 @@ import {
   AlertTriangle, FileText, AlertCircle
 } from 'lucide-react';
 import http from '@/api/http';
+import { useToast } from '@/components/ui';
+import { useConfigStore } from '@/store/config';
 import Tag from '@/components/ui/Tag';
+import { Skeleton, CardSkeleton, ListSkeleton } from '@/components/ui/Skeleton';
 
 // ====== 平台设置（站点配置管理 + 审计日志） ======
 // 商业级要求：
@@ -53,6 +56,8 @@ const GROUP_LABELS: Record<string, { label: string; icon: typeof Palette }> = {
 };
 
 export default function AdminSettings() {
+  const toast = useToast();
+  const refreshConfig = useConfigStore((s) => s.fetchConfigs);
   const [tab, setTab] = useState<Tab>('configs');
   const [configs, setConfigs] = useState<SiteConfig[]>([]);
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
@@ -113,6 +118,7 @@ export default function AdminSettings() {
         JSON.parse(value);
       } catch {
         setJsonError('JSON 格式不合法，请检查语法');
+        toast.error('格式错误', 'JSON 格式不合法，请检查语法');
         return;
       }
     }
@@ -125,14 +131,19 @@ export default function AdminSettings() {
       if (res.data?.code === 200) {
         setConfigs(prev => prev.map(c => c.config_key === key ? { ...c, config_value: value } : c));
         setSaveSuccess(key);
+        toast.success('保存成功', `${cfg?.label || key} 已更新`);
+        // 刷新配置 store 使前端页面生效
+        await refreshConfig();
         setTimeout(() => setSaveSuccess(null), 2000);
         setEditingKey(null);
       } else {
         setSaveError(res.data?.message || '保存失败');
+        toast.error('保存失败', res.data?.message || '请稍后重试');
       }
     } catch (err: unknown) {
       const msg = (err && typeof err === 'object' && 'message' in err) ? (err as { message: string }).message : '保存失败，请检查后端服务';
       setSaveError(msg);
+      toast.error('网络错误', msg);
     } finally {
       setSaving(false);
     }
@@ -170,11 +181,24 @@ export default function AdminSettings() {
   };
 
   return (
-    <div className="space-y-6">
-      <div>
+    <div className="min-h-screen bg-gray-50 p-6">
+      {/* 页面标题 */}
+      <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-900">平台设置</h1>
         <p className="text-gray-500 mt-1">站点配置管理与操作审计日志</p>
       </div>
+
+      {/* 加载状态 */}
+      {loading && (
+        <div className="space-y-4">
+          <Skeleton className="h-10 w-64" />
+          <ListSkeleton count={3} />
+        </div>
+      )}
+
+      {/* 主内容 */}
+      {!loading && (
+      <div className="space-y-6">
 
       {/* Tab切换 */}
       <div className="flex items-center gap-1 bg-gray-100 rounded-xl p-1 w-fit">
@@ -470,6 +494,8 @@ export default function AdminSettings() {
             </div>
           )}
         </div>
+      )}
+      </div>
       )}
     </div>
   );

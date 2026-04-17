@@ -16,9 +16,14 @@ import {
   Home,
   Menu,
   X,
-  MessageSquare
+  MessageSquare,
+  BookOpen,
+  Rocket,
+  TrendingUp,
+  Award
 } from 'lucide-react';
 import DevFloatButton from '../components/DevFloatButton';
+import { useReducedMotion } from '../hooks/useReducedMotion';
 
 const SIDEBAR_NAV = [
   { name: '数据总览', href: '/admin/dashboard', icon: BarChart },
@@ -31,13 +36,22 @@ const SIDEBAR_NAV = [
   { name: '留学数据管理', href: '/admin/study-abroad', icon: Globe },
   { name: '公告管理', href: '/admin/announcements', icon: Megaphone },
   { name: '首页配置', href: '/admin/home-config', icon: Home },
-  { name: '主题配置', href: '/admin/theme-config', icon: Palette },
-  { name: '平台设置', href: '/admin/settings', icon: Settings },
+  { name: '考研配置', href: '/admin/postgrad-config', icon: BookOpen },
+  { name: '创业配置', href: '/admin/entrepreneurship-config', icon: Rocket },
+  { name: '背景提升配置', href: '/admin/backgroundboost-config', icon: TrendingUp },
+  { name: '案例配置', href: '/admin/successcases-config', icon: Award },
+  { name: '系统设置', href: '/admin/settings', icon: Settings },
 ];
 
 export default function AdminLayout() {
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const prefersReduced = useReducedMotion();
+
+  // 根据用户动画偏好选择过渡配置
+  const sidebarTransition = prefersReduced
+    ? { duration: 0 }
+    : { type: 'spring' as const, stiffness: 400, damping: 35 };
 
   // 路由切换时关闭移动端侧边栏
   useEffect(() => {
@@ -103,7 +117,7 @@ export default function AdminLayout() {
   );
 
   return (
-    <div className="min-h-screen bg-gray-100 flex">
+    <div className="min-h-screen bg-gray-50 flex">
       {/* 桌面端侧边栏 */}
       <aside className="hidden md:flex w-64 bg-slate-900 border-r border-slate-800 fixed h-full flex-col z-20 text-slate-300">
         {sidebarContent}
@@ -124,7 +138,7 @@ export default function AdminLayout() {
               initial={{ x: -256 }}
               animate={{ x: 0 }}
               exit={{ x: -256 }}
-              transition={{ type: 'spring', stiffness: 400, damping: 35 }}
+              transition={sidebarTransition}
               className="fixed inset-y-0 left-0 w-64 bg-slate-900 z-40 flex flex-col text-slate-300 md:hidden"
               role="dialog"
               aria-modal="true"

@@ -57,14 +57,17 @@ router.get('/', async (req, res) => {
     }));
 
     res.json({
-      courses: parsedCourses,
-      nextCursor,
-      hasMore: nextCursor !== null,
-      limit: pageLimit,
+      code: 200,
+      data: {
+        courses: parsedCourses,
+        nextCursor,
+        hasMore: nextCursor !== null,
+        limit: pageLimit,
+      },
     });
   } catch (err) {
     console.error('获取课程列表失败:', err);
-    res.status(500).json({ error: '服务器内部错误' });
+    res.status(500).json({ code: 500, message: '服务器内部错误' });
   }
 });
 
@@ -85,10 +88,10 @@ router.get('/:id', async (req, res) => {
     // 增加浏览量
     await pool.query('UPDATE courses SET views = views + 1 WHERE id = ?', [req.params.id]);
 
-    res.json(course);
+    res.json({ code: 200, data: course });
   } catch (err) {
     console.error('获取课程详情失败:', err);
-    res.status(500).json({ error: '服务器内部错误' });
+    res.status(500).json({ code: 500, message: '服务器内部错误' });
   }
 });
 

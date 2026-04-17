@@ -234,13 +234,15 @@ const CREATE_NOTIFICATIONS_TABLE = `
   CREATE TABLE IF NOT EXISTS notifications (
     id              INT AUTO_INCREMENT PRIMARY KEY,
     user_id         INT NOT NULL COMMENT '接收通知的用户ID',
-    type            VARCHAR(50) NOT NULL COMMENT '通知类型 (appointment/resume/system/verify)',
+    type            ENUM('system','job','appointment','course','announcement','other') NOT NULL DEFAULT 'system' COMMENT '通知类型',
     title           VARCHAR(200) NOT NULL COMMENT '通知标题',
     content         TEXT COMMENT '通知内容',
+    link            VARCHAR(500) DEFAULT NULL COMMENT '关联链接',
     related_id      INT DEFAULT NULL COMMENT '关联业务ID (预约ID/简历ID等)',
     is_read         TINYINT NOT NULL DEFAULT 0 COMMENT '0=未读, 1=已读',
     deleted_at      TIMESTAMP NULL DEFAULT NULL COMMENT '软删除时间（NULL=未删除）',
     created_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at      DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     INDEX idx_user_id (user_id),
     INDEX idx_is_read (is_read),
     INDEX idx_type (type),
@@ -1293,6 +1295,300 @@ async function seedSiteConfigs(conn) {
     { key: 'footer_copyright', value: '© 2026 江苏初晓云网络科技有限公司', type: 'string', group: 'general', label: '版权信息', desc: '页脚版权声明', sort: 51 },
     { key: 'maintenance_mode', value: 'false', type: 'boolean', group: 'general', label: '维护模式', desc: '开启后前端显示维护页面', sort: 52, is_public: 1 },
     { key: 'announcement', value: '', type: 'string', group: 'general', label: '全站公告', desc: '顶部公告条内容（为空则不显示）', sort: 53 },
+
+    // ===== 考研页面配置 =====
+    { key: 'postgrad_page_config', value: JSON.stringify({
+      timelines: [
+        { month: '3月-5月', title: '基础复习阶段', desc: '确定目标院校和专业，搜集考研大纲和真题，开始英语和专业课基础轮复习。' },
+        { month: '6月-8月', title: '强化提高阶段', desc: '暑期黄金复习期，各科全面展开，参加辅导班或集中刷题，攻克重难点。' },
+        { month: '9月-10月', title: '报名与冲刺阶段', desc: '关注招生简章，完成网上报名。政治开始复习，进行全真模拟训练。' },
+        { month: '11月-12月', title: '考前押题与心态调整', desc: '背诵核心考点，查漏补缺，调整作息规律，保持良好心态迎接初试。' }
+      ],
+      heroTitle: '考研 / 保研 / 留学',
+      heroDesc: '汇集全网最全的升学资讯、学长学姐真实经验贴、院校专业分析报告，助你顺利迈向人生的下一个台阶。'
+    }), type: 'json', group: 'postgrad', label: '考研页面配置', desc: '考研页面的时间线、内容等配置', sort: 60 },
+
+    // ===== 创业页面配置 =====
+    { key: 'entrepreneurship_page_config', value: JSON.stringify({
+      competitions: [
+        { id: 1, name: '"挑战杯"全国大学生课外学术科技作品竞赛', level: '国家级', status: '报名中', deadline: '2024-05-30', tags: ['学术研究', '科技创新'] },
+        { id: 2, name: '中国国际"互联网+"大学生创新创业大赛', level: '国家级', status: '即将开始', deadline: '2024-06-15', tags: ['创业项目', '商业计划'] },
+        { id: 3, name: '全国大学生电子商务"创新、创意及创业"挑战赛', level: '国家级', status: '进行中', deadline: '2024-04-20', tags: ['电商', '三创'] },
+        { id: 4, name: '全国大学生数学建模竞赛', level: '国家级', status: '报名中', deadline: '2024-09-01', tags: ['算法', '数据分析'] }
+      ],
+      heroTitle: '点燃你的创业梦',
+      heroDesc: '寻找志同道合的合伙人，获取专业的创业指导，参与顶级赛事，对接天使投资。让每一个疯狂的想法都有机会改变世界。'
+    }), type: 'json', group: 'entrepreneurship', label: '创业页面配置', desc: '创业比赛列表、内容等配置', sort: 61 },
+
+    // ===== 背景提升页面配置 =====
+    { key: 'background_boost_page_config', value: JSON.stringify({
+      services: [
+        {
+          id: 1, title: '实习内推', icon: 'Briefcase', color: 'text-blue-500', bg: 'bg-blue-50', border: 'border-blue-100',
+          gradientFrom: 'from-blue-500', gradientTo: 'to-blue-600',
+          description: '大厂/外企/券商核心岗位实习机会，助力留学申请与职业发展',
+          features: [
+            '字节跳动、腾讯、阿里、美团等头部互联网',
+            '四大会计师事务所 (PwC/Deloitte/EY/KPMG) 核心岗位',
+            '中金、中信、高盛、摩根士丹利等券商投行实习',
+            'PTA 远程实习可选，时间灵活，适合在校学生',
+            '微软、Google、Amazon 等外企实习（海外方向）',
+            '内推成功率 85%+，部分岗位可免笔试'
+          ],
+          link: '/jobs', linkLabel: '查看实习岗位',
+          stats: { count: '500+', label: '可选岗位' },
+          cases: [
+            { name: '小王', school: '双非大三', result: '通过平台内推入职字节跳动后端实习', highlight: '双非逆袭' },
+            { name: '小李', school: '211金融', result: '拿到中金投行部暑期实习offer', highlight: '一次通过' }
+          ]
+        },
+        {
+          id: 2, title: '科研项目', icon: 'FlaskConical', color: 'text-purple-500', bg: 'bg-purple-50', border: 'border-purple-100',
+          gradientFrom: 'from-purple-500', gradientTo: 'to-purple-600',
+          description: '海内外知名教授带队科研课题，获取推荐信与科研成果',
+          features: [
+            'MIT/Stanford/Oxford/Cambridge 等海外教授课题',
+            '国内清华/北大/浙大/复旦等985高校实验室直推',
+            '覆盖 CS/商科/工科/社科/生物医学等12+方向',
+            '可产出 SCI/SSCI 论文或研究报告',
+            '优秀学员可获教授亲笔推荐信',
+            '远程+线下混合模式，灵活安排'
+          ],
+          link: '/study-abroad', linkLabel: '咨询科研项目',
+          stats: { count: '120+', label: '在研课题' },
+          cases: [
+            { name: '小张', school: '985 CS', result: '参与MIT教授NLP课题，发表ACL Workshop论文', highlight: '顶会论文' },
+            { name: '小陈', school: '211经济', result: '参与Oxford教授行为经济学课题，获推荐信', highlight: '强推荐信' }
+          ]
+        },
+        {
+          id: 3, title: '论文发表', icon: 'FileText', color: 'text-green-500', bg: 'bg-green-50', border: 'border-green-100',
+          gradientFrom: 'from-green-500', gradientTo: 'to-green-600',
+          description: 'SCI/SSCI/EI/CPCI 期刊论文写作指导与发表辅助',
+          features: [
+            '一对一论文选题与研究框架设计指导',
+            '数据分析方法辅导（SPSS/Python/R/Stata）',
+            '论文写作润色与投稿全流程支持',
+            '支持 SCI/SSCI/EI/CPCI/核心期刊等多级别',
+            '提供发表周期保障（3-6个月内见刊）',
+            '学术道德合规，保证原创性'
+          ],
+          link: '/study-abroad', linkLabel: '咨询论文发表',
+          stats: { count: '95%', label: '发表率' },
+          cases: [
+            { name: '小赵', school: '211 CS', result: '首篇SCI论文3个月内成功发表', highlight: 'SCI收录' },
+            { name: '小刘', school: '985金融', result: '发表SSCI论文，成功申请LSE金融硕士', highlight: '助力名校' }
+          ]
+        },
+        {
+          id: 4, title: '商赛/创赛', icon: 'Trophy', color: 'text-amber-500', bg: 'bg-amber-50', border: 'border-amber-100',
+          gradientFrom: 'from-amber-500', gradientTo: 'to-amber-600',
+          description: '国际商赛、创新创业竞赛组队与辅导，斩获含金量高的奖项',
+          features: [
+            '挑战杯/互联网+/创青春 等国家级赛事辅导',
+            'HULT Prize/KWHS/Diamond Challenge 国际商赛',
+            'MCM/ICM 美国大学生数学建模竞赛',
+            '专业导师全程辅导（赛前集训+赛中指导）',
+            '智能组队匹配服务，跨校跨专业组队',
+            '历年获奖案例库参考'
+          ],
+          link: '/entrepreneurship', linkLabel: '查看赛事信息',
+          stats: { count: '80%', label: '获奖率' },
+          cases: [
+            { name: '团队Alpha', school: '跨校组队', result: '获HULT Prize中国赛区冠军', highlight: '国际金奖' },
+            { name: '团队Beta', school: '985联队', result: '互联网+省级金奖，国赛铜奖', highlight: '国家级奖项' }
+          ]
+        },
+        {
+          id: 5, title: '社会实践', icon: 'Heart', color: 'text-rose-500', bg: 'bg-rose-50', border: 'border-rose-100',
+          gradientFrom: 'from-rose-500', gradientTo: 'to-rose-600',
+          description: '支教、志愿者、公益项目推荐，展现社会责任感与领导力',
+          features: [
+            '国际志愿者项目（泰国/柬埔寨/坦桑尼亚/尼泊尔）',
+            '乡村支教公益活动（云南/贵州/甘肃等）',
+            '环保/海洋保护类实践项目',
+            '联合国 SDGs 可持续发展目标相关项目',
+            '可获权威志愿时长证明与推荐信',
+            '项目周期 1-4 周，假期灵活安排'
+          ],
+          link: '/study-abroad', linkLabel: '咨询实践项目',
+          stats: { count: '50+', label: '合作项目' },
+          cases: [
+            { name: '小孙', school: '211英语', result: '参加柬埔寨志愿者项目，文书素材出彩', highlight: '文书亮点' },
+            { name: '小钱', school: '985环境', result: '参加海洋保护项目，获联合国环境署证书', highlight: 'UN证书' }
+          ]
+        },
+        {
+          id: 6, title: '语言提升', icon: 'BookOpen', color: 'text-sky-500', bg: 'bg-sky-50', border: 'border-sky-100',
+          gradientFrom: 'from-sky-500', gradientTo: 'to-sky-600',
+          description: '雅思/托福/GRE/GMAT 一对一培训与小班课程',
+          features: [
+            '一对一名师精讲课程（海归/教龄10年+）',
+            '真题模拟考场与精准批改',
+            '写作精批与口语一对一陪练',
+            '签约保分班可选（未达目标退费）',
+            '覆盖雅思/托福/GRE/GMAT/日语N1-N2',
+            'AI智能诊断学习弱点，个性化提分方案'
+          ],
+          link: '/study-abroad', linkLabel: '咨询语言课程',
+          stats: { count: '7.0+', label: '平均雅思' },
+          cases: [
+            { name: '小周', school: '211大三', result: '雅思从5.5提升至7.5，两个月见效', highlight: '提分2.0' },
+            { name: '小吴', school: '985大二', result: 'GRE 首考328，verbal 162', highlight: '一次高分' }
+          ]
+        }
+      ],
+      processSteps: [
+        { step: 1, title: '免费评估', desc: '专业顾问一对一评估你的背景，找出短板', icon: 'Target' },
+        { step: 2, title: '定制方案', desc: '根据目标院校和专业，定制专属提升方案', icon: 'FileText' },
+        { step: 3, title: '执行提升', desc: '全程跟踪，辅导老师+班主任双重督导', icon: 'TrendingUp' },
+        { step: 4, title: '成果收获', desc: '获取实习证明/论文/推荐信/获奖证书', icon: 'Award' }
+      ],
+      guarantees: [
+        { title: '效果保障', desc: '签约服务，未达效果可退费', icon: 'Shield' },
+        { title: '导师资源', desc: '全球500+名校导师资源库', icon: 'Users' },
+        { title: '一站式服务', desc: '评估-方案-执行-验收闭环管理', icon: 'BarChart3' },
+        { title: '隐私保护', desc: '严格保护学员个人信息', icon: 'Lightbulb' }
+      ]
+    }), type: 'json', group: 'background_boost', label: '背景提升页面配置', desc: '背景提升服务列表、流程、保障等配置', sort: 62 },
+
+    // ===== 成功案例页面配置 =====
+    { key: 'success_cases_page_config', value: JSON.stringify({
+      _meta: { version: "1.0", description: "成功案例页面配置数据", lastUpdated: "2026-04-17" },
+      categories: [
+        { key: "all", label: "全部", icon: "Star" },
+        { key: "job", label: "求职成功", icon: "Briefcase" },
+        { key: "postgrad", label: "考研上岸", icon: "GraduationCap" },
+        { key: "abroad", label: "留学录取", icon: "Globe" },
+        { key: "startup", label: "创业成功", icon: "Rocket" }
+      ],
+      stats: [
+        { label: "求职成功", value: 12800, suffix: "+", icon: "Briefcase" },
+        { label: "考研上岸", value: 5600, suffix: "+", icon: "GraduationCap" },
+        { label: "留学录取", value: 3200, suffix: "+", icon: "Globe" },
+        { label: "创业成功", value: 860, suffix: "+", icon: "Rocket" }
+      ],
+      cases: [
+        {
+          id: 1, name: "张同学", avatar: "张",
+          school: "南京大学 · 计算机科学与技术", category: "job",
+          achievement: "斩获腾讯 PCG 产品经理 Offer",
+          quote: "在启航平台上预约了3次模拟面试，导师的反馈非常精准，帮我找到了自我介绍和项目阐述中的短板。最终群面和终面都很顺利，拿到了SP Offer！",
+          tags: ["互联网大厂", "产品经理", "校招"],
+          color: "from-blue-500 to-cyan-500", bgLight: "bg-blue-50", textColor: "text-blue-600"
+        },
+        {
+          id: 2, name: "李同学", avatar: "李",
+          school: "浙江大学 · 金融学", category: "job",
+          achievement: "成功入职中金公司投资银行部",
+          quote: "平台上的简历精修服务让我的简历焕然一新，行业导师还帮我梳理了金融建模和估值分析的面试思路。从实习到正式offer，启航一路陪伴。",
+          tags: ["金融行业", "投行", "秋招"],
+          color: "from-amber-500 to-orange-500", bgLight: "bg-amber-50", textColor: "text-amber-600"
+        },
+        {
+          id: 3, name: "王同学", avatar: "王",
+          school: "华中科技大学 · 机械工程", category: "postgrad",
+          achievement: "跨考上海交通大学计算机专业 初试 410 分",
+          quote: "作为跨考生压力很大，但启航平台的考研课程体系很完整，尤其是数据结构和算法课程帮了大忙。学长学姐的经验分享也给了我很大的信心。",
+          tags: ["跨考", "985院校", "计算机"],
+          color: "from-purple-500 to-indigo-500", bgLight: "bg-purple-50", textColor: "text-purple-600"
+        },
+        {
+          id: 4, name: "赵同学", avatar: "赵",
+          school: "武汉大学 · 英语语言文学", category: "abroad",
+          achievement: "收获伦敦大学学院 (UCL) 教育学硕士录取",
+          quote: "平台留学专区的文书写作指导课程非常实用，导师帮我反复打磨PS和推荐信。从选校定位到签证办理，每一步都有清晰的指引。",
+          tags: ["英国G5", "教育学", "DIY申请"],
+          color: "from-sky-500 to-blue-500", bgLight: "bg-sky-50", textColor: "text-sky-600"
+        },
+        {
+          id: 5, name: "陈同学", avatar: "陈",
+          school: "东南大学 · 电子信息工程", category: "startup",
+          achievement: "创立智能硬件公司，获天使轮融资 200 万",
+          quote: "在启航平台的创业专区找到了技术合伙人和设计师，还参加了平台组织的路演活动，直接对接到了投资人。从想法到公司成立只用了半年！",
+          tags: ["智能硬件", "天使投资", "大学生创业"],
+          color: "from-emerald-500 to-teal-500", bgLight: "bg-emerald-50", textColor: "text-emerald-600"
+        },
+        {
+          id: 6, name: "刘同学", avatar: "刘",
+          school: "北京师范大学 · 心理学", category: "postgrad",
+          achievement: "保研至北京大学心理与认知科学学院",
+          quote: "大三暑假通过平台了解到各校夏令营信息并提前准备，导师帮我准备了研究计划书和面试答辩。最终拿到了北大优秀营员资格，顺利推免。",
+          tags: ["保研", "夏令营", "心理学"],
+          color: "from-rose-500 to-pink-500", bgLight: "bg-rose-50", textColor: "text-rose-600"
+        },
+        {
+          id: 7, name: "孙同学", avatar: "孙",
+          school: "同济大学 · 建筑学", category: "abroad",
+          achievement: "获得哈佛大学 GSD 建筑学硕士全额奖学金",
+          quote: "平台上有很多海外名校的学长分享作品集制作经验，导师还帮我联系了在GSD就读的学姐做portfolio review。这些资源对建筑留学生来说太宝贵了。",
+          tags: ["美国藤校", "建筑学", "全额奖学金"],
+          color: "from-violet-500 to-purple-500", bgLight: "bg-violet-50", textColor: "text-violet-600"
+        },
+        {
+          id: 8, name: "周同学", avatar: "周",
+          school: "中山大学 · 市场营销", category: "job",
+          achievement: "拿下字节跳动商业化运营管培生 Offer",
+          quote: "从简历海投石沉大海到精准投递，启航平台彻底改变了我的求职策略。职业导师帮我做了SWOT分析，定位到了最适合我的赛道。两个月内拿到4个offer！",
+          tags: ["互联网", "运营", "管培生"],
+          color: "from-cyan-500 to-teal-500", bgLight: "bg-cyan-50", textColor: "text-cyan-600"
+        },
+        {
+          id: 9, name: "吴同学", avatar: "吴",
+          school: "复旦大学 · 数据科学", category: "startup",
+          achievement: "创办 AI 教育科技公司，入选国家级孵化器",
+          quote: "启航平台的创新创业课程体系帮我理清了商业模式，还在平台上认识了现在的CTO。我们的AI自适应学习产品已经服务了3000多名学生。",
+          tags: ["AI教育", "科技创业", "孵化器"],
+          color: "from-teal-500 to-green-500", bgLight: "bg-teal-50", textColor: "text-teal-600"
+        },
+        {
+          id: 10, name: "郑同学", avatar: "郑",
+          school: "西安交通大学 · 临床医学", category: "postgrad",
+          achievement: "考研至协和医学院 初试专业课满分",
+          quote: "医学考研复习量巨大，平台上系统的备考规划帮我合理分配时间。还有同校学长一对一辅导西医综合，针对性特别强。感谢启航让我实现了梦想！",
+          tags: ["医学考研", "协和", "专业课高分"],
+          color: "from-red-500 to-rose-500", bgLight: "bg-red-50", textColor: "text-red-600"
+        }
+      ]
+    }), type: 'json', group: 'success_cases', label: '成功案例页面配置', desc: '成功案例分类、统计数据、案例列表等', sort: 63 },
+
+    // ===== 留学资讯页面配置 =====
+    { key: 'study_abroad_articles_config', value: JSON.stringify({
+      _meta: { version: "1.0", lastUpdated: "2026-04-14", description: "留学资讯文章数据" },
+      featured: {
+        id: 100,
+        title: "2026 Fall 留学申请全攻略：从选校到拿Offer，一文搞定",
+        category: "申请指南",
+        cover: "https://images.unsplash.com/photo-1523050854058-8df90110c9f1?w=1200&q=80",
+        excerpt: "从确定留学目标到最终拿到Offer，这篇万字长文涵盖了选校策略、材料准备、文书写作、面试技巧、签证办理的完整流程。无论你是大一刚开始规划，还是大三即将申请，都能从中找到适合自己阶段的行动指南。",
+        views: 15600, likes: 892, date: "2026-04-01",
+        author: "启航留学研究院", readTime: "25 min", tags: ["精华", "必读"]
+      },
+      articles: [
+        { id: 1, title: "2026 Fall 英国G5申请时间线与完整材料清单", category: "申请指南", cover: "https://images.unsplash.com/photo-1526129318478-62ed807ebdf9?w=400&q=80", excerpt: "详细梳理牛津、剑桥、IC、LSE、UCL五所G5院校的申请开放时间、截止日期、所需材料及注意事项，助你提前规划，从容应对。", views: 8420, likes: 456, date: "2026-03-25", author: "启航留学编辑部", readTime: "8 min", tags: ["英国", "G5"] },
+        { id: 2, title: "雅思7.0到7.5的备考突破：三个月逆袭经验分享", category: "语言考试", cover: "https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?w=400&q=80", excerpt: "从6.5到7.5，分享听说读写四科的备考策略、高效刷题方法、核心资料推荐和考场实战技巧。三个月逆袭不是梦！", views: 6180, likes: 378, date: "2026-03-22", author: "学员 小王 · 雅思7.5", readTime: "6 min", tags: ["雅思", "经验"] },
+        { id: 3, title: "港三新二 商科跨专业申请全流程分享（双非背景）", category: "就读分享", cover: "https://images.unsplash.com/photo-1536599018102-9f803c029e12?w=400&q=80", excerpt: "双非本科英语专业，如何成功跨申香港大学商业分析硕士？从GMAT备考、实习规划到文书策略，分享拿到HKU、NUS、NTU三枚Offer的完整经历。", views: 12560, likes: 723, date: "2026-03-20", author: "学员 小李 · HKU BA", readTime: "12 min", tags: ["双非", "跨专业", "港三"] },
+        { id: 4, title: "留学文书PS/SOP写作万能框架与常见避坑指南", category: "文书写作", cover: "https://images.unsplash.com/photo-1455390582262-044cdead277a?w=400&q=80", excerpt: "个人陈述怎么写？开头如何吸引招生官？如何展示学术热情和职业规划？附G5/港三/新国立通用的万能段落结构模板和真实案例解析。", views: 15230, likes: 891, date: "2026-03-18", author: "文书导师 Sarah · 前Oxford招生官", readTime: "10 min", tags: ["文书", "PS", "模板"] },
+        { id: 5, title: "澳洲八大2026年入学最新申请要求汇总", category: "院校解析", cover: "https://images.unsplash.com/photo-1523482580672-f109ba8cb9be?w=400&q=80", excerpt: "悉尼大学、墨尔本大学、UNSW、ANU等八大名校2026年最新GPA要求、语言要求、专业变化及学费调整一站汇总。", views: 4890, likes: 267, date: "2026-03-15", author: "启航留学编辑部", readTime: "7 min", tags: ["澳洲", "八大"] },
+        { id: 6, title: "英国Tier 4学生签证申请全攻略（2026最新版）", category: "签证办理", cover: "https://images.unsplash.com/photo-1569154941061-e231b4725ef1?w=400&q=80", excerpt: "从拿到CAS到签证递交，TB检测预约、资金证明准备、签证中心选择、面签模拟等全流程详解，附签证材料清单下载。", views: 7340, likes: 412, date: "2026-03-12", author: "签证顾问 Jenny · 10年经验", readTime: "9 min", tags: ["签证", "英国"] },
+        { id: 7, title: "CSC国家留学基金委奖学金申请指南与成功案例", category: "奖学金", cover: "https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=400&q=80", excerpt: "国家公派留学如何申请？哪些学校有CSC合作项目？申请时间线、材料准备、面试技巧和3位成功获奖学员的经验分享。", views: 9100, likes: 534, date: "2026-03-10", author: "启航留学研究院", readTime: "8 min", tags: ["CSC", "奖学金", "公派"] },
+        { id: 8, title: "2026暑期海外名校夏令营项目汇总与申请建议", category: "夏令营/活动", cover: "https://images.unsplash.com/photo-1517486808906-6ca8b3f04846?w=400&q=80", excerpt: "牛津、剑桥、MIT、Stanford、UCLA等名校2026暑期项目开放申请！费用、时长、申请条件全汇总，提升背景的绝佳机会。", views: 5670, likes: 321, date: "2026-03-08", author: "启航留学编辑部", readTime: "6 min", tags: ["夏校", "暑期项目"] },
+        { id: 9, title: "托福100+备考经验：阅读听力满分，口语突破24", category: "语言考试", cover: "https://images.unsplash.com/photo-1434030216411-0b793f4b4173?w=400&q=80", excerpt: "从首考85到二刷108，分享TPO高效刷题法、阅读速读技巧、听力笔记方法、口语模板和写作高分句型。", views: 7890, likes: 445, date: "2026-03-05", author: "学员 小张 · 托福108", readTime: "8 min", tags: ["托福", "高分"] },
+        { id: 10, title: "GRE 325+备考攻略：verbal提分秘诀与数学满分技巧", category: "语言考试", cover: "https://images.unsplash.com/photo-1513475382585-d06e58bcb0e0?w=400&q=80", excerpt: "两个月从310到328！分享GRE verbal核心词汇记忆法、阅读理解策略、填空秒杀技巧和写作模板。", views: 5340, likes: 298, date: "2026-03-02", author: "学员 小赵 · GRE 328", readTime: "7 min", tags: ["GRE", "高分"] },
+        { id: 11, title: "帝国理工 vs UCL vs 爱丁堡：CS硕士三校横评", category: "院校解析", cover: "https://images.unsplash.com/photo-1607237138185-eedd9c632b0b?w=400&q=80", excerpt: "从课程设置、录取难度、就业前景、生活成本四个维度全面对比英国三所顶尖CS硕士项目，帮你做出最优选择。", views: 11200, likes: 678, date: "2026-02-28", author: "启航留学研究院", readTime: "15 min", tags: ["CS", "选校", "对比"] },
+        { id: 12, title: "美国F1签证面签全攻略：高频问题与回答模板", category: "签证办理", cover: "https://images.unsplash.com/photo-1551434678-e076c223a692?w=400&q=80", excerpt: "整理50+个F1签证高频面签问题，附中英文回答模板。涵盖学习计划、资金证明、回国计划等敏感问题的回答策略。", views: 6780, likes: 389, date: "2026-02-25", author: "签证顾问 David · 美签专家", readTime: "10 min", tags: ["F1签证", "美国", "面签"] }
+      ],
+      hotTopics: [
+        { label: "2026 Fall时间线", count: 156 },
+        { label: "G5申请", count: 128 },
+        { label: "雅思7.0+", count: 112 },
+        { label: "跨专业申请", count: 98 },
+        { label: "PS文书写作", count: 87 },
+        { label: "港三新二", count: 76 },
+        { label: "双非逆袭", count: 65 },
+        { label: "CSC奖学金", count: 54 }
+      ]
+    }), type: 'json', group: 'studyabroad_articles', label: '留学资讯页面配置', desc: '留学文章列表、热门话题等配置', sort: 64 }
   ];
 
   for (const c of configs) {

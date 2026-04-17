@@ -1,5 +1,6 @@
 import { Inbox, Search, Bell, Heart, type LucideIcon } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { useReducedMotion } from '@/hooks/useReducedMotion';
 
 /** 预设变体配置 */
 const PRESETS: Record<string, { icon: LucideIcon; title: string; description: string }> = {
@@ -43,11 +44,14 @@ export default function EmptyState({
   const IconComp = icon || preset.icon;
   const displayTitle = title || preset.title;
   const displayDesc = description || preset.description;
+  const prefersReduced = useReducedMotion();
+  const fadeTransition = prefersReduced ? { duration: 0 } : undefined;
 
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
+      transition={fadeTransition}
       className={`flex flex-col items-center justify-center py-16 px-4 ${className}`}
     >
       <div className="w-16 h-16 rounded-full bg-primary-50 flex items-center justify-center mb-4">

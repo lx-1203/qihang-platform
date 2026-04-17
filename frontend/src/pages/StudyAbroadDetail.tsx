@@ -578,7 +578,7 @@ export default function StudyAbroadDetail() {
                         <motion.div
                           initial={{ width: 0 }}
                           animate={{ width: `${ind.percent}%` }}
-                          transition={{ delay: idx * 0.1, duration: 0.5 }}
+                          transition={{ delay: idx * 0.08, duration: 0.35 }}
                           className="h-full bg-gradient-to-r from-primary-500 to-primary-600 rounded-full flex items-center justify-end pr-3"
                         >
                           <span className="text-[12px] font-bold text-white">{ind.percent}%</span>

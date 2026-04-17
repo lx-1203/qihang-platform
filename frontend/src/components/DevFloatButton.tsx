@@ -25,14 +25,14 @@ interface QuickLink {
 const QUICK_LINKS: { group: string; color: string; links: QuickLink[] }[] = [
   {
     group: 'C端',
-    color: 'text-teal-600',
+    color: 'text-primary-600',
     links: [
-      { path: '/', label: '首页', icon: Home, color: 'text-teal-600' },
-      { path: '/jobs', label: '求职招聘', icon: Briefcase, color: 'text-teal-600' },
-      { path: '/courses', label: '干货资料', icon: BookOpen, color: 'text-teal-600' },
-      { path: '/mentors', label: '导师列表', icon: Users, color: 'text-teal-600' },
-      { path: '/study-abroad', label: '留学申请', icon: Globe, color: 'text-teal-600' },
-      { path: '/notifications', label: '消息中心', icon: Bell, color: 'text-teal-600' },
+      { path: '/', label: '首页', icon: Home, color: 'text-primary-600' },
+      { path: '/jobs', label: '求职招聘', icon: Briefcase, color: 'text-primary-600' },
+      { path: '/courses', label: '干货资料', icon: BookOpen, color: 'text-primary-600' },
+      { path: '/mentors', label: '导师列表', icon: Users, color: 'text-primary-600' },
+      { path: '/study-abroad', label: '留学申请', icon: Globe, color: 'text-primary-600' },
+      { path: '/notifications', label: '消息中心', icon: Bell, color: 'text-primary-600' },
     ],
   },
   {

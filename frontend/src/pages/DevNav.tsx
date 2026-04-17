@@ -24,8 +24,8 @@ interface RouteGroup {
 const ALL_ROUTES: RouteGroup[] = [
   {
     title: 'C端 - 公共页面',
-    color: 'text-teal-700',
-    bg: 'bg-teal-50 border-teal-200',
+    color: 'text-primary-700',
+    bg: 'bg-primary-50 border-primary-200',
     icon: Home,
     routes: [
       { path: '/', label: '首页', icon: Home, desc: 'Hero + 数据统计 + 功能模块' },

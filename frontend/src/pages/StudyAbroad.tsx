@@ -96,6 +96,35 @@ const ARTICLES = articlesData.articles.slice(0, 6).map(a => ({
   id: a.id, title: a.title, category: a.category, views: a.views, hot: a.views > 10000,
 }));
 
+// ====== 从配置读取的常量 ======
+const CONFIG_CONSTANTS = (uiConfig as Record<string, unknown>).constants as {
+  heroSlideInterval: number;
+  quoteSlideInterval: number;
+  heroMinHeightMobile: number;
+  heroMinHeightDesktop: number;
+  quoteMinHeightMobile: number;
+  quoteMinHeightDesktop: number;
+  serviceCardHeight: number;
+};
+
+const TEXT_RESOURCES = (uiConfig as Record<string, unknown>).textResources as {
+  hero: { offerBtnText: string };
+  sidebar: { consultantTitle: string; consultantCta: string; evaluatedCount: string };
+  articles: { title: string; viewMore: string };
+  stories: { title: string; subtitle: string; viewMore: string };
+  services: { title: string; subtitle: string; viewAll: string };
+  cta: {
+    aiBadge: string;
+    title: string;
+    description: string;
+    servedStudents: string;
+    satisfactionRate: string;
+    btnText: string;
+    floatingCta: string;
+    floatingSubtitle: string;
+  };
+};
+
 // ====== 类型定义 ======
 
 interface CountryItem {
@@ -214,7 +243,7 @@ export default function StudyAbroad() {
   useEffect(() => {
     const timer = setInterval(() => {
       setCurrentSlide((prev) => (prev + 1) % HERO_SLIDES.length);
-    }, 5000);
+    }, CONFIG_CONSTANTS.heroSlideInterval);
     return () => clearInterval(timer);
   }, []);
 
@@ -223,7 +252,7 @@ export default function StudyAbroad() {
     if (quotePaused) return;
     const timer = setInterval(() => {
       setQuoteIndex((prev) => (prev + 1) % uiConfig.newcomerQuotes.length);
-    }, 6000);
+    }, CONFIG_CONSTANTS.quoteSlideInterval);
     return () => clearInterval(timer);
   }, [quotePaused]);
 
@@ -248,7 +277,9 @@ export default function StudyAbroad() {
           setOffers(apiList.map(mapApiOffer));
         }
       })
-      .catch(() => {});
+      .catch(() => {
+        if (import.meta.env.DEV) console.warn('[StudyAbroad] Offers API 加载失败，使用 JSON 默认数据');
+      });
 
     http.get('/study-abroad/consultants')
       .then(res => {
@@ -257,7 +288,9 @@ export default function StudyAbroad() {
           setConsultants(apiList.map(mapApiConsultant));
         }
       })
-      .catch(() => {});
+      .catch(() => {
+        if (import.meta.env.DEV) console.warn('[StudyAbroad] Consultants API 加载失败，使用 JSON 默认数据');
+      });
   }, []);
 
   // 提取热门项目（按 QS 排名排序，取前 9 个项目）
@@ -298,7 +331,7 @@ export default function StudyAbroad() {
     <div className="min-h-screen bg-gray-50 pb-16">
 
       {/* ====== Hero 轮播区 ====== */}
-      <section ref={heroRef} className="relative overflow-hidden bg-slate-900 min-h-[480px] md:min-h-[540px]">
+      <section ref={heroRef} className="relative overflow-hidden bg-gradient-to-br from-indigo-950 via-purple-900 to-violet-950 min-h-[480px] md:min-h-[540px]">
         <AnimatePresence mode="wait">
           <motion.div
             key={currentSlide}
@@ -306,18 +339,22 @@ export default function StudyAbroad() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.8 }}
+            transition={{ duration: 0.4 }}
           >
-            <img src={HERO_SLIDES[currentSlide].image} alt="" className="w-full h-full object-cover opacity-40 scale-105" />
+            <img src={HERO_SLIDES[currentSlide].image} alt="" className="w-full h-full object-cover opacity-30 scale-105" />
           </motion.div>
         </AnimatePresence>
-        <div className="absolute inset-0 bg-gradient-to-r from-slate-900 via-slate-900/85 to-slate-900/60" />
-        <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-slate-900 to-transparent" />
+        {/* 鲜亮渐变叠加层 */}
+        <div className="absolute inset-0 bg-gradient-to-r from-violet-900/90 via-purple-800/80 to-indigo-900/70" />
+        <div className="absolute bottom-0 left-0 right-0 h-40 bg-gradient-to-t from-indigo-950 to-transparent" />
+        {/* 装饰性光晕效果 */}
+        <div className="absolute top-0 right-0 w-96 h-96 bg-violet-500/20 rounded-full blur-3xl" />
+        <div className="absolute bottom-0 left-0 w-72 h-72 bg-fuchsia-500/15 rounded-full blur-3xl" />
 
         <div className="relative z-10 container-main pt-16 pb-20 md:pt-20 md:pb-24">
           <div className="max-w-2xl">
-            <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/20 backdrop-blur-md text-white border border-white/20 text-[13px] font-medium mb-6">
-              <Globe className="w-4 h-4 text-primary-500" />
+            <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-white/25 backdrop-blur-md text-white border border-white/30 text-[13px] font-bold mb-6 shadow-lg shadow-purple-500/10">
+              <Globe className="w-4 h-4 text-violet-300" />
               {HERO_SLIDES[currentSlide].tag}
             </motion.div>
             <AnimatePresence mode="wait">
@@ -327,16 +364,26 @@ export default function StudyAbroad() {
               </motion.div>
             </AnimatePresence>
             <div className="flex flex-wrap gap-4 mb-8">
-              <Link to={HERO_SLIDES[currentSlide].ctaLink} className="bg-primary-500 text-white px-8 py-4 rounded-xl font-bold text-[15px] hover:bg-primary-700 transition-all shadow-lg shadow-primary-500/25 flex items-center gap-2 hover:gap-3">
+              <Link to={HERO_SLIDES[currentSlide].ctaLink}
+                className="bg-gradient-to-r from-violet-500 to-purple-600 text-white px-10 py-4 rounded-xl font-bold text-[15px]
+                hover:from-violet-400 hover:to-purple-500 hover:-translate-y-1 hover:shadow-2xl hover:shadow-violet-500/40
+                active:scale-[0.97] focus-visible:ring-2 focus-visible:ring-white/40 focus-visible:outline-none
+                transition-all duration-300 shadow-xl shadow-violet-500/30 flex items-center gap-2 hover:gap-3"
+              >
                 {HERO_SLIDES[currentSlide].cta} <ArrowRight className="w-4 h-4" />
               </Link>
-              <Link to="/study-abroad/offers" className="bg-white/20 backdrop-blur-md text-white border border-white/25 px-8 py-4 rounded-xl font-bold text-[15px] hover:bg-white/30 transition-all flex items-center gap-2">
-                <TrendingUp className="w-4 h-4" /> 查看 Offer 榜
+              <Link to="/study-abroad/offers"
+                className="bg-white/25 backdrop-blur-md text-white border-2 border-white/35 px-8 py-4 rounded-xl font-bold text-[15px]
+                hover:bg-white/35 hover:-translate-y-0.5 hover:border-white/50 hover:shadow-xl
+                active:scale-[0.97] focus-visible:ring-2 focus-visible:ring-white/30 focus-visible:outline-none
+                transition-all duration-300 flex items-center gap-2"
+              >
+                <TrendingUp className="w-4 h-4" /> {TEXT_RESOURCES.hero.offerBtnText}
               </Link>
             </div>
 
             {/* 14 国快捷入口 */}
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-2 overflow-x-auto pb-1 scrollbar-hide">
               {countries.map((c) => (
                 <Link
                   key={c.id}
@@ -374,7 +421,7 @@ export default function StudyAbroad() {
         {/* ====== 快捷入口 ====== */}
         <section className="relative -mt-10 z-20 mb-14">
           <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-6 md:p-8">
-            <div className="grid grid-cols-4 md:grid-cols-8 gap-3 md:gap-5">
+            <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-3 md:gap-5">
               {QUICK_ACTIONS.map((item, idx: number) => (
                 <Link key={idx} to={item.link} className="flex flex-col items-center gap-2.5 group cursor-pointer">
                   <div className={`w-13 h-13 md:w-14 md:h-14 ${item.bg} rounded-2xl flex items-center justify-center group-hover:scale-110 group-hover:shadow-md transition-all duration-200`}>
@@ -492,7 +539,7 @@ export default function StudyAbroad() {
               <div className="absolute top-0 right-0 w-24 h-24 bg-primary-500/10 rounded-full blur-2xl" />
               <div className="relative">
                 <h3 className="text-[17px] font-bold text-gray-900 mb-4 flex items-center gap-2">
-                  <Users className="w-5 h-5 text-primary-500" /> 资深留学顾问
+                  <Users className="w-5 h-5 text-primary-500" /> {TEXT_RESOURCES.sidebar.consultantTitle}
                 </h3>
                 <div className="space-y-3">
                   {featuredConsultants.map((consultant) => (
@@ -516,16 +563,16 @@ export default function StudyAbroad() {
                   ))}
                 </div>
                 <button className="w-full mt-4 bg-primary-500 text-white py-3 rounded-xl font-bold text-[13px] hover:bg-primary-700 transition-all flex items-center justify-center gap-2 shadow-lg shadow-primary-500/25 hover:-translate-y-0.5 hover:shadow-xl hover:shadow-primary-500/30 active:translate-y-0">
-                  <MessageCircle className="w-4 h-4" /> 预约免费咨询
+                  <MessageCircle className="w-4 h-4" /> {TEXT_RESOURCES.sidebar.consultantCta}
                 </button>
-                <p className="text-center text-[10px] text-gray-400 mt-2">已有 <span className="text-primary-500 font-bold">12,400+</span> 名同学获得了免费评估</p>
+                <p className="text-center text-[10px] text-gray-400 mt-2">已有 <span className="text-primary-500 font-bold">{TEXT_RESOURCES.sidebar.evaluatedCount}</span> 名同学获得了免费评估</p>
               </div>
             </div>
 
             {/* 留学资讯 */}
             <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
               <h3 className="text-[17px] font-bold text-gray-900 mb-4 flex items-center gap-2">
-                <BookOpen className="w-5 h-5 text-primary-500" /> 热门资讯
+                <BookOpen className="w-5 h-5 text-primary-500" /> {TEXT_RESOURCES.articles.title}
               </h3>
               <ul className="space-y-3">
                 {ARTICLES.map((article, idx) => (
@@ -544,7 +591,7 @@ export default function StudyAbroad() {
                 ))}
               </ul>
               <Link to="/study-abroad/articles" className="mt-4 text-primary-500 font-medium text-[13px] flex items-center gap-1 hover:gap-2 transition-all">
-                查看更多 <ChevronRight className="w-4 h-4" />
+                {TEXT_RESOURCES.articles.viewMore} <ChevronRight className="w-4 h-4" />
               </Link>
             </div>
           </div>
@@ -554,9 +601,9 @@ export default function StudyAbroad() {
         <section className="mb-14">
           <div className="text-center mb-8">
             <h2 className="text-[22px] font-bold text-gray-900 flex items-center justify-center gap-2 mb-2">
-              <Sparkles className="w-6 h-6 text-primary-500" /> 他们的故事，也是你的未来
+              <Sparkles className="w-6 h-6 text-primary-500" /> {TEXT_RESOURCES.stories.title}
             </h2>
-            <p className="text-[13px] text-gray-400">真实学员的申请历程与成长蜕变</p>
+            <p className="text-[13px] text-gray-400">{TEXT_RESOURCES.stories.subtitle}</p>
           </div>
           <div className="space-y-6">
             {uiConfig.studentStories.map((story, idx) => (
@@ -599,7 +646,7 @@ export default function StudyAbroad() {
           </div>
           <div className="text-center mt-6">
             <Link to="/study-abroad/offers" className="inline-flex items-center gap-2 text-[14px] font-medium text-primary-500 hover:gap-3 transition-all">
-              查看更多学员故事 <ArrowRight className="w-4 h-4" />
+              {TEXT_RESOURCES.stories.viewMore} <ArrowRight className="w-4 h-4" />
             </Link>
           </div>
         </section>
@@ -630,7 +677,7 @@ export default function StudyAbroad() {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                transition={{ duration: 0.8 }}
+                transition={{ duration: 0.35 }}
               >
                 <img
                   src={uiConfig.newcomerQuotes[quoteIndex].image}
@@ -684,11 +731,11 @@ export default function StudyAbroad() {
         <section className="mb-14">
           <div className="flex items-center justify-between mb-2">
             <h2 className="text-[22px] font-bold text-gray-900 flex items-center gap-2">
-              <Star className="w-6 h-6 text-primary-500" /> 八大维度背景提升
+              <Star className="w-6 h-6 text-primary-500" /> {TEXT_RESOURCES.services.title}
             </h2>
-            <Link to="/study-abroad/background" className="text-[14px] text-gray-500 hover:text-primary-500 font-medium flex items-center transition-colors">了解全部 <ChevronRight className="w-4 h-4 ml-1" /></Link>
+            <Link to="/study-abroad/background" className="text-[14px] text-gray-500 hover:text-primary-500 font-medium flex items-center transition-colors">{TEXT_RESOURCES.services.viewAll} <ChevronRight className="w-4 h-4 ml-1" /></Link>
           </div>
-          <p className="text-[13px] text-gray-400 mb-6">八大维度全面提升申请竞争力 · 与旗下实习/创赛/保研业务深度联动</p>
+          <p className="text-[13px] text-gray-400 mb-6">{TEXT_RESOURCES.services.subtitle}</p>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {uiConfig.serviceCards.map((service: { id: string; icon: string; color: string; title: string; subtitle: string; description: string; image: string }, idx: number) => {
               const IconComp = ICON_MAP[service.icon] || Star;
@@ -718,36 +765,42 @@ export default function StudyAbroad() {
 
         {/* ====== CTA 底部大横幅 ====== */}
         <section className="mb-6">
-          <div className="bg-gray-900 rounded-[24px] overflow-hidden relative">
-            <div className="absolute inset-0 bg-gradient-to-r from-primary-500/15 via-transparent to-purple-600/10" />
-            <div className="absolute top-0 right-0 w-80 h-80 bg-primary-500/10 rounded-full blur-3xl" />
-            <div className="absolute bottom-0 left-0 w-60 h-60 bg-purple-500/10 rounded-full blur-3xl" />
+          <div className="bg-gradient-to-br from-indigo-950 via-purple-900 to-violet-950 rounded-[24px] overflow-hidden relative">
+            {/* 鲜亮装饰性渐变 */}
+            <div className="absolute inset-0 bg-gradient-to-r from-violet-500/20 via-transparent to-fuchsia-500/15" />
+            <div className="absolute top-0 right-0 w-96 h-96 bg-violet-500/20 rounded-full blur-3xl" />
+            <div className="absolute bottom-0 left-0 w-72 h-72 bg-fuchsia-500/15 rounded-full blur-3xl" />
             <div className="relative z-10 p-10 md:p-14 flex flex-col md:flex-row items-center justify-between gap-8">
               <div className="text-white max-w-xl">
                 <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 text-[12px] font-medium mb-4 border border-white/15">
-                  <Zap className="w-3.5 h-3.5 text-yellow-400" /> AI 智能选校
+                  <Zap className="w-3.5 h-3.5 text-yellow-400" /> {TEXT_RESOURCES.cta.aiBadge}
                 </div>
                 <h2 className="text-[26px] md:text-[32px] font-black mb-4 leading-tight">
-                  3 分钟获取专属选校报告
+                  {TEXT_RESOURCES.cta.title}
                 </h2>
                 <p className="text-[15px] text-gray-300 leading-relaxed">
-                  输入你的 GPA、语言成绩、本科院校，AI 自动匹配 <span className="text-red-400 font-bold">冲刺校</span> / <span className="text-yellow-400 font-bold">匹配校</span> / <span className="text-green-400 font-bold">保底校</span>，生成可视化选校方案。
+                  {TEXT_RESOURCES.cta.description}
                 </p>
                 {/* 信任标识 */}
                 <div className="flex flex-wrap items-center gap-3 mt-4">
                   <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/10 border border-white/15 text-[12px] text-white/80 font-medium">
-                    <Users className="w-3.5 h-3.5 text-primary-400" /> 已服务 10,000+ 学员
+                    <Users className="w-3.5 h-3.5 text-primary-400" /> 已服务 {TEXT_RESOURCES.cta.servedStudents} 学员
                   </span>
                   <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/10 border border-white/15 text-[12px] text-white/80 font-medium">
-                    <Star className="w-3.5 h-3.5 text-yellow-400" /> 满意度 98%
+                    <Star className="w-3.5 h-3.5 text-yellow-400" /> 满意度 {TEXT_RESOURCES.cta.satisfactionRate}
                   </span>
                   <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/10 border border-white/15 text-[12px] text-white/80 font-medium">
                     <Shield className="w-3.5 h-3.5 text-green-400" /> 专业顾问 1v1
                   </span>
                 </div>
               </div>
-              <Link to="/study-abroad/programs" className="shrink-0 bg-primary-500 hover:bg-primary-700 text-white px-10 py-5 rounded-2xl font-bold text-[16px] transition-all flex items-center gap-3 shadow-xl shadow-primary-500/25 hover:shadow-2xl hover:shadow-primary-500/30">
-                <Rocket className="w-5 h-5" /> 免费智能选校
+              <Link to="/study-abroad/programs"
+                className="shrink-0 bg-gradient-to-r from-violet-500 to-purple-600 hover:from-violet-400 hover:to-purple-500 text-white px-12 py-5 rounded-2xl font-bold text-[16px]
+                transition-all flex items-center gap-3 shadow-xl shadow-violet-500/30
+                hover:shadow-2xl hover:shadow-violet-500/40 hover:-translate-y-0.5
+                active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-white/40 focus-visible:outline-none"
+              >
+                <Rocket className="w-5 h-5" /> {TEXT_RESOURCES.cta.btnText}
               </Link>
             </div>
           </div>
@@ -767,14 +820,14 @@ export default function StudyAbroad() {
           >
             <Link
               to="/mentors"
-              className="group flex items-center gap-3 bg-primary-500 hover:bg-primary-600 text-white pl-5 pr-6 py-3.5 rounded-full font-bold text-[14px] shadow-2xl shadow-primary-500/30 hover:shadow-primary-500/40 transition-all hover:-translate-y-0.5 active:translate-y-0"
+              className="group flex items-center gap-3 bg-gradient-to-r from-violet-500 to-purple-600 hover:from-violet-400 hover:to-purple-500 text-white pl-6 pr-7 py-4 rounded-full font-bold text-[14px] shadow-2xl shadow-violet-500/30 hover:shadow-violet-500/40 transition-all hover:-translate-y-0.5 active:translate-y-0"
             >
               <span className="w-9 h-9 rounded-full bg-white/20 flex items-center justify-center shrink-0">
                 <Calendar className="w-4.5 h-4.5" />
               </span>
               <span className="flex flex-col leading-tight">
-                <span className="text-[14px]">免费预约留学咨询</span>
-                <span className="text-[10px] text-white/70 font-normal">资深顾问 · 1v1 规划</span>
+                <span className="text-[14px]">{TEXT_RESOURCES.cta.floatingCta}</span>
+                <span className="text-[10px] text-white/70 font-normal">{TEXT_RESOURCES.cta.floatingSubtitle}</span>
               </span>
             </Link>
           </motion.div>
@@ -789,14 +842,17 @@ export default function StudyAbroad() {
             animate={{ y: 0 }}
             exit={{ y: 100 }}
             transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-            className="fixed bottom-0 left-0 right-0 z-40 md:hidden bg-white/95 backdrop-blur-md border-t border-gray-200 px-4 py-3 safe-area-bottom"
+            className="fixed bottom-0 left-0 right-0 z-40 md:hidden bg-white/95 backdrop-blur-md border-t border-gray-200 px-4 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))]"
           >
             <Link
               to="/mentors"
-              className="flex items-center justify-center gap-2 w-full bg-primary-500 hover:bg-primary-600 text-white py-3 rounded-xl font-bold text-[14px] shadow-lg shadow-primary-500/25 transition-all active:scale-[0.98]"
+              className="flex items-center justify-center gap-2 w-full bg-gradient-to-r from-violet-500 to-purple-600 hover:from-violet-400 hover:to-purple-500 text-white py-3.5 rounded-xl font-bold text-[14px]
+                shadow-xl shadow-violet-500/30 transition-all
+                hover:shadow-2xl hover:shadow-violet-500/40 active:scale-[0.98]
+                focus-visible:ring-2 focus-visible:ring-violet-400/50 focus-visible:outline-none"
             >
               <Phone className="w-4 h-4" />
-              免费预约留学咨询
+              {TEXT_RESOURCES.cta.floatingCta}
             </Link>
           </motion.div>
         )}

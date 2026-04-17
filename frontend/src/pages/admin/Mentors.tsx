@@ -2,10 +2,14 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import {
   Search, CheckCircle, XCircle, Clock, Eye,
-  Star, Award, ChevronLeft, ChevronRight
+  Star, Award, ChevronLeft, ChevronRight, Loader2
 } from 'lucide-react';
 import http from '@/api/http';
 import Tag from '@/components/ui/Tag';
+import { TableSkeleton } from '../../components/ui/Skeleton';
+import ErrorState from '../../components/ui/ErrorState';
+import ConfirmDialog from '@/components/ui/ConfirmDialog';
+import { showToast } from '@/components/ui/ToastContainer';
 
 // ====== 导师资质审核 ======
 // 商业级要求：导师认证审核、资质验证
@@ -40,6 +44,8 @@ export default function AdminMentors() {
   const pageSize = 10;
   const [reviewModal, setReviewModal] = useState<MentorRecord | null>(null);
   const [reviewRemark, setReviewRemark] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const mockMentors: MentorRecord[] = [
     { id: 1, user_id: 10, name: '陈经理', title: '某头部互联网大厂HRD', avatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=100', bio: '10年以上人力资源管理经验', expertise: ['简历优化', '面试辅导', 'HR视角'], rating: 4.9, price: 299, verify_status: 'approved', verify_remark: '', created_at: '2026-03-05' },
@@ -58,6 +64,7 @@ export default function AdminMentors() {
   async function fetchMentors() {
     try {
       setLoading(true);
+      setError(null);
       const res = await http.get('/admin/mentors', { params: { page, pageSize, status: statusFilter, keyword: search } });
       if (res.data?.code === 200 && res.data.data) {
         setMentors(res.data.data.list || res.data.data.mentors || []);
@@ -78,22 +85,44 @@ export default function AdminMentors() {
     if (search) filtered = filtered.filter(m => m.name.includes(search) || m.title.includes(search));
     setMentors(filtered);
     setTotal(filtered.length);
+    setError(null);
   }
 
   async function handleReview(mentorId: number, status: 'approved' | 'rejected') {
     try {
       await http.put(`/admin/mentors/${mentorId}/verify`, { status, remark: reviewRemark });
+      showToast({
+        type: status === 'approved' ? 'success' : 'warning',
+        title: status === 'approved' ? '导师认证已通过' : '导师认证已驳回',
+        message: reviewRemark ? `备注：${reviewRemark}` : undefined
+      });
     } catch {
       setMentors(prev => prev.map(m =>
         m.id === mentorId ? { ...m, verify_status: status, verify_remark: reviewRemark } : m
       ));
+      showToast({
+        type: status === 'approved' ? 'success' : 'warning',
+        title: status === 'approved' ? '导师认证已通过' : '导师认证已驳回'
+      });
     }
     setReviewModal(null);
     setReviewRemark('');
+    fetchMentors();
   }
 
   const totalPages = Math.ceil(total / pageSize);
   const pendingCount = mockMentors.filter(m => m.verify_status === 'pending').length;
+
+  if (loading) return <div className="space-y-6"><TableSkeleton rows={6} cols={4} /></div>;
+  if (error) return (
+    <div className="space-y-6">
+      <ErrorState
+        message={error}
+        onRetry={() => { setError(null); fetchMentors(); }}
+        onLoadMockData={() => { applyMock(); }}
+      />
+    </div>
+  );
 
   return (
     <div className="space-y-6">

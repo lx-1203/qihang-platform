@@ -1,11 +1,15 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import {
   Search, Briefcase, Video, Eye, EyeOff,
-  MoreVertical, Loader2
+  MoreVertical, Loader2,
+  ArrowUpDown, ArrowUp, ArrowDown
 } from 'lucide-react';
 import http from '@/api/http';
 import Tag from '@/components/ui/Tag';
+import { showToast } from '@/components/ui/ToastContainer';
+import ErrorState from '../../components/ui/ErrorState';
+import EmptyState from '../../components/ui/EmptyState';
 
 // ====== 职位+课程内容管理 ======
 // 数据从 /api/admin/jobs 和 /api/admin/courses 获取
@@ -45,6 +49,10 @@ export default function AdminContent() {
   const [jobsLoading, setJobsLoading] = useState(true);
   const [coursesLoading, setCoursesLoading] = useState(true);
   const [error, setError] = useState('');
+
+  // 排序状态
+  const [sortField, setSortField] = useState<string>('created_at');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
 
   // 加载职位列表
   async function fetchJobs(keyword = '') {
@@ -103,8 +111,10 @@ export default function AdminContent() {
     try {
       await http.put(`/admin/jobs/${id}/status`, { status: newStatus });
       setJobs(prev => prev.map(j => j.id === id ? { ...j, status: newStatus } : j));
+      showToast({ type: 'success', title: newStatus === 'active' ? '职位已上架' : '职位已下架' });
     } catch {
       setError('操作失败，请重试');
+      showToast({ type: 'error', title: '操作失败，请重试' });
     }
     setActionMenu(null);
   }
@@ -117,11 +127,46 @@ export default function AdminContent() {
     try {
       await http.put(`/admin/courses/${id}/status`, { status: newStatus });
       setCourses(prev => prev.map(c => c.id === id ? { ...c, status: newStatus } : c));
+      showToast({ type: 'success', title: newStatus === 'active' ? '课程已上架' : '课程已下架' });
     } catch {
       setError('操作失败，请重试');
+      showToast({ type: 'error', title: '操作失败，请重试' });
     }
     setActionMenu(null);
   }
+
+  // 排序处理
+  const handleSort = (field: string) => {
+    if (sortField === field) {
+      setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortOrder('asc');
+    }
+  };
+
+  // 排序图标
+  const SortIcon = ({ field }: { field: string }) => {
+    if (sortField !== field) return <ArrowUpDown className="w-3.5 h-3.5 text-gray-400" />;
+    return sortOrder === 'asc'
+      ? <ArrowUp className="w-3.5 h-3.5 text-indigo-600" />
+      : <ArrowDown className="w-3.5 h-3.5 text-indigo-600" />;
+  };
+
+  // 排序后的列表
+  const sortedList = useMemo(() => {
+    const list = currentList;
+    if (!sortField || !list.length) return list;
+    return [...list].sort((a: Record<string, unknown>, b: Record<string, unknown>) => {
+      let aVal = a[sortField];
+      let bVal = b[sortField];
+      if (typeof aVal === 'string') aVal = aVal.toLowerCase();
+      if (typeof bVal === 'string') bVal = bVal.toLowerCase();
+      if (aVal < bVal) return sortOrder === 'asc' ? -1 : 1;
+      if (aVal > bVal) return sortOrder === 'asc' ? 1 : -1;
+      return 0;
+    });
+  }, [currentList, sortField, sortOrder]);
 
   const isLoading = tab === 'jobs' ? jobsLoading : coursesLoading;
   const currentList = tab === 'jobs' ? jobs : courses;
@@ -135,9 +180,9 @@ export default function AdminContent() {
 
       {/* 错误提示 */}
       {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
-          {error}
-          <button onClick={() => setError('')} className="ml-2 text-red-500 hover:text-red-700">×</button>
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm flex items-center justify-between">
+          <span>{error}</span>
+          <button onClick={() => setError('')} className="ml-2 text-red-500 hover:text-red-700 font-bold">&times;</button>
         </div>
       )}
 
@@ -186,11 +231,12 @@ export default function AdminContent() {
       )}
 
       {/* 空状态 */}
-      {!isLoading && currentList.length === 0 && (
-        <div className="text-center py-20 text-gray-400">
-          <p className="text-lg">暂无{tab === 'jobs' ? '职位' : '课程'}数据</p>
-          <p className="text-sm mt-1">数据将在有内容发布后显示</p>
-        </div>
+      {!isLoading && currentList.length === 0 && !error && (
+        <EmptyState
+          icon={tab === 'jobs' ? Briefcase : Video}
+          title={`暂无${tab === 'jobs' ? '职位' : '课程'}数据`}
+          description={tab === 'jobs' ? '企业发布职位后将在此显示' : '导师创建课程后将在此显示'}
+        />
       )}
 
       {/* 职位列表 */}
