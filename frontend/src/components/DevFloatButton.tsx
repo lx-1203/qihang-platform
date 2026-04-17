@@ -37,11 +37,11 @@ const QUICK_LINKS: { group: string; color: string; links: QuickLink[] }[] = [
   },
   {
     group: '学生',
-    color: 'text-purple-600',
+    color: 'text-primary-600',
     links: [
-      { path: '/student/profile', label: '个人资料', icon: User, color: 'text-purple-600' },
-      { path: '/student/applications', label: '我的投递', icon: Briefcase, color: 'text-purple-600' },
-      { path: '/student/appointments', label: '我的预约', icon: GraduationCap, color: 'text-purple-600' },
+      { path: '/student/profile', label: '个人资料', icon: User, color: 'text-primary-600' },
+      { path: '/student/applications', label: '我的投递', icon: Briefcase, color: 'text-primary-600' },
+      { path: '/student/appointments', label: '我的预约', icon: GraduationCap, color: 'text-primary-600' },
     ],
   },
   {
@@ -145,7 +145,7 @@ export default function DevFloatButton() {
                       { role: 'admin' as const, label: '管理员', color: 'bg-red-600 hover:bg-red-700' },
                       { role: 'company' as const, label: '企业', color: 'bg-blue-600 hover:bg-blue-700' },
                       { role: 'mentor' as const, label: '导师', color: 'bg-emerald-600 hover:bg-emerald-700' },
-                      { role: 'student' as const, label: '学生', color: 'bg-purple-600 hover:bg-purple-700' },
+                      { role: 'student' as const, label: '学生', color: 'bg-primary-600 hover:bg-primary-700' },
                     ]).map(item => (
                       <button
                         key={item.role}

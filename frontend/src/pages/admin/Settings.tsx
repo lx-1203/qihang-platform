@@ -268,8 +268,8 @@ export default function AdminSettings() {
                   className="w-full flex items-center justify-between px-6 py-4 hover:bg-gray-50 transition-colors"
                 >
                   <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 bg-indigo-50 rounded-lg flex items-center justify-center">
-                      <GroupIcon className="w-5 h-5 text-indigo-600" />
+                    <div className="w-9 h-9 bg-primary-50 rounded-lg flex items-center justify-center">
+                      <GroupIcon className="w-5 h-5 text-primary-600" />
                     </div>
                     <div className="text-left">
                       <h3 className="text-sm font-bold text-gray-900">{groupInfo.label}</h3>
@@ -300,7 +300,7 @@ export default function AdminSettings() {
                                   <select
                                     value={editValue}
                                     onChange={e => setEditValue(e.target.value)}
-                                    className="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
+                                    className="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 outline-none"
                                   >
                                     <option value="true">开启</option>
                                     <option value="false">关闭</option>
@@ -317,7 +317,7 @@ export default function AdminSettings() {
                                       type="text"
                                       value={editValue}
                                       onChange={e => setEditValue(e.target.value)}
-                                      className="border border-gray-200 rounded-lg px-3 py-2 text-sm w-32 font-mono focus:ring-2 focus:ring-indigo-500 outline-none"
+                                      className="border border-gray-200 rounded-lg px-3 py-2 text-sm w-32 font-mono focus:ring-2 focus:ring-primary-500 outline-none"
                                     />
                                   </div>
                                 ) : cfg.config_type === 'json' ? (
@@ -326,7 +326,7 @@ export default function AdminSettings() {
                                       value={editValue}
                                       onChange={e => { setEditValue(e.target.value); setJsonError(null); }}
                                       rows={6}
-                                      className={`w-full border rounded-lg px-3 py-2 text-sm font-mono resize-y focus:ring-2 focus:ring-indigo-500 outline-none max-w-lg ${
+                                      className={`w-full border rounded-lg px-3 py-2 text-sm font-mono resize-y focus:ring-2 focus:ring-primary-500 outline-none max-w-lg ${
                                         jsonError ? 'border-red-300 bg-red-50' : 'border-gray-200'
                                       }`}
                                       placeholder='{"key": "value"}'
@@ -339,7 +339,7 @@ export default function AdminSettings() {
                                       type="url"
                                       value={editValue}
                                       onChange={e => setEditValue(e.target.value)}
-                                      className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none max-w-lg w-full"
+                                      className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 outline-none max-w-lg w-full"
                                       placeholder="输入图片URL"
                                     />
                                     {editValue && (
@@ -353,7 +353,7 @@ export default function AdminSettings() {
                                     type="text"
                                     value={editValue}
                                     onChange={e => setEditValue(e.target.value)}
-                                    className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none max-w-lg w-full"
+                                    className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 outline-none max-w-lg w-full"
                                   />
                                 )}
                                 <div className="flex items-center gap-2">
@@ -401,7 +401,7 @@ export default function AdminSettings() {
                               )}
                               <button
                                 onClick={() => { setEditingKey(cfg.config_key); setEditValue(cfg.config_value); }}
-                                className="p-2 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-indigo-600 transition-colors"
+                                className="p-2 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-primary-600 transition-colors"
                               >
                                 <Edit3 className="w-4 h-4" />
                               </button>
@@ -456,7 +456,7 @@ export default function AdminSettings() {
                       log.action === 'create' ? 'bg-green-100 text-green-700' :
                       log.action === 'update' ? 'bg-blue-100 text-blue-700' :
                       log.action === 'delete' ? 'bg-red-100 text-red-700' :
-                      log.action === 'login' ? 'bg-purple-100 text-purple-700' : 'bg-gray-100 text-gray-700'
+                      log.action === 'login' ? 'bg-primary-100 text-primary-700' : 'bg-gray-100 text-gray-700'
                     }`}>
                       {ACTION_MAP[log.action]?.charAt(0) || log.action.charAt(0)}
                     </div>

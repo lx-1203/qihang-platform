@@ -10,7 +10,7 @@
       "id": "slide-1",
       "title": "你的职业发展，\n从启航开始",
       "subtitle": "连接梦想与机遇，助力每一位大学生迈向理想职业",
-      "gradient": "from-violet-600 via-purple-600 to-indigo-700",
+      "gradient": "from-primary-600 via-primary-700 to-primary-800",
       "cta": "开始探索",
       "ctaLink": "/jobs"
     },
@@ -18,7 +18,7 @@
       "id": "slide-2",
       "title": "大咖导师\n1对1辅导",
       "subtitle": "简历精修、模拟面试、职业规划，帮你拿到心仪Offer",
-      "gradient": "from-indigo-500 via-blue-600 to-cyan-700",
+      "gradient": "from-primary-500 via-blue-600 to-cyan-700",
       "cta": "找导师",
       "ctaLink": "/mentors"
     },
@@ -38,16 +38,16 @@
       "desc": "名企实习/校招",
       "icon": "Briefcase",
       "link": "/jobs",
-      "color": "text-indigo-600",
-      "bg": "bg-gradient-to-br from-indigo-50 to-indigo-100/70"
+      "color": "text-primary-600",
+      "bg": "bg-gradient-to-br from-primary-50 to-primary-100/70"
     },
     {
       "label": "大咖1v1",
       "desc": "导师辅导预约",
       "icon": "MessageCircle",
       "link": "/mentors",
-      "color": "text-violet-600",
-      "bg": "bg-gradient-to-br from-violet-50 to-violet-100/70"
+      "color": "text-primary-600",
+      "bg": "bg-gradient-to-br from-teal-50 to-primary-100/70"
     },
     {
       "label": "干货资料库",
@@ -77,8 +77,8 @@
   ],
 
   "courseColors": [
-    "from-violet-400 to-purple-500",
-    "from-indigo-400 to-blue-500",
+    "from-primary-400 to-primary-500",
+    "from-blue-400 to-blue-500",
     "from-fuchsia-400 to-pink-500",
     "from-amber-400 to-orange-500"
   ],
@@ -114,11 +114,11 @@
     {
       "role": "对学生",
       "icon": "GraduationCap",
-      "color": "text-purple-600",
-      "bg": "bg-purple-50",
-      "border": "border-purple-100",
-      "gradientFrom": "from-purple-400",
-      "gradientTo": "to-purple-600",
+      "color": "text-primary-600",
+      "bg": "bg-primary-50",
+      "border": "border-primary-100",
+      "gradientFrom": "from-primary-400",
+      "gradientTo": "to-primary-600",
       "points": [
         "一站搜索校招/实习/社招岗位",
         "1v1预约行业大咖导师辅导",

@@ -25,7 +25,7 @@ const STATUS_CONFIG: Record<StatusType, { label: string; icon: typeof Clock; cla
   dev: {
     label: '开发中',
     icon: Rocket,
-    className: 'bg-purple-50 text-purple-700 border-purple-200',
+    className: 'bg-primary-50 text-primary-700 border-primary-200',
   },
   locked: {
     label: '需认证',

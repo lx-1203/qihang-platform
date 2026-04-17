@@ -8,6 +8,7 @@ import {
 import http from '@/api/http';
 import { showToast } from '@/components/ui/ToastContainer';
 import TagComponent from '@/components/ui/Tag';
+import ErrorState from '@/components/ui/ErrorState';
 
 // 人才数据结构（匹配后端 /api/company/talent 返回）
 interface TalentItem {
@@ -65,6 +66,7 @@ export default function TalentSearch() {
     page: 1, pageSize: 10, total: 0, totalPages: 0
   });
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   // 搜索条件
   const [keyword, setKeyword] = useState('');
@@ -118,6 +120,7 @@ export default function TalentSearch() {
   const fetchTalents = async () => {
     try {
       setLoading(true);
+      setError(null);
       const params: Record<string, string | number> = {
         page: pagination.page,
         pageSize: pagination.pageSize,
@@ -135,9 +138,11 @@ export default function TalentSearch() {
           total: data.pagination.total,
           totalPages: data.pagination.totalPages,
         }));
+      } else {
+        setError('获取人才数据失败，服务器返回异常');
       }
-    } catch (err) {
-      console.error('搜索人才失败:', err);
+    } catch {
+      setError('搜索人才失败，请检查网络连接后重试');
     } finally {
       setLoading(false);
     }
@@ -265,6 +270,8 @@ export default function TalentSearch() {
           <Loader2 className="w-8 h-8 text-primary-600 animate-spin" />
           <span className="ml-3 text-gray-500">搜索中...</span>
         </div>
+      ) : error ? (
+        <ErrorState message={error} onRetry={fetchTalents} />
       ) : talents.length === 0 ? (
         <div className="bg-white rounded-xl p-12 shadow-sm border border-gray-100 text-center">
           <Users className="w-16 h-16 text-gray-200 mx-auto mb-4" />

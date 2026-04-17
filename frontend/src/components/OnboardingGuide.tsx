@@ -50,8 +50,8 @@ const ROLE_GUIDES: Record<GuideRole, { welcome: string; subtitle: string; steps:
         title: '第一步：完善个人资料',
         desc: '上传头像、填写教育背景和技能特长，完善的资料能让企业更快注意到你。',
         icon: User,
-        color: 'text-purple-600',
-        bg: 'bg-purple-50',
+        color: 'text-primary-600',
+        bg: 'bg-primary-50',
         link: '/student/profile',
         linkText: '去完善资料',
         tips: ['填写真实学校和专业信息', '添加至少3个技能标签', '上传简历文件（支持PDF）'],
@@ -126,8 +126,8 @@ const ROLE_GUIDES: Record<GuideRole, { welcome: string; subtitle: string; steps:
         title: '第三步：管理简历投递',
         desc: '在简历池中查看所有投递，使用看板式流程管理（待筛选→面试→录用）。',
         icon: FileText,
-        color: 'text-indigo-600',
-        bg: 'bg-indigo-50',
+        color: 'text-primary-600',
+        bg: 'bg-primary-50',
         link: '/company/resumes',
         linkText: '查看简历池',
         tips: ['及时查看新投递，避免人才流失', '使用状态流转追踪每位候选人', '可直接发起面试邀请'],
@@ -136,8 +136,8 @@ const ROLE_GUIDES: Record<GuideRole, { welcome: string; subtitle: string; steps:
         title: '第四步：搜索人才库',
         desc: '主动搜索平台注册学生，按学校、专业、技能等条件精准筛选。',
         icon: Search,
-        color: 'text-purple-600',
-        bg: 'bg-purple-50',
+        color: 'text-primary-600',
+        bg: 'bg-primary-50',
         link: '/company/talent',
         linkText: '搜索人才',
         tips: ['支持多维度组合筛选', '收藏优质候选人以便后续联系'],
@@ -182,8 +182,8 @@ const ROLE_GUIDES: Record<GuideRole, { welcome: string; subtitle: string; steps:
         title: '第四步：查看评价 & 数据',
         desc: '关注学生评价反馈，查看工作台数据报表，持续优化辅导质量。',
         icon: Star,
-        color: 'text-purple-600',
-        bg: 'bg-purple-50',
+        color: 'text-primary-600',
+        bg: 'bg-primary-50',
         link: '/mentor/dashboard',
         linkText: '查看数据',
         tips: ['高评分导师会获得平台推荐加权', '积极回复学生评价展示专业态度'],
@@ -198,8 +198,8 @@ const ROLE_GUIDES: Record<GuideRole, { welcome: string; subtitle: string; steps:
         title: '数据监控',
         desc: '查看平台整体运营数据：用户增长、活跃度、投递量等核心指标。',
         icon: BarChart,
-        color: 'text-indigo-600',
-        bg: 'bg-indigo-50',
+        color: 'text-primary-600',
+        bg: 'bg-primary-50',
         link: '/admin/dashboard',
         linkText: '查看数据',
         tips: ['关注日注册量和周活跃趋势', '异常数据波动需及时排查'],
@@ -305,7 +305,7 @@ export default function OnboardingGuide({ role, inline = false, bubbleMode = fal
     const rect = target.getBoundingClientRect();
 
     // 高亮目标元素
-    target.style.boxShadow = '0 0 0 3px rgba(99, 102, 241, 0.4), 0 0 20px rgba(99, 102, 241, 0.2)';
+    target.style.boxShadow = '0 0 0 3px rgba(20, 184, 166, 0.4), 0 0 20px rgba(20, 184, 166, 0.2)';
     target.style.position = 'relative';
     target.style.zIndex = '9992';
 
@@ -403,7 +403,7 @@ export default function OnboardingGuide({ role, inline = false, bubbleMode = fal
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.8 }}
             transition={bubbleTransition}
-            className="fixed z-[9991] w-[300px] bg-white rounded-xl shadow-2xl border border-indigo-100 overflow-hidden"
+            className="fixed z-[9991] w-[300px] bg-white rounded-xl shadow-2xl border border-primary-100 overflow-hidden"
             style={{ top: bubblePos.top, left: bubblePos.left }}
           >
             {/* 箭头指示器 - 根据 position 动态定位 */}
@@ -411,17 +411,17 @@ export default function OnboardingGuide({ role, inline = false, bubbleMode = fal
               const pos = step?.position || 'bottom';
               // 根据气泡相对于目标的位置，决定箭头指向目标的反方向
               const arrowStyles: Record<string, string> = {
-                top: 'absolute w-3 h-3 bg-white border-l border-t border-indigo-100 rotate-45 -bottom-1.5 left-1/2 -translate-x-1/2',      // 气泡在上方，箭头朝下
-                bottom: 'absolute w-3 h-3 bg-white border-l border-t border-indigo-100 rotate-45 -top-1.5 left-1/2 -translate-x-1/2',   // 气泡在下方，箭头朝上
-                left: 'absolute w-3 h-3 bg-white border-l border-t border-indigo-100 rotate-45 -right-1.5 top-1/2 -translate-y-1/2',    // 气泡在左方，箭头朝右
-                right: 'absolute w-3 h-3 bg-white border-l border-t border-indigo-100 rotate-45 -left-1.5 top-1/2 -translate-y-1/2',    // 气泡在右方，箭头朝左
+                top: 'absolute w-3 h-3 bg-white border-l border-t border-primary-100 rotate-45 -bottom-1.5 left-1/2 -translate-x-1/2',      // 气泡在上方，箭头朝下
+                bottom: 'absolute w-3 h-3 bg-white border-l border-t border-primary-100 rotate-45 -top-1.5 left-1/2 -translate-x-1/2',   // 气泡在下方，箭头朝上
+                left: 'absolute w-3 h-3 bg-white border-l border-t border-primary-100 rotate-45 -right-1.5 top-1/2 -translate-y-1/2',    // 气泡在左方，箭头朝右
+                right: 'absolute w-3 h-3 bg-white border-l border-t border-primary-100 rotate-45 -left-1.5 top-1/2 -translate-y-1/2',    // 气泡在右方，箭头朝左
               };
               return <div className={arrowStyles[pos] || arrowStyles.bottom} />;
             })()}
 
             {/* 内容区 */}
             <div className="p-4">
-              <div className={`w-10 h-10 ${step?.bg || 'bg-indigo-50'} rounded-lg flex items-center justify-center mb-3`}>
+              <div className={`w-10 h-10 ${step?.bg || 'bg-primary-50'} rounded-lg flex items-center justify-center mb-3`}>
                 {step && <step.icon className={`w-5 h-5 ${step.color}`} />}
               </div>
               <h4 className="text-sm font-bold text-gray-900 mb-1">
@@ -433,7 +433,7 @@ export default function OnboardingGuide({ role, inline = false, bubbleMode = fal
                 <Link
                   to={step.link}
                   onClick={handleClose}
-                  className="inline-flex items-center gap-1 text-xs font-medium text-indigo-600 hover:text-indigo-700"
+                  className="inline-flex items-center gap-1 text-xs font-medium text-primary-600 hover:text-primary-700"
                 >
                   {step.linkText} <ChevronRight className="w-3 h-3" />
                 </Link>
@@ -472,14 +472,14 @@ export default function OnboardingGuide({ role, inline = false, bubbleMode = fal
                     setCurrentStep(prev => prev + 1);
                     setBubblePos(null);
                   }}
-                  className="text-xs font-medium text-indigo-600 hover:text-indigo-700"
+                  className="text-xs font-medium text-primary-600 hover:text-primary-700"
                 >
                   下一步 <ChevronRight className="w-3 h-3 inline ml-0.5" />
                 </button>
               ) : (
                 <button
                   onClick={handleClose}
-                  className="text-xs font-medium bg-indigo-600 text-white px-3 py-1 rounded-md hover:bg-indigo-700"
+                  className="text-xs font-medium bg-primary-600 text-white px-3 py-1 rounded-md hover:bg-primary-700"
                 >
                   完成
                 </button>

@@ -32,10 +32,10 @@ interface ResumeCard {
   avatar: string;
 }
 
-const STATUS_CONFIG: Record<ResumeStatus, { label: string; color: string; bgCard: string; borderColor: string; headerBg: string; count_bg: string; tagVariant: 'yellow' | 'blue' | 'purple' | 'green' | 'gray' }> = {
+const STATUS_CONFIG: Record<ResumeStatus, { label: string; color: string; bgCard: string; borderColor: string; headerBg: string; count_bg: string; tagVariant: 'yellow' | 'blue' | 'primary' | 'green' | 'gray' }> = {
   pending:    { label: '待筛选', color: 'text-amber-700',  bgCard: 'bg-amber-50/50',  borderColor: 'border-amber-200', headerBg: 'bg-amber-50', count_bg: 'bg-amber-100 text-amber-700', tagVariant: 'yellow' },
   viewed:     { label: '已查看', color: 'text-blue-700',   bgCard: 'bg-blue-50/50',   borderColor: 'border-blue-200',  headerBg: 'bg-blue-50',  count_bg: 'bg-blue-100 text-blue-700', tagVariant: 'blue' },
-  interview:  { label: '面试中', color: 'text-purple-700', bgCard: 'bg-purple-50/50', borderColor: 'border-purple-200', headerBg: 'bg-purple-50', count_bg: 'bg-purple-100 text-purple-700', tagVariant: 'purple' },
+  interview:  { label: '面试中', color: 'text-primary-700', bgCard: 'bg-primary-50/50', borderColor: 'border-primary-200', headerBg: 'bg-primary-50', count_bg: 'bg-primary-100 text-primary-700', tagVariant: 'primary' },
   offered:    { label: '已录用', color: 'text-green-700',  bgCard: 'bg-green-50/50',  borderColor: 'border-green-200', headerBg: 'bg-green-50', count_bg: 'bg-green-100 text-green-700', tagVariant: 'green' },
   rejected:   { label: '已淘汰', color: 'text-gray-500',   bgCard: 'bg-gray-50/50',   borderColor: 'border-gray-200',  headerBg: 'bg-gray-50',  count_bg: 'bg-gray-200 text-gray-600', tagVariant: 'gray' },
 };
@@ -63,25 +63,8 @@ export default function CompanyResumePool() {
   const [rejectTarget, setRejectTarget] = useState<{ id: number; name: string } | null>(null);
   const [rejectLoading, setRejectLoading] = useState(false);
 
-  // 模拟简历数据
-  const mockResumes: ResumeCard[] = [
-    { id: 1, studentName: '张明远', university: '清华大学', major: '计算机科学与技术', degree: '硕士', jobTitle: '前端开发工程师', status: 'pending', appliedAt: '2026-04-07 10:30', phone: '138****1234', email: 'zhang@example.com', avatar: '' },
-    { id: 2, studentName: '李思涵', university: '北京大学', major: '软件工程', degree: '本科', jobTitle: 'Java后端开发工程师', status: 'pending', appliedAt: '2026-04-07 09:15', phone: '139****5678', email: 'li@example.com', avatar: '' },
-    { id: 3, studentName: '王子豪', university: '浙江大学', major: '人工智能', degree: '硕士', jobTitle: 'AIGC算法研究员', status: 'pending', appliedAt: '2026-04-06 16:40', phone: '137****9012', email: 'wang@example.com', avatar: '' },
-    { id: 4, studentName: '陈雨欣', university: '复旦大学', major: '数据科学', degree: '本科', jobTitle: '数据分析实习生', status: 'pending', appliedAt: '2026-04-06 14:20', phone: '136****3456', email: 'chen@example.com', avatar: '' },
-    { id: 5, studentName: '刘博文', university: '上海交通大学', major: '电子信息', degree: '硕士', jobTitle: '前端开发工程师', status: 'viewed', appliedAt: '2026-04-05 11:00', phone: '135****7890', email: 'liu@example.com', avatar: '' },
-    { id: 6, studentName: '赵思琪', university: '南京大学', major: '计算机科学', degree: '本科', jobTitle: 'Java后端开发工程师', status: 'viewed', appliedAt: '2026-04-05 09:30', phone: '133****2345', email: 'zhao@example.com', avatar: '' },
-    { id: 7, studentName: '黄子涵', university: '中国科技大学', major: '人工智能', degree: '博士', jobTitle: 'AIGC算法研究员', status: 'viewed', appliedAt: '2026-04-04 15:20', phone: '131****6789', email: 'huang@example.com', avatar: '' },
-    { id: 8, studentName: '周文静', university: '同济大学', major: '设计学', degree: '本科', jobTitle: 'UI/UX设计师实习', status: 'interview', appliedAt: '2026-04-03 10:00', phone: '130****0123', email: 'zhou@example.com', avatar: '' },
-    { id: 9, studentName: '吴昊天', university: '武汉大学', major: '软件工程', degree: '硕士', jobTitle: '前端开发工程师', status: 'interview', appliedAt: '2026-04-02 14:30', phone: '132****4567', email: 'wu@example.com', avatar: '' },
-    { id: 10, studentName: '杨鑫磊', university: '哈尔滨工业大学', major: '计算机科学', degree: '硕士', jobTitle: 'Java后端开发工程师', status: 'offered', appliedAt: '2026-03-28 09:00', phone: '134****8901', email: 'yang@example.com', avatar: '' },
-    { id: 11, studentName: '孙婉婷', university: '西安交通大学', major: '市场营销', degree: '本科', jobTitle: '管培生 (2026届)', status: 'offered', appliedAt: '2026-03-25 11:20', phone: '136****2345', email: 'sun@example.com', avatar: '' },
-    { id: 12, studentName: '马天宇', university: '中山大学', major: '信息管理', degree: '本科', jobTitle: '产品经理实习生', status: 'rejected', appliedAt: '2026-04-01 08:45', phone: '138****6789', email: 'ma@example.com', avatar: '' },
-    { id: 13, studentName: '林小雅', university: '厦门大学', major: '新闻传播', degree: '本科', jobTitle: '市场运营专员', status: 'rejected', appliedAt: '2026-03-30 16:00', phone: '139****0123', email: 'lin@example.com', avatar: '' },
-  ];
-
   // 可用的职位列表（从当前简历数据中提取）
-  const jobTitles = Array.from(new Set((resumes.length > 0 ? resumes : mockResumes).map(r => r.jobTitle)));
+  const jobTitles = Array.from(new Set(resumes.map(r => r.jobTitle)));
 
   useEffect(() => {
     fetchResumes();
@@ -226,7 +209,6 @@ export default function CompanyResumePool() {
         <ErrorState
           message={error}
           onRetry={fetchResumes}
-          onLoadMockData={() => { setResumes(mockResumes); setError(null); }}
         />
       )}
 
@@ -291,7 +273,7 @@ export default function CompanyResumePool() {
                       </div>
                       <Tag variant={
                         card.degree === '博士' ? 'red' :
-                        card.degree === '硕士' ? 'purple' :
+                        card.degree === '硕士' ? 'primary' :
                         'blue'
                       } size="xs">
                         {card.degree}

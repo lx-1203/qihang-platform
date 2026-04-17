@@ -23,7 +23,7 @@ const stories = [
     year: '2024届',
     quote: '三次面试失败后，通过1v1辅导拿到了阿里P6 Offer。',
     content: '连续三次终面被刷让我几乎放弃，是启航的导师帮我复盘了每次失败的原因——不是技术不行，而是表达逻辑有问题。针对性训练两周后，我一举通过阿里面试。',
-    gradient: 'from-blue-500 to-indigo-600',
+    gradient: 'from-blue-500 to-primary-600',
     initial: '张',
   },
   {
@@ -33,7 +33,7 @@ const stories = [
     year: '2023届',
     quote: '跨专业考研上岸清华，启航帮我制定了完美计划。',
     content: '从市场营销跨考到计算机，所有人都觉得不可能。启航的考研规划模块帮我制定了详细的12个月复习计划，从基础数学到专业课，每一步都有明确目标和节奏把控。',
-    gradient: 'from-purple-500 to-violet-600',
+    gradient: 'from-primary-500 to-primary-600',
     initial: '王',
   },
   {

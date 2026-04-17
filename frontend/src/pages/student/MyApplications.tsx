@@ -42,45 +42,6 @@ const statusConfig: Record<Exclude<ApplicationStatus, 'all'>, { label: string; c
 const progressSteps = ['待查看', '已查看', '面试中', '已录用'];
 const statusToStep: Record<string, number> = { pending: 0, viewed: 1, interview: 2, offered: 3, rejected: -1 };
 
-// 模拟数据
-const mockApplications: Application[] = [
-  {
-    id: 1, jobTitle: '前端开发工程师（实习）', companyName: '字节跳动', companyLogo: '',
-    location: '北京·海淀区', salary: '200-300/天', jobType: '实习',
-    appliedAt: '2026-04-05', status: 'interview', statusUpdatedAt: '2026-04-07', jobId: 101,
-  },
-  {
-    id: 2, jobTitle: 'Java后端开发', companyName: '阿里巴巴', companyLogo: '',
-    location: '杭州·余杭区', salary: '8K-15K', jobType: '全职',
-    appliedAt: '2026-04-03', status: 'viewed', statusUpdatedAt: '2026-04-04', jobId: 102,
-  },
-  {
-    id: 3, jobTitle: '产品经理助理', companyName: '腾讯科技', companyLogo: '',
-    location: '深圳·南山区', salary: '7K-12K', jobType: '全职',
-    appliedAt: '2026-04-01', status: 'pending', statusUpdatedAt: '2026-04-01', jobId: 103,
-  },
-  {
-    id: 4, jobTitle: 'UI设计师（实习）', companyName: '美团', companyLogo: '',
-    location: '北京·朝阳区', salary: '180-250/天', jobType: '实习',
-    appliedAt: '2026-03-28', status: 'offered', statusUpdatedAt: '2026-04-06', jobId: 104,
-  },
-  {
-    id: 5, jobTitle: '数据分析师', companyName: '网易', companyLogo: '',
-    location: '杭州·滨江区', salary: '10K-18K', jobType: '全职',
-    appliedAt: '2026-03-25', status: 'rejected', statusUpdatedAt: '2026-04-02', jobId: 105,
-  },
-  {
-    id: 6, jobTitle: 'Python开发工程师', companyName: '华为技术', companyLogo: '',
-    location: '南京·雨花台区', salary: '12K-20K', jobType: '全职',
-    appliedAt: '2026-03-20', status: 'viewed', statusUpdatedAt: '2026-03-22', jobId: 106,
-  },
-  {
-    id: 7, jobTitle: '运营实习生', companyName: '小红书', companyLogo: '',
-    location: '上海·黄浦区', salary: '150-200/天', jobType: '实习',
-    appliedAt: '2026-03-15', status: 'rejected', statusUpdatedAt: '2026-03-28', jobId: 107,
-  },
-];
-
 const tabItems: { key: ApplicationStatus; label: string }[] = [
   { key: 'all', label: '全部' },
   { key: 'pending', label: '待查看' },
@@ -152,7 +113,7 @@ export default function MyApplications() {
   }, {} as Record<string, number>);
 
   if (loading) return <div className="container-narrow py-8"><ListSkeleton count={5} /></div>;
-  if (error) return <div className="container-narrow py-8"><ErrorState message={error} onRetry={() => { setError(null); fetchApplications(); }} onLoadMockData={() => { setApplications(mockApplications); setError(null); }} /></div>;
+  if (error) return <div className="container-narrow py-8"><ErrorState message={error} onRetry={() => { setError(null); fetchApplications(); }} /></div>;
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">

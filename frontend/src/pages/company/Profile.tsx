@@ -53,23 +53,6 @@ export default function CompanyProfile() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // 模拟数据（仅 DEV 模式手动加载用）
-  const mockProfile: CompanyProfile = {
-    id: 1,
-    companyName: '启航科技有限公司',
-    industry: '互联网/IT',
-    scale: '151-500人',
-    description: '启航科技是一家专注于大学生职业发展的科技公司，致力于为高校毕业生提供一站式就业指导与招聘服务。公司拥有一支经验丰富的技术团队和导师资源，已服务超过10万名在校大学生。',
-    logoUrl: 'https://ui-avatars.com/api/?name=QH&background=14b8a6&color=fff&size=128',
-    website: 'https://www.qihang-tech.com',
-    address: '江苏省南京市雨花台区软件大道168号',
-    contactPerson: '王经理',
-    contactPhone: '025-88886666',
-    contactEmail: 'hr@qihang-tech.com',
-    verifyStatus: 'verified',
-    createdAt: '2026-01-15',
-  };
-
   useEffect(() => {
     fetchProfile();
   }, []);
@@ -80,7 +63,7 @@ export default function CompanyProfile() {
       setError(null);
       const res = await http.get('/company/profile');
       if (res.data?.code === 200 && res.data.data) {
-        setProfile(res.data.data);
+        setProfile(res.data.data.company || res.data.data);
       } else {
         setError('获取企业资料失败，服务器返回异常');
       }
@@ -126,7 +109,6 @@ export default function CompanyProfile() {
         <ErrorState
           message={error || '企业资料加载失败'}
           onRetry={fetchProfile}
-          onLoadMockData={() => { setProfile(mockProfile); setError(null); }}
         />
       </div>
     );

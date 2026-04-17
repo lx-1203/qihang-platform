@@ -331,7 +331,7 @@ export default function StudyAbroad() {
     <div className="min-h-screen bg-gray-50 pb-16">
 
       {/* ====== Hero 轮播区 ====== */}
-      <section ref={heroRef} className="relative overflow-hidden bg-gradient-to-br from-indigo-950 via-purple-900 to-violet-950 min-h-[480px] md:min-h-[540px]">
+      <section ref={heroRef} className="relative overflow-hidden bg-gradient-to-br from-primary-700 via-primary-800 to-primary-900 min-h-[480px] md:min-h-[540px]">
         <AnimatePresence mode="wait">
           <motion.div
             key={currentSlide}
@@ -345,16 +345,16 @@ export default function StudyAbroad() {
           </motion.div>
         </AnimatePresence>
         {/* 鲜亮渐变叠加层 */}
-        <div className="absolute inset-0 bg-gradient-to-r from-violet-900/90 via-purple-800/80 to-indigo-900/70" />
-        <div className="absolute bottom-0 left-0 right-0 h-40 bg-gradient-to-t from-indigo-950 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-r from-primary-900/90 via-primary-800/80 to-primary-700/70" />
+        <div className="absolute bottom-0 left-0 right-0 h-40 bg-gradient-to-t from-primary-900 to-transparent" />
         {/* 装饰性光晕效果 */}
-        <div className="absolute top-0 right-0 w-96 h-96 bg-violet-500/20 rounded-full blur-3xl" />
-        <div className="absolute bottom-0 left-0 w-72 h-72 bg-fuchsia-500/15 rounded-full blur-3xl" />
+        <div className="absolute top-0 right-0 w-96 h-96 bg-primary-400/20 rounded-full blur-3xl" />
+        <div className="absolute bottom-0 left-0 w-72 h-72 bg-primary-300/15 rounded-full blur-3xl" />
 
         <div className="relative z-10 container-main pt-16 pb-20 md:pt-20 md:pb-24">
           <div className="max-w-2xl">
-            <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-white/25 backdrop-blur-md text-white border border-white/30 text-[13px] font-bold mb-6 shadow-lg shadow-purple-500/10">
-              <Globe className="w-4 h-4 text-violet-300" />
+            <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-white/25 backdrop-blur-md text-white border border-white/30 text-[13px] font-bold mb-6 shadow-lg shadow-primary-500/10">
+              <Globe className="w-4 h-4 text-primary-300" />
               {HERO_SLIDES[currentSlide].tag}
             </motion.div>
             <AnimatePresence mode="wait">
@@ -365,10 +365,10 @@ export default function StudyAbroad() {
             </AnimatePresence>
             <div className="flex flex-wrap gap-4 mb-8">
               <Link to={HERO_SLIDES[currentSlide].ctaLink}
-                className="bg-gradient-to-r from-violet-500 to-purple-600 text-white px-10 py-4 rounded-xl font-bold text-[15px]
-                hover:from-violet-400 hover:to-purple-500 hover:-translate-y-1 hover:shadow-2xl hover:shadow-violet-500/40
+                className="bg-gradient-to-r from-primary-500 to-primary-600 text-white px-10 py-4 rounded-xl font-bold text-[15px]
+                hover:from-primary-400 hover:to-primary-500 hover:-translate-y-1 hover:shadow-2xl hover:shadow-primary-500/40
                 active:scale-[0.97] focus-visible:ring-2 focus-visible:ring-white/40 focus-visible:outline-none
-                transition-all duration-300 shadow-xl shadow-violet-500/30 flex items-center gap-2 hover:gap-3"
+                transition-all duration-300 shadow-xl shadow-primary-500/30 flex items-center gap-2 hover:gap-3"
               >
                 {HERO_SLIDES[currentSlide].cta} <ArrowRight className="w-4 h-4" />
               </Link>
@@ -765,11 +765,11 @@ export default function StudyAbroad() {
 
         {/* ====== CTA 底部大横幅 ====== */}
         <section className="mb-6">
-          <div className="bg-gradient-to-br from-indigo-950 via-purple-900 to-violet-950 rounded-[24px] overflow-hidden relative">
+          <div className="bg-gradient-to-br from-primary-700 via-primary-800 to-primary-900 rounded-[24px] overflow-hidden relative">
             {/* 鲜亮装饰性渐变 */}
-            <div className="absolute inset-0 bg-gradient-to-r from-violet-500/20 via-transparent to-fuchsia-500/15" />
-            <div className="absolute top-0 right-0 w-96 h-96 bg-violet-500/20 rounded-full blur-3xl" />
-            <div className="absolute bottom-0 left-0 w-72 h-72 bg-fuchsia-500/15 rounded-full blur-3xl" />
+            <div className="absolute inset-0 bg-gradient-to-r from-primary-500/20 via-transparent to-primary-300/15" />
+            <div className="absolute top-0 right-0 w-96 h-96 bg-primary-400/20 rounded-full blur-3xl" />
+            <div className="absolute bottom-0 left-0 w-72 h-72 bg-primary-300/15 rounded-full blur-3xl" />
             <div className="relative z-10 p-10 md:p-14 flex flex-col md:flex-row items-center justify-between gap-8">
               <div className="text-white max-w-xl">
                 <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 text-[12px] font-medium mb-4 border border-white/15">
@@ -795,9 +795,9 @@ export default function StudyAbroad() {
                 </div>
               </div>
               <Link to="/study-abroad/programs"
-                className="shrink-0 bg-gradient-to-r from-violet-500 to-purple-600 hover:from-violet-400 hover:to-purple-500 text-white px-12 py-5 rounded-2xl font-bold text-[16px]
-                transition-all flex items-center gap-3 shadow-xl shadow-violet-500/30
-                hover:shadow-2xl hover:shadow-violet-500/40 hover:-translate-y-0.5
+                className="shrink-0 bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-400 hover:to-primary-500 text-white px-12 py-5 rounded-2xl font-bold text-[16px]
+                transition-all flex items-center gap-3 shadow-xl shadow-primary-500/30
+                hover:shadow-2xl hover:shadow-primary-500/40 hover:-translate-y-0.5
                 active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-white/40 focus-visible:outline-none"
               >
                 <Rocket className="w-5 h-5" /> {TEXT_RESOURCES.cta.btnText}
@@ -820,7 +820,7 @@ export default function StudyAbroad() {
           >
             <Link
               to="/mentors"
-              className="group flex items-center gap-3 bg-gradient-to-r from-violet-500 to-purple-600 hover:from-violet-400 hover:to-purple-500 text-white pl-6 pr-7 py-4 rounded-full font-bold text-[14px] shadow-2xl shadow-violet-500/30 hover:shadow-violet-500/40 transition-all hover:-translate-y-0.5 active:translate-y-0"
+              className="group flex items-center gap-3 bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-400 hover:to-primary-500 text-white pl-6 pr-7 py-4 rounded-full font-bold text-[14px] shadow-2xl shadow-primary-500/30 hover:shadow-primary-500/40 transition-all hover:-translate-y-0.5 active:translate-y-0"
             >
               <span className="w-9 h-9 rounded-full bg-white/20 flex items-center justify-center shrink-0">
                 <Calendar className="w-4.5 h-4.5" />
@@ -846,10 +846,10 @@ export default function StudyAbroad() {
           >
             <Link
               to="/mentors"
-              className="flex items-center justify-center gap-2 w-full bg-gradient-to-r from-violet-500 to-purple-600 hover:from-violet-400 hover:to-purple-500 text-white py-3.5 rounded-xl font-bold text-[14px]
-                shadow-xl shadow-violet-500/30 transition-all
-                hover:shadow-2xl hover:shadow-violet-500/40 active:scale-[0.98]
-                focus-visible:ring-2 focus-visible:ring-violet-400/50 focus-visible:outline-none"
+              className="flex items-center justify-center gap-2 w-full bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-400 hover:to-primary-500 text-white py-3.5 rounded-xl font-bold text-[14px]
+                shadow-xl shadow-primary-500/30 transition-all
+                hover:shadow-2xl hover:shadow-primary-500/40 active:scale-[0.98]
+                focus-visible:ring-2 focus-visible:ring-primary-400/50 focus-visible:outline-none"
             >
               <Phone className="w-4 h-4" />
               {TEXT_RESOURCES.cta.floatingCta}

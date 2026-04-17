@@ -14,8 +14,8 @@ const services = [
     desc: 'AI智能岗位推荐',
     detail: '基于你的专业、技能和求职偏好，智能匹配最适合的岗位',
     icon: Target,
-    gradient: 'from-violet-500 to-purple-600',
-    bg: 'bg-violet-50',
+    gradient: 'from-primary-500 to-primary-600',
+    bg: 'bg-primary-50',
     link: '/jobs',
   },
   {
@@ -23,8 +23,8 @@ const services = [
     desc: '500+合作企业免中介',
     detail: '直接对接企业HR，省去中间环节，高效投递',
     icon: Building2,
-    gradient: 'from-indigo-500 to-blue-600',
-    bg: 'bg-indigo-50',
+    gradient: 'from-primary-400 to-teal-600',
+    bg: 'bg-teal-50',
     link: '/jobs',
   },
   {
@@ -32,8 +32,8 @@ const services = [
     desc: '行业导师实时预约',
     detail: '来自BAT/TMD一线大厂的行业导师，一对一深度辅导',
     icon: Users,
-    gradient: 'from-fuchsia-500 to-pink-600',
-    bg: 'bg-fuchsia-50',
+    gradient: 'from-primary-500 to-primary-700',
+    bg: 'bg-primary-50',
     link: '/mentors',
   },
   {
@@ -133,7 +133,7 @@ export default function ServiceGrid() {
       <div className="text-center mt-10">
         <Link
           to="/guidance"
-          className="inline-flex items-center gap-2 rounded-full px-10 py-3.5 bg-gradient-to-r from-violet-600 to-purple-600 text-white font-bold hover:from-violet-500 hover:to-purple-500 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-xl hover:shadow-violet-500/30"
+          className="inline-flex items-center gap-2 rounded-full px-10 py-3.5 bg-gradient-to-r from-primary-600 to-primary-700 text-white font-bold hover:from-primary-500 hover:to-primary-600 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-xl hover:shadow-primary-500/30"
         >
           了解全部平台服务与特色
           <ArrowRight className="w-4 h-4" />

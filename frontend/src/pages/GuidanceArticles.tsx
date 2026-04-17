@@ -173,7 +173,7 @@ export default function GuidanceArticles() {
                         variant={
                           article.category === '校招指南' ? 'blue' :
                           article.category === '简历技巧' ? 'green' :
-                          article.category === '面试经验' ? 'purple' :
+                          article.category === '面试经验' ? 'primary' :
                           article.category === '政策解读' ? 'yellow' : 'gray'
                         }
                         size="sm"

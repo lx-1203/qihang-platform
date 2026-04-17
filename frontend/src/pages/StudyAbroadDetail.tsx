@@ -176,7 +176,7 @@ export default function StudyAbroadDetail() {
       <div className="relative h-[240px] md:h-[320px] overflow-hidden bg-slate-900">
         <img src={prog.cover} alt="" className="w-full h-full object-cover opacity-40" />
         <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/60 to-transparent" />
-        <div className="absolute inset-0 bg-gradient-to-r from-primary-500/10 via-transparent to-purple-500/10" />
+        <div className="absolute inset-0 bg-gradient-to-r from-primary-500/10 via-transparent to-primary-500/10" />
       </div>
 
       <div className="container-main">
@@ -374,7 +374,7 @@ export default function StudyAbroadDetail() {
                   {[
                     { label: '学术成绩', value: prog.requirements.gpa, icon: Star, color: 'text-amber-500', bg: 'bg-amber-50', border: 'border-amber-100' },
                     { label: '语言要求', value: prog.requirements.language, icon: Globe, color: 'text-sky-500', bg: 'bg-sky-50', border: 'border-sky-100' },
-                    { label: '专业背景', value: prog.requirements.background, icon: GraduationCap, color: 'text-purple-500', bg: 'bg-purple-50', border: 'border-purple-100' },
+                    { label: '专业背景', value: prog.requirements.background, icon: GraduationCap, color: 'text-primary-500', bg: 'bg-primary-50', border: 'border-primary-100' },
                     { label: '申请材料', value: prog.requirements.other, icon: FileText, color: 'text-green-500', bg: 'bg-green-50', border: 'border-green-100' },
                     { label: '工作经验', value: prog.requirements.workExp, icon: Briefcase, color: 'text-blue-500', bg: 'bg-blue-50', border: 'border-blue-100' },
                     { label: '面试要求', value: prog.requirements.interview, icon: MessageCircle, color: 'text-rose-500', bg: 'bg-rose-50', border: 'border-rose-100' },
@@ -531,7 +531,7 @@ export default function StudyAbroadDetail() {
                           {offer.ielts && offer.ielts !== '-' && <span className="bg-white px-2 py-1 rounded border border-gray-100">IELTS {offer.ielts}</span>}
                           {offer.gre && <span className="bg-white px-2 py-1 rounded border border-gray-100">GRE {offer.gre}</span>}
                           {offer.internship && <Tag variant="blue" size="sm">{offer.internship}</Tag>}
-                          {offer.research && <Tag variant="purple" size="sm">{offer.research}</Tag>}
+                          {offer.research && <Tag variant="primary" size="sm">{offer.research}</Tag>}
                         </div>
                       </div>
                     </div>
@@ -562,8 +562,8 @@ export default function StudyAbroadDetail() {
                     <div className="text-[32px] font-bold text-amber-600">{prog.avgSalary}</div>
                     <div className="text-[13px] text-gray-500">平均起始年薪</div>
                   </div>
-                  <div className="bg-purple-50 rounded-xl p-6 text-center border border-purple-100">
-                    <div className="text-[32px] font-bold text-purple-600">2年</div>
+                  <div className="bg-primary-50 rounded-xl p-6 text-center border border-primary-100">
+                    <div className="text-[32px] font-bold text-primary-600">2年</div>
                     <div className="text-[13px] text-gray-500">PSW工签时长</div>
                   </div>
                 </div>

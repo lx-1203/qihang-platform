@@ -31,10 +31,10 @@ interface JobRecord {
   created_at: string;
 }
 
-const JOB_TYPE_TAG_VARIANT: Record<string, 'blue' | 'green' | 'purple'> = {
+const JOB_TYPE_TAG_VARIANT: Record<string, 'blue' | 'green' | 'primary'> = {
   '全职': 'blue',
   '实习': 'green',
-  '兼职': 'purple',
+  '兼职': 'primary',
 };
 
 export default function CompanyJobManage() {
@@ -59,18 +59,6 @@ export default function CompanyJobManage() {
   // 搜索防抖 + AbortController
   const abortControllerRef = useRef<AbortController | null>(null);
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  // 模拟数据
-  const mockJobs: JobRecord[] = [
-    { id: 1, title: '前端开发工程师 (2026届校招)', location: '北京/上海', salary: '25k-40k', type: '全职', status: 'active', view_count: 3250, applications: 86, description: '负责公司核心产品的前端开发，使用React/Vue技术栈。', requirements: '本科及以上学历，计算机相关专业，熟悉React或Vue框架。', created_at: '2026-03-10' },
-    { id: 2, title: '产品经理实习生', location: '深圳', salary: '200-300/天', type: '实习', status: 'active', view_count: 2100, applications: 45, description: '参与产品需求分析、原型设计和项目跟进。', requirements: '在校大学生，产品管理或相关专业优先。', created_at: '2026-03-08' },
-    { id: 3, title: 'AIGC算法研究员', location: '北京', salary: '35k-60k', type: '全职', status: 'active', view_count: 4500, applications: 120, description: '研究并落地AIGC相关算法，包括大语言模型微调和多模态方向。', requirements: '硕士及以上学历，AI/ML相关方向，有论文发表优先。', created_at: '2026-03-12' },
-    { id: 4, title: '市场运营专员', location: '上海', salary: '15k-22k', type: '全职', status: 'active', view_count: 1800, applications: 32, description: '负责品牌推广、活动策划和用户增长相关工作。', requirements: '本科及以上学历，市场营销相关专业，有实习经验优先。', created_at: '2026-03-15' },
-    { id: 5, title: 'UI/UX设计师实习', location: '上海', salary: '250/天', type: '实习', status: 'inactive', view_count: 980, applications: 18, description: '参与产品UI/UX设计工作，包括界面设计、交互原型等。', requirements: '在校大学生，设计相关专业，熟悉Figma或Sketch。', created_at: '2026-03-20' },
-    { id: 6, title: '管培生 (2026届)', location: '全国', salary: '12k-18k', type: '全职', status: 'active', view_count: 2800, applications: 95, description: '参加为期12个月的管培生轮岗计划，覆盖产品、运营、市场等方向。', requirements: '2026届本科及以上学历，GPA 3.5+，有学生干部经历优先。', created_at: '2026-03-22' },
-    { id: 7, title: '数据分析兼职', location: '远程', salary: '150/小时', type: '兼职', status: 'active', view_count: 650, applications: 12, description: '协助数据团队进行数据清洗、分析和可视化报告撰写。', requirements: '熟悉Python/SQL，有数据分析经验，可远程办公。', created_at: '2026-04-01' },
-    { id: 8, title: 'Java后端开发工程师', location: '杭州', salary: '28k-45k', type: '全职', status: 'active', view_count: 3100, applications: 78, description: '负责后端微服务架构设计与开发，保障系统高可用。', requirements: '本科及以上学历，3年以上Java开发经验，熟悉Spring Boot。', created_at: '2026-03-25' },
-  ];
 
   useEffect(() => {
     fetchJobs();
@@ -132,17 +120,6 @@ export default function CompanyJobManage() {
     } finally {
       setLoading(false);
     }
-  }
-
-  function applyMockFilter() {
-    let filtered = [...mockJobs];
-    if (typeFilter !== 'all') filtered = filtered.filter(j => j.type === typeFilter);
-    if (statusFilter !== 'all') filtered = filtered.filter(j => j.status === statusFilter);
-    if (search) filtered = filtered.filter(j =>
-      j.title.includes(search) || j.location.includes(search)
-    );
-    setJobs(filtered);
-    setTotal(filtered.length);
   }
 
   function requestToggleJobStatus(id: number) {
@@ -259,7 +236,6 @@ export default function CompanyJobManage() {
         <ErrorState
           message={error}
           onRetry={fetchJobs}
-          onLoadMockData={() => { applyMockFilter(); setError(null); }}
         />
       )}
 
@@ -269,7 +245,7 @@ export default function CompanyJobManage() {
         {[
           { label: '在招职位', value: jobs.filter(j => j.status === 'active').length, icon: Briefcase, color: 'text-primary-600', bg: 'bg-primary-50' },
           { label: '总浏览量', value: jobs.reduce((a, j) => a + j.view_count, 0).toLocaleString(), icon: Eye, color: 'text-blue-600', bg: 'bg-blue-50' },
-          { label: '总投递数', value: jobs.reduce((a, j) => a + j.applications, 0), icon: FileText, color: 'text-purple-600', bg: 'bg-purple-50' },
+          { label: '总投递数', value: jobs.reduce((a, j) => a + j.applications, 0), icon: FileText, color: 'text-primary-600', bg: 'bg-primary-50' },
           { label: '已下架', value: jobs.filter(j => j.status === 'inactive').length, icon: EyeOff, color: 'text-gray-500', bg: 'bg-gray-50' },
         ].map((item) => (
           <div key={item.label} className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 flex items-center gap-3">

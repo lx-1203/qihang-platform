@@ -27,22 +27,13 @@ interface StudentProfile {
   email: string;
 }
 
-// 模拟数据（API 未就绪时使用）
-const mockProfile: StudentProfile = {
-  nickname: '林小明',
-  phone: '138****6789',
-  school: '南京大学',
-  major: '计算机科学与技术',
-  grade: '大三',
-  skills: ['React', 'TypeScript', 'Node.js', 'Python', 'MySQL', 'Git'],
-  jobIntention: '前端开发工程师',
-  bio: '热爱编程，对前端技术充满热情。有多个项目实践经验，擅长 React 生态开发。希望在互联网公司找到一份前端开发的实习或全职工作。',
-  resumeUrl: 'https://example.com/resume/linxiaoming.pdf',
-  avatar: '',
-  email: 'linxiaoming@nju.edu.cn',
-};
-
 const gradeOptions = ['大一', '大二', '大三', '大四', '研一', '研二', '研三', '博士'];
+
+// 空白初始值（新用户 / API 返回空时使用）
+const emptyProfile: StudentProfile = {
+  nickname: '', phone: '', school: '', major: '', grade: '大一',
+  skills: [], jobIntention: '', bio: '', resumeUrl: '', avatar: '', email: '',
+};
 
 const commonSkills = [
   'React', 'Vue', 'Angular', 'TypeScript', 'JavaScript',
@@ -54,7 +45,7 @@ const commonSkills = [
 export default function Profile() {
   const [profile, setProfile] = useState<StudentProfile | null>(null);
   const [editMode, setEditMode] = useState(false);
-  const [editData, setEditData] = useState<StudentProfile>(mockProfile);
+  const [editData, setEditData] = useState<StudentProfile>(emptyProfile);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -101,7 +92,7 @@ export default function Profile() {
   }
 
   function handleCancel() {
-    setEditData(profile || mockProfile);
+    setEditData(profile || emptyProfile);
     setEditMode(false);
     setNewSkill('');
     setSaveError(null);
@@ -135,7 +126,7 @@ export default function Profile() {
   }
 
   if (loading) return <div className="container-narrow py-8"><DetailSkeleton /></div>;
-  if (error) return <div className="container-narrow py-8"><ErrorState message={error} onRetry={() => { setError(null); fetchProfile(); }} onLoadMockData={() => { setProfile(mockProfile); setEditData(mockProfile); setError(null); }} /></div>;
+  if (error) return <div className="container-narrow py-8"><ErrorState message={error} onRetry={() => { setError(null); fetchProfile(); }} /></div>;
   if (!profile) return <div className="container-narrow py-8"><DetailSkeleton /></div>;
 
   return (

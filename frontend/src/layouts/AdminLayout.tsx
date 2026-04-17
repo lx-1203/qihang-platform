@@ -70,7 +70,7 @@ export default function AdminLayout() {
     <>
       <div className="h-16 flex items-center px-6 border-b border-slate-800 bg-slate-950 shrink-0">
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center text-white font-bold text-xl">
+          <div className="w-8 h-8 bg-primary-600 rounded-lg flex items-center justify-center text-white font-bold text-xl">
             管
           </div>
           <span className="text-xl font-bold text-white tracking-wide">启航系统后台</span>
@@ -94,7 +94,7 @@ export default function AdminLayout() {
               to={item.href}
               className={`flex items-center gap-3 px-3 py-2.5 rounded-lg font-medium transition-colors ${
                 isActive
-                  ? 'bg-indigo-600 text-white'
+                  ? 'bg-primary-600 text-white'
                   : 'text-slate-400 hover:bg-slate-800 hover:text-white'
               }`}
               aria-current={isActive ? 'page' : undefined}
@@ -170,7 +170,7 @@ export default function AdminLayout() {
 
           <div className="flex items-center gap-6">
             <div className="flex items-center gap-3 pl-6 border-l border-gray-200">
-              <div className="w-8 h-8 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold">
+              <div className="w-8 h-8 rounded-full bg-primary-100 text-primary-700 flex items-center justify-center font-bold">
                 超
               </div>
               <div className="hidden sm:flex flex-col">

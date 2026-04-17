@@ -6,6 +6,7 @@ import {
   Image, FileText, CheckCircle, Loader2
 } from 'lucide-react';
 import http from '@/api/http';
+import ErrorState from '@/components/ui/ErrorState';
 
 // ====== 导师资料编辑页 ======
 // 个人信息编辑、专长标签、可用时间段管理
@@ -25,25 +26,18 @@ interface MentorProfile {
   education: string;
 }
 
-const mockProfile: MentorProfile = {
-  name: '陈导师',
-  title: '资深职业规划师 / 前阿里巴巴HR总监',
-  bio: '拥有10年人力资源管理经验，曾在阿里巴巴、腾讯等大厂担任HR负责人。擅长校招面试辅导、简历优化、职业发展规划。已累计辅导超过1200名学生成功入职大厂，面试通过率达85%以上。',
-  avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=200&h=200&fit=crop',
-  expertise: ['简历优化', '面试辅导', '职业规划', '校招策略', '大厂面经'],
-  pricePerSession: 299,
-  availableSlots: ['周一 09:00-12:00', '周二 14:00-18:00', '周三 09:00-12:00', '周四 14:00-18:00', '周五 10:00-16:00'],
-  verifyStatus: 'approved',
-  email: 'chen.mentor@example.com',
-  phone: '138****5678',
-  experience: '10年',
-  education: '北京大学 · 人力资源管理硕士',
+// 默认空资料，用于新建导师
+const emptyProfile: MentorProfile = {
+  name: '', title: '', bio: '', avatar: '',
+  expertise: [], pricePerSession: 0, availableSlots: [],
+  verifyStatus: 'pending', email: '', phone: '',
+  experience: '', education: '',
 };
 
 export default function MentorProfile() {
-  const [profile, setProfile] = useState<MentorProfile>(mockProfile);
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [_loading, setLoading] = useState(false);
+  const [profile, setProfile] = useState<MentorProfile>(emptyProfile);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [expertiseInput, setExpertiseInput] = useState('');
@@ -56,12 +50,14 @@ export default function MentorProfile() {
   async function fetchProfile() {
     try {
       setLoading(true);
+      setError(null);
       const res = await http.get('/mentor/profile');
       if (res.data?.code === 200 && res.data.data) {
         setProfile(res.data.data);
       }
-    } catch {
-      // 使用默认 Mock 数据
+    } catch (err) {
+      setError('资料加载失败，请稍后重试');
+      if (import.meta.env.DEV) console.error('[DEV] fetchProfile error:', err);
     } finally {
       setLoading(false);
     }
@@ -70,7 +66,7 @@ export default function MentorProfile() {
   async function handleSave() {
     try {
       setSaving(true);
-      await http.put('/mentor/profile', profile);
+      await http.post('/mentor/profile', profile);
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
     } catch {
@@ -129,6 +125,30 @@ export default function MentorProfile() {
   };
 
   const verify = verifyConfig[profile.verifyStatus];
+
+  if (loading) return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <div className="h-8 w-40 bg-gray-200 rounded-lg animate-pulse" />
+          <div className="h-4 w-64 bg-gray-200 rounded-lg animate-pulse mt-2" />
+        </div>
+        <div className="h-10 w-28 bg-gray-200 rounded-lg animate-pulse" />
+      </div>
+      <div className="h-16 bg-gray-200 rounded-xl animate-pulse" />
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="space-y-6">
+          <div className="h-48 bg-gray-200 rounded-xl animate-pulse" />
+          <div className="h-40 bg-gray-200 rounded-xl animate-pulse" />
+        </div>
+        <div className="lg:col-span-2 space-y-6">
+          <div className="h-56 bg-gray-200 rounded-xl animate-pulse" />
+          <div className="h-40 bg-gray-200 rounded-xl animate-pulse" />
+        </div>
+      </div>
+    </div>
+  );
+  if (error) return <ErrorState message={error} onRetry={fetchProfile} />;
 
   return (
     <div className="space-y-6">

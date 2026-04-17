@@ -47,7 +47,7 @@ const DEFAULT_CONFIG = {
       achievement: "跨考上海交通大学计算机专业 初试 410 分",
       quote: "作为跨考生压力很大，但启航平台的考研课程体系很完整，尤其是数据结构和算法课程帮了大忙。学长学姐的经验分享也给了我很大的信心。",
       tags: ["跨考", "985院校", "计算机"],
-      color: "from-purple-500 to-indigo-500", bgLight: "bg-purple-50", textColor: "text-purple-600"
+      color: "from-primary-500 to-primary-600", bgLight: "bg-primary-50", textColor: "text-primary-600"
     },
     {
       id: 4, name: "赵同学", avatar: "赵",
@@ -79,7 +79,7 @@ const DEFAULT_CONFIG = {
       achievement: "获得哈佛大学 GSD 建筑学硕士全额奖学金",
       quote: "平台上有很多海外名校的学长分享作品集制作经验，导师还帮我联系了在GSD就读的学姐做portfolio review。这些资源对建筑留学生来说太宝贵了。",
       tags: ["美国藤校", "建筑学", "全额奖学金"],
-      color: "from-violet-500 to-purple-500", bgLight: "bg-violet-50", textColor: "text-violet-600"
+      color: "from-primary-400 to-primary-500", bgLight: "bg-primary-50", textColor: "text-primary-600"
     },
     {
       id: 8, name: "周同学", avatar: "周",
@@ -150,11 +150,11 @@ export default function SuccessCases() {
 
   return (
     <div className="min-h-screen bg-gray-50 pb-16">
-      <div className="relative overflow-hidden bg-gradient-to-br from-violet-600 via-purple-600 to-indigo-700">
+      <div className="relative overflow-hidden bg-gradient-to-br from-primary-600 via-primary-600 to-primary-700">
         <div className="absolute top-10 right-10 w-80 h-80 bg-white/10 rounded-full blur-3xl" />
-        <div className="absolute -bottom-20 -left-20 w-96 h-96 bg-fuchsia-500/15 rounded-full blur-3xl" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-violet-400/10 rounded-full" />
-        <div className="absolute -top-20 -right-20 w-[500px] h-[500px] bg-gradient-to-br from-pink-500/20 to-violet-500/20 rounded-full blur-3xl animate-pulse" />
+        <div className="absolute -bottom-20 -left-20 w-96 h-96 bg-primary-300/15 rounded-full blur-3xl" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-primary-400/10 rounded-full" />
+        <div className="absolute -top-20 -right-20 w-[500px] h-[500px] bg-gradient-to-br from-primary-500/20 to-primary-500/20 rounded-full blur-3xl animate-pulse" />
 
         <div className="relative z-10 container-main py-16 md:py-24 text-center">
           <motion.div
@@ -210,13 +210,13 @@ export default function SuccessCases() {
               className={`relative inline-flex items-center gap-1.5 px-5 py-2.5 rounded-full text-sm font-bold whitespace-nowrap transition-all duration-200 ${
                 activeCategory === cat.key
                   ? 'text-white'
-                  : 'text-gray-600 bg-white border-2 border-gray-200 hover:text-violet-600 hover:border-violet-300 hover:bg-violet-50'
-              } active:scale-[0.97] focus-visible:ring-2 focus-visible:ring-violet-500/30 focus-visible:outline-none`}
+                  : 'text-gray-600 bg-white border-2 border-gray-200 hover:text-primary-600 hover:border-primary-300 hover:bg-primary-50'
+              } active:scale-[0.97] focus-visible:ring-2 focus-visible:ring-primary-500/30 focus-visible:outline-none`}
             >
               {activeCategory === cat.key && (
                 <motion.div
                   layoutId="category-indicator"
-                  className="absolute inset-0 bg-gradient-to-r from-violet-600 to-purple-600 rounded-full shadow-lg shadow-violet-500/30"
+                  className="absolute inset-0 bg-gradient-to-r from-primary-600 to-primary-600 rounded-full shadow-lg shadow-primary-500/30"
                   transition={{ type: 'spring', stiffness: 380, damping: 30 }}
                 />
               )}
@@ -296,10 +296,10 @@ export default function SuccessCases() {
           </div>
         )}
 
-        <div className="bg-gradient-to-br from-indigo-950 via-purple-900 to-violet-950 rounded-[24px] overflow-hidden relative">
-          <div className="absolute inset-0 bg-gradient-to-r from-violet-500/25 to-fuchsia-500/15" />
-          <div className="absolute top-0 right-0 w-96 h-96 bg-violet-500/20 rounded-full blur-3xl" />
-          <div className="absolute bottom-0 left-0 w-72 h-72 bg-pink-500/15 rounded-full blur-3xl" />
+        <div className="bg-gradient-to-br from-primary-700 via-primary-800 to-primary-900 rounded-[24px] overflow-hidden relative">
+          <div className="absolute inset-0 bg-gradient-to-r from-primary-500/25 to-primary-300/15" />
+          <div className="absolute top-0 right-0 w-96 h-96 bg-primary-400/20 rounded-full blur-3xl" />
+          <div className="absolute bottom-0 left-0 w-72 h-72 bg-primary-500/15 rounded-full blur-3xl" />
 
           <div className="relative z-10 p-10 md:p-14 text-center">
             <motion.div
@@ -322,7 +322,7 @@ export default function SuccessCases() {
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <Link
                   to="/register"
-                  className="inline-flex items-center justify-center gap-2 bg-gradient-to-r from-violet-500 to-purple-600 hover:from-violet-400 hover:to-purple-500 hover:-translate-y-0.5 hover:shadow-2xl hover:shadow-violet-500/30 active:scale-[0.98] text-white px-10 py-4 rounded-xl font-bold transition-all duration-200 shadow-xl shadow-violet-500/25 focus-visible:ring-2 focus-visible:ring-violet-400/50 focus-visible:outline-none"
+                  className="inline-flex items-center justify-center gap-2 bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-400 hover:to-primary-500 hover:-translate-y-0.5 hover:shadow-2xl hover:shadow-primary-500/30 active:scale-[0.98] text-white px-10 py-4 rounded-xl font-bold transition-all duration-200 shadow-xl shadow-primary-500/25 focus-visible:ring-2 focus-visible:ring-primary-400/50 focus-visible:outline-none"
                 >
                   免费注册，开始启航
                   <ArrowRight className="w-4 h-4" />

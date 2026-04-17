@@ -15,7 +15,7 @@ router.use(authMiddleware, requireRole('mentor'));
 router.post('/profile', async (req, res) => {
   try {
     const userId = req.user.id;
-    const { title, bio, expertise, price, available_time } = req.body;
+    const { name, title, bio, expertise, price, available_time } = req.body;
 
     if (!title || !bio) {
       return res.status(400).json({ code: 400, message: '头衔和简介不能为空' });
@@ -27,8 +27,8 @@ router.post('/profile', async (req, res) => {
     if (existing.length > 0) {
       // 更新
       await pool.query(
-        `UPDATE mentor_profiles SET title = ?, bio = ?, expertise = ?, price = ?, available_time = ? WHERE user_id = ?`,
-        [title, bio, JSON.stringify(expertise || []), price || 0, JSON.stringify(available_time || []), userId]
+        `UPDATE mentor_profiles SET name = ?, title = ?, bio = ?, expertise = ?, price = ?, available_time = ? WHERE user_id = ?`,
+        [name || '', title, bio, JSON.stringify(expertise || []), price || 0, JSON.stringify(available_time || []), userId]
       );
       const [rows] = await pool.query(
         `SELECT mp.*, u.nickname, u.avatar, u.email, u.phone
@@ -40,8 +40,8 @@ router.post('/profile', async (req, res) => {
     } else {
       // 创建
       await pool.query(
-        `INSERT INTO mentor_profiles (user_id, title, bio, expertise, price, available_time) VALUES (?, ?, ?, ?, ?, ?)`,
-        [userId, title, bio, JSON.stringify(expertise || []), price || 0, JSON.stringify(available_time || [])]
+        `INSERT INTO mentor_profiles (user_id, name, title, bio, expertise, price, available_time) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        [userId, name || '', title, bio, JSON.stringify(expertise || []), price || 0, JSON.stringify(available_time || [])]
       );
       const [rows] = await pool.query(
         `SELECT mp.*, u.nickname, u.avatar, u.email, u.phone

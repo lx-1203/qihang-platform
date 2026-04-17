@@ -14,7 +14,7 @@ const ICON_MAP: Record<string, LucideIcon> = { Target, Zap, ShieldCheck };
 const CARD_ACCENTS = [
   { gradient: 'from-primary-400 to-emerald-400', glow: 'shadow-primary-200/60' },
   { gradient: 'from-amber-400 to-orange-400', glow: 'shadow-amber-200/60' },
-  { gradient: 'from-blue-400 to-indigo-400', glow: 'shadow-blue-200/60' },
+  { gradient: 'from-blue-400 to-primary-400', glow: 'shadow-blue-200/60' },
 ];
 
 // 从配置文件读取价值主张列表

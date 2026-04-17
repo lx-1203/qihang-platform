@@ -130,8 +130,8 @@ export default function Courses() {
                 onClick={() => handleCategoryChange(cat)}
                 className={`px-5 py-2 rounded-full text-[14px] font-bold transition-all duration-200 ${
                 activeCategory === cat
-                  ? 'bg-gradient-to-r from-violet-500 to-purple-600 text-white shadow-lg shadow-violet-500/30'
-                  : 'bg-gray-100 text-gray-600 hover:bg-violet-50 hover:text-violet-700 border-2 border-transparent hover:border-violet-200 active:scale-[0.97] focus-visible:ring-2 focus-visible:ring-violet-400/30 focus-visible:outline-none'
+                  ? 'bg-gradient-to-r from-primary-500 to-primary-600 text-white shadow-lg shadow-primary-500/30'
+                  : 'bg-gray-100 text-gray-600 hover:bg-primary-50 hover:text-primary-700 border-2 border-transparent hover:border-primary-200 active:scale-[0.97] focus-visible:ring-2 focus-visible:ring-primary-400/30 focus-visible:outline-none'
               }`}
               >
                 {cat}
@@ -172,7 +172,7 @@ export default function Courses() {
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                       />
                     ) : (
-                      <div className="w-full h-full bg-gradient-to-br from-violet-500 via-purple-600 to-indigo-600 flex items-center justify-center">
+                      <div className="w-full h-full bg-gradient-to-br from-primary-500 via-primary-600 to-primary-700 flex items-center justify-center">
                         <BookOpen className="w-12 h-12 text-white/60" />
                       </div>
                     )}

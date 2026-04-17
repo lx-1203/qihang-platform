@@ -1,13 +1,15 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Megaphone, Plus, Edit3, Trash2, Eye, EyeOff, Clock,
-  X, Search,
+  X, Search, Loader2,
   CheckCircle2, Users
 } from 'lucide-react';
+import http from '@/api/http';
 import { useToast } from '../../components/ui';
 import Tag from '@/components/ui/Tag';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
+import ErrorState from '@/components/ui/ErrorState';
 
 // ====== 公告类型 ======
 type AnnouncementStatus = 'draft' | 'published' | 'scheduled' | 'archived';
@@ -24,30 +26,6 @@ interface Announcement {
   createdAt: string;
   views: number;
 }
-
-// Mock 数据
-const MOCK_ANNOUNCEMENTS: Announcement[] = [
-  {
-    id: 1, title: '平台升级公告：新增留学板块', content: '启航平台已全面升级留学服务板块，包含选校指南、背景提升、Offer 展示等功能。欢迎同学们体验！',
-    status: 'published', priority: 'important', targetRoles: ['student', 'mentor'],
-    createdAt: '2026-04-12', views: 1256,
-  },
-  {
-    id: 2, title: '企业认证流程优化通知', content: '为提升企业入驻效率，我们优化了企业认证审核流程，审核时间缩短至 1 个工作日。',
-    status: 'published', priority: 'normal', targetRoles: ['company'],
-    createdAt: '2026-04-10', views: 342,
-  },
-  {
-    id: 3, title: '五一假期服务安排', content: '五一假期期间（5月1日-5月5日），平台正常运行，客服响应时间可能延长，请谅解。',
-    status: 'scheduled', priority: 'normal', targetRoles: ['student', 'company', 'mentor'],
-    publishAt: '2026-04-28', createdAt: '2026-04-13', views: 0,
-  },
-  {
-    id: 4, title: '导师评价体系升级', content: '新版导师评价体系上线，新增多维度评分和详细评语功能，帮助学生更好地选择导师。',
-    status: 'draft', priority: 'normal', targetRoles: ['student', 'mentor'],
-    createdAt: '2026-04-14', views: 0,
-  },
-];
 
 const STATUS_MAP: Record<AnnouncementStatus, { label: string; color: string; bg: string; tagVariant: 'gray' | 'green' | 'blue' }> = {
   draft: { label: '草稿', color: 'text-gray-600', bg: 'bg-gray-100', tagVariant: 'gray' },
@@ -71,11 +49,13 @@ const ROLE_LABELS: Record<string, string> = {
 
 export default function AdminAnnouncements() {
   const toast = useToast();
-  const [announcements, setAnnouncements] = useState<Announcement[]>(MOCK_ANNOUNCEMENTS);
+  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState<AnnouncementStatus | 'all'>('all');
   const [showEditor, setShowEditor] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   // 删除确认对话框
   const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; announcementId: number | null }>({ open: false, announcementId: null });
@@ -88,6 +68,44 @@ export default function AdminAnnouncements() {
     targetRoles: ['student', 'company', 'mentor'] as string[],
     publishAt: '',
   });
+
+  // 获取公告列表（使用 site_configs 存储公告数据）
+  async function fetchAnnouncements() {
+    try {
+      setLoading(true);
+      setError(null);
+      const res = await http.get('/config/public');
+      if (res.data?.code === 200 && res.data.data) {
+        const raw = res.data.data.announcements;
+        if (raw && Array.isArray(raw)) {
+          setAnnouncements(raw);
+        } else {
+          setAnnouncements([]);
+        }
+      } else {
+        setError('加载公告数据失败');
+      }
+    } catch {
+      setError('加载公告数据失败，请检查后端服务');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  // 保存公告列表到后端
+  async function saveAnnouncements(updatedList: Announcement[]) {
+    try {
+      await http.put('/config/announcements', { value: JSON.stringify(updatedList) });
+      setAnnouncements(updatedList);
+    } catch {
+      toast.error('保存失败', '请稍后重试');
+      throw new Error('保存失败');
+    }
+  }
+
+  useEffect(() => {
+    fetchAnnouncements();
+  }, []);
 
   const filtered = announcements.filter(a => {
     const matchStatus = filterStatus === 'all' || a.status === filterStatus;
@@ -114,7 +132,7 @@ export default function AdminAnnouncements() {
     setShowEditor(true);
   };
 
-  const handleSave = (publish: boolean) => {
+  const handleSave = async (publish: boolean) => {
     if (!form.title.trim()) {
       toast.warning('请填写公告标题');
       return;
@@ -128,29 +146,34 @@ export default function AdminAnnouncements() {
       ? (form.publishAt ? 'scheduled' : 'published')
       : 'draft';
 
-    if (editingId) {
-      setAnnouncements(prev => prev.map(a =>
-        a.id === editingId
-          ? { ...a, title: form.title, content: form.content, priority: form.priority, targetRoles: form.targetRoles, status, publishAt: form.publishAt || undefined }
-          : a
-      ));
-      toast.success('公告已更新');
-    } else {
-      const newAnnouncement: Announcement = {
-        id: Date.now(),
-        title: form.title,
-        content: form.content,
-        status,
-        priority: form.priority,
-        targetRoles: form.targetRoles,
-        publishAt: form.publishAt || undefined,
-        createdAt: new Date().toISOString().split('T')[0],
-        views: 0,
-      };
-      setAnnouncements(prev => [newAnnouncement, ...prev]);
-      toast.success(publish ? '公告已发布' : '草稿已保存');
+    try {
+      if (editingId) {
+        const updatedList = announcements.map(a =>
+          a.id === editingId
+            ? { ...a, title: form.title, content: form.content, priority: form.priority, targetRoles: form.targetRoles, status, publishAt: form.publishAt || undefined }
+            : a
+        );
+        await saveAnnouncements(updatedList);
+        toast.success('公告已更新');
+      } else {
+        const newAnnouncement: Announcement = {
+          id: Date.now(),
+          title: form.title,
+          content: form.content,
+          status,
+          priority: form.priority,
+          targetRoles: form.targetRoles,
+          publishAt: form.publishAt || undefined,
+          createdAt: new Date().toISOString().split('T')[0],
+          views: 0,
+        };
+        await saveAnnouncements([newAnnouncement, ...announcements]);
+        toast.success(publish ? '公告已发布' : '草稿已保存');
+      }
+      setShowEditor(false);
+    } catch {
+      // Error already handled in saveAnnouncements
     }
-    setShowEditor(false);
   };
 
   const handleDelete = (id: number) => {
@@ -159,19 +182,29 @@ export default function AdminAnnouncements() {
   };
 
   // 确认删除
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     if (deleteDialog.announcementId === null) return;
-    setAnnouncements(prev => prev.filter(a => a.id !== deleteDialog.announcementId));
-    toast.success('公告已删除');
+    try {
+      const updatedList = announcements.filter(a => a.id !== deleteDialog.announcementId);
+      await saveAnnouncements(updatedList);
+      toast.success('公告已删除');
+    } catch {
+      // Error already handled
+    }
     setDeleteDialog({ open: false, announcementId: null });
   };
 
-  const togglePublish = (id: number) => {
-    setAnnouncements(prev => prev.map(a => {
-      if (a.id !== id) return a;
-      const newStatus = a.status === 'published' ? 'archived' : 'published';
-      return { ...a, status: newStatus };
-    }));
+  const togglePublish = async (id: number) => {
+    try {
+      const updatedList = announcements.map(a => {
+        if (a.id !== id) return a;
+        const newStatus = a.status === 'published' ? 'archived' : 'published';
+        return { ...a, status: newStatus };
+      });
+      await saveAnnouncements(updatedList);
+    } catch {
+      // Error already handled
+    }
   };
 
   const toggleRole = (role: string) => {
@@ -203,13 +236,31 @@ export default function AdminAnnouncements() {
         </button>
       </div>
 
+      {/* 加载状态 */}
+      {loading && (
+        <div className="flex items-center justify-center py-20">
+          <Loader2 className="w-8 h-8 text-primary-500 animate-spin" />
+          <span className="ml-3 text-gray-500">加载中...</span>
+        </div>
+      )}
+
+      {/* 错误状态 */}
+      {!loading && error && (
+        <ErrorState
+          message={error}
+          onRetry={() => { setError(null); fetchAnnouncements(); }}
+        />
+      )}
+
       {/* 统计 */}
+      {!loading && !error && (
+      <>
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         {[
           { label: '已发布', value: announcements.filter(a => a.status === 'published').length, color: 'text-green-600', bg: 'bg-green-50', icon: CheckCircle2 },
           { label: '草稿', value: announcements.filter(a => a.status === 'draft').length, color: 'text-gray-600', bg: 'bg-gray-50', icon: Edit3 },
           { label: '定时发布', value: announcements.filter(a => a.status === 'scheduled').length, color: 'text-blue-600', bg: 'bg-blue-50', icon: Clock },
-          { label: '总浏览量', value: announcements.reduce((s, a) => s + a.views, 0), color: 'text-purple-600', bg: 'bg-purple-50', icon: Eye },
+          { label: '总浏览量', value: announcements.reduce((s, a) => s + a.views, 0), color: 'text-primary-600', bg: 'bg-primary-50', icon: Eye },
         ].map(stat => (
           <div key={stat.label} className="bg-white rounded-xl border border-gray-200 p-4">
             <div className="flex items-center gap-3">
@@ -335,6 +386,9 @@ export default function AdminAnnouncements() {
             );
           })}
         </div>
+      )}
+
+      </>
       )}
 
       {/* 编辑弹窗 */}

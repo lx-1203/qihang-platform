@@ -27,10 +27,10 @@ interface UserRecord {
   created_at: string;
 }
 
-const ROLE_MAP: Record<string, { label: string; color: string; tagVariant: 'blue' | 'green' | 'purple' | 'red' }> = {
+const ROLE_MAP: Record<string, { label: string; color: string; tagVariant: 'blue' | 'green' | 'primary' | 'red' }> = {
   student: { label: '学生', color: 'bg-blue-100 text-blue-700', tagVariant: 'blue' },
   company: { label: '企业', color: 'bg-emerald-100 text-emerald-700', tagVariant: 'green' },
-  mentor: { label: '导师', color: 'bg-purple-100 text-purple-700', tagVariant: 'purple' },
+  mentor: { label: '导师', color: 'bg-primary-100 text-primary-700', tagVariant: 'primary' },
   admin: { label: '管理员', color: 'bg-red-100 text-red-700', tagVariant: 'red' },
 };
 
@@ -56,20 +56,6 @@ export default function AdminUsers() {
   // 批量操作状态
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const [batchAction, setBatchAction] = useState<{ open: boolean; action: string }>({ open: false, action: '' });
-
-  // 模拟数据
-  const mockUsers: UserRecord[] = [
-    { id: 1, email: 'admin@qihang.com', nickname: '超级管理员', role: 'admin', avatar: '', phone: '138****8888', status: 1, created_at: '2026-01-01 00:00:00' },
-    { id: 2, email: 'student@example.com', nickname: '张同学', role: 'student', avatar: '', phone: '139****1234', status: 1, created_at: '2026-03-15 10:30:00' },
-    { id: 3, email: 'hr@bytedance.com', nickname: '字节跳动HR', role: 'company', avatar: '', phone: '136****5678', status: 1, created_at: '2026-03-10 14:20:00' },
-    { id: 4, email: 'hr@tencent.com', nickname: '腾讯HR', role: 'company', avatar: '', phone: '137****9012', status: 1, created_at: '2026-03-08 09:15:00' },
-    { id: 5, email: 'chen@mentor.com', nickname: '陈经理', role: 'mentor', avatar: '', phone: '135****3456', status: 1, created_at: '2026-03-05 16:45:00' },
-    { id: 6, email: 'wang@student.com', nickname: '王小明', role: 'student', avatar: '', phone: '133****7890', status: 1, created_at: '2026-03-20 11:00:00' },
-    { id: 7, email: 'li@student.com', nickname: '李小红', role: 'student', avatar: '', phone: '131****2345', status: 0, created_at: '2026-03-18 08:30:00' },
-    { id: 8, email: 'hr@baidu.com', nickname: '百度HR', role: 'company', avatar: '', phone: '130****6789', status: 1, created_at: '2026-03-12 13:10:00' },
-    { id: 9, email: 'zhang@mentor.com', nickname: '张工', role: 'mentor', avatar: '', phone: '132****0123', status: 1, created_at: '2026-03-06 15:30:00' },
-    { id: 10, email: 'spam_user@test.com', nickname: 'spam_user123', role: 'student', avatar: '', phone: '', status: 0, created_at: '2026-04-01 02:00:00' },
-  ];
 
   // 搜索防抖：300ms 延迟
   useEffect(() => {
@@ -135,9 +121,7 @@ export default function AdminUsers() {
       showToast({ type: 'success', title: currentStatus === 1 ? '用户已禁用' : '用户已启用' });
       fetchUsers();
     } catch {
-      // 模拟切换
-      setUsers(prev => prev.map(u => u.id === userId ? { ...u, status: currentStatus === 1 ? 0 : 1 } : u));
-      showToast({ type: 'success', title: currentStatus === 1 ? '用户已禁用' : '用户已启用' });
+      showToast({ type: 'error', title: '操作失败，请重试' });
     }
     setActionMenu(null);
     setConfirmDialog({ open: false, userId: null, action: '' });
@@ -171,8 +155,8 @@ export default function AdminUsers() {
   const SortIcon = ({ field }: { field: string }) => {
     if (sortField !== field) return <ArrowUpDown className="w-3.5 h-3.5 text-gray-400" />;
     return sortOrder === 'asc'
-      ? <ArrowUp className="w-3.5 h-3.5 text-indigo-600" />
-      : <ArrowDown className="w-3.5 h-3.5 text-indigo-600" />;
+      ? <ArrowUp className="w-3.5 h-3.5 text-primary-600" />
+      : <ArrowDown className="w-3.5 h-3.5 text-primary-600" />;
   };
 
   // 批量选择
@@ -215,7 +199,6 @@ export default function AdminUsers() {
       <ErrorState
         message={error}
         onRetry={() => { setError(null); fetchUsers(); }}
-        onLoadMockData={() => { setUsers(mockUsers); setTotal(mockUsers.length); setError(null); }}
       />
     </div>
   );
@@ -230,7 +213,7 @@ export default function AdminUsers() {
         </div>
         <button
           onClick={() => showToast({ type: 'info', title: '功能开发中', message: '该功能正在开发中，敬请期待' })}
-          className="flex items-center gap-2 px-4 py-2.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium text-sm"
+          className="flex items-center gap-2 px-4 py-2.5 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors font-medium text-sm"
         >
           <Download className="w-4 h-4" />
           导出用户
@@ -248,7 +231,7 @@ export default function AdminUsers() {
               placeholder="搜索用户名、邮箱..."
               value={search}
               onChange={e => setSearch(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
+              className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none"
             />
           </div>
 
@@ -258,7 +241,7 @@ export default function AdminUsers() {
             <select
               value={roleFilter}
               onChange={e => { setRoleFilter(e.target.value); setPage(1); }}
-              className="border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
+              className="border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-primary-500 outline-none"
             >
               <option value="all">全部角色</option>
               <option value="student">学生</option>
@@ -272,7 +255,7 @@ export default function AdminUsers() {
           <select
             value={statusFilter}
             onChange={e => { setStatusFilter(e.target.value); setPage(1); }}
-            className="border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
+            className="border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-primary-500 outline-none"
           >
             <option value="all">全部状态</option>
             <option value="1">正常</option>
@@ -285,8 +268,8 @@ export default function AdminUsers() {
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
         {/* 批量操作工具栏 */}
         {selectedIds.size > 0 && (
-          <div className="flex items-center justify-between px-6 py-3 bg-indigo-50 border-b border-indigo-100">
-            <span className="text-sm text-indigo-700 font-medium">
+          <div className="flex items-center justify-between px-6 py-3 bg-primary-50 border-b border-primary-100">
+            <span className="text-sm text-primary-700 font-medium">
               已选择 {selectedIds.size} 个用户
             </span>
             <div className="flex items-center gap-2">
@@ -316,7 +299,7 @@ export default function AdminUsers() {
                     type="checkbox"
                     checked={selectedIds.size === sortedUsers.length && sortedUsers.length > 0}
                     onChange={toggleSelectAll}
-                    className="w-4 h-4 text-indigo-600 rounded border-gray-300 focus:ring-indigo-500"
+                    className="w-4 h-4 text-primary-600 rounded border-gray-300 focus:ring-primary-500"
                   />
                 </th>
                 <th
@@ -362,20 +345,20 @@ export default function AdminUsers() {
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ delay: i * 0.03 }}
-                  className={`hover:bg-gray-50 transition-colors ${selectedIds.has(user.id) ? 'bg-indigo-50/50' : ''}`}
+                  className={`hover:bg-gray-50 transition-colors ${selectedIds.has(user.id) ? 'bg-primary-50/50' : ''}`}
                 >
                   <td className="px-6 py-4">
                     <input
                       type="checkbox"
                       checked={selectedIds.has(user.id)}
                       onChange={() => toggleSelectUser(user.id)}
-                      className="w-4 h-4 text-indigo-600 rounded border-gray-300 focus:ring-indigo-500"
+                      className="w-4 h-4 text-primary-600 rounded border-gray-300 focus:ring-primary-500"
                       onClick={e => e.stopPropagation()}
                     />
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center font-bold text-sm">
+                      <div className="w-9 h-9 rounded-full bg-primary-100 text-primary-600 flex items-center justify-center font-bold text-sm">
                         {user.nickname.charAt(0)}
                       </div>
                       <div>

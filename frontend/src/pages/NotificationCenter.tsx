@@ -8,6 +8,8 @@ import {
 import http from '@/api/http';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
 import Tag from '@/components/ui/Tag';
+import ErrorState from '@/components/ui/ErrorState';
+import { ListSkeleton } from '@/components/ui/Skeleton';
 
 // ====== 通知中心 ======
 // 商业级要求：统一通知管理、已读/未读状态、分类筛选
@@ -25,7 +27,7 @@ interface NotificationItem {
 const TYPE_CONFIG: Record<string, { label: string; icon: typeof Bell; color: string; bg: string }> = {
   appointment: { label: '预约通知', icon: Calendar, color: 'text-blue-600', bg: 'bg-blue-100' },
   resume: { label: '简历通知', icon: Briefcase, color: 'text-green-600', bg: 'bg-green-100' },
-  system: { label: '系统通知', icon: Megaphone, color: 'text-purple-600', bg: 'bg-purple-100' },
+  system: { label: '系统通知', icon: Megaphone, color: 'text-primary-600', bg: 'bg-primary-100' },
   verify: { label: '审核通知', icon: Shield, color: 'text-amber-600', bg: 'bg-amber-100' },
 };
 
@@ -36,21 +38,10 @@ export default function NotificationCenter() {
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
   const pageSize = 15;
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const [deleteTarget, setDeleteTarget] = useState<{id: number; name: string} | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
-
-  const mockNotifications: NotificationItem[] = [
-    { id: 1, type: 'resume', title: '简历投递成功', content: '您已成功投递「前端开发工程师」职位（字节跳动），请等待企业查看。', related_id: 1, is_read: 0, created_at: '2026-04-08 09:30:00' },
-    { id: 2, type: 'appointment', title: '预约确认', content: '陈经理已确认您的辅导预约，时间：2026年4月12日 14:00-15:00，请准时参加。', related_id: 1, is_read: 0, created_at: '2026-04-08 08:15:00' },
-    { id: 3, type: 'system', title: '平台升级公告', content: '启航平台将于2026年4月10日凌晨2:00-4:00进行系统维护升级，届时部分功能可能暂时不可用，感谢您的理解。', related_id: null, is_read: 0, created_at: '2026-04-07 18:00:00' },
-    { id: 4, type: 'verify', title: '企业认证已通过', content: '恭喜！您的企业「创新科技有限公司」认证已通过审核，现在可以发布职位了。', related_id: 4, is_read: 1, created_at: '2026-04-07 14:30:00' },
-    { id: 5, type: 'resume', title: '简历被查看', content: '腾讯HR已查看了您投递的「产品经理实习生」简历，请保持手机畅通。', related_id: 2, is_read: 1, created_at: '2026-04-07 11:20:00' },
-    { id: 6, type: 'appointment', title: '辅导即将开始', content: '您与张工的辅导将在30分钟后开始，主题：前端技术面试准备。', related_id: 2, is_read: 1, created_at: '2026-04-06 13:30:00' },
-    { id: 7, type: 'system', title: '新功能上线', content: '留学申请板块已上线！覆盖全球Top100院校，提供选校评估、背景提升、文书修改等一站式服务。', related_id: null, is_read: 1, created_at: '2026-04-05 10:00:00' },
-    { id: 8, type: 'resume', title: '面试邀请', content: '百度邀请您参加「AIGC算法研究员」岗位的面试，时间：2026年4月15日 10:00，地点：北京海淀区百度大厦。', related_id: 3, is_read: 0, created_at: '2026-04-04 16:45:00' },
-    { id: 9, type: 'appointment', title: '辅导评价提醒', content: '您与王总监的辅导已完成，请对本次辅导进行评价，帮助导师改进服务质量。', related_id: 3, is_read: 1, created_at: '2026-04-03 20:00:00' },
-    { id: 10, type: 'verify', title: '导师认证已驳回', content: '您的导师认证申请已被驳回，原因：无法验证工作经历真实性。请补充材料后重新提交。', related_id: 5, is_read: 1, created_at: '2026-04-02 09:00:00' },
-  ];
 
   useEffect(() => {
     fetchNotifications();
@@ -60,28 +51,21 @@ export default function NotificationCenter() {
   async function fetchNotifications() {
     try {
       setLoading(true);
+      setError('');
       const res = await http.get('/notifications', {
         params: { page, pageSize, type: typeFilter, is_read: readFilter }
       });
       if (res.data?.code === 200 && res.data.data) {
-        setNotifications(res.data.data.list);
-        setTotal(res.data.data.total);
+        setNotifications(res.data.data.list || []);
+        setTotal(res.data.data.total || 0);
       } else {
-        applyMock();
+        setError('获取通知失败');
       }
     } catch {
-      applyMock();
+      setError('网络错误，请稍后重试');
     } finally {
       setLoading(false);
     }
-  }
-
-  function applyMock() {
-    let filtered = [...mockNotifications];
-    if (typeFilter !== 'all') filtered = filtered.filter(n => n.type === typeFilter);
-    if (readFilter !== 'all') filtered = filtered.filter(n => n.is_read === Number(readFilter));
-    setNotifications(filtered);
-    setTotal(filtered.length);
   }
 
   async function markAsRead(id: number) {
@@ -205,8 +189,12 @@ export default function NotificationCenter() {
 
         {/* 通知列表 */}
         <div className="space-y-3">
+          {loading && <ListSkeleton count={5} />}
+          {error && !loading && (
+            <ErrorState title="加载失败" message={error} onRetry={fetchNotifications} />
+          )}
           <AnimatePresence>
-            {notifications.map((notif, i) => {
+            {!loading && !error && notifications.map((notif, i) => {
               const typeInfo = TYPE_CONFIG[notif.type] || TYPE_CONFIG.system;
               const TypeIcon = typeInfo.icon;
               return (
@@ -239,7 +227,7 @@ export default function NotificationCenter() {
                           variant={
                             notif.type === 'appointment' ? 'blue' :
                             notif.type === 'resume' ? 'green' :
-                            notif.type === 'system' ? 'purple' : 'yellow'
+                            notif.type === 'system' ? 'primary' : 'yellow'
                           }
                           size="xs"
                         >
@@ -281,7 +269,7 @@ export default function NotificationCenter() {
           </AnimatePresence>
 
           {/* 空状态 */}
-          {notifications.length === 0 && (
+          {!loading && !error && notifications.length === 0 && (
             <div className="text-center py-16">
               <Bell className="w-12 h-12 text-gray-300 mx-auto mb-4" />
               <p className="text-gray-500 font-medium">暂无消息</p>

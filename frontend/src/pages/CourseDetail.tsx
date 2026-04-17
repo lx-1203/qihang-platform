@@ -43,7 +43,7 @@ interface RelatedCourse {
 const difficultyMap: Record<string, { label: string; color: string }> = {
   beginner: { label: '入门', color: 'bg-green-100 text-green-700' },
   intermediate: { label: '进阶', color: 'bg-blue-100 text-blue-700' },
-  advanced: { label: '高级', color: 'bg-purple-100 text-purple-700' },
+  advanced: { label: '高级', color: 'bg-primary-100 text-primary-700' },
 };
 
 export default function CourseDetail() {

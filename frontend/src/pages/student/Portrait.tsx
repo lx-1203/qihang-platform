@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { useToast } from '../../components/ui';
 import http from '../../api/http';
+import ErrorState from '../../components/ui/ErrorState';
 
 // ====== 预设标签库 ======
 
@@ -40,7 +41,7 @@ const INDUSTRY_PRESETS = [
 
 const CAREER_GOALS = [
   { label: '求职就业', icon: Briefcase, color: 'text-blue-600', bg: 'bg-blue-50' },
-  { label: '考研深造', icon: GraduationCap, color: 'text-purple-600', bg: 'bg-purple-50' },
+  { label: '考研深造', icon: GraduationCap, color: 'text-primary-600', bg: 'bg-primary-50' },
   { label: '出国留学', icon: Globe, color: 'text-primary-600', bg: 'bg-primary-50' },
   { label: '考公考编', icon: BookOpen, color: 'text-amber-600', bg: 'bg-amber-50' },
   { label: '创业创新', icon: Lightbulb, color: 'text-rose-600', bg: 'bg-rose-50' },
@@ -229,6 +230,7 @@ function RadarChart({ dimensions }: { dimensions: { name: string; value: number 
 export default function StudentPortrait() {
   const toast = useToast();
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
   // 画像数据
@@ -263,7 +265,7 @@ export default function StudentPortrait() {
           if (d.dimensions) setDimensions(d.dimensions);
         }
       } catch {
-        // 首次使用，无画像数据，使用默认值
+        setError('画像数据加载失败，请稍后重试');
       } finally {
         setLoading(false);
       }
@@ -307,6 +309,40 @@ export default function StudentPortrait() {
             <div className="h-4 bg-gray-100 rounded w-3/4" />
           </div>
         ))}
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="container-narrow py-8">
+        <ErrorState
+          message={error}
+          onRetry={() => {
+            setError(null);
+            setLoading(true);
+            // Re-trigger the useEffect by calling fetch directly
+            const retryFetch = async () => {
+              try {
+                const res = await http.get('/student/portrait');
+                if (res.data?.data) {
+                  const d = res.data.data;
+                  if (d.skills) setSkills(d.skills);
+                  if (d.interests) setInterests(d.interests);
+                  if (d.industries) setIndustries(d.industries);
+                  if (d.career_goals) setCareerGoals(d.career_goals);
+                  if (d.self_intro) setSelfIntro(d.self_intro);
+                  if (d.dimensions) setDimensions(d.dimensions);
+                }
+              } catch {
+                setError('画像数据加载失败，请稍后重试');
+              } finally {
+                setLoading(false);
+              }
+            };
+            retryFetch();
+          }}
+        />
       </div>
     );
   }

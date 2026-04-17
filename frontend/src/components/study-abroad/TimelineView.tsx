@@ -21,14 +21,14 @@ interface TimelineEvent {
 
 const typeColors: Record<string, { dot: string; bg: string; text: string; border: string }> = {
   deadline: { dot: 'bg-red-500', bg: 'bg-red-50', text: 'text-red-600', border: 'border-red-100' },
-  live: { dot: 'bg-purple-500', bg: 'bg-purple-50', text: 'text-purple-600', border: 'border-purple-100' },
+  live: { dot: 'bg-primary-500', bg: 'bg-primary-50', text: 'text-primary-600', border: 'border-primary-100' },
   event: { dot: 'bg-amber-500', bg: 'bg-amber-50', text: 'text-amber-600', border: 'border-amber-100' },
   tips: { dot: 'bg-green-500', bg: 'bg-green-50', text: 'text-green-600', border: 'border-green-100' },
 };
 
-const typeTagVariant: Record<string, 'red' | 'purple' | 'orange' | 'green'> = {
+const typeTagVariant: Record<string, 'red' | 'primary' | 'orange' | 'green'> = {
   deadline: 'red',
-  live: 'purple',
+  live: 'primary',
   event: 'orange',
   tips: 'green',
 };

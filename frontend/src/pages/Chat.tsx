@@ -21,7 +21,7 @@ import Tag from '@/components/ui/Tag';
 /** 会话类型标签配置 */
 const CONV_TYPE_CONFIG: Record<string, { label: string; icon: typeof Bot; color: string; bg: string }> = {
   user_service: { label: '人工客服', icon: Headphones, color: 'text-blue-600', bg: 'bg-blue-50' },
-  ai_chat: { label: 'AI 助手', icon: Bot, color: 'text-violet-600', bg: 'bg-violet-50' },
+  ai_chat: { label: 'AI 助手', icon: Bot, color: 'text-primary-600', bg: 'bg-primary-50' },
 };
 
 /** 会话状态徽标配置 */
@@ -417,19 +417,19 @@ export default function Chat() {
           <div className="lg:col-span-3 bg-white rounded-2xl shadow-sm border border-gray-100 flex flex-col overflow-hidden max-h-[calc(100vh-260px)]">
             {/* 对话头部 */}
             <div className="px-4 sm:px-6 py-3 border-b border-gray-100 flex items-center gap-3">
-              <div className="w-9 h-9 rounded-full bg-gradient-to-br from-violet-100 to-purple-100 flex items-center justify-center flex-shrink-0">
-                <Bot className="w-4 h-4 text-violet-600" />
+              <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary-100 to-primary-200 flex items-center justify-center flex-shrink-0">
+                <Bot className="w-4 h-4 text-primary-600" />
               </div>
               <div className="flex-1 min-w-0">
                 <h2 className="text-sm font-bold text-gray-900 flex items-center gap-1.5">
                   启小航 AI 助手
-                  <Tag variant="purple" size="xs">体验模式</Tag>
+                  <Tag variant="primary" size="xs">体验模式</Tag>
                 </h2>
                 <p className="text-[10px] text-gray-400 mt-0.5">
                   {guestLimitReached ? '体验次数已用完' : `剩余 ${3 - guestCount} 次体验机会`}
                 </p>
               </div>
-              <Sparkles className="w-4 h-4 text-violet-400" />
+              <Sparkles className="w-4 h-4 text-primary-400" />
             </div>
 
             {/* 对话消息区域 */}
@@ -444,13 +444,13 @@ export default function Chat() {
               {/* 初始 AI 欢迎消息 */}
               {guestMessages.length === 0 && (
                 <div className="flex items-start gap-2.5 mb-3">
-                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-violet-100 to-purple-100 flex items-center justify-center flex-shrink-0">
-                    <Bot className="w-4 h-4 text-violet-600" />
+                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary-100 to-primary-200 flex items-center justify-center flex-shrink-0">
+                    <Bot className="w-4 h-4 text-primary-600" />
                   </div>
                   <div className="max-w-[70%]">
                     <div className="flex items-center gap-1.5 mb-1">
                       <span className="text-xs font-medium text-gray-600">启小航</span>
-                      <Tag variant="purple" size="xs">AI</Tag>
+                      <Tag variant="primary" size="xs">AI</Tag>
                     </div>
                     <div className="bg-gray-100 text-gray-800 px-4 py-2.5 rounded-2xl rounded-bl-md">
                       <p className="text-sm whitespace-pre-wrap break-words leading-relaxed">
@@ -485,8 +485,8 @@ export default function Chat() {
                   animate={{ opacity: 1 }}
                   className="flex items-start gap-2.5 mb-3"
                 >
-                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-violet-100 to-purple-100 flex items-center justify-center flex-shrink-0">
-                    <Bot className="w-4 h-4 text-violet-600" />
+                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary-100 to-primary-200 flex items-center justify-center flex-shrink-0">
+                    <Bot className="w-4 h-4 text-primary-600" />
                   </div>
                   <div className="px-4 py-2.5 bg-gray-100 rounded-2xl rounded-bl-md">
                     <div className="flex items-center gap-1.5">
@@ -501,7 +501,7 @@ export default function Chat() {
 
             {/* 输入区域 / 登录提示 */}
             {guestLimitReached ? (
-              <div className="border-t border-gray-100 p-6 bg-gradient-to-r from-primary-50/50 to-violet-50/50">
+              <div className="border-t border-gray-100 p-6 bg-gradient-to-r from-primary-50/50 to-primary-50/50">
                 <div className="text-center">
                   <p className="text-sm font-semibold text-gray-900 mb-1">体验次数已用完</p>
                   <p className="text-xs text-gray-500 mb-4">登录后即可解锁完整功能</p>
@@ -525,9 +525,9 @@ export default function Chat() {
                   </div>
                   <Link
                     to="/login?returnUrl=/chat"
-                    className="inline-flex items-center gap-2 px-8 py-3 bg-gradient-to-r from-violet-500 to-purple-600 text-white rounded-xl
-                      hover:from-violet-400 hover:to-purple-500 transition-colors font-bold shadow-lg shadow-violet-500/25 text-sm
-                      active:scale-[0.97] focus-visible:ring-2 focus-visible:ring-violet-400/50 focus-visible:outline-none"
+                    className="inline-flex items-center gap-2 px-8 py-3 bg-gradient-to-r from-primary-500 to-primary-600 text-white rounded-xl
+                      hover:from-primary-400 hover:to-primary-500 transition-colors font-bold shadow-lg shadow-primary-500/25 text-sm
+                      active:scale-[0.97] focus-visible:ring-2 focus-visible:ring-primary-400/50 focus-visible:outline-none"
                   >
                     <LogIn className="w-4 h-4" />
                     登录 / 注册
@@ -585,10 +585,10 @@ export default function Chat() {
               <button
                 onClick={handleCreateConversation}
                 disabled={creating}
-                className="w-full flex items-center justify-center gap-2 px-5 py-3 bg-gradient-to-r from-violet-500 to-purple-600 text-white rounded-xl
-                  hover:from-violet-400 hover:to-purple-500 disabled:opacity-60 transition-all text-sm font-bold shadow-lg shadow-violet-500/25
+                className="w-full flex items-center justify-center gap-2 px-5 py-3 bg-gradient-to-r from-primary-500 to-primary-600 text-white rounded-xl
+                  hover:from-primary-400 hover:to-primary-500 disabled:opacity-60 transition-all text-sm font-bold shadow-lg shadow-primary-500/25
                   hover:shadow-xl hover:-translate-y-0.5
-                  active:scale-[0.97] focus-visible:ring-2 focus-visible:ring-violet-400/50 focus-visible:outline-none"
+                  active:scale-[0.97] focus-visible:ring-2 focus-visible:ring-primary-400/50 focus-visible:outline-none"
               >
                 {creating ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
@@ -810,9 +810,9 @@ export default function Chat() {
                     <button
                       onClick={handleCreateConversation}
                       disabled={creating}
-                      className="mt-2 inline-flex items-center gap-1.5 px-5 py-2.5 bg-gradient-to-r from-violet-500 to-purple-600 text-white rounded-lg
-                        hover:from-violet-400 hover:to-purple-500 disabled:opacity-60 transition-colors text-xs font-bold
-                        active:scale-[0.97] focus-visible:ring-2 focus-visible:ring-violet-400/50 focus-visible:outline-none"
+                      className="mt-2 inline-flex items-center gap-1.5 px-5 py-2.5 bg-gradient-to-r from-primary-500 to-primary-600 text-white rounded-lg
+                        hover:from-primary-400 hover:to-primary-500 disabled:opacity-60 transition-colors text-xs font-bold
+                        active:scale-[0.97] focus-visible:ring-2 focus-visible:ring-primary-400/50 focus-visible:outline-none"
                     >
                       {creating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />}
                       新建会话
@@ -839,9 +839,9 @@ export default function Chat() {
                   <button
                     onClick={handleCreateConversation}
                     disabled={creating}
-                    className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-violet-500 to-purple-600 text-white rounded-xl
-                      hover:from-violet-400 hover:to-purple-500 disabled:opacity-60 transition-all text-sm font-bold shadow-lg shadow-violet-500/25
-                      hover:shadow-xl active:scale-[0.97] focus-visible:ring-2 focus-visible:ring-violet-400/50 focus-visible:outline-none"
+                    className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-primary-500 to-primary-600 text-white rounded-xl
+                      hover:from-primary-400 hover:to-primary-500 disabled:opacity-60 transition-all text-sm font-bold shadow-lg shadow-primary-500/25
+                      hover:shadow-xl active:scale-[0.97] focus-visible:ring-2 focus-visible:ring-primary-400/50 focus-visible:outline-none"
                   >
                     {creating ? (
                       <Loader2 className="w-4 h-4 animate-spin" />

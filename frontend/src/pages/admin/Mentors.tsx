@@ -46,15 +46,6 @@ export default function AdminMentors() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const mockMentors: MentorRecord[] = [
-    { id: 1, user_id: 10, name: '陈经理', title: '某头部互联网大厂HRD', avatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=100', bio: '10年以上人力资源管理经验', expertise: ['简历优化', '面试辅导', 'HR视角'], rating: 4.9, price: 299, verify_status: 'approved', verify_remark: '', created_at: '2026-03-05' },
-    { id: 2, user_id: 11, name: '张工', title: '高级前端架构师', avatar: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&q=80&w=100', bio: '8年前端开发经验', expertise: ['前端开发', '技术面试', '系统设计'], rating: 4.8, price: 399, verify_status: 'approved', verify_remark: '', created_at: '2026-03-06' },
-    { id: 3, user_id: 12, name: '王总监', title: '知名快消品牌市场总监', avatar: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&q=80&w=100', bio: '12年快消行业从业经验', expertise: ['快消行业', '群面技巧', '品牌营销'], rating: 5.0, price: 349, verify_status: 'approved', verify_remark: '', created_at: '2026-03-06' },
-    { id: 4, user_id: 20, name: '刘老师', title: '资深留学顾问', avatar: '', bio: '5年留学咨询经验，专注英美名校申请', expertise: ['留学申请', '文书修改', '背景提升'], rating: 0, price: 259, verify_status: 'pending', verify_remark: '', created_at: '2026-04-05' },
-    { id: 5, user_id: 21, name: '赵导师', title: '自称某银行高管', avatar: '', bio: '简历信息疑似造假', expertise: ['金融行业'], rating: 0, price: 500, verify_status: 'rejected', verify_remark: '无法验证工作经历真实性，资质证明材料缺失', created_at: '2026-04-02' },
-    { id: 6, user_id: 22, name: '孙老师', title: '考研辅导名师', avatar: '', bio: '10年考研辅导经验，数学满分', expertise: ['考研数学', '考研政治', '备考规划'], rating: 0, price: 199, verify_status: 'pending', verify_remark: '', created_at: '2026-04-07' },
-  ];
-
   useEffect(() => {
     fetchMentors();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -69,22 +60,13 @@ export default function AdminMentors() {
         setMentors(res.data.data.list || res.data.data.mentors || []);
         setTotal(res.data.data.pagination?.total || res.data.data.total || 0);
       } else {
-        applyMock();
+        setError('数据加载失败，请稍后重试');
       }
     } catch {
-      applyMock();
+      setError('数据加载失败，请稍后重试');
     } finally {
       setLoading(false);
     }
-  }
-
-  function applyMock() {
-    let filtered = [...mockMentors];
-    if (statusFilter !== 'all') filtered = filtered.filter(m => m.verify_status === statusFilter);
-    if (search) filtered = filtered.filter(m => m.name.includes(search) || m.title.includes(search));
-    setMentors(filtered);
-    setTotal(filtered.length);
-    setError(null);
   }
 
   async function handleReview(mentorId: number, status: 'approved' | 'rejected') {
@@ -96,13 +78,7 @@ export default function AdminMentors() {
         message: reviewRemark ? `备注：${reviewRemark}` : undefined
       });
     } catch {
-      setMentors(prev => prev.map(m =>
-        m.id === mentorId ? { ...m, verify_status: status, verify_remark: reviewRemark } : m
-      ));
-      showToast({
-        type: status === 'approved' ? 'success' : 'warning',
-        title: status === 'approved' ? '导师认证已通过' : '导师认证已驳回'
-      });
+      showToast({ type: 'error', title: '操作失败，请重试' });
     }
     setReviewModal(null);
     setReviewRemark('');
@@ -110,7 +86,7 @@ export default function AdminMentors() {
   }
 
   const totalPages = Math.ceil(total / pageSize);
-  const pendingCount = mockMentors.filter(m => m.verify_status === 'pending').length;
+  const pendingCount = mentors.filter(m => m.verify_status === 'pending').length;
 
   if (loading) return <div className="space-y-6"><TableSkeleton rows={6} cols={4} /></div>;
   if (error) return (
@@ -118,7 +94,6 @@ export default function AdminMentors() {
       <ErrorState
         message={error}
         onRetry={() => { setError(null); fetchMentors(); }}
-        onLoadMockData={() => { applyMock(); }}
       />
     </div>
   );
@@ -140,9 +115,9 @@ export default function AdminMentors() {
       {/* 状态统计 */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {[
-          { label: '待审核', count: mockMentors.filter(m => m.verify_status === 'pending').length, color: 'text-amber-600', bg: 'bg-amber-50', icon: Clock },
-          { label: '已认证', count: mockMentors.filter(m => m.verify_status === 'approved').length, color: 'text-green-600', bg: 'bg-green-50', icon: Award },
-          { label: '已驳回', count: mockMentors.filter(m => m.verify_status === 'rejected').length, color: 'text-red-600', bg: 'bg-red-50', icon: XCircle },
+          { label: '待审核', count: mentors.filter(m => m.verify_status === 'pending').length, color: 'text-amber-600', bg: 'bg-amber-50', icon: Clock },
+          { label: '已认证', count: mentors.filter(m => m.verify_status === 'approved').length, color: 'text-green-600', bg: 'bg-green-50', icon: Award },
+          { label: '已驳回', count: mentors.filter(m => m.verify_status === 'rejected').length, color: 'text-red-600', bg: 'bg-red-50', icon: XCircle },
         ].map(item => (
           <div key={item.label} className="bg-white rounded-xl p-5 shadow-sm border border-gray-100 flex items-center gap-4">
             <div className={`w-12 h-12 ${item.bg} rounded-xl flex items-center justify-center`}>
@@ -165,7 +140,7 @@ export default function AdminMentors() {
             placeholder="搜索导师姓名、头衔..."
             value={search}
             onChange={e => setSearch(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
+            className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 outline-none"
           />
         </div>
         <div className="flex gap-2">
@@ -174,7 +149,7 @@ export default function AdminMentors() {
               key={s}
               onClick={() => { setStatusFilter(s); setPage(1); }}
               className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                statusFilter === s ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                statusFilter === s ? 'bg-primary-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
               }`}
             >
               {s === 'all' ? '全部' : STATUS_MAP[s as keyof typeof STATUS_MAP].label}
@@ -201,8 +176,8 @@ export default function AdminMentors() {
                   {mentor.avatar ? (
                     <img src={mentor.avatar} alt={mentor.name} className="w-14 h-14 rounded-xl object-cover" />
                   ) : (
-                    <div className="w-14 h-14 bg-purple-100 rounded-xl flex items-center justify-center">
-                      <Award className="w-7 h-7 text-purple-600" />
+                    <div className="w-14 h-14 bg-primary-100 rounded-xl flex items-center justify-center">
+                      <Award className="w-7 h-7 text-primary-600" />
                     </div>
                   )}
                   <div>

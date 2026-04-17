@@ -53,9 +53,9 @@
       "achievement": "跨考上海交通大学计算机专业 初试 410 分",
       "quote": "作为跨考生压力很大，但启航平台的考研课程体系很完整，尤其是数据结构和算法课程帮了大忙。学长学姐的经验分享也给了我很大的信心。",
       "tags": ["跨考", "985院校", "计算机"],
-      "color": "from-purple-500 to-indigo-500",
-      "bgLight": "bg-purple-50",
-      "textColor": "text-purple-600"
+      "color": "from-primary-500 to-primary-700",
+      "bgLight": "bg-primary-50",
+      "textColor": "text-primary-600"
     },
     {
       "id": 4,
@@ -105,9 +105,9 @@
       "achievement": "获得哈佛大学 GSD 建筑学硕士全额奖学金",
       "quote": "平台上有很多海外名校的学长分享作品集制作经验，导师还帮我联系了在GSD就读的学姐做portfolio review。这些资源对建筑留学生来说太宝贵了。",
       "tags": ["美国藤校", "建筑学", "全额奖学金"],
-      "color": "from-violet-500 to-purple-500",
-      "bgLight": "bg-violet-50",
-      "textColor": "text-violet-600"
+      "color": "from-primary-500 to-primary-600",
+      "bgLight": "bg-primary-50",
+      "textColor": "text-primary-600"
     },
     {
       "id": 8,

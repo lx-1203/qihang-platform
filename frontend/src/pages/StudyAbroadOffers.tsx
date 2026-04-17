@@ -298,9 +298,9 @@ export default function StudyAbroadOffers() {
               label: '录取率',
               value: `${stats.admitRate}%`,
               icon: Award,
-              color: 'text-purple-600',
-              bg: 'bg-purple-50',
-              border: 'border-purple-100',
+              color: 'text-primary-600',
+              bg: 'bg-primary-50',
+              border: 'border-primary-100',
             },
           ].map((s, idx) => (
             <motion.div

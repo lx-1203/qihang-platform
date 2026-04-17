@@ -72,13 +72,13 @@ export default function ChatBubble({ message, isCurrentUser, onResend }: ChatBub
   if (sender_role === 'ai') {
     return (
       <div className="flex items-start gap-2.5 mb-3">
-        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-violet-100 to-purple-100 flex items-center justify-center flex-shrink-0">
-          <Bot className="w-4 h-4 text-violet-600" />
+        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary-100 to-primary-200 flex items-center justify-center flex-shrink-0">
+          <Bot className="w-4 h-4 text-primary-600" />
         </div>
         <div className="max-w-[70%]">
           <div className="flex items-center gap-1.5 mb-1">
             <span className="text-xs font-medium text-gray-600">启小航</span>
-            <Tag variant="purple" size="xs">AI</Tag>
+            <Tag variant="primary" size="xs">AI</Tag>
           </div>
           <div className="bg-gray-100 text-gray-800 px-4 py-2.5 rounded-2xl rounded-bl-md">
             <p className="text-sm whitespace-pre-wrap break-words leading-relaxed">{content}</p>

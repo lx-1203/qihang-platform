@@ -388,9 +388,9 @@ export default function ChatManage() {
       label: '总会话数',
       value: stats.total,
       icon: MessageSquare,
-      color: 'text-indigo-600',
-      borderColor: 'border-l-indigo-500',
-      bg: 'bg-indigo-50',
+      color: 'text-primary-600',
+      borderColor: 'border-l-primary-500',
+      bg: 'bg-primary-50',
     },
     {
       label: '进行中',
@@ -428,9 +428,9 @@ export default function ChatManage() {
       label: '今日消息量',
       value: stats.messagesToday,
       icon: Zap,
-      color: 'text-purple-600',
-      borderColor: 'border-l-purple-500',
-      bg: 'bg-purple-50',
+      color: 'text-primary-600',
+      borderColor: 'border-l-primary-500',
+      bg: 'bg-primary-50',
     },
   ];
 
@@ -440,7 +440,7 @@ export default function ChatManage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl font-bold text-gray-900 flex items-center gap-2">
-            <MessageSquare className="w-6 h-6 text-indigo-600" />
+            <MessageSquare className="w-6 h-6 text-primary-600" />
             聊天管理
           </h1>
           <p className="text-sm text-gray-500 mt-0.5">管理平台所有用户会话，及时回复用户咨询</p>
@@ -488,7 +488,7 @@ export default function ChatManage() {
           <select
             value={statusFilter}
             onChange={e => setStatusFilter(e.target.value)}
-            className="appearance-none bg-white border border-gray-200 rounded-lg pl-3 pr-8 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 transition-colors"
+            className="appearance-none bg-white border border-gray-200 rounded-lg pl-3 pr-8 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-400 transition-colors"
           >
             {STATUS_OPTIONS.map(opt => (
               <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -505,7 +505,7 @@ export default function ChatManage() {
             value={keyword}
             onChange={e => setKeyword(e.target.value)}
             placeholder="搜索用户昵称或内容..."
-            className="w-full pl-9 pr-3 py-2 text-sm bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 transition-colors"
+            className="w-full pl-9 pr-3 py-2 text-sm bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-400 transition-colors"
           />
         </div>
 
@@ -523,11 +523,11 @@ export default function ChatManage() {
             {/* 全选复选框 */}
             <button
               onClick={toggleSelectAll}
-              className="flex-shrink-0 text-gray-400 hover:text-indigo-500 transition-colors"
+              className="flex-shrink-0 text-gray-400 hover:text-primary-500 transition-colors"
               title={selectedIds.size === conversations.length ? '取消全选' : '全选'}
             >
               {selectedIds.size > 0 && selectedIds.size === conversations.length ? (
-                <CheckSquare className="w-4 h-4 text-indigo-500" />
+                <CheckSquare className="w-4 h-4 text-primary-500" />
               ) : (
                 <Square className="w-4 h-4" />
               )}
@@ -586,7 +586,7 @@ export default function ChatManage() {
                       className={`
                         flex items-start gap-2 px-3 py-3.5 cursor-pointer transition-colors border-b border-gray-50
                         ${isActive
-                          ? 'bg-indigo-50 border-l-2 border-l-indigo-500'
+                          ? 'bg-primary-50 border-l-2 border-l-primary-500'
                           : 'hover:bg-gray-50 border-l-2 border-l-transparent'
                         }
                       `}
@@ -594,10 +594,10 @@ export default function ChatManage() {
                       {/* 复选框 */}
                       <button
                         onClick={(e) => toggleSelection(conv.id, e)}
-                        className="flex-shrink-0 mt-1 text-gray-300 hover:text-indigo-500 transition-colors"
+                        className="flex-shrink-0 mt-1 text-gray-300 hover:text-primary-500 transition-colors"
                       >
                         {isChecked ? (
-                          <CheckSquare className="w-4 h-4 text-indigo-500" />
+                          <CheckSquare className="w-4 h-4 text-primary-500" />
                         ) : (
                           <Square className="w-4 h-4" />
                         )}
@@ -612,8 +612,8 @@ export default function ChatManage() {
                             className="w-10 h-10 rounded-full object-cover"
                           />
                         ) : (
-                          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-100 to-purple-100 flex items-center justify-center">
-                            <User className="w-5 h-5 text-indigo-500" />
+                          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary-100 to-primary-100 flex items-center justify-center">
+                            <User className="w-5 h-5 text-primary-500" />
                           </div>
                         )}
                         {/* 在线状态点 */}
@@ -682,7 +682,7 @@ export default function ChatManage() {
               >
                 <div className="flex items-center justify-between gap-2 mb-2">
                   <span className="text-xs text-gray-500">
-                    已选 <span className="font-semibold text-indigo-600">{selectedIds.size}</span> 个会话
+                    已选 <span className="font-semibold text-primary-600">{selectedIds.size}</span> 个会话
                   </span>
                   <button
                     onClick={() => setSelectedIds(new Set())}
@@ -707,7 +707,7 @@ export default function ChatManage() {
                   <button
                     onClick={handleBatchMarkRead}
                     disabled={batchLoading}
-                    className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium text-white bg-indigo-500 hover:bg-indigo-600 rounded-lg transition-colors disabled:opacity-50"
+                    className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium text-white bg-primary-500 hover:bg-primary-600 rounded-lg transition-colors disabled:opacity-50"
                   >
                     {batchLoading ? (
                       <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -736,8 +736,8 @@ export default function ChatManage() {
                       className="w-9 h-9 rounded-full object-cover"
                     />
                   ) : (
-                    <div className="w-9 h-9 rounded-full bg-gradient-to-br from-indigo-100 to-purple-100 flex items-center justify-center">
-                      <User className="w-4 h-4 text-indigo-500" />
+                    <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary-100 to-primary-100 flex items-center justify-center">
+                      <User className="w-4 h-4 text-primary-500" />
                     </div>
                   )}
                   <div>
@@ -797,7 +797,7 @@ export default function ChatManage() {
                   <div className="px-5 pt-2 pb-0">
                     <button
                       onClick={() => setQuickRepliesOpen(!quickRepliesOpen)}
-                      className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-indigo-600 transition-colors py-1"
+                      className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-primary-600 transition-colors py-1"
                     >
                       <ChevronsUpDown className="w-3.5 h-3.5" />
                       快捷回复
@@ -830,7 +830,7 @@ export default function ChatManage() {
                         onKeyDown={handleKeyDown}
                         placeholder="输入回复内容... (Enter发送, Shift+Enter换行)"
                         rows={2}
-                        className="flex-1 resize-none border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 transition-colors"
+                        className="flex-1 resize-none border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-400 transition-colors"
                       />
                       <button
                         onClick={handleSend}
@@ -838,7 +838,7 @@ export default function ChatManage() {
                         className={`
                           flex items-center justify-center w-10 h-10 rounded-xl transition-all flex-shrink-0
                           ${replyText.trim() && !sending
-                            ? 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-sm shadow-indigo-200'
+                            ? 'bg-primary-600 text-white hover:bg-primary-700 shadow-sm shadow-primary-200'
                             : 'bg-gray-100 text-gray-400 cursor-not-allowed'
                           }
                         `}

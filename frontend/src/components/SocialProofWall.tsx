@@ -32,7 +32,7 @@ const TESTIMONIALS = [
     company: '字节跳动',
     position: '后端开发',
     quote: '从简历打磨到面试准备，启航平台提供了一站式的求职支持，省时省心。',
-    color: 'from-purple-500 to-indigo-500',
+    color: 'from-primary-500 to-teal-600',
   },
   {
     name: '赵同学',

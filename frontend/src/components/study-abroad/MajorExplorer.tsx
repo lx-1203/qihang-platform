@@ -50,10 +50,10 @@ const iconMap: Record<string, React.ComponentType<{ className?: string; size?: n
 const colorMap: Record<string, { text: string; bg: string }> = {
   blue: { text: 'text-blue-500', bg: 'bg-blue-50' },
   emerald: { text: 'text-emerald-500', bg: 'bg-emerald-50' },
-  indigo: { text: 'text-indigo-500', bg: 'bg-indigo-50' },
+  teal: { text: 'text-primary-500', bg: 'bg-primary-50' },
   rose: { text: 'text-rose-500', bg: 'bg-rose-50' },
   red: { text: 'text-red-500', bg: 'bg-red-50' },
-  purple: { text: 'text-purple-500', bg: 'bg-purple-50' },
+  primary: { text: 'text-primary-500', bg: 'bg-primary-50' },
 };
 
 // ---------- 常量 ----------

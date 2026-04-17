@@ -30,59 +30,6 @@ interface Appointment {
   note: string;
 }
 
-const mockAppointments: Appointment[] = [
-  {
-    id: 1, studentName: '李明轩', studentAvatar: '李', studentSchool: '清华大学',
-    service: '简历精修与诊断', date: '2026-04-08', time: '14:00', duration: 60,
-    status: 'pending', fee: 299, note: '希望针对秋招简历做优化，目标大厂后端岗位',
-  },
-  {
-    id: 2, studentName: '张思颖', studentAvatar: '张', studentSchool: '北京大学',
-    service: '模拟面试辅导', date: '2026-04-08', time: '16:00', duration: 90,
-    status: 'confirmed', fee: 399, note: '准备字节跳动产品经理岗位面试',
-  },
-  {
-    id: 3, studentName: '王子豪', studentAvatar: '王', studentSchool: '浙江大学',
-    service: '职业规划咨询', date: '2026-04-09', time: '10:00', duration: 60,
-    status: 'pending', fee: 299, note: '大三在读，纠结考研还是直接就业',
-  },
-  {
-    id: 4, studentName: '赵雨萱', studentAvatar: '赵', studentSchool: '复旦大学',
-    service: '考研复试指导', date: '2026-04-09', time: '15:00', duration: 90,
-    status: 'confirmed', fee: 399, note: '报考北大计算机系，需要英语口语和专业课面试辅导',
-  },
-  {
-    id: 5, studentName: '刘浩然', studentAvatar: '刘', studentSchool: '南京大学',
-    service: '简历精修与诊断', date: '2026-04-10', time: '09:00', duration: 60,
-    status: 'pending', fee: 299, note: '转行求职，从机械转互联网产品',
-  },
-  {
-    id: 6, studentName: '陈晨', studentAvatar: '陈', studentSchool: '武汉大学',
-    service: '模拟面试辅导', date: '2026-04-05', time: '14:00', duration: 60,
-    status: 'completed', fee: 299, note: '模拟面试效果很好',
-  },
-  {
-    id: 7, studentName: '周小雅', studentAvatar: '周', studentSchool: '中山大学',
-    service: '职业规划咨询', date: '2026-04-04', time: '10:00', duration: 90,
-    status: 'completed', fee: 399, note: '已制定完整职业规划路线图',
-  },
-  {
-    id: 8, studentName: '孙博文', studentAvatar: '孙', studentSchool: '同济大学',
-    service: '简历精修与诊断', date: '2026-04-03', time: '16:00', duration: 60,
-    status: 'cancelled', fee: 299, note: '学生临时有事取消',
-  },
-  {
-    id: 9, studentName: '吴嘉琪', studentAvatar: '吴', studentSchool: '华中科技大学',
-    service: '考研复试指导', date: '2026-04-02', time: '09:00', duration: 90,
-    status: 'completed', fee: 399, note: '学生已成功通过复试',
-  },
-  {
-    id: 10, studentName: '郑梓涵', studentAvatar: '郑', studentSchool: '西安交通大学',
-    service: '模拟面试辅导', date: '2026-04-01', time: '14:00', duration: 60,
-    status: 'cancelled', fee: 299, note: '时间冲突，已重新预约',
-  },
-];
-
 const statusConfig = {
   pending: { label: '待确认', color: 'bg-orange-50 text-orange-700 border-orange-200', icon: AlertCircle, dotColor: 'bg-orange-500', tagVariant: 'orange' as const },
   confirmed: { label: '已确认', color: 'bg-blue-50 text-blue-700 border-blue-200', icon: CalendarCheck, dotColor: 'bg-blue-500', tagVariant: 'blue' as const },
@@ -206,7 +153,6 @@ export default function MentorAppointments() {
       <ErrorState
         message={error}
         onRetry={() => { setError(null); fetchAppointments(); }}
-        onLoadMockData={() => { setAppointments(mockAppointments); setError(null); }}
       />
     </div>
   );

@@ -6,6 +6,7 @@ import {
   User
 } from 'lucide-react';
 import http from '@/api/http';
+import ErrorState from '@/components/ui/ErrorState';
 
 // 学生数据结构（匹配后端 /api/mentor/students 返回）
 interface StudentItem {
@@ -21,6 +22,7 @@ interface StudentItem {
 export default function MentorStudents() {
   const [students, setStudents] = useState<StudentItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [searchKeyword, setSearchKeyword] = useState('');
 
   // 获取学生列表
@@ -31,12 +33,14 @@ export default function MentorStudents() {
   const fetchStudents = async () => {
     try {
       setLoading(true);
+      setError(null);
       const res = await http.get('/mentor/students');
       if (res.data?.code === 200 && res.data.data) {
         setStudents(res.data.data.students || []);
       }
     } catch (err) {
-      console.error('获取学生列表失败:', err);
+      setError('学生列表加载失败，请稍后重试');
+      if (import.meta.env.DEV) console.error('[DEV] fetchStudents error:', err);
     } finally {
       setLoading(false);
     }
@@ -88,7 +92,9 @@ export default function MentorStudents() {
       </div>
 
       {/* 学生列表 */}
-      {loading ? (
+      {error ? (
+        <ErrorState message={error} onRetry={fetchStudents} />
+      ) : loading ? (
         <div className="flex items-center justify-center py-20">
           <Loader2 className="w-8 h-8 text-primary-600 animate-spin" />
           <span className="ml-3 text-gray-500">加载学生列表中...</span>

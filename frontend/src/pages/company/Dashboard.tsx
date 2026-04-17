@@ -12,6 +12,8 @@ import { useAuthStore } from '@/store/auth';
 import OnboardingGuide from '@/components/OnboardingGuide';
 import FeatureStatus, { FeatureOverlay } from '@/components/FeatureStatus';
 import Tag from '@/components/ui/Tag';
+import ErrorState from '@/components/ui/ErrorState';
+import { CardSkeleton } from '@/components/ui/Skeleton';
 
 // ====== 企业端仪表盘 ======
 // 风格：蓝色专业招聘感，招聘漏斗为核心差异
@@ -19,60 +21,84 @@ import Tag from '@/components/ui/Tag';
 
 export default function CompanyDashboardPage() {
   const { user } = useAuthStore();
-  const [stats, setStats] = useState({
-    activeJobs: 12, totalResumes: 156, pendingResumes: 43, interviews: 8,
-  });
+  const [stats, setStats] = useState<{
+    activeJobs?: number; totalResumes?: number; pendingResumes?: number; interviews?: number;
+    todayResumes?: number; passRate?: string; avgCycle?: string;
+    funnel?: Array<{ stage: string; count: number; color: string; width: string }>;
+  } | null>(null);
+  const [recentResumes, setRecentResumes] = useState<Array<{
+    id: number; studentName: string; school: string; major: string; jobTitle: string; status: string; createdAt: string;
+  }>>([]);
+  const [jobRanking, setJobRanking] = useState<Array<{ title: string; count: number }>>([]);
+  const [dailyResumes, setDailyResumes] = useState<number[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    (async () => {
-      try {
-        const res = await http.get('/company/stats');
-        if (res.data?.code === 200 && res.data.data) setStats(prev => ({ ...prev, ...res.data.data }));
-      } catch { /* mock */ }
-    })();
+    fetchDashboard();
   }, []);
 
-  // 招聘漏斗数据 (企业端独有)
-  const funnel = [
-    { stage: '投递', count: 156, color: 'from-blue-400 to-blue-500', width: '100%' },
-    { stage: '筛选', count: 89, color: 'from-sky-400 to-sky-500', width: '57%' },
-    { stage: '面试', count: 34, color: 'from-indigo-400 to-indigo-500', width: '22%' },
-    { stage: 'Offer', count: 12, color: 'from-purple-400 to-purple-500', width: '8%' },
-    { stage: '入职', count: 8, color: 'from-green-400 to-green-500', width: '5%' },
-  ];
+  async function fetchDashboard() {
+    try {
+      setLoading(true);
+      setError(null);
+      const [statsRes, resumesRes] = await Promise.all([
+        http.get('/company/stats'),
+        http.get('/company/resumes?pageSize=5'),
+      ]);
+      if (statsRes.data?.code === 200 && statsRes.data.data) {
+        setStats(statsRes.data.data);
+        if (statsRes.data.data.jobRanking) setJobRanking(statsRes.data.data.jobRanking);
+        if (statsRes.data.data.dailyResumes) setDailyResumes(statsRes.data.data.dailyResumes);
+      }
+      if (resumesRes.data?.code === 200 && resumesRes.data.data?.resumes) {
+        setRecentResumes(resumesRes.data.data.resumes);
+      }
+    } catch {
+      setError('数据加载失败，请检查网络连接后重试');
+    } finally {
+      setLoading(false);
+    }
+  }
 
-  // 投递趋势
-  const resumeTrend = [12, 18, 15, 22, 25, 20, 24];
-  const trendMax = Math.max(...resumeTrend);
-
-  // 最新投递
-  const latestApps = [
-    { name: '林小明', univ: '南京大学', major: '计算机科学', job: '前端开发工程师', time: '10分钟前', status: '待查看' },
-    { name: '王思远', univ: '浙江大学', major: '软件工程', job: 'AIGC算法研究员', time: '30分钟前', status: '待查看' },
-    { name: '张晓华', univ: '复旦大学', major: '数据科学', job: '数据分析师', time: '1小时前', status: '已查看' },
-    { name: '陈美琪', univ: '上海交大', major: '市场营销', job: '产品经理实习', time: '2小时前', status: '已邀约' },
-    { name: '李伟', univ: '武汉大学', major: '电子信息', job: 'Java后端开发', time: '3小时前', status: '已查看' },
-  ];
   const statusTagVariant: Record<string, 'yellow' | 'blue' | 'green' | 'red'> = {
+    'pending': 'yellow', 'viewed': 'blue',
+    'interview': 'green', 'rejected': 'red',
+    'offered': 'green',
     '待查看': 'yellow', '已查看': 'blue',
     '已邀约': 'green', '已拒绝': 'red',
   };
 
-  // 热门岗位排行
-  const hotJobs = [
-    { name: '前端开发工程师', count: 45 },
-    { name: 'AIGC算法研究员', count: 38 },
-    { name: '产品经理实习生', count: 32 },
-    { name: 'Java后端开发', count: 28 },
-    { name: 'UI/UX设计师', count: 13 },
-  ];
-  const hotMax = hotJobs[0].count;
+  const statusLabel: Record<string, string> = {
+    'pending': '待查看', 'viewed': '已查看',
+    'interview': '面试中', 'offered': '已录用',
+    'rejected': '已拒绝',
+  };
+
+  const hotMax = jobRanking.length > 0 ? jobRanking[0].count : 1;
+  const trendMax = dailyResumes.length > 0 ? Math.max(...dailyResumes) : 1;
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div className="bg-gray-100 rounded-2xl p-6 h-32 animate-pulse" />
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {Array.from({ length: 4 }).map((_, i) => <CardSkeleton key={i} />)}
+        </div>
+        <CardSkeleton />
+      </div>
+    );
+  }
+
+  if (error) {
+    return <ErrorState message={error} onRetry={fetchDashboard} />;
+  }
 
   return (
     <div className="space-y-6">
       {/* ====== 企业欢迎区 —— 蓝色专业招聘风格 ====== */}
       <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}
-        className="bg-gradient-to-r from-blue-600 via-blue-700 to-indigo-700 rounded-2xl p-6 text-white relative overflow-hidden"
+        className="bg-gradient-to-r from-blue-600 via-blue-700 to-primary-700 rounded-2xl p-6 text-white relative overflow-hidden"
       >
         <div className="absolute top-0 right-0 w-48 h-48 bg-white/5 rounded-full blur-3xl" />
         <div className="relative z-10">
@@ -87,7 +113,7 @@ export default function CompanyDashboardPage() {
                   <span className="bg-green-400/20 text-green-300 text-[10px] font-bold px-2 py-0.5 rounded-full border border-green-400/30">已认证</span>
                 </div>
                 <p className="text-sm text-blue-200 mt-1">
-                  已发布 <b className="text-white">{stats.activeJobs}</b> 个岗位 · 收到 <b className="text-white">{stats.totalResumes}</b> 份简历 · 本周面试 <b className="text-white">{stats.interviews}</b> 场
+                  已发布 <b className="text-white">{stats?.activeJobs ?? 0}</b> 个岗位 · 收到 <b className="text-white">{stats?.totalResumes ?? 0}</b> 份简历 · 本周面试 <b className="text-white">{stats?.interviews ?? 0}</b> 场
                 </p>
               </div>
             </div>
@@ -103,10 +129,10 @@ export default function CompanyDashboardPage() {
       {/* ====== 招聘数据卡 ====== */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
-          { label: '在招岗位', value: stats.activeJobs, change: '+3', up: true, icon: Briefcase, color: 'text-blue-600', bg: 'bg-blue-50', border: 'border-blue-100' },
-          { label: '今日新投递', value: 24, change: '+15%', up: true, icon: FileText, color: 'text-green-600', bg: 'bg-green-50', border: 'border-green-100' },
-          { label: '简历通过率', value: '57%', change: '+5%', up: true, icon: UserCheck, color: 'text-indigo-600', bg: 'bg-indigo-50', border: 'border-indigo-100' },
-          { label: '平均招聘周期', value: '18天', change: '-3天', up: true, icon: Calendar, color: 'text-amber-600', bg: 'bg-amber-50', border: 'border-amber-100' },
+          { label: '在招岗位', value: stats?.activeJobs ?? 0, change: '', up: true, icon: Briefcase, color: 'text-blue-600', bg: 'bg-blue-50', border: 'border-blue-100' },
+          { label: '今日新投递', value: stats?.todayResumes ?? 0, change: '', up: true, icon: FileText, color: 'text-green-600', bg: 'bg-green-50', border: 'border-green-100' },
+          { label: '简历通过率', value: stats?.passRate ?? '-', change: '', up: true, icon: UserCheck, color: 'text-primary-600', bg: 'bg-primary-50', border: 'border-primary-100' },
+          { label: '平均招聘周期', value: stats?.avgCycle ?? '-', change: '', up: true, icon: Calendar, color: 'text-amber-600', bg: 'bg-amber-50', border: 'border-amber-100' },
         ].map((card, i) => (
           <motion.div key={i} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
             className={`${card.bg} rounded-xl p-4 border ${card.border}`}
@@ -114,7 +140,7 @@ export default function CompanyDashboardPage() {
             <div className="flex items-center justify-between mb-2">
               <card.icon className={`w-5 h-5 ${card.color}`} />
               <span className="text-[11px] font-medium text-green-600 flex items-center gap-0.5">
-                <TrendingUp className="w-3 h-3" />{card.change}
+                {card.change && <><TrendingUp className="w-3 h-3" />{card.change}</>}
               </span>
             </div>
             <div className="text-2xl font-bold text-gray-900">{card.value}</div>
@@ -135,7 +161,9 @@ export default function CompanyDashboardPage() {
         </div>
         <p className="text-xs text-gray-400 mb-5">从投递到入职的全链路转化数据</p>
         <div className="space-y-3">
-          {funnel.map((f, i) => (
+          {(stats?.funnel || []).map((f, i) => {
+            const funnelData = stats?.funnel || [];
+            return (
             <div key={i} className="flex items-center gap-4">
               <span className="text-sm font-medium text-gray-600 w-12 shrink-0">{f.stage}</span>
               <div className="flex-1 h-10 bg-gray-100 rounded-lg overflow-hidden relative">
@@ -150,12 +178,16 @@ export default function CompanyDashboardPage() {
               </div>
               {i > 0 && (
                 <span className="text-xs text-gray-400 w-12 shrink-0 text-right">
-                  {Math.round(f.count / funnel[i - 1].count * 100)}%
+                  {Math.round(f.count / (funnelData[i - 1]?.count || 1) * 100)}%
                 </span>
               )}
               {i === 0 && <span className="text-xs text-gray-400 w-12 shrink-0 text-right">100%</span>}
             </div>
-          ))}
+            );
+          })}
+          {(!stats?.funnel || stats.funnel.length === 0) && (
+            <div className="text-center py-8 text-gray-400 text-sm">暂无漏斗数据</div>
+          )}
         </div>
       </motion.div>
 
@@ -171,27 +203,35 @@ export default function CompanyDashboardPage() {
             </Link>
           </div>
           <div className="space-y-3">
-            {latestApps.map((app, i) => (
-              <motion.div key={i} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i * 0.08 }}
+            {recentResumes.map((app, i) => {
+              const studentName = (app as Record<string, unknown>).student_name as string || app.studentName;
+              const university = (app as Record<string, unknown>).school as string || app.school;
+              const jobTitle = (app as Record<string, unknown>).job_title as string || app.jobTitle;
+              return (
+              <motion.div key={app.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i * 0.08 }}
                 className="flex items-center gap-4 p-3 bg-gray-50 rounded-xl hover:bg-blue-50 transition-colors group"
               >
                 <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center text-sm font-bold text-blue-700">
-                  {app.name[0]}
+                  {(studentName || '?').charAt(0)}
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
-                    <span className="text-sm font-bold text-gray-900">{app.name}</span>
-                    <span className="text-xs text-gray-400">{app.univ} · {app.major}</span>
+                    <span className="text-sm font-bold text-gray-900">{studentName || '未知'}</span>
+                    <span className="text-xs text-gray-400">{university || '-'} · {app.major || '-'}</span>
                   </div>
-                  <p className="text-xs text-gray-500 mt-0.5">投递: {app.job}</p>
+                  <p className="text-xs text-gray-500 mt-0.5">投递: {jobTitle || '-'}</p>
                 </div>
                 <Tag variant={statusTagVariant[app.status] || 'gray'} size="xs">
-                  {app.status}
+                  {statusLabel[app.status] || app.status}
                 </Tag>
-                <span className="text-[11px] text-gray-400 hidden sm:inline">{app.time}</span>
+                <span className="text-[11px] text-gray-400 hidden sm:inline">{app.createdAt ? String(app.createdAt).slice(0, 10) : '-'}</span>
                 <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-blue-500 transition-colors" />
               </motion.div>
-            ))}
+              );
+            })}
+            {recentResumes.length === 0 && (
+              <div className="text-center py-8 text-gray-400 text-sm">暂无投递记录</div>
+            )}
           </div>
         </div>
 
@@ -202,12 +242,12 @@ export default function CompanyDashboardPage() {
               <Star className="w-4 h-4 text-amber-500" /> 岗位投递排行
             </h3>
             <div className="space-y-3">
-              {hotJobs.map((j, i) => (
+              {jobRanking.map((j, i) => (
                 <div key={i} className="flex items-center gap-3">
                   <span className={`w-5 h-5 rounded-md flex items-center justify-center text-[10px] font-bold text-white ${
                     i < 3 ? 'bg-blue-500' : 'bg-gray-300'
                   }`}>{i + 1}</span>
-                  <span className="text-sm text-gray-700 flex-1 truncate">{j.name}</span>
+                  <span className="text-sm text-gray-700 flex-1 truncate">{j.title}</span>
                   <div className="w-20 h-2 bg-gray-100 rounded-full overflow-hidden">
                     <motion.div initial={{ width: 0 }} animate={{ width: `${(j.count / hotMax) * 100}%` }}
                       transition={{ delay: 0.5 + i * 0.1 }}
@@ -217,6 +257,9 @@ export default function CompanyDashboardPage() {
                   <span className="text-xs text-gray-500 w-8 text-right">{j.count}</span>
                 </div>
               ))}
+              {jobRanking.length === 0 && (
+                <div className="text-center py-4 text-gray-400 text-sm">暂无数据</div>
+              )}
             </div>
           </div>
 
@@ -225,16 +268,19 @@ export default function CompanyDashboardPage() {
               <TrendingUp className="w-4 h-4 text-blue-500" /> 7日投递趋势
             </h3>
             <div className="flex items-end gap-2 h-24">
-              {resumeTrend.map((v, i) => (
+              {dailyResumes.map((v, i) => (
                 <div key={i} className="flex-1 flex flex-col items-center gap-1">
                   <span className="text-[10px] text-gray-500">{v}</span>
                   <motion.div initial={{ height: 0 }} animate={{ height: `${(v / trendMax) * 100}%` }}
                     transition={{ delay: i * 0.1, duration: 0.5 }}
                     className="w-full bg-gradient-to-t from-blue-600 to-blue-400 rounded-md min-h-[4px]"
                   />
-                  <span className="text-[10px] text-gray-400">{['一', '二', '三', '四', '五', '六', '日'][i]}</span>
+                  <span className="text-[10px] text-gray-400">{['一', '二', '三', '四', '五', '六', '日'][i] || ''}</span>
                 </div>
               ))}
+              {dailyResumes.length === 0 && (
+                <div className="flex-1 text-center py-4 text-gray-400 text-sm">暂无趋势数据</div>
+              )}
             </div>
           </div>
         </div>
@@ -244,12 +290,12 @@ export default function CompanyDashboardPage() {
       <FeatureOverlay status="coming" message="AI 智能人才推荐即将上线，届时将根据岗位要求自动匹配候选人">
         <div className="bg-white rounded-xl p-6 border border-gray-100">
           <h3 className="text-sm font-bold text-gray-900 mb-4 flex items-center gap-2">
-            <Search className="w-4 h-4 text-purple-500" /> AI 人才智能推荐
+            <Search className="w-4 h-4 text-primary-500" /> AI 人才智能推荐
           </h3>
           <div className="grid grid-cols-3 gap-4">
             {['林小明 · 南大CS · 匹配度 92%', '张晓华 · 复旦 · 匹配度 87%', '王思远 · 浙大 · 匹配度 83%'].map((t, i) => (
               <div key={i} className="bg-gray-50 rounded-xl p-4 text-center">
-                <div className="w-12 h-12 bg-purple-100 rounded-full mx-auto mb-2 flex items-center justify-center text-sm font-bold text-purple-700">
+                <div className="w-12 h-12 bg-primary-100 rounded-full mx-auto mb-2 flex items-center justify-center text-sm font-bold text-primary-700">
                   {t[0]}
                 </div>
                 <p className="text-xs text-gray-600">{t}</p>

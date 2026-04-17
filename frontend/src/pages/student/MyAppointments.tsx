@@ -40,48 +40,6 @@ interface ReviewForm {
   content: string;
 }
 
-// 模拟数据
-const mockAppointments: Appointment[] = [
-  {
-    id: 1, mentorName: '王教授', mentorAvatar: '', mentorTitle: '南京大学计算机学院·副教授',
-    serviceTitle: '简历精修与面试辅导', serviceType: '一对一辅导',
-    date: '2026-04-12', time: '14:00-15:00', duration: 60, fee: 299,
-    status: 'upcoming', location: '线上·腾讯会议', hasReviewed: false,
-  },
-  {
-    id: 2, mentorName: '李总监', mentorAvatar: '', mentorTitle: '阿里巴巴·技术总监',
-    serviceTitle: '互联网大厂求职攻略', serviceType: '职业咨询',
-    date: '2026-04-15', time: '19:00-20:30', duration: 90, fee: 499,
-    status: 'upcoming', location: '线上·Zoom', hasReviewed: false,
-  },
-  {
-    id: 3, mentorName: '张导师', mentorAvatar: '', mentorTitle: '资深HR·10年招聘经验',
-    serviceTitle: '求职方向规划', serviceType: '职业规划',
-    date: '2026-04-02', time: '10:00-11:00', duration: 60, fee: 199,
-    status: 'completed', location: '线上·腾讯会议', hasReviewed: true,
-    rating: 5, reviewContent: '张导师非常专业，给了很多实用的建议！帮我理清了职业方向，推荐！',
-  },
-  {
-    id: 4, mentorName: '陈老师', mentorAvatar: '', mentorTitle: '东南大学·就业指导中心',
-    serviceTitle: '考研vs就业选择分析', serviceType: '一对一辅导',
-    date: '2026-03-25', time: '15:00-16:00', duration: 60, fee: 159,
-    status: 'completed', location: '线下·东大就业中心302', hasReviewed: false,
-  },
-  {
-    id: 5, mentorName: '刘经理', mentorAvatar: '', mentorTitle: '腾讯·前端技术专家',
-    serviceTitle: '前端技术面试模拟', serviceType: '模拟面试',
-    date: '2026-03-18', time: '20:00-21:00', duration: 60, fee: 399,
-    status: 'completed', location: '线上·腾讯会议', hasReviewed: true,
-    rating: 4, reviewContent: '模拟面试质量很高，面试官提问角度很贴近真实面试，建议的改进方向也很准。',
-  },
-  {
-    id: 6, mentorName: '赵教授', mentorAvatar: '', mentorTitle: '南理工·创业导师',
-    serviceTitle: '创业项目BP指导', serviceType: '创业咨询',
-    date: '2026-03-10', time: '09:00-10:00', duration: 60, fee: 349,
-    status: 'cancelled', location: '线下·科技园B栋', hasReviewed: false,
-  },
-];
-
 const tabItems: { key: AppointmentStatus; label: string; icon: React.ElementType }[] = [
   { key: 'upcoming', label: '即将开始', icon: Calendar },
   { key: 'completed', label: '已完成', icon: CheckCircle2 },
@@ -179,7 +137,7 @@ export default function MyAppointments() {
   }, {} as Record<string, number>);
 
   if (loading) return <div className="container-narrow py-8"><ListSkeleton count={5} /></div>;
-  if (error) return <div className="container-narrow py-8"><ErrorState message={error} onRetry={() => { setError(null); fetchAppointments(); }} onLoadMockData={() => { setAppointments(mockAppointments); setError(null); }} /></div>;
+  if (error) return <div className="container-narrow py-8"><ErrorState message={error} onRetry={() => { setError(null); fetchAppointments(); }} /></div>;
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">

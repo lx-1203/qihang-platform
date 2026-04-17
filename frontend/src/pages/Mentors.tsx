@@ -113,8 +113,8 @@ export default function Mentors() {
                 onClick={() => setExpertiseFilter(opt)}
                 className={`px-4 py-2 rounded-lg text-sm font-bold transition-all duration-200 ${
                   expertiseFilter === opt
-                    ? 'bg-gradient-to-r from-violet-500 to-purple-600 text-white shadow-lg shadow-violet-500/30'
-                    : 'bg-white border-2 border-gray-200 text-gray-600 hover:bg-violet-50 hover:border-violet-300 hover:text-violet-700 active:scale-[0.97] focus-visible:ring-2 focus-visible:ring-violet-400/30 focus-visible:outline-none'
+                    ? 'bg-gradient-to-r from-primary-500 to-primary-600 text-white shadow-lg shadow-primary-500/30'
+                    : 'bg-white border-2 border-gray-200 text-gray-600 hover:bg-primary-50 hover:border-primary-300 hover:text-primary-700 active:scale-[0.97] focus-visible:ring-2 focus-visible:ring-primary-400/30 focus-visible:outline-none'
                 }`}
               >
               {opt}
@@ -201,10 +201,10 @@ export default function Mentors() {
               <div className="flex items-center justify-between mt-5 pt-4 border-t border-gray-100">
                 <div className="flex items-center gap-1 text-sm">
                   <span className="text-gray-500">辅导费用</span>
-                  <span className="text-xl font-bold bg-gradient-to-r from-violet-600 to-purple-600 bg-clip-text text-transparent">{mentor.price}</span>
+                  <span className="text-xl font-bold bg-gradient-to-r from-primary-600 to-primary-600 bg-clip-text text-transparent">{mentor.price}</span>
                   <span className="text-gray-500 text-xs">元/次</span>
                 </div>
-                <span className="flex items-center gap-1 text-sm font-bold bg-gradient-to-r from-violet-600 to-purple-600 bg-clip-text text-transparent group-hover:translate-x-1 transition-transform">
+                <span className="flex items-center gap-1 text-sm font-bold bg-gradient-to-r from-primary-600 to-primary-600 bg-clip-text text-transparent group-hover:translate-x-1 transition-transform">
                   <MessageCircle className="w-4 h-4" />
                   预约咨询
                 </span>

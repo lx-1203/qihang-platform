@@ -207,8 +207,8 @@ export default function AdminArticles() {
   const SortIcon = ({ field }: { field: string }) => {
     if (sortField !== field) return <ArrowUpDown className="w-3.5 h-3.5 text-gray-400" />;
     return sortOrder === 'asc'
-      ? <ArrowUp className="w-3.5 h-3.5 text-indigo-600" />
-      : <ArrowDown className="w-3.5 h-3.5 text-indigo-600" />;
+      ? <ArrowUp className="w-3.5 h-3.5 text-primary-600" />
+      : <ArrowDown className="w-3.5 h-3.5 text-primary-600" />;
   };
 
   return (

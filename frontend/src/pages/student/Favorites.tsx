@@ -57,66 +57,6 @@ interface FavoriteMentor {
   favoritedAt: string;
 }
 
-// 模拟数据
-const mockJobs: FavoriteJob[] = [
-  {
-    id: 101, favoriteId: 1, title: '前端开发工程师', companyName: '字节跳动',
-    location: '北京·海淀区', salary: '15K-25K', jobType: '全职',
-    tags: ['React', 'TypeScript', '大厂'], createdAt: '2026-04-01', favoritedAt: '2026-04-05',
-  },
-  {
-    id: 102, favoriteId: 2, title: 'Go后端开发（实习）', companyName: '腾讯科技',
-    location: '深圳·南山区', salary: '250-350/天', jobType: '实习',
-    tags: ['Go', '微服务', '实习'], createdAt: '2026-03-28', favoritedAt: '2026-04-03',
-  },
-  {
-    id: 103, favoriteId: 3, title: '全栈开发工程师', companyName: '美团',
-    location: '北京·朝阳区', salary: '18K-30K', jobType: '全职',
-    tags: ['Node.js', 'React', 'MySQL'], createdAt: '2026-03-25', favoritedAt: '2026-04-01',
-  },
-  {
-    id: 104, favoriteId: 4, title: '数据分析实习生', companyName: '网易',
-    location: '杭州·滨江区', salary: '200-300/天', jobType: '实习',
-    tags: ['Python', 'SQL', '数据分析'], createdAt: '2026-03-20', favoritedAt: '2026-03-28',
-  },
-];
-
-const mockCourses: FavoriteCourse[] = [
-  {
-    id: 201, favoriteId: 5, title: 'React 19 从入门到精通', mentorName: '王教授',
-    category: '前端开发', price: 199, rating: 4.8, studentCount: 1256,
-    coverImage: '', favoritedAt: '2026-04-04',
-  },
-  {
-    id: 202, favoriteId: 6, title: '大厂面试算法突击班', mentorName: '李总监',
-    category: '算法面试', price: 399, rating: 4.9, studentCount: 2340,
-    coverImage: '', favoritedAt: '2026-04-02',
-  },
-  {
-    id: 203, favoriteId: 7, title: '产品经理入门：从0到1', mentorName: '张导师',
-    category: '产品经理', price: 149, rating: 4.6, studentCount: 890,
-    coverImage: '', favoritedAt: '2026-03-30',
-  },
-];
-
-const mockMentors: FavoriteMentor[] = [
-  {
-    id: 301, favoriteId: 8, name: '王教授', title: '南京大学计算机学院·副教授',
-    specialty: ['前端开发', 'React', '简历辅导'], rating: 4.9, reviewCount: 128,
-    price: 299, avatar: '', favoritedAt: '2026-04-03',
-  },
-  {
-    id: 302, favoriteId: 9, name: '李总监', title: '阿里巴巴·技术总监',
-    specialty: ['系统设计', '职业规划', '大厂面试'], rating: 4.8, reviewCount: 95,
-    price: 499, avatar: '', favoritedAt: '2026-03-29',
-  },
-  {
-    id: 303, favoriteId: 10, name: '陈老师', title: '东南大学·就业指导中心主任',
-    specialty: ['职业规划', '考研指导', '就业分析'], rating: 4.7, reviewCount: 67,
-    price: 159, avatar: '', favoritedAt: '2026-03-25',
-  },
-];
-
 const tabItems: { key: FavoriteTab; label: string; icon: React.ElementType }[] = [
   { key: 'jobs', label: '职位', icon: Briefcase },
   { key: 'courses', label: '课程', icon: BookOpen },
@@ -218,7 +158,7 @@ export default function Favorites() {
   const filteredMentors = mentors.filter(m => !keyword || m.name.toLowerCase().includes(keyword) || m.title.toLowerCase().includes(keyword));
 
   if (loading) return <div className="max-w-5xl mx-auto px-4 py-8"><ListSkeleton count={5} /></div>;
-  if (error) return <div className="max-w-5xl mx-auto px-4 py-8"><ErrorState message={error} onRetry={() => { setError(null); fetchFavorites(); }} onLoadMockData={() => { setJobs(mockJobs); setCourses(mockCourses); setMentors(mockMentors); setError(null); }} /></div>;
+  if (error) return <div className="max-w-5xl mx-auto px-4 py-8"><ErrorState message={error} onRetry={() => { setError(null); fetchFavorites(); }} /></div>;
 
   return (
     <div className="max-w-5xl mx-auto space-y-6">

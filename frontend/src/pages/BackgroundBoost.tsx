@@ -32,8 +32,8 @@ const DEFAULT_BG_BOOST_CONFIG = {
       ]
     },
     {
-      id: 2, title: '科研项目', icon: 'FlaskConical', color: 'text-purple-500', bg: 'bg-purple-50', border: 'border-purple-100',
-      gradientFrom: 'from-purple-500', gradientTo: 'to-purple-600',
+      id: 2, title: '科研项目', icon: 'FlaskConical', color: 'text-primary-500', bg: 'bg-primary-50', border: 'border-primary-100',
+      gradientFrom: 'from-primary-500', gradientTo: 'to-primary-600',
       description: '海内外知名教授带队科研课题，获取推荐信与科研成果',
       features: [
         'MIT/Stanford/Oxford/Cambridge 等海外教授课题',
@@ -167,9 +167,9 @@ export default function BackgroundBoost() {
 
         {/* Hero */}
         <div className="bg-gray-900 rounded-[24px] overflow-hidden relative mb-12">
-          <div className="absolute inset-0 bg-gradient-to-r from-primary-500/20 via-transparent to-purple-500/10" />
+          <div className="absolute inset-0 bg-gradient-to-r from-primary-500/20 via-transparent to-primary-500/10" />
           <div className="absolute top-0 right-0 w-80 h-80 bg-primary-500/10 rounded-full blur-3xl" />
-          <div className="absolute bottom-0 left-0 w-60 h-60 bg-purple-500/10 rounded-full blur-3xl" />
+          <div className="absolute bottom-0 left-0 w-60 h-60 bg-primary-500/10 rounded-full blur-3xl" />
           <div className="relative z-10 p-10 md:p-16">
             <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-8">
               <div className="max-w-2xl">
@@ -301,7 +301,7 @@ export default function BackgroundBoost() {
                                 <Tag
                                   variant={
                                     service.color.includes('blue') ? 'blue' :
-                                    service.color.includes('purple') ? 'purple' :
+                                    service.color.includes('primary') ? 'primary' :
                                     service.color.includes('green') ? 'green' :
                                     service.color.includes('amber') ? 'yellow' :
                                     service.color.includes('rose') ? 'red' :

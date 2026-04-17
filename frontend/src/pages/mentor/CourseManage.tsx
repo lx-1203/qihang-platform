@@ -28,34 +28,11 @@ interface Course {
   created_at: string;
 }
 
-const mockCourses: Course[] = [
-  {
-    id: 1, title: '校招简历怎么写才能过海选？', description: '从0到1打造一份能通过AI筛选的高质量校招简历，包含模板下载。',
-    category: '简历指导', cover: '', difficulty: 'beginner', views: 12400, rating: 4.9, rating_count: 850, status: 'active', created_at: '2026-02-15',
-  },
-  {
-    id: 2, title: '大厂群面通关秘籍', description: '深度解析BAT、字节跳动等大厂群面环节，提供实战案例和话术模板。',
-    category: '面试辅导', cover: '', difficulty: 'intermediate', views: 8500, rating: 4.8, rating_count: 420, status: 'active', created_at: '2026-03-01',
-  },
-  {
-    id: 3, title: '1V1模拟面试录像回放', description: '真实模拟面试场景回放与点评，帮助学生发现面试中的问题。',
-    category: '面试辅导', cover: '', difficulty: 'advanced', views: 3200, rating: 4.7, rating_count: 150, status: 'inactive', created_at: '2026-03-10',
-  },
-  {
-    id: 4, title: '职业规划必修课：找到你的方向', description: '帮助大学生明确职业方向，制定3-5年职业发展路线图。',
-    category: '职业规划', cover: '', difficulty: 'beginner', views: 6800, rating: 4.6, rating_count: 380, status: 'active', created_at: '2026-01-20',
-  },
-  {
-    id: 5, title: '考研复试面试全攻略', description: '考研复试各环节深度解析，含英语口语、专业面试、综合素质面试技巧。',
-    category: '考研指导', cover: '', difficulty: 'intermediate', views: 4500, rating: 4.8, rating_count: 260, status: 'active', created_at: '2026-03-25',
-  },
-];
-
 const categories = ['简历指导', '面试辅导', '职业规划', '考研指导', '创业指导', '留学规划'];
 const difficultyMap = {
   beginner: { label: '入门', color: 'bg-green-50 text-green-700' },
   intermediate: { label: '进阶', color: 'bg-blue-50 text-blue-700' },
-  advanced: { label: '高级', color: 'bg-purple-50 text-purple-700' },
+  advanced: { label: '高级', color: 'bg-primary-50 text-primary-700' },
 };
 const statusMap = {
   active: { label: '已上线', color: 'bg-green-50 text-green-700' },
@@ -159,7 +136,6 @@ export default function CourseManage() {
       <ErrorState
         message={error}
         onRetry={() => { setError(null); fetchCourses(); }}
-        onLoadMockData={() => { setCourses(mockCourses); setError(null); }}
       />
     </div>
   );
@@ -216,7 +192,7 @@ export default function CourseManage() {
           { label: '全部课程', value: courses.length, icon: BookOpen, bg: 'bg-primary-50', color: 'text-primary-600' },
           { label: '已上线', value: courses.filter(c => c.status === 'active').length, icon: ToggleRight, bg: 'bg-green-50', color: 'text-green-600' },
           { label: '总浏览量', value: formatViews(courses.reduce((a, c) => a + c.views, 0)), icon: Eye, bg: 'bg-blue-50', color: 'text-blue-600' },
-          { label: '总学员数', value: courses.reduce((a, c) => a + (c.rating_count || 0), 0).toLocaleString(), icon: Users, bg: 'bg-purple-50', color: 'text-purple-600' },
+          { label: '总学员数', value: courses.reduce((a, c) => a + (c.rating_count || 0), 0).toLocaleString(), icon: Users, bg: 'bg-primary-50', color: 'text-primary-600' },
         ].map((item, i) => (
           <motion.div
             key={item.label}

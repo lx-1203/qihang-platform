@@ -70,7 +70,7 @@
       "description": "120+前沿课题，发表推荐信双保障",
       "image": "https://images.unsplash.com/photo-1497366811353-6870744d04b2?w=800&q=80",
       "icon": "FlaskConical",
-      "color": "purple"
+      "color": "primary"
     },
     {
       "id": "service-4",
@@ -97,7 +97,7 @@
       "description": "80%获奖率，背景提升利器",
       "image": "https://images.unsplash.com/photo-1524178232363-1fb2b075b655?w=800&q=80",
       "icon": "Trophy",
-      "color": "indigo"
+      "color": "primary"
     },
     {
       "id": "service-7",
@@ -212,7 +212,7 @@
     { "icon": "Search", "label": "智能选校", "color": "text-primary-500", "bg": "bg-primary-50", "link": "/study-abroad/programs" },
     { "icon": "TrendingUp", "label": "Offer 榜", "color": "text-orange-500", "bg": "bg-orange-50", "link": "/study-abroad/offers" },
     { "icon": "Target", "label": "背景评估", "color": "text-blue-500", "bg": "bg-blue-50", "link": "/study-abroad/background" },
-    { "icon": "Calendar", "label": "申请时间线", "color": "text-purple-500", "bg": "bg-purple-50", "link": "/study-abroad/articles" },
+    { "icon": "Calendar", "label": "申请时间线", "color": "text-primary-500", "bg": "bg-primary-50", "link": "/study-abroad/articles" },
     { "icon": "FileText", "label": "文书指导", "color": "text-green-500", "bg": "bg-green-50", "link": "/study-abroad/articles" },
     { "icon": "BookOpen", "label": "语言备考", "color": "text-sky-500", "bg": "bg-sky-50", "link": "/study-abroad/articles" },
     { "icon": "DollarSign", "label": "费用估算", "color": "text-amber-500", "bg": "bg-amber-50", "link": "/study-abroad/articles" },
@@ -222,10 +222,10 @@
   "serviceColorMap": {
     "blue": "from-blue-600/80 to-blue-900/90",
     "teal": "from-teal-600/80 to-teal-900/90",
-    "purple": "from-purple-600/80 to-purple-900/90",
+    "primary": "from-primary-600/80 to-primary-900/90",
     "rose": "from-rose-600/80 to-rose-900/90",
     "amber": "from-amber-600/80 to-amber-900/90",
-    "indigo": "from-indigo-600/80 to-indigo-900/90",
+    "primary-dark": "from-primary-600/80 to-primary-800/90",
     "emerald": "from-emerald-600/80 to-emerald-900/90",
     "cyan": "from-cyan-600/80 to-cyan-900/90"
   },

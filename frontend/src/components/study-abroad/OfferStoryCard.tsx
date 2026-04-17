@@ -110,7 +110,7 @@ function CompactCard({ offer }: { offer: OfferData }) {
           </Tag>
         )}
         {offer.toefl && (
-          <Tag variant="purple" size="sm">
+          <Tag variant="primary" size="sm">
             TOEFL {offer.toefl}
           </Tag>
         )}
@@ -207,7 +207,7 @@ function FullCard({ offer, index }: { offer: OfferData; index: number }) {
             </div>
           ))}
           {offer.research.map((item, i) => (
-            <div key={`research-${i}`} className="flex items-center gap-2 text-xs text-purple-700 bg-purple-50 rounded-lg px-3 py-1.5">
+            <div key={`research-${i}`} className="flex items-center gap-2 text-xs text-primary-700 bg-primary-50 rounded-lg px-3 py-1.5">
               <FlaskConical size={14} className="flex-shrink-0" />
               <span>{item}</span>
             </div>

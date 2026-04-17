@@ -48,15 +48,6 @@ export default function AdminCompanies() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const mockCompanies: CompanyRecord[] = [
-    { id: 1, user_id: 3, company_name: '字节跳动', industry: '互联网/科技', scale: '10000人以上', description: '全球化科技公司，旗下产品包括抖音、TikTok等', logo: '', website: 'https://www.bytedance.com', address: '北京市海淀区', verify_status: 'approved', verify_remark: '', created_at: '2026-03-10', email: 'hr@bytedance.com' },
-    { id: 2, user_id: 4, company_name: '腾讯', industry: '互联网/科技', scale: '10000人以上', description: '世界领先的互联网科技公司', logo: '', website: 'https://www.tencent.com', address: '深圳市南山区', verify_status: 'approved', verify_remark: '', created_at: '2026-03-08', email: 'hr@tencent.com' },
-    { id: 3, user_id: 5, company_name: '百度', industry: '互联网/人工智能', scale: '10000人以上', description: '全球最大中文搜索引擎', logo: '', website: 'https://www.baidu.com', address: '北京市海淀区', verify_status: 'approved', verify_remark: '', created_at: '2026-03-12', email: 'hr@baidu.com' },
-    { id: 4, user_id: 6, company_name: '创新科技有限公司', industry: '软件开发', scale: '50-200人', description: '专注企业级SaaS服务的初创公司', logo: '', website: '', address: '杭州市余杭区', verify_status: 'pending', verify_remark: '', created_at: '2026-04-05', email: 'admin@chuangxin.com' },
-    { id: 5, user_id: 7, company_name: '无名公司', industry: '不明', scale: '1-50人', description: '资料不完整', logo: '', website: '', address: '', verify_status: 'rejected', verify_remark: '企业信息不完整，缺少营业执照', created_at: '2026-04-01', email: 'test@unknown.com' },
-    { id: 6, user_id: 8, company_name: '智联教育科技', industry: '教育/培训', scale: '200-500人', description: '专注K12教育技术的创新企业', logo: '', website: 'https://zhilian-edu.com', address: '南京市建邺区', verify_status: 'pending', verify_remark: '', created_at: '2026-04-06', email: 'hr@zhilian-edu.com' },
-  ];
-
   useEffect(() => {
     fetchCompanies();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -73,22 +64,13 @@ export default function AdminCompanies() {
         setCompanies(res.data.data.list || res.data.data.companies || []);
         setTotal(res.data.data.pagination?.total || res.data.data.total || 0);
       } else {
-        applyMock();
+        setError('数据加载失败，请稍后重试');
       }
     } catch {
-      applyMock();
+      setError('数据加载失败，请稍后重试');
     } finally {
       setLoading(false);
     }
-  }
-
-  function applyMock() {
-    let filtered = [...mockCompanies];
-    if (statusFilter !== 'all') filtered = filtered.filter(c => c.verify_status === statusFilter);
-    if (search) filtered = filtered.filter(c => c.company_name.includes(search));
-    setCompanies(filtered);
-    setTotal(filtered.length);
-    setError(null);
   }
 
   async function handleReview(companyId: number, status: 'approved' | 'rejected') {
@@ -100,14 +82,7 @@ export default function AdminCompanies() {
         message: reviewRemark ? `备注：${reviewRemark}` : undefined
       });
     } catch {
-      // 模拟
-      setCompanies(prev => prev.map(c =>
-        c.id === companyId ? { ...c, verify_status: status, verify_remark: reviewRemark } : c
-      ));
-      showToast({
-        type: status === 'approved' ? 'success' : 'warning',
-        title: status === 'approved' ? '企业审核已通过' : '企业审核已驳回'
-      });
+      showToast({ type: 'error', title: '操作失败，请重试' });
     }
     setReviewModal(null);
     setReviewRemark('');
@@ -115,7 +90,7 @@ export default function AdminCompanies() {
   }
 
   const totalPages = Math.ceil(total / pageSize);
-  const pendingCount = mockCompanies.filter(c => c.verify_status === 'pending').length;
+  const pendingCount = companies.filter(c => c.verify_status === 'pending').length;
 
   if (loading) return <div className="space-y-6"><TableSkeleton rows={6} cols={4} /></div>;
   if (error) return (
@@ -123,7 +98,6 @@ export default function AdminCompanies() {
       <ErrorState
         message={error}
         onRetry={() => { setError(null); fetchCompanies(); }}
-        onLoadMockData={() => { applyMock(); }}
       />
     </div>
   );
@@ -146,9 +120,9 @@ export default function AdminCompanies() {
       {/* 统计卡片 */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {[
-          { label: '待审核', count: mockCompanies.filter(c => c.verify_status === 'pending').length, color: 'text-amber-600', bg: 'bg-amber-50', icon: Clock },
-          { label: '已通过', count: mockCompanies.filter(c => c.verify_status === 'approved').length, color: 'text-green-600', bg: 'bg-green-50', icon: CheckCircle },
-          { label: '已驳回', count: mockCompanies.filter(c => c.verify_status === 'rejected').length, color: 'text-red-600', bg: 'bg-red-50', icon: XCircle },
+          { label: '待审核', count: companies.filter(c => c.verify_status === 'pending').length, color: 'text-amber-600', bg: 'bg-amber-50', icon: Clock },
+          { label: '已通过', count: companies.filter(c => c.verify_status === 'approved').length, color: 'text-green-600', bg: 'bg-green-50', icon: CheckCircle },
+          { label: '已驳回', count: companies.filter(c => c.verify_status === 'rejected').length, color: 'text-red-600', bg: 'bg-red-50', icon: XCircle },
         ].map(item => (
           <div key={item.label} className="bg-white rounded-xl p-5 shadow-sm border border-gray-100 flex items-center gap-4">
             <div className={`w-12 h-12 ${item.bg} rounded-xl flex items-center justify-center`}>
@@ -171,7 +145,7 @@ export default function AdminCompanies() {
             placeholder="搜索企业名称..."
             value={search}
             onChange={e => setSearch(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
+            className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none"
           />
         </div>
         <div className="flex gap-2">
@@ -181,7 +155,7 @@ export default function AdminCompanies() {
               onClick={() => { setStatusFilter(s); setPage(1); }}
               className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                 statusFilter === s
-                  ? 'bg-indigo-600 text-white'
+                  ? 'bg-primary-600 text-white'
                   : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
               }`}
             >

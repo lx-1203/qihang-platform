@@ -23,6 +23,8 @@ interface Resource {
   createdAt: string;
 }
 
+// TODO: 资料库功能需要后端创建 resources 表并提供 API 后对接
+// 当前使用本地 Mock 数据，后续应替换为 http.get('/mentor/resources') 等 API 调用
 // Mock 数据（后续对接 API）
 const MOCK_RESOURCES: Resource[] = [
   {
@@ -56,9 +58,9 @@ const TYPE_ICONS: Record<ResourceType, typeof FileText> = {
   image: Image,
 };
 
-const TYPE_COLORS: Record<ResourceType, { text: string; bg: string; tagVariant: 'blue' | 'purple' | 'primary' | 'orange' }> = {
+const TYPE_COLORS: Record<ResourceType, { text: string; bg: string; tagVariant: 'blue' | 'primary' | 'orange' }> = {
   document: { text: 'text-blue-600', bg: 'bg-blue-50', tagVariant: 'blue' },
-  video: { text: 'text-purple-600', bg: 'bg-purple-50', tagVariant: 'purple' },
+  video: { text: 'text-primary-600', bg: 'bg-primary-50', tagVariant: 'primary' },
   link: { text: 'text-primary-600', bg: 'bg-primary-50', tagVariant: 'primary' },
   image: { text: 'text-amber-600', bg: 'bg-amber-50', tagVariant: 'orange' },
 };
@@ -130,7 +132,7 @@ export default function MentorResources() {
         {[
           { label: '总资料数', value: resources.length, icon: Folder, color: 'text-blue-600', bg: 'bg-blue-50' },
           { label: '总下载量', value: resources.reduce((s, r) => s + r.downloads, 0), icon: Download, color: 'text-green-600', bg: 'bg-green-50' },
-          { label: '文档类', value: resources.filter(r => r.type === 'document').length, icon: FileText, color: 'text-purple-600', bg: 'bg-purple-50' },
+          { label: '文档类', value: resources.filter(r => r.type === 'document').length, icon: FileText, color: 'text-primary-600', bg: 'bg-primary-50' },
           { label: '视频类', value: resources.filter(r => r.type === 'video').length, icon: Video, color: 'text-amber-600', bg: 'bg-amber-50' },
         ].map(stat => (
           <div key={stat.label} className="bg-white rounded-xl border border-gray-200 p-4">

@@ -1,0 +1,21 @@
+{
+  "total": 3,
+  "data": [
+    {
+      "name_cn": "美国",
+      "url": "https://liuxue.xdf.cn/usa/",
+      "has_content": true
+    },
+    {
+      "name_cn": "英国",
+      "url": "https://liuxue.xdf.cn/uk/",
+      "has_content": true
+    },
+    {
+      "name_cn": "加拿大",
+      "url": "https://liuxue.xdf.cn/canada/",
+      "has_content": true
+    }
+  ],
+  "scrape_time": "2026-04-17 19:07:04"
+}

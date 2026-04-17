@@ -56,8 +56,8 @@ const ALL_ROUTES: RouteGroup[] = [
   },
   {
     title: 'C端 - 学生个人中心',
-    color: 'text-purple-700',
-    bg: 'bg-purple-50 border-purple-200',
+    color: 'text-primary-700',
+    bg: 'bg-primary-50 border-primary-200',
     icon: User,
     routes: [
       { path: '/student/profile', label: '个人资料', icon: User, desc: '编辑个人信息' },
@@ -83,8 +83,8 @@ const ALL_ROUTES: RouteGroup[] = [
   },
   {
     title: '企业端 (/company)',
-    color: 'text-indigo-700',
-    bg: 'bg-indigo-50 border-indigo-200',
+    color: 'text-sky-700',
+    bg: 'bg-sky-50 border-sky-200',
     icon: Building2,
     routes: [
       { path: '/company/dashboard', label: '企业总览', icon: LayoutDashboard, desc: '招聘数据看板' },
@@ -147,7 +147,7 @@ export default function DevNav() {
                   { role: 'admin' as const, label: '管理员', color: 'bg-red-600 hover:bg-red-700' },
                   { role: 'company' as const, label: '企业', color: 'bg-blue-600 hover:bg-blue-700' },
                   { role: 'mentor' as const, label: '导师', color: 'bg-emerald-600 hover:bg-emerald-700' },
-                  { role: 'student' as const, label: '学生', color: 'bg-purple-600 hover:bg-purple-700' },
+                  { role: 'student' as const, label: '学生', color: 'bg-primary-600 hover:bg-primary-700' },
                 ].map(item => (
                   <button
                     key={item.role}

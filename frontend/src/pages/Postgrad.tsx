@@ -66,16 +66,16 @@ export default function Postgrad() {
         {/* Section: Channels */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Baoyan */}
-          <div className="bg-gradient-to-br from-indigo-50 to-white p-8 rounded-[24px] border border-indigo-100 relative">
-            <Award className="w-10 h-10 text-indigo-500 mb-4" />
+          <div className="bg-gradient-to-br from-primary-50 to-white p-8 rounded-[24px] border border-primary-100 relative">
+            <Award className="w-10 h-10 text-primary-500 mb-4" />
             <h3 className="text-[24px] font-bold text-gray-900 mb-2">保研专区 (推免)</h3>
             <p className="text-gray-600 mb-6">夏令营通知、九推捡漏、导师套磁信模板、专业笔面试面经汇总。</p>
             <ul className="space-y-3 mb-8">
-              <li className="flex items-center text-[14px] text-gray-600 hover:text-indigo-600 cursor-pointer"><ChevronRight className="w-4 h-4 mr-1"/> 2024年全国高校夏令营入营要求盘点</li>
-              <li className="flex items-center text-[14px] text-gray-600 hover:text-indigo-600 cursor-pointer"><ChevronRight className="w-4 h-4 mr-1"/> 计算机专业保研机试常见题型解析</li>
-              <li className="flex items-center text-[14px] text-gray-600 hover:text-indigo-600 cursor-pointer"><ChevronRight className="w-4 h-4 mr-1"/> 如何给心仪的导师发一封高回复率的邮件？</li>
+              <li className="flex items-center text-[14px] text-gray-600 hover:text-primary-600 cursor-pointer"><ChevronRight className="w-4 h-4 mr-1"/> 2024年全国高校夏令营入营要求盘点</li>
+              <li className="flex items-center text-[14px] text-gray-600 hover:text-primary-600 cursor-pointer"><ChevronRight className="w-4 h-4 mr-1"/> 计算机专业保研机试常见题型解析</li>
+              <li className="flex items-center text-[14px] text-gray-600 hover:text-primary-600 cursor-pointer"><ChevronRight className="w-4 h-4 mr-1"/> 如何给心仪的导师发一封高回复率的邮件？</li>
             </ul>
-            <button className="text-indigo-600 font-medium text-[15px] flex items-center gap-1 hover:gap-2 transition-all">
+            <button className="text-primary-600 font-medium text-[15px] flex items-center gap-1 hover:gap-2 transition-all">
               进入保研社区 <ChevronRight className="w-5 h-5" />
             </button>
           </div>

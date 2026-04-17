@@ -178,22 +178,22 @@ export default function Jobs() {
   return (
     <div className="bg-gray-50 min-h-screen">
       {/* 1. 顶部搜索区域 */}
-      <section className="bg-gradient-to-br from-indigo-950 via-purple-900 to-violet-950 text-white py-16 lg:py-24 relative overflow-hidden">
+      <section className="bg-gradient-to-br from-primary-700 via-primary-800 to-primary-900 text-white py-16 lg:py-24 relative overflow-hidden">
         {/* 鲜亮装饰元素 */}
         <div className="absolute top-0 left-0 w-full h-full overflow-hidden opacity-30 pointer-events-none">
           <svg className="absolute w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
             <path d="M0,100 L100,0 L100,100 Z" fill="url(#gradJob)" />
             <defs>
               <linearGradient id="gradJob" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" style={{ stopColor: "#8b5cf6", stopOpacity: 1 }} />
-                <stop offset="100%" style={{ stopColor: "#7c3aed", stopOpacity: 0.3 }} />
+                <stop offset="0%" style={{ stopColor: "#0d9488", stopOpacity: 1 }} />
+                <stop offset="100%" style={{ stopColor: "#0f766e", stopOpacity: 0.3 }} />
               </linearGradient>
             </defs>
           </svg>
         </div>
         {/* 光晕装饰 */}
-        <div className="absolute -top-20 -right-20 w-[500px] h-[500px] bg-violet-500/20 rounded-full blur-3xl" />
-        <div className="absolute -bottom-20 -left-20 w-[400px] h-[400px] bg-fuchsia-500/15 rounded-full blur-3xl" />
+        <div className="absolute -top-20 -right-20 w-[500px] h-[500px] bg-primary-400/20 rounded-full blur-3xl" />
+        <div className="absolute -bottom-20 -left-20 w-[400px] h-[400px] bg-primary-300/15 rounded-full blur-3xl" />
 
         <div className="container-main relative z-10">
           <div className="text-center max-w-3xl mx-auto mb-10">
@@ -267,10 +267,10 @@ export default function Jobs() {
             </div>
             <button
               onClick={handleSearch}
-              className="bg-gradient-to-r from-violet-500 to-purple-600 hover:from-violet-400 hover:to-purple-500 text-white px-10 py-3.5 rounded-xl font-bold
-                transition-all w-full sm:w-auto shrink-0 shadow-xl shadow-violet-500/30
-                hover:shadow-2xl hover:shadow-violet-500/40 hover:-translate-y-0.5 active:scale-[0.97]
-                focus-visible:ring-2 focus-visible:ring-violet-400/50 focus-visible:outline-none"
+              className="bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-400 hover:to-primary-500 text-white px-10 py-3.5 rounded-xl font-bold
+                transition-all w-full sm:w-auto shrink-0 shadow-xl shadow-primary-500/30
+                hover:shadow-2xl hover:shadow-primary-500/40 hover:-translate-y-0.5 active:scale-[0.97]
+                focus-visible:ring-2 focus-visible:ring-primary-400/50 focus-visible:outline-none"
             >
               搜索岗位
             </button>

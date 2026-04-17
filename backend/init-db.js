@@ -1295,6 +1295,7 @@ async function seedSiteConfigs(conn) {
     { key: 'footer_copyright', value: '© 2026 江苏初晓云网络科技有限公司', type: 'string', group: 'general', label: '版权信息', desc: '页脚版权声明', sort: 51 },
     { key: 'maintenance_mode', value: 'false', type: 'boolean', group: 'general', label: '维护模式', desc: '开启后前端显示维护页面', sort: 52, is_public: 1 },
     { key: 'announcement', value: '', type: 'string', group: 'general', label: '全站公告', desc: '顶部公告条内容（为空则不显示）', sort: 53 },
+    { key: 'announcements', value: '[]', type: 'json', group: 'general', label: '公告列表', desc: '平台公告数据（JSON数组，支持草稿/发布/定时）', sort: 54, is_public: 1 },
 
     // ===== 考研页面配置 =====
     { key: 'postgrad_page_config', value: JSON.stringify({
