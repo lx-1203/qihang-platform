@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import {
   Search, FileText, Plus, Edit, Trash2, Eye, EyeOff,
-  MoreVertical, Loader2, Save, X, Upload
+  MoreVertical, Loader2, Save, X
 } from 'lucide-react';
 import http from '@/api/http';
 import FileUpload from '@/components/ui/FileUpload';
@@ -52,7 +52,7 @@ export default function AdminArticles() {
     setLoading(true);
     setError('');
     try {
-      const params: any = {};
+      const params: Record<string, string> = {};
       if (keyword) params.keyword = keyword;
       if (cat && cat !== '全部') params.category = cat;
       if (stat) params.status = stat;
@@ -70,7 +70,8 @@ export default function AdminArticles() {
 
   useEffect(() => {
     fetchArticles(search, category, status);
-  }, []);
+     
+  }, [category, search, status]);
 
   const handleSearch = () => {
     fetchArticles(search, category, status);

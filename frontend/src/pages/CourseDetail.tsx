@@ -65,9 +65,10 @@ export default function CourseDetail() {
         setError('');
         const res = await http.get(`/courses/${id}`);
         setCourse(res.data);
-      } catch (err: any) {
+      } catch (err: unknown) {
         console.error('获取课程详情失败:', err);
-        if (err?.code === 404 || err?.response?.status === 404) {
+        const error = err as { code?: number; response?: { status?: number } };
+        if (error?.code === 404 || error?.response?.status === 404) {
           setError('课程不存在或已下架');
         } else {
           setError('加载失败，请稍后重试');
@@ -117,7 +118,7 @@ export default function CourseDetail() {
         await http.post('/student/favorites', { target_type: 'course', target_id: course?.id });
       }
       setIsFavorited(!isFavorited);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('收藏操作失败:', err);
     }
   };

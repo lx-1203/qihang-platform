@@ -81,7 +81,7 @@ export default function StudyAbroadConfig() {
               return (
                 <button
                   key={tab.id}
-                  onClick={() => setActiveTab(tab.id as any)}
+                  onClick={() => setActiveTab(tab.id as typeof activeTab)}
                   className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium whitespace-nowrap transition-all ${
                     isActive
                       ? 'bg-primary-500 text-white shadow-md'

@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import {
-  Save, RefreshCw, Palette, Globe, Mail,
+  Palette, Globe, Mail,
   Search as SearchIcon, Shield, Clock,
   ChevronDown, ChevronUp, Edit3, Check, X,
-  AlertTriangle, FileText, Image, AlertCircle
+  AlertTriangle, FileText, AlertCircle
 } from 'lucide-react';
 import http from '@/api/http';
 import Tag from '@/components/ui/Tag';

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { MessageSquare, Plus, X, Edit2, Check, Trash2 } from 'lucide-react';
+import { MessageSquare, Plus, X, Edit2, Trash2 } from 'lucide-react';
 
 // ====== 快捷回复模板管理组件 ======
 // 管理员聊天时可一键使用预设回复模板

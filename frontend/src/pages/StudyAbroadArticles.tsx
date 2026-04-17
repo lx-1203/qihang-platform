@@ -1,10 +1,9 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  BookOpen, ChevronRight, Search, Clock, Eye, Tag as TagIcon,
-  TrendingUp, FileText, MessageCircle, Globe, Sparkles,
-  ThumbsUp, ArrowRight, Star, Users, Heart, Bookmark,
-  ChevronDown, Filter
+  BookOpen, ChevronRight, Search, Clock, Eye,
+  TrendingUp, FileText, MessageCircle, Sparkles,
+  ThumbsUp, Star
 } from 'lucide-react';
 import TagComponent from '@/components/ui/Tag';
 import { motion } from 'framer-motion';
@@ -15,7 +14,7 @@ import articlesData from '../data/study-abroad-articles.json';
 const FEATURED_ARTICLE = articlesData.featured;
 const ARTICLES = articlesData.articles;
 const HOT_TOPICS = articlesData.hotTopics;
-const CATEGORIES = ['全部', ...Array.from(new Set(ARTICLES.map((a: any) => a.category)))];
+const CATEGORIES = ['全部', ...Array.from(new Set(ARTICLES.map((a: { category: string }) => a.category)))];
 
 export default function StudyAbroadArticles() {
   const [selectedCategory, setSelectedCategory] = useState('全部');

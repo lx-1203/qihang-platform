@@ -6,7 +6,7 @@ import {
   User, Briefcase, BookOpen, Calendar, Heart,
   Building2, FileText, Search, Shield, Settings,
   Video, Users, BarChart, Star, Rocket,
-  GraduationCap, MessageCircle, Award, Zap
+  MessageCircle, Zap
 } from 'lucide-react';
 import Tag from '@/components/ui/Tag';
 

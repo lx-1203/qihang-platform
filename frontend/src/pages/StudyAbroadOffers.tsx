@@ -23,6 +23,28 @@ import http from '../api/http';
 
 // ====== 类型定义 ======
 
+interface ApiOfferRow {
+  id: number | string;
+  student_name: string;
+  avatar?: string | null;
+  background: string;
+  gpa?: string;
+  ielts?: number | null;
+  toefl?: number | null;
+  gre?: number | null;
+  internship?: string | string[];
+  research?: string | string[];
+  result: string;
+  country: string;
+  school: string;
+  program: string;
+  scholarship?: string;
+  story?: string;
+  date?: string;
+  tags?: string | string[];
+  likes?: number;
+}
+
 interface OfferItem {
   id: string;
   studentName: string;
@@ -75,7 +97,7 @@ function extractBgType(background: string): string {
 }
 
 /** 将 API 返回的 snake_case 行映射为 OfferItem */
-function mapApiOffer(row: any): OfferItem {
+function mapApiOffer(row: ApiOfferRow): OfferItem {
   return {
     id: String(row.id),
     studentName: row.student_name,

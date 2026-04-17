@@ -111,7 +111,7 @@ export default function CourseForm() {
       }
     }
     fetchCourse();
-  }, [id, isEdit]);
+  }, [id, isEdit, location.state, navigate]);
 
   function parseTags(raw: unknown): string[] {
     if (!raw) return [];

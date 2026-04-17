@@ -67,18 +67,19 @@ function formatMonthLabel(monthKey: string): string {
 }
 
 /** 将 API 返回的 snake_case 行映射为 TimelineEvent */
-function mapApiTimeline(row: any): TimelineEvent {
+function mapApiTimeline(row: Record<string, unknown>): TimelineEvent {
+  const dateVal = typeof row.date === 'string' ? row.date : '';
   return {
     id: String(row.id),
-    date: row.date?.slice?.(0, 10) || row.date,
-    title: row.title,
-    description: row.description || '',
-    type: row.type || 'event',
-    category: row.category || '',
-    icon: row.icon || '',
-    color: row.color || '',
-    link: row.link || null,
-    tags: typeof row.tags === 'string' ? JSON.parse(row.tags) : (row.tags || []),
+    date: dateVal.slice(0, 10) || dateVal,
+    title: (row.title as string) || '',
+    description: (row.description as string) || '',
+    type: (row.type as TimelineEvent['type']) || 'event',
+    category: (row.category as string) || '',
+    icon: (row.icon as string) || '',
+    color: (row.color as string) || '',
+    link: (row.link as string) || null,
+    tags: typeof row.tags === 'string' ? JSON.parse(row.tags) : (Array.isArray(row.tags) ? row.tags as string[] : []),
   };
 }
 

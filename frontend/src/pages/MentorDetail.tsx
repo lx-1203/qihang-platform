@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { Star, Clock, BookOpen, Video, Award, ChevronRight, MessageCircle, Calendar, Loader2, AlertCircle, Users } from 'lucide-react';
+import { Star, Clock, Video, ChevronRight, MessageCircle, Calendar, Loader2, AlertCircle, Users } from 'lucide-react';
 import { motion } from 'framer-motion';
 import http from '@/api/http';
 import { useAuthStore } from '@/store/auth';
@@ -37,7 +37,7 @@ interface MentorCourse {
 export default function MentorDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { isAuthenticated, user } = useAuthStore();
+  const { isAuthenticated } = useAuthStore();
 
   const [mentor, setMentor] = useState<MentorDetailData | null>(null);
   const [courses, setCourses] = useState<MentorCourse[]>([]);
@@ -53,9 +53,10 @@ export default function MentorDetail() {
         setError('');
         const res = await http.get(`/mentors/${id}`);
         setMentor(res.data);
-      } catch (err: any) {
+      } catch (err: unknown) {
+        const error = err as { code?: number; response?: { status?: number } };
         console.error('获取导师详情失败:', err);
-        if (err?.code === 404 || err?.response?.status === 404) {
+        if (error?.code === 404 || error?.response?.status === 404) {
           setError('导师不存在或已下架');
         } else {
           setError('加载失败，请稍后重试');
@@ -105,8 +106,9 @@ export default function MentorDetail() {
         note: `预约${mentor?.name}老师的1v1辅导服务`,
       });
       alert('预约申请已提交，请等待导师确认！');
-    } catch (err: any) {
-      alert(err?.message || '预约失败，请稍后重试');
+    } catch (err: unknown) {
+      const error = err as { message?: string };
+      alert(error?.message || '预约失败，请稍后重试');
     } finally {
       setBookingLoading(false);
     }

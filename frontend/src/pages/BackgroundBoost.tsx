@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 import {
   Star, ChevronRight, Briefcase, FlaskConical, FileText, Trophy,
   Heart, BookOpen, ArrowRight, CheckCircle2, Users, Sparkles,
-  Building2, GraduationCap, Globe, MessageCircle, Award,
+  GraduationCap, Globe, MessageCircle, Award,
   TrendingUp, Target, Clock, BarChart3, Lightbulb, Shield
 } from 'lucide-react';
 import { motion } from 'framer-motion';

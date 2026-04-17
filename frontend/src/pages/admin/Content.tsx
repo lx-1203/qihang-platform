@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import {
   Search, Briefcase, Video, Eye, EyeOff,
-  MoreVertical, Trash2, Loader2
+  MoreVertical, Loader2
 } from 'lucide-react';
 import http from '@/api/http';
 import Tag from '@/components/ui/Tag';

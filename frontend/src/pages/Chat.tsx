@@ -232,7 +232,7 @@ export default function Chat() {
   // 消息变化时自动滚动到底部
   useEffect(() => {
     scrollToBottom();
-  }, [messages]);
+  }, [messages, scrollToBottom]);
 
   // 选中会话后，在移动端切换到聊天视图
   useEffect(() => {

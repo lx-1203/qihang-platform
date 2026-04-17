@@ -2,8 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
-  Search, Star, MapPin, Clock, Filter,
-  ChevronDown, Users, Award, MessageCircle, RefreshCw
+  Search, Star, Users, Award, MessageCircle, RefreshCw
 } from 'lucide-react';
 import http from '@/api/http';
 import { CardSkeleton } from '../components/ui/Skeleton';

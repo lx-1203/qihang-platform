@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   FileText, Upload, Folder, Search, Plus, X, Download,
   Eye, Trash2, File, Image, Video, Link2, Clock,
-  ChevronDown, Filter, BookOpen
+  BookOpen
 } from 'lucide-react';
 import { useToast } from '../../components/ui';
 import Tag from '@/components/ui/Tag';

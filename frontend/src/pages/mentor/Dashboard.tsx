@@ -4,8 +4,8 @@ import { motion } from 'framer-motion';
 import {
   Video, Calendar, Users, Star, Clock,
   TrendingUp, CheckCircle2, AlertCircle,
-  ChevronRight, MessageCircle, BookOpen,
-  DollarSign, Award, ArrowRight, User
+  MessageCircle,
+  DollarSign, Award, ArrowRight
 } from 'lucide-react';
 import http from '@/api/http';
 import OnboardingGuide from '@/components/OnboardingGuide';

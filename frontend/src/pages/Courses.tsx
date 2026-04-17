@@ -10,11 +10,23 @@ import Tag from '@/components/ui/Tag';
 
 const CATEGORIES = ['全部', '求职指导', '面试技巧', '简历制作', '行业解析', '考研保研', '体制内备考', '技能提升'];
 
+interface CourseItem {
+  id: number;
+  title: string;
+  cover?: string;
+  tags?: string[];
+  mentor?: string;
+  mentor_name?: string;
+  duration?: string;
+  rating?: string;
+  views?: number;
+}
+
 export default function Courses() {
   const [activeCategory, setActiveCategory] = useState('全部');
   const [keyword, setKeyword] = useState('');
   const [searchInput, setSearchInput] = useState('');
-  const [courses, setCourses] = useState<any[]>([]);
+  const [courses, setCourses] = useState<CourseItem[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);

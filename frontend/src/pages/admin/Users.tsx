@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import {
-  Search, Filter, UserPlus, MoreVertical,
+  Search, Filter, MoreVertical,
   Shield, Ban, CheckCircle, XCircle,
   ChevronLeft, ChevronRight, Download
 } from 'lucide-react';
@@ -77,6 +77,7 @@ export default function AdminUsers() {
       // 组件卸载时取消进行中的请求
       abortControllerRef.current?.abort();
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page, roleFilter, statusFilter, debouncedSearch]);
 
   async function fetchUsers() {
@@ -97,9 +98,9 @@ export default function AdminUsers() {
       } else {
         setError('数据加载失败，请刷新重试');
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       // 忽略因取消请求导致的错误
-      if (err.name === 'CanceledError') return;
+      if (err && typeof err === 'object' && 'name' in err && (err as { name: string }).name === 'CanceledError') return;
       setError('数据加载失败，请刷新重试');
       if (import.meta.env.DEV) console.error('[DEV] API error:', err);
     } finally {

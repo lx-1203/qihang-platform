@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import {
   Briefcase, Building2, Calendar, MapPin,
   Clock, Eye, Phone, CheckCircle2, XCircle,
-  ChevronRight, Search, Filter, ExternalLink
+  Search, Filter, ExternalLink
 } from 'lucide-react';
 import http from '@/api/http';
 import { ListSkeleton } from '../../components/ui/Skeleton';

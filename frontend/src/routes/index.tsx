@@ -73,6 +73,7 @@ const MentorCourseForm = lazy(() => import('../pages/mentor/CourseForm'));
 const MentorResources = lazy(() => import('../pages/mentor/Resources'));
 
 // 加载中组件
+// eslint-disable-next-line react-refresh/only-export-components
 const LoadingFallback = () => (
   <div className="flex items-center justify-center min-h-screen">
     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-500"></div>

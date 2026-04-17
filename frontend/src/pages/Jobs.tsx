@@ -19,6 +19,19 @@ import Tag from "@/components/ui/Tag";
 // ====== 岗位列表页 ======
 // 数据全部从 /api/jobs 获取，筛选项由接口返回
 
+interface JobItem {
+  id: number;
+  title: string;
+  company_name: string;
+  logo?: string;
+  location: string;
+  salary: string;
+  type: string;
+  time?: string;
+  tags?: string[];
+  urgent?: boolean;
+}
+
 export default function Jobs() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -31,7 +44,7 @@ export default function Jobs() {
   const [isFilterOpen, setIsFilterOpen] = useState(false);
 
   // API 数据
-  const [jobs, setJobs] = useState<any[]>([]);
+  const [jobs, setJobs] = useState<JobItem[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);

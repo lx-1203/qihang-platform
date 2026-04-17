@@ -40,14 +40,14 @@ function showToast(msg: string, type: 'success' | 'error' = 'success') {
 
 export default function AdminStudyAbroad() {
   const [activeTab, setActiveTab] = useState<TabKey>('universities');
-  const [list, setList] = useState<any[]>([]);
+  const [list, setList] = useState<Record<string, unknown>[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(false);
   const [keyword, setKeyword] = useState('');
   const [showModal, setShowModal] = useState(false);
-  const [editingItem, setEditingItem] = useState<any>(null);
-  const [formData, setFormData] = useState<Record<string, any>>({});
+  const [editingItem, setEditingItem] = useState<Record<string, unknown> | null>(null);
+  const [formData, setFormData] = useState<Record<string, string | number>>({});
   const [saving, setSaving] = useState(false);
   const [universityOptions, setUniversityOptions] = useState<{ id: number; name: string }[]>([]);
 
@@ -68,7 +68,7 @@ export default function AdminStudyAbroad() {
   const fetchList = useCallback(async () => {
     setLoading(true);
     try {
-      const params: Record<string, any> = { page, pageSize };
+      const params: Record<string, string | number> = { page, pageSize };
       if (keyword) params.keyword = keyword;
       const res = await http.get(apiPath(activeTab), { params });
       setList(res.data.data?.list || []);
@@ -95,12 +95,12 @@ export default function AdminStudyAbroad() {
     if (activeTab === 'programs' && universityOptions.length === 0) {
       http.get('/admin/universities', { params: { pageSize: 200 } })
         .then(res => {
-          const opts = (res.data.data?.list || []).map((u: any) => ({ id: u.id, name: u.name_zh }));
+          const opts = (res.data.data?.list || []).map((u: { id: number; name_zh: string }) => ({ id: u.id, name: u.name_zh }));
           setUniversityOptions(opts);
         })
         .catch(() => {});
     }
-  }, [activeTab]);
+  }, [activeTab, universityOptions.length]);
 
   // ---------- CRUD 操作 ----------
   const openCreate = () => {
@@ -109,7 +109,7 @@ export default function AdminStudyAbroad() {
     setShowModal(true);
   };
 
-  const openEdit = (item: any) => {
+  const openEdit = (item: Record<string, unknown>) => {
     setEditingItem(item);
     setFormData(itemToFormData(activeTab, item));
     setShowModal(true);
@@ -128,8 +128,9 @@ export default function AdminStudyAbroad() {
       }
       setShowModal(false);
       fetchList();
-    } catch (err: any) {
-      showToast(err.response?.data?.message || '操作失败', 'error');
+    } catch (err: unknown) {
+      const axiosErr = err as { response?: { data?: { message?: string } } };
+      showToast(axiosErr.response?.data?.message || '操作失败', 'error');
     } finally {
       setSaving(false);
     }
@@ -146,7 +147,7 @@ export default function AdminStudyAbroad() {
     }
   };
 
-  const handleToggleStatus = async (item: any) => {
+  const handleToggleStatus = async (item: Record<string, unknown>) => {
     const newStatus = item.status === 'active' ? 'inactive' : 'active';
     try {
       if (activeTab === 'universities') {
@@ -240,10 +241,10 @@ export default function AdminStudyAbroad() {
                 </tr>
               ) : (
                 list.map((item) => (
-                  <tr key={item.id} className="hover:bg-gray-50/50">
+                  <tr key={item.id as number} className="hover:bg-gray-50/50">
                     {getColumns(activeTab).map((col, i) => (
                       <td key={i} className="px-4 py-3 text-gray-700 whitespace-nowrap max-w-[200px] truncate">
-                        {col.render ? col.render(item) : (item[col.key] ?? '-')}
+                        {col.render ? col.render(item) : ((item[col.key] as React.ReactNode) ?? '-')}
                       </td>
                     ))}
                     <td className="px-4 py-3 text-right">
@@ -269,7 +270,7 @@ export default function AdminStudyAbroad() {
                           </button>
                         )}
                         <button
-                          onClick={() => handleDelete(item.id)}
+                          onClick={() => handleDelete(item.id as number)}
                           className="p-1.5 text-gray-400 hover:text-red-500 rounded-lg hover:bg-red-50 transition-colors"
                           title="删除"
                         >
@@ -337,7 +338,7 @@ export default function AdminStudyAbroad() {
                       className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/40"
                     >
                       <option value="">请选择</option>
-                      {(field.options || []).map((opt: any) => (
+                      {(field.options || []).map((opt: { value: string; label: string }) => (
                         <option key={opt.value} value={opt.value}>{opt.label}</option>
                       ))}
                     </select>
@@ -389,11 +390,11 @@ export default function AdminStudyAbroad() {
 interface ColDef {
   key: string;
   label: string;
-  render?: (item: any) => React.ReactNode;
+  render?: (item: Record<string, unknown>) => React.ReactNode;
 }
 
 function getColumns(tab: TabKey): ColDef[] {
-  const statusBadge = (item: any) => (
+  const statusBadge = (item: Record<string, unknown>) => (
     <Tag variant={item.status === 'active' ? 'green' : 'gray'} size="xs">
       {item.status === 'active' ? '上架' : '下架'}
     </Tag>
@@ -406,8 +407,8 @@ function getColumns(tab: TabKey): ColDef[] {
         { key: 'name_zh', label: '中文名' },
         { key: 'name_en', label: '英文名' },
         { key: 'region', label: '地区' },
-        { key: 'qs_ranking', label: 'QS排名', render: (i) => i.qs_ranking || '-' },
-        { key: 'program_count', label: '项目数', render: (i) => i.program_count ?? 0 },
+        { key: 'qs_ranking', label: 'QS排名', render: (i) => (i.qs_ranking as string | number) || '-' },
+        { key: 'program_count', label: '项目数', render: (i) => (i.program_count as number) ?? 0 },
         { key: 'status', label: '状态', render: statusBadge },
       ];
     case 'programs':
@@ -427,18 +428,18 @@ function getColumns(tab: TabKey): ColDef[] {
         { key: 'school', label: '录取院校' },
         { key: 'program', label: '项目' },
         { key: 'country', label: '国家' },
-        { key: 'date', label: '日期', render: (i) => i.date?.slice(0, 10) },
+        { key: 'date', label: '日期', render: (i) => (i.date as string)?.slice(0, 10) },
         { key: 'likes', label: '点赞' },
         { key: 'status', label: '状态', render: statusBadge },
       ];
     case 'timeline':
       return [
         { key: 'id', label: 'ID' },
-        { key: 'date', label: '日期', render: (i) => i.date?.slice(0, 10) },
+        { key: 'date', label: '日期', render: (i) => (i.date as string)?.slice(0, 10) },
         { key: 'title', label: '标题' },
         { key: 'type', label: '类型', render: (i) => {
           const map: Record<string, string> = { deadline: '截止日期', live: '直播', event: '事件', tips: '提示' };
-          return map[i.type] || i.type;
+          return map[i.type as string] || (i.type as string);
         }},
         { key: 'category', label: '分类' },
         { key: 'status', label: '状态', render: statusBadge },
@@ -575,7 +576,7 @@ function getFormFields(tab: TabKey, universityOptions: { id: number; name: strin
 
 // ====== 表单默认值 ======
 
-function getDefaultFormData(tab: TabKey): Record<string, any> {
+function getDefaultFormData(tab: TabKey): Record<string, string | number> {
   switch (tab) {
     case 'universities':
       return { name_zh: '', name_en: '', region: '', country: '', city: '', qs_ranking: '', logo: '', description: '', gpa_min: '', ielts_min: '', toefl_min: '', tuition_min: '', tuition_max: '', website: '' };
@@ -592,11 +593,11 @@ function getDefaultFormData(tab: TabKey): Record<string, any> {
 
 // ====== 数据库行 → 表单数据 ======
 
-function itemToFormData(tab: TabKey, item: any): Record<string, any> {
-  const base = { ...item };
+function itemToFormData(tab: TabKey, item: Record<string, unknown>): Record<string, string | number> {
+  const base: Record<string, unknown> = { ...item };
 
   // JSON 数组字段转文本
-  const parseJson = (val: any): string[] => {
+  const parseJson = (val: unknown): string[] => {
     if (Array.isArray(val)) return val;
     if (typeof val === 'string') { try { return JSON.parse(val); } catch { return []; } }
     return [];
@@ -606,11 +607,11 @@ function itemToFormData(tab: TabKey, item: any): Record<string, any> {
     base.internship_text = parseJson(item.internship).join('\n');
     base.research_text = parseJson(item.research).join('\n');
     base.tags_text = parseJson(item.tags).join(',');
-    base.date = item.date?.slice(0, 10) || '';
+    base.date = (item.date as string)?.slice(0, 10) || '';
   }
   if (tab === 'timeline') {
     base.tags_text = parseJson(item.tags).join(',');
-    base.date = item.date?.slice(0, 10) || '';
+    base.date = (item.date as string)?.slice(0, 10) || '';
   }
   if (tab === 'consultants') {
     base.specialty_text = parseJson(item.specialty).join(',');
@@ -619,13 +620,11 @@ function itemToFormData(tab: TabKey, item: any): Record<string, any> {
     base.university_id = String(item.university_id || '');
   }
 
-  return base;
+  return base as Record<string, string | number>;
 }
 
-// ====== 表单数据 → API payload ======
-
-function preparePayload(tab: TabKey, form: Record<string, any>): Record<string, any> {
-  const data = { ...form };
+function preparePayload(tab: TabKey, form: Record<string, string | number>): Record<string, unknown> {
+  const data: Record<string, unknown> = { ...form };
 
   // 清理数字字段
   const numFields = ['qs_ranking', 'gpa_min', 'ielts_min', 'toefl_min', 'tuition_min', 'tuition_max',
@@ -638,19 +637,19 @@ function preparePayload(tab: TabKey, form: Record<string, any>): Record<string, 
 
   // 文本字段转 JSON 数组
   if (tab === 'offers') {
-    data.internship = (data.internship_text || '').split('\n').map((s: string) => s.trim()).filter(Boolean);
-    data.research = (data.research_text || '').split('\n').map((s: string) => s.trim()).filter(Boolean);
-    data.tags = (data.tags_text || '').split(',').map((s: string) => s.trim()).filter(Boolean);
+    data.internship = ((data.internship_text as string) || '').split('\n').map((s: string) => s.trim()).filter(Boolean);
+    data.research = ((data.research_text as string) || '').split('\n').map((s: string) => s.trim()).filter(Boolean);
+    data.tags = ((data.tags_text as string) || '').split(',').map((s: string) => s.trim()).filter(Boolean);
     delete data.internship_text;
     delete data.research_text;
     delete data.tags_text;
   }
   if (tab === 'timeline') {
-    data.tags = (data.tags_text || '').split(',').map((s: string) => s.trim()).filter(Boolean);
+    data.tags = ((data.tags_text as string) || '').split(',').map((s: string) => s.trim()).filter(Boolean);
     delete data.tags_text;
   }
   if (tab === 'consultants') {
-    data.specialty = (data.specialty_text || '').split(',').map((s: string) => s.trim()).filter(Boolean);
+    data.specialty = ((data.specialty_text as string) || '').split(',').map((s: string) => s.trim()).filter(Boolean);
     delete data.specialty_text;
   }
 

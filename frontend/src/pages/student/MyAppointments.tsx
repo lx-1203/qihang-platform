@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Calendar, Clock, User, Star, MessageSquare,
+  Calendar, Clock, Star, MessageSquare,
   Video, MapPin, X, Send, CheckCircle2,
   XCircle, AlertCircle, DollarSign
 } from 'lucide-react';
@@ -115,22 +115,22 @@ export default function MyAppointments() {
       if (res.data?.code === 200 && res.data.data) {
         // 将后端状态映射为前端展示状态
         const raw = res.data.data.appointments || res.data.data.list || res.data.data;
-        const normalized = raw.map((a: any) => ({
+        const normalized = raw.map((a: Record<string, unknown>) => ({
           ...a,
-          mentorName: a.mentor_name || a.mentorName || '',
-          mentorAvatar: a.mentor_avatar || a.mentorAvatar || '',
-          mentorTitle: a.mentor_title || a.mentorTitle || '',
-          serviceTitle: a.service_title || a.serviceTitle || '',
-          serviceType: a.service_title || a.serviceType || '导师辅导',
-          date: a.appointment_time ? String(a.appointment_time).slice(0, 10) : (a.date || ''),
-          time: a.appointment_time ? String(a.appointment_time).slice(11, 16) : (a.time || ''),
-          fee: a.fee || 0,
-          location: a.location || '线上',
+          mentorName: (a.mentor_name || a.mentorName || '') as string,
+          mentorAvatar: (a.mentor_avatar || a.mentorAvatar || '') as string,
+          mentorTitle: (a.mentor_title || a.mentorTitle || '') as string,
+          serviceTitle: (a.service_title || a.serviceTitle || '') as string,
+          serviceType: (a.service_title || a.serviceType || '导师辅导') as string,
+          date: a.appointment_time ? String(a.appointment_time).slice(0, 10) : ((a.date || '') as string),
+          time: a.appointment_time ? String(a.appointment_time).slice(11, 16) : ((a.time || '') as string),
+          fee: (a.fee || 0) as number,
+          location: (a.location || '线上') as string,
           hasReviewed: !!a.review_rating,
-          rating: a.review_rating,
-          reviewContent: a.review_content,
+          rating: a.review_rating as number | undefined,
+          reviewContent: a.review_content as string | undefined,
           // 将 pending/confirmed → upcoming，其余保留
-          status: ['pending', 'confirmed'].includes(a.status) ? 'upcoming' : a.status,
+          status: (['pending', 'confirmed'].includes(a.status as string) ? 'upcoming' : a.status) as AppointmentStatus,
         }));
         setAppointments(normalized);
       }

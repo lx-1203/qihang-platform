@@ -14,7 +14,6 @@ export default function Footer() {
   const companyName = useConfigStore(s => s.getString('footer_copyright', '© 2026 江苏初晓云网络科技有限公司'));
   const icpNumber = useConfigStore(s => s.getString('footer_icp', ''));
   const contactEmail = useConfigStore(s => s.getString('contact_email', ''));
-  const brandName = useConfigStore(s => s.getString('brand_name', '启航平台'));
 
   const languages = [
     { code: 'zh', name: t('footer.lang_zh') },
@@ -87,8 +86,6 @@ export default function Footer() {
       ],
     },
   ];
-
-  const currentYear = new Date().getFullYear();
 
   return (
     <footer className="bg-gray-50 border-t border-gray-200 mt-20 relative w-full text-gray-600 font-sans">

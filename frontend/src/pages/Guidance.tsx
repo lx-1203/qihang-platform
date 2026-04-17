@@ -36,9 +36,17 @@ const SERVICES = [
   }
 ];
 
+interface ArticleItem {
+  id: number;
+  title: string;
+  cover?: string;
+  created_at: string;
+  view_count: number;
+}
+
 export default function Guidance() {
   const navigate = useNavigate();
-  const [articles, setArticles] = useState<any[]>([]);
+  const [articles, setArticles] = useState<ArticleItem[]>([]);
   const [articlesLoading, setArticlesLoading] = useState(true);
 
   // 加载最新4篇文章

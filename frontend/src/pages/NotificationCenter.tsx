@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Bell, Check, CheckCheck, Trash2, Clock,
   Briefcase, Calendar, Shield, Megaphone,
-  ChevronLeft, ChevronRight, Filter
+  ChevronLeft, ChevronRight
 } from 'lucide-react';
 import http from '@/api/http';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
@@ -31,7 +31,6 @@ const TYPE_CONFIG: Record<string, { label: string; icon: typeof Bell; color: str
 
 export default function NotificationCenter() {
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
-  const [loading, setLoading] = useState(false);
   const [typeFilter, setTypeFilter] = useState<string>('all');
   const [readFilter, setReadFilter] = useState<string>('all');
   const [page, setPage] = useState(1);
@@ -55,6 +54,7 @@ export default function NotificationCenter() {
 
   useEffect(() => {
     fetchNotifications();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page, typeFilter, readFilter]);
 
   async function fetchNotifications() {

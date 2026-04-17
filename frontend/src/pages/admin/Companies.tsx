@@ -35,7 +35,6 @@ const STATUS_MAP = {
 
 export default function AdminCompanies() {
   const [companies, setCompanies] = useState<CompanyRecord[]>([]);
-  const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [page, setPage] = useState(1);
@@ -55,6 +54,7 @@ export default function AdminCompanies() {
 
   useEffect(() => {
     fetchCompanies();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page, statusFilter, search]);
 
   async function fetchCompanies() {

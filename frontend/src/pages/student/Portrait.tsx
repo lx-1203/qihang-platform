@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import {
   User, Target, Briefcase, BookOpen, Star, Plus, X,
   Save, Sparkles, TrendingUp, Heart, Code, Globe,
-  Palette, Calculator, Megaphone, Stethoscope,
+  Megaphone,
   GraduationCap, Lightbulb, ChevronRight
 } from 'lucide-react';
 import { useToast } from '../../components/ui';

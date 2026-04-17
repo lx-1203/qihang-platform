@@ -42,7 +42,8 @@ const mockProfile: MentorProfile = {
 
 export default function MentorProfile() {
   const [profile, setProfile] = useState<MentorProfile>(mockProfile);
-  const [loading, setLoading] = useState(false);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [_loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [expertiseInput, setExpertiseInput] = useState('');

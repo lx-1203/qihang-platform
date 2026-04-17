@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import {
   Search, CheckCircle, XCircle, Clock, Eye,
-  Star, Award, MapPin, ChevronLeft, ChevronRight
+  Star, Award, ChevronLeft, ChevronRight
 } from 'lucide-react';
 import http from '@/api/http';
 import Tag from '@/components/ui/Tag';
@@ -33,7 +33,6 @@ const STATUS_MAP = {
 
 export default function AdminMentors() {
   const [mentors, setMentors] = useState<MentorRecord[]>([]);
-  const [loading, setLoading] = useState(false);
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
@@ -53,6 +52,7 @@ export default function AdminMentors() {
 
   useEffect(() => {
     fetchMentors();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page, statusFilter, search]);
 
   async function fetchMentors() {

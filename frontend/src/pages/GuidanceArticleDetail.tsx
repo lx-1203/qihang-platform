@@ -57,7 +57,7 @@ export default function GuidanceArticleDetail() {
 
   // 简单的 Markdown 转 HTML（处理标题、列表、粗体、代码块等）
   const renderMarkdown = (text: string) => {
-    let html = text
+    const html = text
       // 标题
       .replace(/^### (.+)$/gm, '<h3 class="text-lg font-bold text-gray-900 mt-6 mb-3">$1</h3>')
       .replace(/^## (.+)$/gm, '<h2 class="text-xl font-bold text-gray-900 mt-8 mb-4">$1</h2>')

@@ -1,8 +1,8 @@
 import { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import {
-  Search, Filter, Users, MapPin, GraduationCap, Briefcase,
-  Mail, Phone, FileText, ChevronLeft, ChevronRight,
+  Search, Filter, Users, GraduationCap, Briefcase,
+  Mail, FileText, ChevronLeft, ChevronRight,
   Loader2, User, X, Building2, BookOpen, Star, Tag, TrendingUp
 } from 'lucide-react';
 import http from '@/api/http';
@@ -112,6 +112,7 @@ export default function TalentSearch() {
 
   useEffect(() => {
     fetchTalents();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pagination.page]);
 
   const fetchTalents = async () => {

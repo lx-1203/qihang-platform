@@ -36,11 +36,6 @@ function getSavedPosition(): { x: number; y: number } {
 
 // 限制位置不超出屏幕边界
 function clampPosition(x: number, y: number, elWidth = 56, elHeight = 56) {
-  const maxX = window.innerWidth - elWidth - 24;  // 24px 边距
-  // 移动端底部安全距离：避免遮挡底部导航
-  const isMobile = window.innerWidth < 768;
-  const bottomPadding = isMobile ? 80 : 24;
-  const maxY = window.innerHeight - elHeight - bottomPadding;
   const minX = -(window.innerWidth - elWidth - 24); // 相对于 right-6 的偏移
   const minY = -(window.innerHeight - elHeight - 24);
   return {

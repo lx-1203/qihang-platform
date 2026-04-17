@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import {
   Plus, Search, Filter, MoreVertical, Edit3,
   Trash2, Eye, EyeOff, MapPin, Briefcase,
-  ChevronLeft, ChevronRight, Loader2,
+  ChevronLeft, ChevronRight,
   Clock, FileText
 } from 'lucide-react';
 import axios from 'axios';
@@ -74,6 +74,7 @@ export default function CompanyJobManage() {
 
   useEffect(() => {
     fetchJobs();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page, typeFilter, statusFilter]);
 
   // 搜索防抖 + AbortController
@@ -89,6 +90,7 @@ export default function CompanyJobManage() {
         clearTimeout(debounceTimerRef.current);
       }
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [search]);
 
   // 组件卸载时清理

@@ -74,6 +74,7 @@ export default function FileUpload({
   maxFiles = 5,
   maxSize = 10 * 1024 * 1024,
   onSuccess,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   onMultiSuccess,
   onError,
   placeholder,
@@ -94,6 +95,68 @@ export default function FileUpload({
     : category === 'cover'
     ? '点击或拖拽上传封面图（JPG/PNG，最大5MB）'
     : '点击或拖拽上传文件';
+
+  // 上传单个文件（含压缩）
+  const uploadFile = useCallback(async (fileItem: FileItem) => {
+    let fileToUpload = fileItem.file;
+
+    // 图片文件超过 2MB 时自动压缩
+    const COMPRESS_THRESHOLD = 2 * 1024 * 1024; // 2MB
+    if (fileToUpload.type.startsWith('image/') && fileToUpload.size > COMPRESS_THRESHOLD) {
+      setFiles((prev) =>
+        prev.map((f) => (f.id === fileItem.id ? { ...f, status: 'compressing' as const } : f))
+      );
+      try {
+        fileToUpload = await compressImage(fileToUpload, {
+          maxWidth: 1920,
+          maxHeight: 1080,
+          quality: 0.85,
+          sizeThreshold: COMPRESS_THRESHOLD,
+        });
+      } catch {
+        // 压缩失败则使用原文件继续上传
+        console.warn('图片压缩失败，使用原文件上传');
+      }
+    }
+
+    setFiles((prev) =>
+      prev.map((f) => (f.id === fileItem.id ? { ...f, file: fileToUpload, status: 'uploading', progress: 0 } : f))
+    );
+
+    try {
+      const formData = new FormData();
+      formData.append('file', fileToUpload);
+      formData.append('category', category);
+
+      const res = await http.post('/upload', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+        onUploadProgress: (progressEvent) => {
+          const progress = progressEvent.total
+            ? Math.round((progressEvent.loaded / progressEvent.total) * 100)
+            : 0;
+          setFiles((prev) =>
+            prev.map((f) => (f.id === fileItem.id ? { ...f, progress } : f))
+          );
+        },
+      });
+
+      if (res.data?.code === 200) {
+        const result = res.data.data as UploadResult;
+        setFiles((prev) =>
+          prev.map((f) => (f.id === fileItem.id ? { ...f, status: 'success', progress: 100, result } : f))
+        );
+        onSuccess?.(result);
+      } else {
+        throw new Error(res.data?.message || '上传失败');
+      }
+    } catch (err: unknown) {
+      const errorMsg = err instanceof Error ? err.message : '上传失败，请重试';
+      setFiles((prev) =>
+        prev.map((f) => (f.id === fileItem.id ? { ...f, status: 'error', error: errorMsg } : f))
+      );
+      onError?.(errorMsg);
+    }
+  }, [category, onSuccess, onError]);
 
   // 处理文件选择
   const handleFiles = useCallback((selectedFiles: FileList | null) => {
@@ -148,69 +211,7 @@ export default function FileUpload({
       // 自动开始上传
       newFiles.forEach((f) => uploadFile(f));
     }
-  }, [files.length, maxFiles, maxSize, multiple, onError]);
-
-  // 上传单个文件（含压缩）
-  const uploadFile = async (fileItem: FileItem) => {
-    let fileToUpload = fileItem.file;
-
-    // 图片文件超过 2MB 时自动压缩
-    const COMPRESS_THRESHOLD = 2 * 1024 * 1024; // 2MB
-    if (fileToUpload.type.startsWith('image/') && fileToUpload.size > COMPRESS_THRESHOLD) {
-      setFiles((prev) =>
-        prev.map((f) => (f.id === fileItem.id ? { ...f, status: 'compressing' as const } : f))
-      );
-      try {
-        fileToUpload = await compressImage(fileToUpload, {
-          maxWidth: 1920,
-          maxHeight: 1080,
-          quality: 0.85,
-          sizeThreshold: COMPRESS_THRESHOLD,
-        });
-      } catch {
-        // 压缩失败则使用原文件继续上传
-        console.warn('图片压缩失败，使用原文件上传');
-      }
-    }
-
-    setFiles((prev) =>
-      prev.map((f) => (f.id === fileItem.id ? { ...f, file: fileToUpload, status: 'uploading', progress: 0 } : f))
-    );
-
-    try {
-      const formData = new FormData();
-      formData.append('file', fileToUpload);
-      formData.append('category', category);
-
-      const res = await http.post('/upload', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-        onUploadProgress: (progressEvent) => {
-          const progress = progressEvent.total
-            ? Math.round((progressEvent.loaded / progressEvent.total) * 100)
-            : 0;
-          setFiles((prev) =>
-            prev.map((f) => (f.id === fileItem.id ? { ...f, progress } : f))
-          );
-        },
-      });
-
-      if (res.data?.code === 200) {
-        const result = res.data.data as UploadResult;
-        setFiles((prev) =>
-          prev.map((f) => (f.id === fileItem.id ? { ...f, status: 'success', progress: 100, result } : f))
-        );
-        onSuccess?.(result);
-      } else {
-        throw new Error(res.data?.message || '上传失败');
-      }
-    } catch (err: any) {
-      const errorMsg = err?.message || '上传失败，请重试';
-      setFiles((prev) =>
-        prev.map((f) => (f.id === fileItem.id ? { ...f, status: 'error', error: errorMsg } : f))
-      );
-      onError?.(errorMsg);
-    }
-  };
+  }, [files.length, maxFiles, maxSize, multiple, onError, uploadFile]);
 
   // 移除文件
   const removeFile = (id: string) => {

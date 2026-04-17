@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import {
-  Users, Search, Mail, Phone, Calendar, Clock,
-  MessageCircle, ChevronLeft, ChevronRight, Loader2,
-  User, BookOpen, Filter
+  Users, Search, Mail, Phone, Calendar,
+  MessageCircle, Loader2,
+  User
 } from 'lucide-react';
 import http from '@/api/http';
 

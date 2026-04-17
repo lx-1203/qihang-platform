@@ -1,4 +1,4 @@
-import { BookOpen, GraduationCap, Globe, Clock, ChevronRight, Award } from 'lucide-react';
+import { GraduationCap, Globe, Clock, ChevronRight, Award } from 'lucide-react';
 
 const TIMELINES = [
   { month: '3月-5月', title: '基础复习阶段', desc: '确定目标院校和专业，搜集考研大纲和真题，开始英语和专业课基础轮复习。' },

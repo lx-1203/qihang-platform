@@ -1,7 +1,7 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Search, UserCircle, Bell, LogOut, Settings, User, ChevronDown, Clock, X, Menu, ArrowRight } from 'lucide-react';
-import { motion, AnimatePresence, useScroll, useTransform } from 'framer-motion';
+import { Search, UserCircle, Bell, LogOut, Settings, User, ChevronDown, Clock, X, Menu } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useAuthStore } from '@/store/auth';
 import { useConfigStore } from '@/store/config';
 import http from '@/api/http';
@@ -175,18 +175,16 @@ export default function Navbar() {
 
   const dashboardLink = getDashboardLink();
 
-  // 路由预加载映射（UX-005）— 鼠标悬停导航链接时预加载目标 chunk
-  const prefetchMap: Record<string, () => void> = {
-    '/jobs': () => import('../pages/Jobs'),
-    '/courses': () => import('../pages/Courses'),
-    '/guidance': () => import('../pages/Guidance'),
-    '/postgrad': () => import('../pages/Postgrad'),
-    '/entrepreneurship': () => import('../pages/Entrepreneurship'),
-    '/study-abroad': () => import('../pages/StudyAbroad'),
-    '/success-cases': () => import('../pages/SuccessCases'),
-  };
-
   const handlePrefetch = useCallback((path: string) => {
+    const prefetchMap: Record<string, () => void> = {
+      '/jobs': () => import('../pages/Jobs'),
+      '/courses': () => import('../pages/Courses'),
+      '/guidance': () => import('../pages/Guidance'),
+      '/postgrad': () => import('../pages/Postgrad'),
+      '/entrepreneurship': () => import('../pages/Entrepreneurship'),
+      '/study-abroad': () => import('../pages/StudyAbroad'),
+      '/success-cases': () => import('../pages/SuccessCases'),
+    };
     const prefetch = prefetchMap[path];
     if (prefetch) prefetch();
   }, []);

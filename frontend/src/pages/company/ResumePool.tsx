@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import {
-  Search, Filter, Eye, Phone, Mail, Calendar,
+  Search, Filter, Phone, Mail, Calendar,
   ChevronRight, GripVertical, User, GraduationCap,
-  Briefcase, Clock, CheckCircle, XCircle,
+  Briefcase, CheckCircle, XCircle,
   MessageSquare, ArrowRight, RefreshCw
 } from 'lucide-react';
 import http from '@/api/http';
@@ -94,18 +94,18 @@ export default function CompanyResumePool() {
       const res = await http.get('/company/resumes', { params: { pageSize: 100 } });
       if (res.data?.code === 200 && res.data.data?.resumes) {
         // 将后端字段映射为前端字段
-        const normalized = res.data.data.resumes.map((r: any) => ({
-          id: r.id,
-          studentName: r.student_name || r.studentName || '',
-          university: r.school || r.university || '',
-          major: r.major || '',
-          degree: r.degree || '本科',
-          jobTitle: r.job_title || r.jobTitle || '',
+        const normalized = res.data.data.resumes.map((r: Record<string, unknown>) => ({
+          id: r.id as number,
+          studentName: (r.student_name || r.studentName || '') as string,
+          university: (r.school || r.university || '') as string,
+          major: (r.major || '') as string,
+          degree: (r.degree || '本科') as ResumeCard['degree'],
+          jobTitle: (r.job_title || r.jobTitle || '') as string,
           status: r.status as ResumeStatus,
           appliedAt: r.created_at ? String(r.created_at).slice(0, 16) : '',
-          phone: r.phone || '',
-          email: r.student_email || r.email || '',
-          avatar: r.student_avatar || r.avatar || '',
+          phone: (r.phone || '') as string,
+          email: (r.student_email || r.email || '') as string,
+          avatar: (r.student_avatar || r.avatar || '') as string,
         }));
         setResumes(normalized);
       } else {

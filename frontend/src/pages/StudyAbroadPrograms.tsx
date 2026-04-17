@@ -65,6 +65,22 @@ interface MajorCategory {
   majors: { id: string; name: string; nameEn: string }[];
 }
 
+interface ApiProgramRow {
+  id: number;
+  name_zh?: string;
+  name_en?: string;
+  duration?: string;
+  tuition_total?: string;
+  deadline?: string;
+  language?: string;
+  gpa_min?: number | string;
+  employment_rate?: number | string;
+  avg_salary?: string;
+  tags?: string | string[];
+  region?: string;
+  country?: string;
+}
+
 /** 展平后的项目（含大学信息 + 筛选用字段） */
 interface FlatProgram {
   program: ProgramItem;
@@ -162,7 +178,7 @@ const REGION_TO_COUNTRY_ID: Record<string, string> = {
 };
 
 /** 将 API 返回的 programs 行映射为 FlatProgram */
-function mapApiProgram(row: any): FlatProgram {
+function mapApiProgram(row: ApiProgramRow): FlatProgram {
   const countryId = REGION_TO_COUNTRY_ID[row.region] || row.country?.toLowerCase() || '';
   return {
     program: {

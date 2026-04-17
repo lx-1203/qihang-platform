@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import {
   BookOpen, Plus, Eye, Star, ToggleLeft, ToggleRight,
   Edit3, Trash2, Search, Filter,
-  Users, Loader2
+  Users
 } from 'lucide-react';
 import http from '@/api/http';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';

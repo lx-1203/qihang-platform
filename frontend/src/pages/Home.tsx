@@ -2,12 +2,11 @@ import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Search, ChevronLeft, ChevronRight, Play, Star,
+  Search, Play, Star,
   Briefcase, Users, BookOpen, Globe, GraduationCap,
   MapPin, DollarSign, Heart, ArrowRight, Sparkles,
-  FileText, Calendar, Compass, Lightbulb, Building2,
+  FileText, Calendar, Building2,
   MessageCircle, Award, TrendingUp, ChevronDown, ChevronUp,
-  Loader2
 } from 'lucide-react';
 import { useAuthStore } from '@/store/auth';
 import { useConfigStore } from '@/store/config';
@@ -32,7 +31,7 @@ import CountUp from '@/components/CountUp';
 import homeConfig from '../data/home-ui-config.json';
 
 // ====== 图标映射（JSON 中存储字符串，渲染时映射为 Lucide 组件） ======
-const ICON_MAP: Record<string, any> = {
+const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
   Briefcase, MessageCircle, BookOpen, Globe, GraduationCap,
   Building2, Award, Users, FileText,
 };
@@ -49,9 +48,9 @@ export default function Home() {
   const [homeSearch, setHomeSearch] = useState('');
 
   // API 数据状态
-  const [hotJobs, setHotJobs] = useState<any[]>([]);
-  const [hotMentors, setHotMentors] = useState<any[]>([]);
-  const [hotCourses, setHotCourses] = useState<any[]>([]);
+  const [hotJobs, setHotJobs] = useState<Record<string, unknown>[]>([]);
+  const [hotMentors, setHotMentors] = useState<Record<string, unknown>[]>([]);
+  const [hotCourses, setHotCourses] = useState<Record<string, unknown>[]>([]);
   const [dataLoading, setDataLoading] = useState(true);
   const [jobsError, setJobsError] = useState(false);
   const [mentorsError, setMentorsError] = useState(false);
@@ -121,7 +120,7 @@ export default function Home() {
   };
 
   // 轮播（首条使用配置中心内容，其余从 JSON 读取）
-  const slides = homeConfig.heroSlides.map((s: any, idx: number) => ({
+  const slides = homeConfig.heroSlides.map((s: { title: string; subtitle: string; gradient: string; cta: string; ctaLink: string }, idx: number) => ({
     title: idx === 0 ? heroTitle.replace('，', '，\n') : s.title,
     sub: idx === 0 ? heroSubtitle : s.subtitle,
     bg: s.gradient,
@@ -132,7 +131,7 @@ export default function Home() {
   useEffect(() => {
     timerRef.current = setInterval(() => setCurrentSlide(p => (p + 1) % slides.length), 5000);
     return () => clearInterval(timerRef.current);
-  }, []);
+  }, [slides.length]);
 
   // 统计数字（从配置中心读取展示值）
   const platformStats = [
@@ -143,7 +142,7 @@ export default function Home() {
   ];
 
   // 快捷入口（从 JSON 配置读取，图标字符串映射为组件）
-  const quickEntries = homeConfig.quickEntries.map((e: any) => ({
+  const quickEntries = homeConfig.quickEntries.map((e: { icon: string; badge?: string; link: string; bg: string; color: string; label: string; desc: string }) => ({
     ...e,
     icon: ICON_MAP[e.icon] || Briefcase,
     badge: e.badge as 'new' | undefined,
@@ -536,7 +535,7 @@ export default function Home() {
           <h2 className="text-xl font-bold text-gray-900 text-center mb-2">一个平台，三方受益</h2>
           <p className="text-sm text-gray-500 text-center mb-8">启航平台连接学生、企业、导师，让每一方都获得价值</p>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {homeConfig.valueSections.map((item: any, i: number) => {
+            {homeConfig.valueSections.map((item: { icon: string; bg: string; border: string; gradientFrom: string; gradientTo: string; color: string; role: string; points: string[] }, i: number) => {
               const IconComp = ICON_MAP[item.icon] || GraduationCap;
               return (
               <motion.div key={i} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 + i * 0.1 }}

@@ -2,9 +2,9 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
-  Building2, Briefcase, FileText, Search, Users,
-  TrendingUp, TrendingDown, Plus, Eye, ChevronRight,
-  Clock, CheckCircle2, XCircle, ArrowRight, Star,
+  Building2, Briefcase, FileText, Search,
+  TrendingUp, Plus, ChevronRight,
+  ArrowRight, Star,
   UserCheck, Calendar, BarChart3
 } from 'lucide-react';
 import http from '@/api/http';

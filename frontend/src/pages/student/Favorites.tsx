@@ -3,8 +3,8 @@ import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Heart, Briefcase, BookOpen, User,
-  MapPin, Building2, Clock, Star,
-  DollarSign, Trash2, GraduationCap,
+  MapPin, Building2, Star,
+  GraduationCap,
   Search, LayoutGrid, List, ExternalLink
 } from 'lucide-react';
 import http from '@/api/http';

@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import {
-  Calendar, Clock, User, CheckCircle, XCircle,
-  CalendarCheck, CalendarX, Filter, Search,
-  DollarSign, Timer, ChevronRight, AlertCircle
+  Calendar, Clock, CheckCircle, XCircle,
+  CalendarCheck, CalendarX, Search,
+  DollarSign, Timer, AlertCircle
 } from 'lucide-react';
 import http from '@/api/http';
 import { ListSkeleton } from '../../components/ui/Skeleton';

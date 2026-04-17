@@ -43,6 +43,7 @@ const TOAST_EVENT = 'qihang:toast';
  * Standalone toast 函数 — 可在任何地方调用（不依赖 React Context）
  * 用法：showToast({ type: 'error', title: '操作失败', message: '请稍后重试' })
  */
+// eslint-disable-next-line react-refresh/only-export-components
 export function showToast(opts: ShowToastOptions): void {
   // 去重：1s 内相同文案不重复弹出
   const dedupKey = `${opts.type}:${opts.title}`;
@@ -66,6 +67,7 @@ export function showToast(opts: ShowToastOptions): void {
 const ToastContext = createContext<ToastContextType | null>(null);
 
 /** 在组件内使用 Toast：const toast = useToast(); toast.success('操作成功'); */
+// eslint-disable-next-line react-refresh/only-export-components
 export function useToast(): ToastContextType {
   const ctx = useContext(ToastContext);
   if (!ctx) {

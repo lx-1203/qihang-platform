@@ -1,11 +1,11 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  Globe, GraduationCap, Search, ChevronRight, MapPin, Star, Clock,
+  Globe, Search, ChevronRight, MapPin, Star, Clock,
   BookOpen, Briefcase, FlaskConical, FileText, Trophy, Heart,
-  MessageCircle, Headphones, ArrowRight, TrendingUp, Users, Plane,
-  Building2, DollarSign, Calendar, CheckCircle2, Sparkles, ChevronLeft,
-  Award, Zap, Shield, BarChart3, Target, Rocket, User, Phone
+  MessageCircle, Headphones, ArrowRight, TrendingUp, Users,
+  Building2, DollarSign, Calendar, Sparkles, ChevronLeft,
+  Award, Zap, Shield, Target, Rocket, User, Phone
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Tag from '@/components/ui/Tag';
@@ -30,49 +30,51 @@ import http from '../api/http';
 // ====== API 映射函数 ======
 
 /** 将 API 返回的 snake_case 行映射为 OfferItem */
-function mapApiOffer(row: any): OfferItem {
+function mapApiOffer(row: Record<string, unknown>): OfferItem {
   return {
     id: String(row.id),
-    studentName: row.student_name,
-    avatar: row.avatar || null,
-    background: row.background,
-    gpa: row.gpa || '',
-    ielts: row.ielts ?? null,
-    toefl: row.toefl ?? null,
-    gre: row.gre ?? null,
-    internship: typeof row.internship === 'string' ? JSON.parse(row.internship) : (row.internship || []),
-    research: typeof row.research === 'string' ? JSON.parse(row.research) : (row.research || []),
-    result: row.result,
-    country: row.country,
-    school: row.school,
-    program: row.program,
-    scholarship: row.scholarship || '',
-    story: row.story || '',
-    date: row.date?.slice?.(0, 10) || row.date,
-    tags: typeof row.tags === 'string' ? JSON.parse(row.tags) : (row.tags || []),
-    likes: row.likes || 0,
+    studentName: row.student_name as string,
+    avatar: (row.avatar as string) || null,
+    background: row.background as string,
+    gpa: (row.gpa as string) || '',
+    ielts: (row.ielts as number) ?? null,
+    toefl: (row.toefl as number) ?? null,
+    gre: (row.gre as number) ?? null,
+    internship: typeof row.internship === 'string' ? JSON.parse(row.internship) : ((row.internship as string[]) || []),
+    research: typeof row.research === 'string' ? JSON.parse(row.research) : ((row.research as string[]) || []),
+    result: row.result as string,
+    country: row.country as string,
+    school: row.school as string,
+    program: row.program as string,
+    scholarship: (row.scholarship as string) || '',
+    story: (row.story as string) || '',
+    date: (row.date as string)?.slice?.(0, 10) || (row.date as string),
+    tags: typeof row.tags === 'string' ? JSON.parse(row.tags) : ((row.tags as string[]) || []),
+    likes: (row.likes as number) || 0,
   };
 }
 
 /** 将 API 返回的 snake_case 行映射为 ConsultantItem */
-function mapApiConsultant(row: any): ConsultantItem {
+function mapApiConsultant(row: Record<string, unknown>): ConsultantItem {
   return {
     id: String(row.id),
-    name: row.name,
-    title: row.title || '',
-    avatar: row.avatar || null,
-    specialty: typeof row.specialty === 'string' ? JSON.parse(row.specialty) : (row.specialty || []),
-    experience: row.experience || '',
-    education: row.education || '',
-    successCases: row.success_cases || 0,
-    country: row.country || '',
-    description: row.description || '',
+    name: row.name as string,
+    title: (row.title as string) || '',
+    avatar: (row.avatar as string) || null,
+    specialty: typeof row.specialty === 'string' ? JSON.parse(row.specialty) : ((row.specialty as string[]) || []),
+    experience: (row.experience as string) || '',
+    education: (row.education as string) || '',
+    successCases: (row.success_cases as number) || 0,
+    country: (row.country as string) || '',
+    description: (row.description as string) || '',
   };
 }
 
+import type { LucideIcon } from 'lucide-react';
+
 // ====== 图标名称 → Lucide 组件统一映射 ======
 
-const ICON_MAP: Record<string, any> = {
+const ICON_MAP: Record<string, LucideIcon> = {
   Building2, Award, Trophy, Target, Search, TrendingUp, Calendar, FileText,
   BookOpen, DollarSign, Headphones, Users, Briefcase, FlaskConical, Heart, Star,
 };
@@ -81,14 +83,14 @@ const ICON_MAP: Record<string, any> = {
 
 const HERO_SLIDES = uiConfig.heroSlides;
 
-const STATS = uiConfig.stats.map((s: any) => ({ ...s, icon: ICON_MAP[s.icon] || Building2 }));
+const STATS = uiConfig.stats.map((s: { icon: string; value: string; label: string }) => ({ ...s, icon: ICON_MAP[s.icon] || Building2 }));
 
-const QUICK_ACTIONS = (uiConfig as any).quickActions.map((a: any) => ({
+const QUICK_ACTIONS = ((uiConfig as Record<string, unknown>).quickActions as Array<{ icon: string; label: string; link: string; bg: string; color: string }>).map((a) => ({
   ...a,
   icon: ICON_MAP[a.icon] || Star,
 }));
 
-const SERVICE_COLOR_MAP: Record<string, string> = (uiConfig as any).serviceColorMap;
+const SERVICE_COLOR_MAP: Record<string, string> = (uiConfig as Record<string, unknown>).serviceColorMap as Record<string, string>;
 
 const ARTICLES = articlesData.articles.slice(0, 6).map(a => ({
   id: a.id, title: a.title, category: a.category, views: a.views, hot: a.views > 10000,
@@ -373,7 +375,7 @@ export default function StudyAbroad() {
         <section className="relative -mt-10 z-20 mb-14">
           <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-6 md:p-8">
             <div className="grid grid-cols-4 md:grid-cols-8 gap-3 md:gap-5">
-              {QUICK_ACTIONS.map((item: any, idx: number) => (
+              {QUICK_ACTIONS.map((item, idx: number) => (
                 <Link key={idx} to={item.link} className="flex flex-col items-center gap-2.5 group cursor-pointer">
                   <div className={`w-13 h-13 md:w-14 md:h-14 ${item.bg} rounded-2xl flex items-center justify-center group-hover:scale-110 group-hover:shadow-md transition-all duration-200`}>
                     <item.icon className={`w-5 h-5 md:w-6 md:h-6 ${item.color}`} />
@@ -664,7 +666,7 @@ export default function StudyAbroad() {
               </AnimatePresence>
               {/* 圆点指示器 */}
               <div className="flex items-center gap-2 mt-8">
-                {uiConfig.newcomerQuotes.map((_: any, idx: number) => (
+                {uiConfig.newcomerQuotes.map((_: unknown, idx: number) => (
                   <button
                     key={idx}
                     onClick={() => setQuoteIndex(idx)}
@@ -688,7 +690,7 @@ export default function StudyAbroad() {
           </div>
           <p className="text-[13px] text-gray-400 mb-6">八大维度全面提升申请竞争力 · 与旗下实习/创赛/保研业务深度联动</p>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {uiConfig.serviceCards.map((service: any, idx: number) => {
+            {uiConfig.serviceCards.map((service: { id: string; icon: string; color: string; title: string; subtitle: string; description: string; image: string }, idx: number) => {
               const IconComp = ICON_MAP[service.icon] || Star;
               const gradientClass = SERVICE_COLOR_MAP[service.color] || 'from-gray-600/80 to-gray-900/90';
               return (

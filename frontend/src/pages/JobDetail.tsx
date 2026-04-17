@@ -68,9 +68,10 @@ export default function JobDetail() {
         } else {
           setError(res.data?.message || '加载职位数据失败');
         }
-      } catch (err: any) {
+      } catch (err: unknown) {
         console.error('获取职位详情失败:', err);
-        if (err?.response?.status === 404) {
+        const error = err as { response?: { status?: number } };
+        if (error?.response?.status === 404) {
           setError('职位不存在或已下线');
         } else {
           setError('加载职位数据失败，请稍后重试');
@@ -93,7 +94,7 @@ export default function JobDetail() {
         if (res.data?.code === 200) {
           const applications = res.data.data?.list || res.data.data || [];
           const found = Array.isArray(applications)
-            ? applications.find((r: any) => String(r.job_id) === String(id))
+            ? applications.find((r: { job_id: number | string }) => String(r.job_id) === String(id))
             : null;
           if (found) {
             setApplyStatus('done');
@@ -111,7 +112,7 @@ export default function JobDetail() {
         if (res.data?.code === 200) {
           const favorites = res.data.data?.list || res.data.data || [];
           const found = Array.isArray(favorites)
-            ? favorites.find((f: any) => f.target_type === 'job' && String(f.target_id) === String(id))
+            ? favorites.find((f: { target_type: string; target_id: number | string; id: number }) => f.target_type === 'job' && String(f.target_id) === String(id))
             : null;
           if (found) {
             setIsFavorited(true);
@@ -152,11 +153,12 @@ export default function JobDetail() {
       await http.post('/student/resumes', { job_id: job.id });
       setApplyStatus('done');
       setMessage({ type: 'success', text: '投递成功！企业收到后将通知你' });
-    } catch (err: any) {
+    } catch (err: unknown) {
       setApplyStatus('error');
-      const errMsg = err?.message || err?.response?.data?.message || '投递失败，请重试';
+      const error = err as { message?: string; response?: { status?: number; data?: { message?: string } } };
+      const errMsg = error?.message || error?.response?.data?.message || '投递失败，请重试';
       // 如果是重复投递，标记为已投递
-      if (err?.response?.status === 409 || errMsg.includes('已投递')) {
+      if (error?.response?.status === 409 || errMsg.includes('已投递')) {
         setApplyStatus('done');
         setMessage({ type: 'error', text: '你已投递过该职位' });
       } else {
@@ -197,24 +199,15 @@ export default function JobDetail() {
         }
         setMessage({ type: 'success', text: '收藏成功' });
       }
-    } catch (err: any) {
-      const errMsg = err?.message || '操作失败';
+    } catch (err: unknown) {
+      const error = err as { message?: string };
+      const errMsg = error?.message || '操作失败';
       setMessage({ type: 'error', text: errMsg });
     } finally {
       setFavoriteLoading(false);
     }
     setTimeout(() => setMessage(null), 3000);
   }, [user, id, isFavorited, favoriteId, favoriteLoading, navigate]);
-
-  // 工作类型标签颜色映射
-  const typeColor = (type: string) => {
-    const map: Record<string, string> = {
-      '校招': 'bg-blue-50 text-blue-700 border-blue-200',
-      '实习': 'bg-green-50 text-green-700 border-green-200',
-      '社招': 'bg-orange-50 text-orange-700 border-orange-200',
-    };
-    return map[type] || 'bg-gray-50 text-gray-700 border-gray-200';
-  };
 
   // 投递按钮是否应禁用
   const isApplyDisabled =

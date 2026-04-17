@@ -5,8 +5,8 @@ import {
   GraduationCap, BookOpen, CheckCircle2, Calendar, Users,
   FileText, Heart, Share2, MessageCircle, Building2,
   ArrowRight, TrendingUp, ExternalLink, AlertCircle,
-  Award, BarChart3, Briefcase, Lightbulb, Target,
-  ThumbsUp, Sparkles, ChevronDown
+  Award, Briefcase, Lightbulb, Target,
+  ThumbsUp
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import Tag from '@/components/ui/Tag';
@@ -14,8 +14,115 @@ import Tag from '@/components/ui/Tag';
 // ====== 数据导入（从 JSON 读取，管理员可通过配置页修改） ======
 import programDetailsData from '../data/study-abroad-program-details.json';
 
+import type { LucideIcon } from 'lucide-react';
+
+// ====== 项目详情数据类型 ======
+
+interface ProgramHighlight {
+  text: string;
+  icon: string;
+}
+
+interface ProgramRequirements {
+  gpa: string;
+  language: string;
+  background: string;
+  other: string;
+  workExp: string;
+  interview: string;
+}
+
+interface ProgramMaterial {
+  name: string;
+  required: boolean;
+  tip: string;
+}
+
+interface ProgramTimelineItem {
+  date: string;
+  event: string;
+  detail: string;
+}
+
+interface CurriculumCourse {
+  name: string;
+  credits: number;
+  type: string;
+}
+
+interface CurriculumSemester {
+  semester: string;
+  courses: CurriculumCourse[];
+}
+
+interface ProgramOffer {
+  id: number;
+  result: string;
+  date: string;
+  scholarship: string;
+  university: string;
+  background: string;
+  gpa: string;
+  ielts: string;
+  gre: string;
+  internship: string;
+  research: string;
+}
+
+interface RelatedProgram {
+  id: number;
+  school: string;
+  program: string;
+  ranking: number;
+}
+
+interface EmploymentIndustry {
+  name: string;
+  percent: number;
+}
+
+interface EmploymentData {
+  industries: EmploymentIndustry[];
+  topEmployers: string[];
+}
+
+interface ProgramDetail {
+  id: number;
+  school: string;
+  schoolEn: string;
+  program: string;
+  programEn: string;
+  country: string;
+  city: string;
+  ranking: number;
+  subjectRanking: number;
+  deadline: string;
+  tuition: string;
+  tuitionCNY: string;
+  duration: string;
+  intake: string;
+  classSize: number;
+  intlRatio: string;
+  employRate: string;
+  avgSalary: string;
+  logo: string;
+  cover: string;
+  tags: string[];
+  description: string;
+  highlights: ProgramHighlight[];
+  requirements: ProgramRequirements;
+  materials: ProgramMaterial[];
+  timeline: ProgramTimelineItem[];
+  curriculum: CurriculumSemester[];
+  offers: ProgramOffer[];
+  relatedPrograms: RelatedProgram[];
+  employmentData: EmploymentData;
+  website: string;
+  scholarship: string;
+}
+
 // 高亮图标映射：JSON 中存储字符串，渲染时映射为 Lucide 组件
-const HIGHLIGHT_ICON_MAP: Record<string, any> = {
+const HIGHLIGHT_ICON_MAP: Record<string, LucideIcon> = {
   Award, DollarSign, Building2, Target, MapPin, Briefcase,
   GraduationCap, BookOpen, Star, Globe, Users,
 };
@@ -25,7 +132,7 @@ const HIGHLIGHT_ICON_MAP: Record<string, any> = {
 export default function StudyAbroadDetail() {
   const { id: rawId } = useParams();
   const programId = parseInt(rawId || '1', 10);
-  const prog = (programDetailsData.programs as any[]).find((p: any) => p.id === programId);
+  const prog = (programDetailsData.programs as ProgramDetail[]).find((p) => p.id === programId);
 
   const [activeTab, setActiveTab] = useState<'overview' | 'requirements' | 'curriculum' | 'offers' | 'career'>('overview');
   const [saved, setSaved] = useState(false);
@@ -196,7 +303,7 @@ export default function StudyAbroadDetail() {
 
                 <h3 className="text-[20px] font-bold text-gray-900 mb-4">项目亮点</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-8">
-                  {prog.highlights.map((h: any, idx: number) => {
+                  {prog.highlights.map((h, idx: number) => {
                   const HIcon = HIGHLIGHT_ICON_MAP[h.icon] || Star;
                   return (
                     <div key={idx} className="flex items-start gap-3 bg-gray-50 rounded-xl p-4 border border-gray-100">

@@ -8,14 +8,6 @@ import Tag from '@/components/ui/Tag';
 // 文章分类
 const CATEGORIES = ['全部', '校招指南', '简历技巧', '面试经验', '政策解读'];
 
-// 分类颜色映射
-const categoryColors: Record<string, string> = {
-  '校招指南': 'bg-blue-50 text-blue-700 border-blue-200',
-  '简历技巧': 'bg-emerald-50 text-emerald-700 border-emerald-200',
-  '面试经验': 'bg-purple-50 text-purple-700 border-purple-200',
-  '政策解读': 'bg-amber-50 text-amber-700 border-amber-200',
-};
-
 interface Article {
   id: number;
   title: string;
