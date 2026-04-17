@@ -54,7 +54,7 @@ export default function PostgradConfig() {
       }
     }
     loadConfig();
-  }, []);
+  }, [toast]);
 
   const handleSave = async () => {
     if (saving) return;

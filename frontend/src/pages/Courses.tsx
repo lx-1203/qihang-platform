@@ -64,7 +64,7 @@ export default function Courses() {
     } finally {
       setLoading(false);
     }
-  }, [page, activeCategory, keyword]);
+  }, [page, activeCategory, keyword, pageSize]);
 
   useEffect(() => {
     fetchCourses();

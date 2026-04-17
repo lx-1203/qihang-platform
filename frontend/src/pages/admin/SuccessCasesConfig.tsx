@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Save, Plus, Trash2, Eye, CheckCircle2, Loader2, AlertTriangle, Award } from 'lucide-react';
+import { Save, Plus, Trash2, Eye, CheckCircle2, Loader2, AlertTriangle } from 'lucide-react';
 import { motion } from 'framer-motion';
 import http from '@/api/http';
 import { useToast } from '@/components/ui';
@@ -70,7 +70,7 @@ export default function SuccessCasesConfig() {
       }
     }
     loadConfig();
-  }, []);
+  }, [toast]);
 
   const handleSave = async () => {
     if (saving) return;

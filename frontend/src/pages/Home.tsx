@@ -4,8 +4,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Search, Play, Star,
   Briefcase, Users, BookOpen, Globe, GraduationCap,
-  MapPin, DollarSign, Heart, ArrowRight, Sparkles,
-  FileText, Calendar, Building2,
+  MapPin, DollarSign, ArrowRight, Sparkles,
+  FileText, Building2,
   MessageCircle, Award, TrendingUp, ChevronDown, ChevronUp,
 } from 'lucide-react';
 import { useAuthStore } from '@/store/auth';

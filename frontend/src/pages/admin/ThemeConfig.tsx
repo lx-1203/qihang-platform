@@ -100,7 +100,7 @@ export default function ThemeConfig() {
       }
     }
     loadThemeConfig();
-  }, []);
+  }, [toast]);
 
   // 实时更新 CSS 变量（预览效果）
   const updateCSSVariables = useCallback((color?: string, radiusIdx?: number, shadowIdx?: number) => {
@@ -163,12 +163,6 @@ export default function ThemeConfig() {
   const handleSave = async () => {
     if (saving) return;
     setSaving(true);
-
-    const config = {
-      brandColor: currentColor,
-      radius: RADIUS_PRESETS[selectedRadius],
-      shadow: SHADOW_PRESETS[selectedShadow],
-    };
 
     try {
       const res = await http.post('/config/batch', {

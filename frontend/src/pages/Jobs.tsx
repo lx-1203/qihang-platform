@@ -22,11 +22,9 @@ import jobsConfig from '@/data/jobs-config.json';
 // 数据全部从 /api/jobs 获取，筛选项由接口返回，热门搜索和文案从 jobs-config.json 配置文件读取
 
 const {
-  pageMeta,
   hotSearchTags,
   emptyState: emptyStateConfig,
   errorMessages,
-  ui,
 } = jobsConfig;
 
 interface JobItem {

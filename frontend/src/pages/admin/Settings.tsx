@@ -10,7 +10,7 @@ import http from '@/api/http';
 import { useToast } from '@/components/ui';
 import { useConfigStore } from '@/store/config';
 import Tag from '@/components/ui/Tag';
-import { Skeleton, CardSkeleton, ListSkeleton } from '@/components/ui/Skeleton';
+import { Skeleton, ListSkeleton } from '@/components/ui/Skeleton';
 
 // ====== 平台设置（站点配置管理 + 审计日志） ======
 // 商业级要求：

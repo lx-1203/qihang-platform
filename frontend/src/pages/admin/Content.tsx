@@ -1,14 +1,12 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import {
   Search, Briefcase, Video, Eye, EyeOff,
-  MoreVertical, Loader2,
-  ArrowUpDown, ArrowUp, ArrowDown
+  MoreVertical, Loader2
 } from 'lucide-react';
 import http from '@/api/http';
 import Tag from '@/components/ui/Tag';
 import { showToast } from '@/components/ui/ToastContainer';
-import ErrorState from '../../components/ui/ErrorState';
 import EmptyState from '../../components/ui/EmptyState';
 
 // ====== 职位+课程内容管理 ======
@@ -49,10 +47,6 @@ export default function AdminContent() {
   const [jobsLoading, setJobsLoading] = useState(true);
   const [coursesLoading, setCoursesLoading] = useState(true);
   const [error, setError] = useState('');
-
-  // 排序状态
-  const [sortField, setSortField] = useState<string>('created_at');
-  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
 
   // 加载职位列表
   async function fetchJobs(keyword = '') {
@@ -134,39 +128,6 @@ export default function AdminContent() {
     }
     setActionMenu(null);
   }
-
-  // 排序处理
-  const handleSort = (field: string) => {
-    if (sortField === field) {
-      setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc');
-    } else {
-      setSortField(field);
-      setSortOrder('asc');
-    }
-  };
-
-  // 排序图标
-  const SortIcon = ({ field }: { field: string }) => {
-    if (sortField !== field) return <ArrowUpDown className="w-3.5 h-3.5 text-gray-400" />;
-    return sortOrder === 'asc'
-      ? <ArrowUp className="w-3.5 h-3.5 text-indigo-600" />
-      : <ArrowDown className="w-3.5 h-3.5 text-indigo-600" />;
-  };
-
-  // 排序后的列表
-  const sortedList = useMemo(() => {
-    const list = currentList;
-    if (!sortField || !list.length) return list;
-    return [...list].sort((a: Record<string, unknown>, b: Record<string, unknown>) => {
-      let aVal = a[sortField];
-      let bVal = b[sortField];
-      if (typeof aVal === 'string') aVal = aVal.toLowerCase();
-      if (typeof bVal === 'string') bVal = bVal.toLowerCase();
-      if (aVal < bVal) return sortOrder === 'asc' ? -1 : 1;
-      if (aVal > bVal) return sortOrder === 'asc' ? 1 : -1;
-      return 0;
-    });
-  }, [currentList, sortField, sortOrder]);
 
   const isLoading = tab === 'jobs' ? jobsLoading : coursesLoading;
   const currentList = tab === 'jobs' ? jobs : courses;

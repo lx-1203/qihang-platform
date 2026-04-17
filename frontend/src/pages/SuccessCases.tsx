@@ -9,10 +9,8 @@ import {
 import Tag from '@/components/ui/Tag';
 import { useCountUp } from '@/hooks/useCountUp';
 import { useInViewAnimation } from '@/hooks/useInViewAnimation';
-import { useConfigStore } from '@/store/config';
 
-// 默认配置（当后端不可用时使用）
-const DEFAULT_SUCCESS_CASES_CONFIG = {
+const DEFAULT_CONFIG = {
   categories: [
     { key: "all", label: "全部", icon: "Star" },
     { key: "job", label: "求职成功", icon: "Briefcase" },
@@ -106,16 +104,18 @@ const DEFAULT_SUCCESS_CASES_CONFIG = {
       quote: "医学考研复习量巨大，平台上系统的备考规划帮我合理分配时间。还有同校学长一对一辅导西医综合，针对性特别强。感谢启航让我实现了梦想！",
       tags: ["医学考研", "协和", "专业课高分"],
       color: "from-red-500 to-rose-500", bgLight: "bg-red-50", textColor: "text-red-600"
-    }
+    },
   ]
 };
 
-// ====== 图标名称 → Lucide 组件映射 ======
+const CATEGORIES = DEFAULT_CONFIG.categories;
+const STATS = DEFAULT_CONFIG.stats;
+const CASES = DEFAULT_CONFIG.cases;
+
 const ICON_MAP: Record<string, LucideIcon> = {
   Star, Briefcase, GraduationCap, Globe, Rocket, Trophy, TrendingUp, Users,
 };
 
-// ====== 统计数字卡片组件（使用共享 hooks） ======
 function StatCard({ stat, index }: { stat: typeof STATS[number]; index: number }) {
   const { ref, isInView } = useInViewAnimation({ threshold: 0.3 });
   const count = useCountUp({ end: stat.value, enabled: isInView });
@@ -140,11 +140,9 @@ function StatCard({ stat, index }: { stat: typeof STATS[number]; index: number }
   );
 }
 
-// ====== 成功案例展示页 ======
 export default function SuccessCases() {
   const [activeCategory, setActiveCategory] = useState('all');
 
-  // 根据分类筛选案例
   const filteredCases =
     activeCategory === 'all'
       ? CASES
@@ -152,13 +150,10 @@ export default function SuccessCases() {
 
   return (
     <div className="min-h-screen bg-gray-50 pb-16">
-      {/* ====== Hero 渐变头部 ====== */}
       <div className="relative overflow-hidden bg-gradient-to-br from-violet-600 via-purple-600 to-indigo-700">
-        {/* 装饰性背景元素 — 更鲜亮 */}
         <div className="absolute top-10 right-10 w-80 h-80 bg-white/10 rounded-full blur-3xl" />
         <div className="absolute -bottom-20 -left-20 w-96 h-96 bg-fuchsia-500/15 rounded-full blur-3xl" />
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-violet-400/10 rounded-full" />
-        {/* 动态光效 */}
         <div className="absolute -top-20 -right-20 w-[500px] h-[500px] bg-gradient-to-br from-pink-500/20 to-violet-500/20 rounded-full blur-3xl animate-pulse" />
 
         <div className="relative z-10 container-main py-16 md:py-24 text-center">
@@ -183,14 +178,12 @@ export default function SuccessCases() {
       </div>
 
       <div className="container-main">
-        {/* ====== 统计数据区域 ====== */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 -mt-10 relative z-20 mb-12">
           {STATS.map((stat, i) => (
             <StatCard key={stat.label} stat={stat} index={i} />
           ))}
         </div>
 
-        {/* ====== 已帮助提示横幅 ====== */}
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -208,105 +201,94 @@ export default function SuccessCases() {
           </p>
         </motion.div>
 
-        {/* ====== 分类筛选标签 ====== */}
         <div className="flex items-center gap-2 mb-8 overflow-x-auto pb-2 scrollbar-hide">
           <Filter className="w-4 h-4 text-gray-400 shrink-0" />
           {CATEGORIES.map((cat) => (
             <button
-                key={cat.key}
-                onClick={() => setActiveCategory(cat.key)}
-                className={`relative inline-flex items-center gap-1.5 px-5 py-2.5 rounded-full text-sm font-bold whitespace-nowrap transition-all duration-200 ${
-                  activeCategory === cat.key
-                    ? 'text-white'
-                    : 'text-gray-600 bg-white border-2 border-gray-200 hover:text-violet-600 hover:border-violet-300 hover:bg-violet-50'
-                } active:scale-[0.97] focus-visible:ring-2 focus-visible:ring-violet-500/30 focus-visible:outline-none`}
-              >
-                {activeCategory === cat.key && (
-                  <motion.div
-                    layoutId="category-indicator"
-                    className="absolute inset-0 bg-gradient-to-r from-violet-600 to-purple-600 rounded-full shadow-lg shadow-violet-500/30"
-                    transition={{ type: 'spring', stiffness: 380, damping: 30 }}
-                  />
-                )}
+              key={cat.key}
+              onClick={() => setActiveCategory(cat.key)}
+              className={`relative inline-flex items-center gap-1.5 px-5 py-2.5 rounded-full text-sm font-bold whitespace-nowrap transition-all duration-200 ${
+                activeCategory === cat.key
+                  ? 'text-white'
+                  : 'text-gray-600 bg-white border-2 border-gray-200 hover:text-violet-600 hover:border-violet-300 hover:bg-violet-50'
+              } active:scale-[0.97] focus-visible:ring-2 focus-visible:ring-violet-500/30 focus-visible:outline-none`}
+            >
+              {activeCategory === cat.key && (
+                <motion.div
+                  layoutId="category-indicator"
+                  className="absolute inset-0 bg-gradient-to-r from-violet-600 to-purple-600 rounded-full shadow-lg shadow-violet-500/30"
+                  transition={{ type: 'spring', stiffness: 380, damping: 30 }}
+                />
+              )}
               {(() => { const IconComp = ICON_MAP[cat.icon] || Star; return <IconComp className="w-4 h-4 relative z-10" />; })()}
               <span className="relative z-10">{cat.label}</span>
             </button>
           ))}
         </div>
 
-        {/* ====== 案例卡片网格 ====== */}
         <AnimatePresence mode="popLayout">
           <motion.div
             layout
             className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-16"
           >
-          {filteredCases.map((item, i) => (
-            <motion.div
-              key={item.id}
-              layout
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              transition={{ delay: i * 0.06, duration: 0.35 }}
-              tabIndex={0}
-              className="bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-sm group cursor-pointer transition-all duration-300 hover:shadow-lg hover:-translate-y-1 active:scale-[0.98] touch-manipulation focus-visible:ring-2 focus-visible:ring-primary-500/30 focus-visible:outline-none"
-            >
-              {/* 顶部渐变装饰条 */}
-              <div className={`h-1.5 bg-gradient-to-r ${item.color}`} />
-
-              <div className="p-6">
-                {/* 头部：头像 + 基本信息 */}
-                <div className="flex items-start gap-4 mb-4">
-                  <div
-                    className={`w-12 h-12 rounded-xl bg-gradient-to-br ${item.color} flex items-center justify-center text-white font-bold text-lg shrink-0 shadow-sm`}
-                  >
-                    {item.avatar}
-                  </div>
-                  <div className="min-w-0">
-                    <h3 className="text-base font-bold text-gray-900 group-hover:text-primary-600 transition-colors">
-                      {item.name}
-                    </h3>
-                    <p className="text-xs text-gray-500 truncate">{item.school}</p>
-                  </div>
-                </div>
-
-                {/* 成就标签 */}
-                <div
-                  className={`${item.bgLight} rounded-xl px-4 py-3 mb-4 border border-transparent`}
-                >
-                  <p className={`text-sm font-bold ${item.textColor} flex items-start gap-2`}>
-                    <Trophy className="w-4 h-4 shrink-0 mt-0.5" />
-                    {item.achievement}
-                  </p>
-                </div>
-
-                {/* 引用语 */}
-                <div className="relative mb-4">
-                  <Quote className="w-5 h-5 text-gray-200 absolute -top-1 -left-1" />
-                  <p className="text-sm text-gray-600 leading-relaxed pl-5 line-clamp-4">
-                    {item.quote}
-                  </p>
-                </div>
-
-                {/* 标签列表 */}
-                <div className="flex flex-wrap gap-1.5">
-                  {item.tags.map((tag) => (
-                    <Tag
-                      key={tag}
-                      variant="gray"
-                      size="md"
+            {filteredCases.map((item, i) => (
+              <motion.div
+                key={item.id}
+                layout
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ delay: i * 0.06, duration: 0.35 }}
+                tabIndex={0}
+                className="bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-sm group cursor-pointer transition-all duration-300 hover:shadow-lg hover:-translate-y-1 active:scale-[0.98] touch-manipulation focus-visible:ring-2 focus-visible:ring-primary-500/30 focus-visible:outline-none"
+              >
+                <div className={`h-1.5 bg-gradient-to-r ${item.color}`} />
+                <div className="p-6">
+                  <div className="flex items-start gap-4 mb-4">
+                    <div
+                      className={`w-12 h-12 rounded-xl bg-gradient-to-br ${item.color} flex items-center justify-center text-white font-bold text-lg shrink-0 shadow-sm`}
                     >
-                      {tag}
-                    </Tag>
-                  ))}
+                      {item.avatar}
+                    </div>
+                    <div className="min-w-0">
+                      <h3 className="text-base font-bold text-gray-900 group-hover:text-primary-600 transition-colors">
+                        {item.name}
+                      </h3>
+                      <p className="text-xs text-gray-500 truncate">{item.school}</p>
+                    </div>
+                  </div>
+
+                  <div className={`${item.bgLight} rounded-xl px-4 py-3 mb-4 border border-transparent`}>
+                    <p className={`text-sm font-bold ${item.textColor} flex items-start gap-2`}>
+                      <Trophy className="w-4 h-4 shrink-0 mt-0.5" />
+                      {item.achievement}
+                    </p>
+                  </div>
+
+                  <div className="relative mb-4">
+                    <Quote className="w-5 h-5 text-gray-200 absolute -top-1 -left-1" />
+                    <p className="text-sm text-gray-600 leading-relaxed pl-5 line-clamp-4">
+                      {item.quote}
+                    </p>
+                  </div>
+
+                  <div className="flex flex-wrap gap-1.5">
+                    {item.tags.map((tag) => (
+                      <Tag
+                        key={tag}
+                        variant="gray"
+                        size="md"
+                      >
+                        {tag}
+                      </Tag>
+                    ))}
+                  </div>
                 </div>
-              </div>
-            </motion.div>
-          ))}
+              </motion.div>
+            ))}
           </motion.div>
         </AnimatePresence>
 
-        {/* 筛选无结果提示 */}
         {filteredCases.length === 0 && (
           <div className="text-center py-16">
             <Users className="w-12 h-12 text-gray-300 mx-auto mb-4" />
@@ -314,9 +296,7 @@ export default function SuccessCases() {
           </div>
         )}
 
-        {/* ====== CTA 行动号召区域 ====== */}
         <div className="bg-gradient-to-br from-indigo-950 via-purple-900 to-violet-950 rounded-[24px] overflow-hidden relative">
-          {/* 装饰性渐变 — 更鲜亮 */}
           <div className="absolute inset-0 bg-gradient-to-r from-violet-500/25 to-fuchsia-500/15" />
           <div className="absolute top-0 right-0 w-96 h-96 bg-violet-500/20 rounded-full blur-3xl" />
           <div className="absolute bottom-0 left-0 w-72 h-72 bg-pink-500/15 rounded-full blur-3xl" />

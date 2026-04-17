@@ -4,12 +4,12 @@ import {
   Search, Filter, MoreVertical,
   Shield, Ban, CheckCircle, XCircle,
   ChevronLeft, ChevronRight, Download,
-  ArrowUpDown, ArrowUp, ArrowDown, Trash2
+  ArrowUpDown, ArrowUp, ArrowDown
 } from 'lucide-react';
 import http from '@/api/http';
 import { TableSkeleton } from '../../components/ui/Skeleton';
 import ErrorState from '../../components/ui/ErrorState';
-import ConfirmDialog from '@/components/ui/ConfirmDialog';
+import ConfirmDialog from '../../components/ui/ConfirmDialog';
 import { showToast } from '@/components/ui/ToastContainer';
 import Tag from '@/components/ui/Tag';
 

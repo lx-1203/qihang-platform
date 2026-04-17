@@ -144,7 +144,7 @@ const DEFAULT_BG_BOOST_CONFIG = {
 };
 
 // 图标名称映射
-const ICON_MAP: Record<string, any> = {
+const ICON_MAP: Record<string, unknown> = {
   Briefcase, FlaskConical, FileText, Trophy, Heart, BookOpen,
   Target, TrendingUp, Award, Shield, Users, BarChart3, Lightbulb,
 };

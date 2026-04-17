@@ -55,7 +55,7 @@ export default function StudyAbroadConfig() {
       }
     }
     loadConfig();
-  }, []);
+  }, [toast]);
 
   const handleSave = async () => {
     if (saving) return;

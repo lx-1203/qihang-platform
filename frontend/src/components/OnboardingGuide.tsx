@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   X, ChevronRight, ChevronLeft, CheckCircle2,
   User, Briefcase, BookOpen, Calendar, Heart,
-  Building2, FileText, Search, Shield, Settings,
+  Building2, FileText, Search, Settings,
   Video, Users, BarChart, Star, Rocket,
   MessageCircle, Zap
 } from 'lucide-react';

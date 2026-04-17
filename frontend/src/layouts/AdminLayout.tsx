@@ -12,7 +12,6 @@ import {
   Video,
   FileText,
   Megaphone,
-  Palette,
   Home,
   Menu,
   X,

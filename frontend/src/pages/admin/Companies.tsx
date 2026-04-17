@@ -3,13 +3,12 @@ import { motion } from 'framer-motion';
 import {
   Search, CheckCircle, XCircle, Clock, Eye,
   Building2, Globe, MapPin, Users as UsersIcon,
-  ChevronLeft, ChevronRight, Loader2
+  ChevronLeft, ChevronRight
 } from 'lucide-react';
 import http from '@/api/http';
 import Tag from '@/components/ui/Tag';
 import { TableSkeleton } from '../../components/ui/Skeleton';
 import ErrorState from '../../components/ui/ErrorState';
-import ConfirmDialog from '@/components/ui/ConfirmDialog';
 import { showToast } from '@/components/ui/ToastContainer';
 
 // ====== 企业资质审核 ======
