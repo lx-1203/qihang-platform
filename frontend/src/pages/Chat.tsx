@@ -387,7 +387,7 @@ export default function Chat() {
     const guestLimitReached = guestCount >= 3;
 
     return (
-      <div className="max-w-[1200px] mx-auto px-4 sm:px-6 py-4 sm:py-6">
+      <div className="container-main py-4 sm:py-6">
         {/* 页面标题 */}
         <motion.div
           initial={{ opacity: 0, y: -10 }}
@@ -549,7 +549,7 @@ export default function Chat() {
   // ====== 页面主体 ======
 
   return (
-    <div className="max-w-[1200px] mx-auto px-4 sm:px-6 py-4 sm:py-6">
+    <div className="container-main py-4 sm:py-6">
       {/* 页面标题 */}
       <motion.div
         initial={{ opacity: 0, y: -10 }}

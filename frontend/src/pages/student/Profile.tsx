@@ -134,9 +134,9 @@ export default function Profile() {
     );
   }
 
-  if (loading) return <div className="max-w-4xl mx-auto px-4 py-8"><DetailSkeleton /></div>;
-  if (error) return <div className="max-w-4xl mx-auto px-4 py-8"><ErrorState message={error} onRetry={() => { setError(null); fetchProfile(); }} onLoadMockData={() => { setProfile(mockProfile); setEditData(mockProfile); setError(null); }} /></div>;
-  if (!profile) return <div className="max-w-4xl mx-auto px-4 py-8"><DetailSkeleton /></div>;
+  if (loading) return <div className="container-narrow py-8"><DetailSkeleton /></div>;
+  if (error) return <div className="container-narrow py-8"><ErrorState message={error} onRetry={() => { setError(null); fetchProfile(); }} onLoadMockData={() => { setProfile(mockProfile); setEditData(mockProfile); setError(null); }} /></div>;
+  if (!profile) return <div className="container-narrow py-8"><DetailSkeleton /></div>;
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">

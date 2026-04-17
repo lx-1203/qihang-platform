@@ -143,18 +143,18 @@ const GUARANTEES = [
 
 export default function BackgroundBoost() {
   return (
-    <div className="min-h-screen bg-[#f9fafb] pt-6 pb-16">
-      <div className="max-w-[1200px] mx-auto px-4 sm:px-6">
+    <div className="min-h-screen bg-gray-50 pt-6 pb-16">
+      <div className="container-main">
 
         {/* 面包屑 */}
-        <div className="flex items-center gap-2 text-[13px] text-[#9ca3af] mb-4">
+        <div className="flex items-center gap-2 text-[13px] text-gray-400 mb-4">
           <Link to="/study-abroad" className="hover:text-primary-500 transition-colors">留学</Link>
           <ChevronRight className="w-3.5 h-3.5" />
-          <span className="text-[#4b5563]">背景提升</span>
+          <span className="text-gray-600">背景提升</span>
         </div>
 
         {/* Hero */}
-        <div className="bg-[#111827] rounded-[24px] overflow-hidden relative mb-12">
+        <div className="bg-gray-900 rounded-[24px] overflow-hidden relative mb-12">
           <div className="absolute inset-0 bg-gradient-to-r from-primary-500/20 via-transparent to-purple-500/10" />
           <div className="absolute top-0 right-0 w-80 h-80 bg-primary-500/10 rounded-full blur-3xl" />
           <div className="absolute bottom-0 left-0 w-60 h-60 bg-purple-500/10 rounded-full blur-3xl" />
@@ -199,7 +199,7 @@ export default function BackgroundBoost() {
 
         {/* 服务流程 */}
         <div className="mb-14">
-          <h2 className="text-[22px] font-bold text-[#111827] text-center mb-8">服务流程</h2>
+          <h2 className="text-[22px] font-bold text-gray-900 text-center mb-8">服务流程</h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {PROCESS_STEPS.map((step, idx) => (
               <motion.div
@@ -214,11 +214,11 @@ export default function BackgroundBoost() {
                   <step.icon className="w-6 h-6 text-primary-500" />
                 </div>
                 <div className="text-[11px] text-primary-500 font-bold mb-1">STEP {step.step}</div>
-                <h3 className="text-[16px] font-bold text-[#111827] mb-1">{step.title}</h3>
-                <p className="text-[13px] text-[#6b7280]">{step.desc}</p>
+                <h3 className="text-[16px] font-bold text-gray-900 mb-1">{step.title}</h3>
+                <p className="text-[13px] text-gray-500">{step.desc}</p>
                 {idx < PROCESS_STEPS.length - 1 && (
                   <div className="hidden md:block absolute top-1/2 -right-2 transform -translate-y-1/2">
-                    <ArrowRight className="w-4 h-4 text-[#d1d5db]" />
+                    <ArrowRight className="w-4 h-4 text-gray-300" />
                   </div>
                 )}
               </motion.div>
@@ -248,13 +248,13 @@ export default function BackgroundBoost() {
                           <Icon className={`w-7 h-7 ${service.color}`} />
                         </div>
                         <div>
-                          <h2 className="text-[22px] font-bold text-[#111827]">{service.title}</h2>
-                          <p className="text-[14px] text-[#6b7280]">{service.description}</p>
+                          <h2 className="text-[22px] font-bold text-gray-900">{service.title}</h2>
+                          <p className="text-[14px] text-gray-500">{service.description}</p>
                         </div>
                       </div>
                       <ul className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-6">
                         {service.features.map((f, fIdx) => (
-                          <li key={fIdx} className="flex items-start gap-2 text-[14px] text-[#4b5563]">
+                          <li key={fIdx} className="flex items-start gap-2 text-[14px] text-gray-600">
                             <CheckCircle2 className={`w-4 h-4 ${service.color} shrink-0 mt-0.5`} />
                             {f}
                           </li>
@@ -268,24 +268,24 @@ export default function BackgroundBoost() {
                     {/* 右侧统计 */}
                     <div className={`shrink-0 w-full md:w-[160px] ${service.bg} rounded-2xl flex flex-col items-center justify-center p-6`}>
                       <div className={`text-[36px] font-bold ${service.color}`}>{service.stats.count}</div>
-                      <div className="text-[14px] text-[#6b7280]">{service.stats.label}</div>
+                      <div className="text-[14px] text-gray-500">{service.stats.label}</div>
                     </div>
                   </div>
 
                   {/* 成功案例 */}
                   {service.cases && (
                     <div className="mt-6 pt-6 border-t border-gray-100">
-                      <h4 className="text-[13px] font-medium text-[#9ca3af] mb-3">成功案例</h4>
+                      <h4 className="text-[13px] font-medium text-gray-400 mb-3">成功案例</h4>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                         {service.cases.map((c, cIdx) => (
-                          <div key={cIdx} className="bg-[#f9fafb] rounded-xl p-4 border border-gray-100 flex items-start gap-3">
+                          <div key={cIdx} className="bg-gray-50 rounded-xl p-4 border border-gray-100 flex items-start gap-3">
                             <div className={`w-8 h-8 ${service.bg} rounded-lg flex items-center justify-center shrink-0`}>
                               <Star className={`w-4 h-4 ${service.color}`} />
                             </div>
                             <div className="min-w-0">
                               <div className="flex items-center gap-2 mb-1">
-                                <span className="text-[13px] font-bold text-[#111827]">{c.name}</span>
-                                <span className="text-[11px] text-[#9ca3af]">{c.school}</span>
+                                <span className="text-[13px] font-bold text-gray-900">{c.name}</span>
+                                <span className="text-[11px] text-gray-400">{c.school}</span>
                                 <Tag
                                   variant={
                                     service.color.includes('blue') ? 'blue' :
@@ -298,7 +298,7 @@ export default function BackgroundBoost() {
                                   size="xs"
                                 >{c.highlight}</Tag>
                               </div>
-                              <p className="text-[12px] text-[#6b7280]">{c.result}</p>
+                              <p className="text-[12px] text-gray-500">{c.result}</p>
                             </div>
                           </div>
                         ))}
@@ -313,8 +313,8 @@ export default function BackgroundBoost() {
 
         {/* 服务保障 */}
         <div className="mb-14">
-          <h2 className="text-[22px] font-bold text-[#111827] text-center mb-2">服务保障</h2>
-          <p className="text-[14px] text-[#6b7280] text-center mb-8">我们承诺为每一位学员提供高品质、有保障的背景提升服务</p>
+          <h2 className="text-[22px] font-bold text-gray-900 text-center mb-2">服务保障</h2>
+          <p className="text-[14px] text-gray-500 text-center mb-8">我们承诺为每一位学员提供高品质、有保障的背景提升服务</p>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {GUARANTEES.map((g, idx) => (
               <motion.div
@@ -328,8 +328,8 @@ export default function BackgroundBoost() {
                 <div className="w-12 h-12 bg-primary-50 rounded-2xl flex items-center justify-center mx-auto mb-3">
                   <g.icon className="w-6 h-6 text-primary-500" />
                 </div>
-                <h3 className="text-[15px] font-bold text-[#111827] mb-1">{g.title}</h3>
-                <p className="text-[13px] text-[#6b7280]">{g.desc}</p>
+                <h3 className="text-[15px] font-bold text-gray-900 mb-1">{g.title}</h3>
+                <p className="text-[13px] text-gray-500">{g.desc}</p>
               </motion.div>
             ))}
           </div>
@@ -337,10 +337,10 @@ export default function BackgroundBoost() {
 
         {/* 联动说明 */}
         <div className="bg-gradient-to-r from-primary-50 to-white rounded-[24px] border border-primary-100 p-8 md:p-10 mb-14">
-          <h2 className="text-[22px] font-bold text-[#111827] mb-4 flex items-center gap-2">
+          <h2 className="text-[22px] font-bold text-gray-900 mb-4 flex items-center gap-2">
             <Globe className="w-6 h-6 text-primary-500" /> 业务联动
           </h2>
-          <p className="text-[15px] text-[#6b7280] mb-6">背景提升服务与平台旗下实习、创赛、保研等业务深度联动，享受跨业务专属优惠</p>
+          <p className="text-[15px] text-gray-500 mb-6">背景提升服务与平台旗下实习、创赛、保研等业务深度联动，享受跨业务专属优惠</p>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {[
               { title: '实习内推 × 留学', desc: '在大厂实习提升背景，同步准备留学申请，双线并行效率翻倍', link: '/jobs', icon: Briefcase, tag: '最受欢迎' },
@@ -352,8 +352,8 @@ export default function BackgroundBoost() {
                   <item.icon className="w-8 h-8 text-primary-500" />
                   <Tag variant="primary" size="xs" className="font-bold">{item.tag}</Tag>
                 </div>
-                <h3 className="text-[16px] font-bold text-[#111827] mb-1 group-hover:text-primary-500 transition-colors">{item.title}</h3>
-                <p className="text-[13px] text-[#6b7280]">{item.desc}</p>
+                <h3 className="text-[16px] font-bold text-gray-900 mb-1 group-hover:text-primary-500 transition-colors">{item.title}</h3>
+                <p className="text-[13px] text-gray-500">{item.desc}</p>
               </Link>
             ))}
           </div>
@@ -362,12 +362,12 @@ export default function BackgroundBoost() {
         {/* CTA */}
         <div className="text-center bg-white rounded-[24px] border border-gray-100 shadow-sm p-10">
           <div className="max-w-lg mx-auto">
-            <h2 className="text-[24px] font-bold text-[#111827] mb-3">不确定需要哪些背景提升？</h2>
-            <p className="text-[15px] text-[#6b7280] mb-6">资深留学顾问免费评估你的现有背景，根据目标院校定制专属提升方案，让每一分努力都花在刀刃上</p>
+            <h2 className="text-[24px] font-bold text-gray-900 mb-3">不确定需要哪些背景提升？</h2>
+            <p className="text-[15px] text-gray-500 mb-6">资深留学顾问免费评估你的现有背景，根据目标院校定制专属提升方案，让每一分努力都花在刀刃上</p>
             <button className="bg-primary-500 text-white px-10 py-4 rounded-xl font-bold text-[16px] hover:bg-primary-700 transition-colors shadow-lg shadow-primary-500/20 flex items-center gap-2 mx-auto">
               <MessageCircle className="w-5 h-5" /> 免费咨询
             </button>
-            <p className="text-[12px] text-[#9ca3af] mt-4 flex items-center justify-center gap-1">
+            <p className="text-[12px] text-gray-400 mt-4 flex items-center justify-center gap-1">
               <Clock className="w-3 h-3" /> 工作日 9:00 - 21:00 · 30分钟内响应
             </p>
           </div>

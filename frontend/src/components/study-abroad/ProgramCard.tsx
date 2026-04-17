@@ -85,27 +85,27 @@ export default function ProgramCard({ program, university, mode }: ProgramCardPr
             />
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 mb-0.5">
-                <h4 className="text-sm font-semibold text-[#111827] truncate">
+                <h4 className="text-sm font-semibold text-gray-900 truncate">
                   {university.school}
                 </h4>
                 <Tag variant="primary" size="xs" className="shrink-0 rounded">
                   QS {university.ranking}
                 </Tag>
               </div>
-              <p className="text-xs text-[#9ca3af] truncate">{university.schoolEn}</p>
+              <p className="text-xs text-gray-400 truncate">{university.schoolEn}</p>
             </div>
           </div>
 
           {/* Program name */}
-          <h5 className="text-sm font-semibold text-[#111827] mb-2 line-clamp-1">
+          <h5 className="text-sm font-semibold text-gray-900 mb-2 line-clamp-1">
             {program.name}
           </h5>
 
           {/* Country flag + deadline */}
-          <div className="flex items-center gap-2 text-xs text-[#6b7280] mb-2">
+          <div className="flex items-center gap-2 text-xs text-gray-500 mb-2">
             <span className="text-base leading-none">{countryFlag(university.country)}</span>
             <span className="flex items-center gap-1">
-              <Clock className="w-3 h-3 text-[#9ca3af]" size={12} />
+              <Clock className="w-3 h-3 text-gray-400" size={12} />
               截止 {program.deadline}
             </span>
           </div>
@@ -125,14 +125,14 @@ export default function ProgramCard({ program, university, mode }: ProgramCardPr
 
           {/* Admission rate bar */}
           <div className="mt-auto pt-3 border-t border-gray-50">
-            <div className="flex items-center justify-between text-[10px] text-[#9ca3af] mb-1.5">
+            <div className="flex items-center justify-between text-[10px] text-gray-400 mb-1.5">
               <span>
                 平台录取{' '}
                 <span className="font-semibold text-primary-500">{program.admittedCount}</span> 人
               </span>
               <span>
                 申请{' '}
-                <span className="font-medium text-[#6b7280]">{program.applicantCount}</span> 人
+                <span className="font-medium text-gray-500">{program.applicantCount}</span> 人
               </span>
             </div>
             <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden">
@@ -178,16 +178,16 @@ export default function ProgramCard({ program, university, mode }: ProgramCardPr
               />
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-1">
-                  <h4 className="text-base font-bold text-[#111827] truncate">
+                  <h4 className="text-base font-bold text-gray-900 truncate">
                     {university.school}
                   </h4>
                   <Tag variant="primary" size="sm" className="shrink-0 rounded-md font-bold">
                     QS {university.ranking}
                   </Tag>
                 </div>
-                <p className="text-xs text-[#9ca3af] mb-2">{university.schoolEn}</p>
-                <h5 className="text-sm font-semibold text-[#111827]">{program.name}</h5>
-                <p className="text-xs text-[#9ca3af] mt-0.5">{program.nameEn}</p>
+                <p className="text-xs text-gray-400 mb-2">{university.schoolEn}</p>
+                <h5 className="text-sm font-semibold text-gray-900">{program.name}</h5>
+                <p className="text-xs text-gray-400 mt-0.5">{program.nameEn}</p>
               </div>
             </div>
 
@@ -201,13 +201,13 @@ export default function ProgramCard({ program, university, mode }: ProgramCardPr
             </div>
 
             {/* Language + GPA info */}
-            <div className="flex items-center gap-4 text-xs text-[#6b7280]">
+            <div className="flex items-center gap-4 text-xs text-gray-500">
               <span className="flex items-center gap-1">
-                <Globe className="w-3.5 h-3.5 text-[#9ca3af]" size={14} />
+                <Globe className="w-3.5 h-3.5 text-gray-400" size={14} />
                 {program.language}
               </span>
               <span className="flex items-center gap-1">
-                <GraduationCap className="w-3.5 h-3.5 text-[#9ca3af]" size={14} />
+                <GraduationCap className="w-3.5 h-3.5 text-gray-400" size={14} />
                 GPA {program.gpaReq}
               </span>
             </div>
@@ -215,17 +215,17 @@ export default function ProgramCard({ program, university, mode }: ProgramCardPr
 
           {/* Right section - key metrics */}
           <div className="w-full md:w-56 shrink-0 border-t md:border-t-0 md:border-l border-gray-100 bg-gray-50/50 p-5 md:p-6 flex flex-col justify-center gap-3">
-            <div className="flex items-center gap-2 text-xs text-[#6b7280]">
-              <MapPin className="w-3.5 h-3.5 text-[#9ca3af]" size={14} />
+            <div className="flex items-center gap-2 text-xs text-gray-500">
+              <MapPin className="w-3.5 h-3.5 text-gray-400" size={14} />
               <span>{countryFlag(university.country)} {university.country}</span>
             </div>
-            <div className="flex items-center gap-2 text-xs text-[#6b7280]">
-              <Clock className="w-3.5 h-3.5 text-[#9ca3af]" size={14} />
+            <div className="flex items-center gap-2 text-xs text-gray-500">
+              <Clock className="w-3.5 h-3.5 text-gray-400" size={14} />
               <span>{program.duration}</span>
             </div>
             <div>
               <p className="text-lg font-bold text-primary-500">{program.tuitionCNY}</p>
-              <p className="text-[10px] text-[#9ca3af]">{program.tuition}</p>
+              <p className="text-[10px] text-gray-400">{program.tuition}</p>
             </div>
             <div className="flex items-center gap-1.5">
               <Clock className="w-3.5 h-3.5 text-orange-400" size={14} />
@@ -233,12 +233,12 @@ export default function ProgramCard({ program, university, mode }: ProgramCardPr
                 截止 {program.deadline}
               </span>
             </div>
-            <div className="flex items-center gap-2 text-xs text-[#6b7280]">
-              <TrendingUp className="w-3.5 h-3.5 text-[#9ca3af]" size={14} />
+            <div className="flex items-center gap-2 text-xs text-gray-500">
+              <TrendingUp className="w-3.5 h-3.5 text-gray-400" size={14} />
               <span>就业率 {program.employRate}</span>
             </div>
-            <div className="flex items-center gap-2 text-xs text-[#6b7280]">
-              <Award className="w-3.5 h-3.5 text-[#9ca3af]" size={14} />
+            <div className="flex items-center gap-2 text-xs text-gray-500">
+              <Award className="w-3.5 h-3.5 text-gray-400" size={14} />
               <span>平均年薪 {program.avgSalary}</span>
             </div>
           </div>
@@ -251,8 +251,8 @@ export default function ProgramCard({ program, university, mode }: ProgramCardPr
               <Star className="w-3.5 h-3.5 text-primary-500" size={14} />
             </div>
             <div>
-              <p className="text-[10px] text-[#9ca3af]">GPA 要求</p>
-              <p className="text-xs font-semibold text-[#111827]">{program.gpaReq}</p>
+              <p className="text-[10px] text-gray-400">GPA 要求</p>
+              <p className="text-xs font-semibold text-gray-900">{program.gpaReq}</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -260,8 +260,8 @@ export default function ProgramCard({ program, university, mode }: ProgramCardPr
               <Globe className="w-3.5 h-3.5 text-primary-500" size={14} />
             </div>
             <div>
-              <p className="text-[10px] text-[#9ca3af]">授课语言</p>
-              <p className="text-xs font-semibold text-[#111827]">{program.language}</p>
+              <p className="text-[10px] text-gray-400">授课语言</p>
+              <p className="text-xs font-semibold text-gray-900">{program.language}</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -269,8 +269,8 @@ export default function ProgramCard({ program, university, mode }: ProgramCardPr
               <TrendingUp className="w-3.5 h-3.5 text-primary-500" size={14} />
             </div>
             <div>
-              <p className="text-[10px] text-[#9ca3af]">就业率</p>
-              <p className="text-xs font-semibold text-[#111827]">{program.employRate}</p>
+              <p className="text-[10px] text-gray-400">就业率</p>
+              <p className="text-xs font-semibold text-gray-900">{program.employRate}</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -278,8 +278,8 @@ export default function ProgramCard({ program, university, mode }: ProgramCardPr
               <Award className="w-3.5 h-3.5 text-primary-500" size={14} />
             </div>
             <div>
-              <p className="text-[10px] text-[#9ca3af]">平均年薪</p>
-              <p className="text-xs font-semibold text-[#111827]">{program.avgSalary}</p>
+              <p className="text-[10px] text-gray-400">平均年薪</p>
+              <p className="text-xs font-semibold text-gray-900">{program.avgSalary}</p>
             </div>
           </div>
         </div>

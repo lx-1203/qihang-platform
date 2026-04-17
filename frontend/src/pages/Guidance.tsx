@@ -59,16 +59,16 @@ export default function Guidance() {
   };
 
   return (
-    <div className="min-h-screen bg-[#f9fafb] pt-8 pb-16">
-      <div className="max-w-[1200px] mx-auto px-4 sm:px-6">
+    <div className="min-h-screen bg-gray-50 pt-8 pb-16">
+      <div className="container-main">
         
         {/* Header */}
         <div className="mb-12 text-center max-w-2xl mx-auto">
-          <h1 className="text-[36px] font-bold text-[#111827] flex items-center justify-center gap-3 mb-4">
+          <h1 className="text-[36px] font-bold text-gray-900 flex items-center justify-center gap-3 mb-4">
             <Briefcase className="w-10 h-10 text-primary-500" />
             就业指导服务
           </h1>
-          <p className="text-[16px] text-[#4b5563] leading-relaxed">
+          <p className="text-[16px] text-gray-600 leading-relaxed">
             为您提供从职业规划、简历制作到面试通关的一站式护航服务。<br/>
             让求职不再迷茫，斩获心仪Offer。
           </p>
@@ -84,14 +84,14 @@ export default function Guidance() {
                   <Icon className={`w-7 h-7 ${service.color}`} />
                 </div>
                 
-                <h3 className="text-[22px] font-bold text-[#111827] mb-3">{service.title}</h3>
-                <p className="text-[15px] text-[#6b7280] mb-8 leading-relaxed min-h-[66px]">
+                <h3 className="text-[22px] font-bold text-gray-900 mb-3">{service.title}</h3>
+                <p className="text-[15px] text-gray-500 mb-8 leading-relaxed min-h-[66px]">
                   {service.desc}
                 </p>
                 
                 <ul className="space-y-3 mb-8">
                   {service.features.map((feature, idx) => (
-                    <li key={idx} className="flex items-start gap-2 text-[14px] text-[#4b5563]">
+                    <li key={idx} className="flex items-start gap-2 text-[14px] text-gray-600">
                       <CheckCircle2 className={`w-5 h-5 ${service.color} shrink-0`} />
                       <span>{feature}</span>
                     </li>
@@ -173,7 +173,7 @@ export default function Guidance() {
         </div>
 
         {/* Banner */}
-        <div className="bg-[#111827] rounded-[24px] overflow-hidden relative">
+        <div className="bg-gray-900 rounded-[24px] overflow-hidden relative">
           <div className="absolute inset-0 bg-gradient-to-r from-primary-500/20 to-transparent"></div>
           <div className="relative z-10 p-10 md:p-14 flex flex-col md:flex-row items-center justify-between gap-8">
             <div className="text-white max-w-xl">

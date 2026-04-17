@@ -38,7 +38,7 @@ export default function StudyAbroadConfig() {
   };
 
   return (
-    <div className="min-h-screen bg-[#f9fafb]">
+    <div className="min-h-screen bg-gray-50">
       {/* 顶部工具栏 */}
       <div className="sticky top-0 z-20 bg-white border-b border-gray-200 shadow-sm">
         <div className="max-w-[1600px] mx-auto px-4 sm:px-6 py-4">

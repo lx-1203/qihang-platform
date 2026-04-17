@@ -144,7 +144,7 @@ export default function TimelineView() {
       {/* Section header */}
       <div className="flex items-center gap-2">
         <Calendar size={22} className="text-primary-500" />
-        <h2 className="text-xl font-bold text-[#111827]">
+        <h2 className="text-xl font-bold text-gray-900">
           重要时间节点
         </h2>
       </div>
@@ -157,13 +157,13 @@ export default function TimelineView() {
           className={`snap-center min-w-[80px] flex flex-col items-center justify-center rounded-xl px-3 py-2 text-sm font-medium transition-all flex-shrink-0 ${
             selectedMonth === null
               ? 'bg-primary-500 text-white shadow-sm'
-              : 'bg-gray-100 text-[#6b7280] hover:bg-gray-200'
+              : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
           }`}
         >
           <span>全部</span>
           <span
             className={`text-xs mt-0.5 rounded-full px-1.5 ${
-              selectedMonth === null ? 'text-teal-100' : 'text-[#9ca3af]'
+              selectedMonth === null ? 'text-teal-100' : 'text-gray-400'
             }`}
           >
             {events.length}
@@ -180,13 +180,13 @@ export default function TimelineView() {
               className={`snap-center min-w-[80px] flex flex-col items-center justify-center rounded-xl px-3 py-2 text-sm font-medium transition-all flex-shrink-0 ${
                 isActive
                   ? 'bg-primary-500 text-white shadow-sm'
-                  : 'bg-gray-100 text-[#6b7280] hover:bg-gray-200'
+                  : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
               }`}
             >
               <span>{formatMonthLabel(monthKey)}</span>
               <span
                 className={`text-xs mt-0.5 rounded-full px-1.5 ${
-                  isActive ? 'text-teal-100' : 'text-[#9ca3af]'
+                  isActive ? 'text-teal-100' : 'text-gray-400'
                 }`}
               >
                 {count}
@@ -239,18 +239,18 @@ export default function TimelineView() {
                                   ? '事件'
                                   : '提示'}
                           </Tag>
-                          <span className="text-xs font-semibold text-[#111827]">
+                          <span className="text-xs font-semibold text-gray-900">
                             {event.date}
                           </span>
                         </div>
 
                         {/* Title */}
-                        <h3 className="text-sm font-bold text-[#111827] leading-snug">
+                        <h3 className="text-sm font-bold text-gray-900 leading-snug">
                           {event.title}
                         </h3>
 
                         {/* Description */}
-                        <p className="text-xs text-[#6b7280] mt-1 line-clamp-2 leading-relaxed">
+                        <p className="text-xs text-gray-500 mt-1 line-clamp-2 leading-relaxed">
                           {event.description}
                         </p>
 
@@ -270,7 +270,7 @@ export default function TimelineView() {
                       {event.link && (
                         <ChevronRight
                           size={16}
-                          className="text-[#9ca3af] group-hover:text-primary-500 transition-colors flex-shrink-0 mt-1"
+                          className="text-gray-400 group-hover:text-primary-500 transition-colors flex-shrink-0 mt-1"
                         />
                       )}
                     </div>
@@ -282,7 +282,7 @@ export default function TimelineView() {
 
           {/* Empty state */}
           {filteredEvents.length === 0 && (
-            <div className="text-center py-8 text-sm text-[#9ca3af]">
+            <div className="text-center py-8 text-sm text-gray-400">
               当前月份暂无事件
             </div>
           )}

@@ -141,7 +141,7 @@ export default function NotificationCenter() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6">
+    <div className="container-narrow">
       <div className="space-y-6">
         {/* 标题 */}
         <div className="flex items-center justify-between">

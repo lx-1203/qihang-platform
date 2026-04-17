@@ -10,11 +10,11 @@ const COMPETITIONS = [
 
 export default function Entrepreneurship() {
   return (
-    <div className="min-h-screen bg-[#f9fafb] pt-8 pb-16">
-      <div className="max-w-[1200px] mx-auto px-4 sm:px-6">
+    <div className="min-h-screen bg-gray-50 pt-8 pb-16">
+      <div className="container-main">
         
         {/* Hero Section */}
-        <div className="bg-[#111827] rounded-[24px] overflow-hidden relative mb-12">
+        <div className="bg-gray-900 rounded-[24px] overflow-hidden relative mb-12">
           <div className="absolute inset-0 opacity-20 bg-[url('https://images.unsplash.com/photo-1556761175-5973dc0f32d7?w=1000&q=80')] bg-cover bg-center mix-blend-luminosity"></div>
           <div className="absolute inset-0 bg-gradient-to-r from-black/80 to-transparent"></div>
           
@@ -43,10 +43,10 @@ export default function Entrepreneurship() {
           {/* Main Content: Competitions */}
           <div className="lg:col-span-2">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-[24px] font-bold text-[#111827] flex items-center gap-2">
+              <h2 className="text-[24px] font-bold text-gray-900 flex items-center gap-2">
                 <Trophy className="w-6 h-6 text-primary-500" /> 热门赛事推荐
               </h2>
-              <button className="text-[#6b7280] hover:text-[#111827] text-[14px] font-medium flex items-center transition-colors">
+              <button className="text-gray-500 hover:text-gray-900 text-[14px] font-medium flex items-center transition-colors">
                 全部赛事 <ChevronRight className="w-4 h-4 ml-1" />
               </button>
             </div>
@@ -66,8 +66,8 @@ export default function Entrepreneurship() {
                         </span>
                       )}
                     </div>
-                    <h3 className="text-[18px] font-bold text-[#111827] mb-2">{comp.name}</h3>
-                    <div className="flex flex-wrap items-center gap-3 text-[13px] text-[#6b7280]">
+                    <h3 className="text-[18px] font-bold text-gray-900 mb-2">{comp.name}</h3>
+                    <div className="flex flex-wrap items-center gap-3 text-[13px] text-gray-500">
                       <span>截止日期: {comp.deadline}</span>
                       <span className="w-1 h-1 rounded-full bg-gray-300"></span>
                       <div className="flex gap-2">
@@ -75,7 +75,7 @@ export default function Entrepreneurship() {
                       </div>
                     </div>
                   </div>
-                  <button className="shrink-0 md:w-auto w-full py-2.5 px-6 rounded-xl border border-gray-200 text-[#4b5563] font-medium hover:bg-gray-50 hover:text-[#111827] transition-colors flex justify-center items-center gap-2">
+                  <button className="shrink-0 md:w-auto w-full py-2.5 px-6 rounded-xl border border-gray-200 text-gray-600 font-medium hover:bg-gray-50 hover:text-gray-900 transition-colors flex justify-center items-center gap-2">
                     查看详情 <ExternalLink className="w-4 h-4" />
                   </button>
                 </div>
@@ -90,8 +90,8 @@ export default function Entrepreneurship() {
               <div className="w-12 h-12 bg-primary-500 rounded-xl flex items-center justify-center mb-4 text-white shadow-lg shadow-primary-500/20">
                 <Users className="w-6 h-6" />
               </div>
-              <h3 className="text-[20px] font-bold text-[#111827] mb-2">组队大厅</h3>
-              <p className="text-[14px] text-[#6b7280] mb-6">
+              <h3 className="text-[20px] font-bold text-gray-900 mb-2">组队大厅</h3>
+              <p className="text-[14px] text-gray-500 mb-6">
                 缺技术？缺运营？在这里发布招募贴，快速集结你的梦幻初创团队。目前已有 <span className="text-primary-500 font-bold">1,204</span> 个项目正在招募。
               </p>
               <button className="w-full bg-white border border-primary-500 text-primary-500 py-3 rounded-xl font-bold hover:bg-primary-500 hover:text-white transition-colors">
@@ -101,7 +101,7 @@ export default function Entrepreneurship() {
 
             {/* Resources */}
             <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
-              <h3 className="text-[18px] font-bold text-[#111827] mb-4 flex items-center gap-2">
+              <h3 className="text-[18px] font-bold text-gray-900 mb-4 flex items-center gap-2">
                 <Lightbulb className="w-5 h-5 text-yellow-500" /> 创业资料库
               </h3>
               <ul className="space-y-4">
@@ -110,7 +110,7 @@ export default function Entrepreneurship() {
                     <Zap className="w-5 h-5 text-gray-400 group-hover:text-white transition-colors" />
                   </div>
                   <div>
-                    <h4 className="text-[14px] font-medium text-[#111827] group-hover:text-primary-500 transition-colors mb-0.5">商业计划书 (BP) 黄金模板</h4>
+                    <h4 className="text-[14px] font-medium text-gray-900 group-hover:text-primary-500 transition-colors mb-0.5">商业计划书 (BP) 黄金模板</h4>
                     <p className="text-[12px] text-gray-500">包含互联网、医疗、教育等8大行业</p>
                   </div>
                 </li>
@@ -119,7 +119,7 @@ export default function Entrepreneurship() {
                     <Zap className="w-5 h-5 text-gray-400 group-hover:text-white transition-colors" />
                   </div>
                   <div>
-                    <h4 className="text-[14px] font-medium text-[#111827] group-hover:text-primary-500 transition-colors mb-0.5">大学生创业扶持政策解读</h4>
+                    <h4 className="text-[14px] font-medium text-gray-900 group-hover:text-primary-500 transition-colors mb-0.5">大学生创业扶持政策解读</h4>
                     <p className="text-[12px] text-gray-500">2024最新无息贷款与补贴申请指南</p>
                   </div>
                 </li>

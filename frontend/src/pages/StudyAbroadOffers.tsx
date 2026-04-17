@@ -201,35 +201,35 @@ export default function StudyAbroadOffers() {
   };
 
   return (
-    <div className="min-h-screen bg-[#f9fafb] pt-6 pb-16">
-      <div className="max-w-[1200px] mx-auto px-4 sm:px-6">
+    <div className="min-h-screen bg-gray-50 pt-6 pb-16">
+      <div className="container-main">
         {/* ====== 面包屑 ====== */}
-        <div className="flex items-center gap-2 text-[13px] text-[#9ca3af] mb-4">
+        <div className="flex items-center gap-2 text-[13px] text-gray-400 mb-4">
           <Link to="/study-abroad" className="hover:text-primary-500 transition-colors">
             留学
           </Link>
           <ChevronRight className="w-3.5 h-3.5" />
-          <span className="text-[#4b5563]">Offer 榜</span>
+          <span className="text-gray-600">Offer 榜</span>
         </div>
 
         {/* ====== 页面头部 ====== */}
         <div className="flex items-center justify-between flex-wrap gap-4 mb-8">
           <div>
-            <h1 className="text-[30px] font-bold text-[#111827] flex items-center gap-3 mb-2">
+            <h1 className="text-[30px] font-bold text-gray-900 flex items-center gap-3 mb-2">
               <TrendingUp className="w-8 h-8 text-primary-500" /> Offer 榜
             </h1>
-            <p className="text-[15px] text-[#6b7280]">
+            <p className="text-[15px] text-gray-500">
               来自平台{' '}
-              <span className="font-bold text-[#111827]">{stats.total}</span> 位用户的真实录取故事，
-              累计 <span className="font-bold text-[#111827]">{stats.totalLikes.toLocaleString()}</span> 次点赞
+              <span className="font-bold text-gray-900">{stats.total}</span> 位用户的真实录取故事，
+              累计 <span className="font-bold text-gray-900">{stats.totalLikes.toLocaleString()}</span> 次点赞
             </p>
           </div>
           <div className="flex items-center gap-2">
-            <ArrowUpDown className="w-4 h-4 text-[#9ca3af]" />
+            <ArrowUpDown className="w-4 h-4 text-gray-400" />
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
-              className="text-[13px] text-[#4b5563] bg-white border border-gray-200 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-primary-500 cursor-pointer"
+              className="text-[13px] text-gray-600 bg-white border border-gray-200 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-primary-500 cursor-pointer"
             >
               <option value="date">按时间排序</option>
               <option value="likes">按热度排序</option>
@@ -290,7 +290,7 @@ export default function StudyAbroadOffers() {
             >
               <s.icon className={`w-6 h-6 ${s.color} mb-2`} />
               <div className={`text-[28px] font-bold ${s.color}`}>{s.value}</div>
-              <div className="text-[13px] text-[#6b7280]">{s.label}</div>
+              <div className="text-[13px] text-gray-500">{s.label}</div>
             </motion.div>
           ))}
         </div>
@@ -307,7 +307,7 @@ export default function StudyAbroadOffers() {
                   className={`px-4 py-2 rounded-lg text-[13px] font-medium transition-all whitespace-nowrap ${
                     selectedSeason === s
                       ? 'bg-primary-500 text-white shadow-sm'
-                      : 'bg-[#f3f4f6] text-[#4b5563] hover:bg-gray-200'
+                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                   }`}
                 >
                   {s}
@@ -316,13 +316,13 @@ export default function StudyAbroadOffers() {
             </div>
             {/* 搜索 */}
             <div className="flex-grow relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#9ca3af]" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
               <input
                 type="text"
                 placeholder="搜索院校、项目、本科学校、学生姓名..."
                 value={searchKeyword}
                 onChange={(e) => setSearchKeyword(e.target.value)}
-                className="w-full pl-9 pr-4 py-2 bg-[#f9fafb] border border-gray-200 rounded-lg text-[13px] focus:outline-none focus:ring-2 focus:ring-primary-500 placeholder-[#9ca3af] transition-all"
+                className="w-full pl-9 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-[13px] focus:outline-none focus:ring-2 focus:ring-primary-500 placeholder-gray-400 transition-all"
               />
             </div>
           </div>
@@ -343,8 +343,8 @@ export default function StudyAbroadOffers() {
                 onClick={() => setResultFilter(f.key)}
                 className={`px-3 py-1.5 rounded-lg text-[12px] font-medium transition-all ${
                   resultFilter === f.key
-                    ? 'bg-[#111827] text-white'
-                    : 'bg-[#f3f4f6] text-[#4b5563] hover:bg-gray-200'
+                    ? 'bg-gray-900 text-white'
+                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                 }`}
               >
                 {f.label}
@@ -377,8 +377,8 @@ export default function StudyAbroadOffers() {
                 onClick={() => setBgFilter(f.key)}
                 className={`px-3 py-1.5 rounded-lg text-[12px] font-medium transition-all ${
                   bgFilter === f.key
-                    ? 'bg-[#111827] text-white'
-                    : 'bg-[#f3f4f6] text-[#4b5563] hover:bg-gray-200'
+                    ? 'bg-gray-900 text-white'
+                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                 }`}
               >
                 {f.label}
@@ -389,7 +389,7 @@ export default function StudyAbroadOffers() {
           {/* 国家/地区高级筛选 */}
           <button
             onClick={() => setShowAdvanced(!showAdvanced)}
-            className="mt-3 text-[12px] text-[#9ca3af] hover:text-primary-500 flex items-center gap-1 transition-colors"
+            className="mt-3 text-[12px] text-gray-400 hover:text-primary-500 flex items-center gap-1 transition-colors"
           >
             <Filter className="w-3 h-3" /> 国家/地区筛选{' '}
             <ChevronDown
@@ -412,7 +412,7 @@ export default function StudyAbroadOffers() {
                       className={`px-3 py-1.5 rounded-lg text-[12px] font-medium transition-all ${
                         countryFilter === c.id
                           ? 'bg-primary-500 text-white'
-                          : 'bg-[#f3f4f6] text-[#4b5563] hover:bg-gray-200'
+                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                       }`}
                     >
                       {c.flag} {c.name}
@@ -426,13 +426,13 @@ export default function StudyAbroadOffers() {
 
         {/* ====== 结果计数 ====== */}
         <div className="flex items-center justify-between mb-4">
-          <span className="text-[14px] text-[#6b7280]">
-            共 <span className="font-bold text-[#111827]">{filtered.length}</span> 条数据
+          <span className="text-[14px] text-gray-500">
+            共 <span className="font-bold text-gray-900">{filtered.length}</span> 条数据
           </span>
           {(resultFilter !== 'all' || bgFilter !== 'all' || countryFilter !== 'all') && (
             <button
               onClick={clearAllFilters}
-              className="text-[12px] text-[#ef4444] hover:text-red-700 font-medium flex items-center gap-1 transition-colors"
+              className="text-[12px] text-red-500 hover:text-red-700 font-medium flex items-center gap-1 transition-colors"
             >
               <X className="w-3 h-3" /> 清除筛选
             </button>
@@ -450,8 +450,8 @@ export default function StudyAbroadOffers() {
         {filtered.length === 0 && (
           <div className="text-center py-20">
             <TrendingUp className="w-16 h-16 text-gray-200 mx-auto mb-4" />
-            <h3 className="text-[18px] font-bold text-[#6b7280] mb-2">暂无匹配的录取数据</h3>
-            <p className="text-[14px] text-[#9ca3af] mb-4">尝试切换申请季或调整筛选条件</p>
+            <h3 className="text-[18px] font-bold text-gray-500 mb-2">暂无匹配的录取数据</h3>
+            <p className="text-[14px] text-gray-400 mb-4">尝试切换申请季或调整筛选条件</p>
             <button
               onClick={clearAllFilters}
               className="text-[14px] text-primary-500 font-medium hover:underline"
@@ -462,7 +462,7 @@ export default function StudyAbroadOffers() {
         )}
 
         {/* ====== CTA ====== */}
-        <div className="mt-12 bg-gradient-to-r from-[#111827] to-[#1e293b] rounded-2xl p-8 flex flex-col md:flex-row items-center justify-between gap-6">
+        <div className="mt-12 bg-gradient-to-r from-gray-900 to-slate-800 rounded-2xl p-8 flex flex-col md:flex-row items-center justify-between gap-6">
           <div>
             <h3 className="text-[20px] font-bold text-white mb-2 flex items-center gap-2">
               <Sparkles className="w-5 h-5 text-primary-500" /> 分享你的 Offer，帮助更多同学

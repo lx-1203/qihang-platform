@@ -91,12 +91,12 @@ export default function Footer() {
   const currentYear = new Date().getFullYear();
 
   return (
-    <footer className="bg-[#f9fafb] border-t border-gray-200 mt-20 relative w-full text-[#4b5563] font-sans">
+    <footer className="bg-gray-50 border-t border-gray-200 mt-20 relative w-full text-gray-600 font-sans">
       {/* 回到顶部按钮 */}
       {showBackToTop && (
         <button
           onClick={scrollToTop}
-          className="fixed bottom-8 right-8 z-50 bg-white border border-gray-200 rounded-full shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-300 text-[#4b5563] hover:text-[#2563eb] focus:outline-none focus:ring-2 focus:ring-[#2563eb] md:p-3 p-4 md:right-8 right-4"
+          className="fixed bottom-8 right-8 z-50 bg-white border border-gray-200 rounded-full shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-300 text-gray-600 hover:text-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600 md:p-3 p-4 md:right-8 right-4"
           aria-label="回到顶部"
         >
           <ArrowUp className="w-5 h-5 md:w-6 md:h-6" />
@@ -104,18 +104,18 @@ export default function Footer() {
       )}
 
       {/* 底部导航内容 - 抽屉式收纳 */}
-      <div className="max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="container-main lg:px-8">
         {/* 精简样式栏 (包含Logo,简介,分类和展开按钮) */}
         <div 
-          className={`flex flex-wrap items-center justify-between py-4 cursor-pointer hover:text-[#2563eb] transition-colors ${isMobileExpanded ? 'hidden' : 'flex'}`}
+          className={`flex flex-wrap items-center justify-between py-4 cursor-pointer hover:text-blue-600 transition-colors ${isMobileExpanded ? 'hidden' : 'flex'}`}
           onClick={toggleMobileExpand}
         >
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2">
-              <div className="w-6 h-6 bg-[#2563eb] rounded flex items-center justify-center text-white font-bold text-xs">
+              <div className="w-6 h-6 bg-blue-600 rounded flex items-center justify-center text-white font-bold text-xs">
                 职
               </div>
-              <span className="text-sm font-bold text-[#111827]">{t('footer.logo_demo')}</span>
+              <span className="text-sm font-bold text-gray-900">{t('footer.logo_demo')}</span>
             </div>
             <span className="hidden md:inline-block text-xs text-gray-500 max-w-[300px] truncate">
               {t('footer.desc')}
@@ -126,7 +126,7 @@ export default function Footer() {
             <span className="hidden sm:inline-block">{t('footer.about_company')}</span>
             <span className="hidden sm:inline-block">{t('footer.user_service')}</span>
             <span className="hidden sm:inline-block">{t('footer.legal_notice')}</span>
-            <div className="flex items-center gap-1 text-[#2563eb] font-medium ml-2">
+            <div className="flex items-center gap-1 text-blue-600 font-medium ml-2">
               {isMobileExpanded ? t('footer.collapse_nav') : t('footer.expand_nav')} 
               {isMobileExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
             </div>
@@ -138,7 +138,7 @@ export default function Footer() {
           <div className="flex justify-end mb-4">
             <button 
               onClick={toggleMobileExpand}
-              className="flex items-center gap-1 text-xs text-[#2563eb] font-medium cursor-pointer hover:underline focus:outline-none"
+              className="flex items-center gap-1 text-xs text-blue-600 font-medium cursor-pointer hover:underline focus:outline-none"
             >
               {t('footer.collapse_nav')} <ChevronUp className="w-4 h-4" />
             </button>
@@ -147,10 +147,10 @@ export default function Footer() {
             {/* 左侧：社交媒体 */}
             <div className="col-span-1">
               <div className="flex items-center gap-2 mb-6">
-                <div className="w-8 h-8 bg-[#2563eb] rounded flex items-center justify-center text-white font-bold text-lg">
+                <div className="w-8 h-8 bg-blue-600 rounded flex items-center justify-center text-white font-bold text-lg">
                   职
                 </div>
-                <span className="text-xl font-bold text-[#111827]">{t('footer.logo_demo')}</span>
+                <span className="text-xl font-bold text-gray-900">{t('footer.logo_demo')}</span>
               </div>
               <p className="text-sm leading-relaxed mb-6 text-gray-600">
                 {t('footer.desc')}
@@ -177,11 +177,11 @@ export default function Footer() {
             <div className="col-span-1 md:col-span-3 grid grid-cols-2 sm:grid-cols-3 gap-6 md:pl-12">
               {footerLinks.map((group, index) => (
                 <div key={index}>
-                  <h3 className="text-sm font-bold text-[#111827] mb-4">{group.title}</h3>
+                  <h3 className="text-sm font-bold text-gray-900 mb-4">{group.title}</h3>
                   <ul className="space-y-3">
                     {group.links.map((link, linkIndex) => (
                       <li key={linkIndex}>
-                        <Link to={link.url} className="text-sm text-gray-500 hover:text-[#2563eb] transition-colors">
+                        <Link to={link.url} className="text-sm text-gray-500 hover:text-blue-600 transition-colors">
                           {link.name}
                         </Link>
                       </li>
@@ -195,8 +195,8 @@ export default function Footer() {
       </div>
 
       {/* 底部：版权信息与辅助功能区 (始终显示) */}
-      <div className="bg-[#f3f4f6] border-t border-gray-200">
-        <div className="max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-8 py-4">
+      <div className="bg-gray-100 border-t border-gray-200">
+        <div className="container-main lg:px-8 py-4">
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
             
             {/* 版权与备案信息 */}
@@ -204,7 +204,7 @@ export default function Footer() {
               <p>{companyName} {t('footer.rights_reserved')}</p>
               <div className="flex items-center gap-4">
                 {icpNumber && (
-                  <a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener noreferrer" className="hover:text-[#2563eb] transition-colors">
+                  <a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener noreferrer" className="hover:text-blue-600 transition-colors">
                     {icpNumber}
                   </a>
                 )}
@@ -215,7 +215,7 @@ export default function Footer() {
             <div className="relative">
               <button
                 type="button"
-                className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-[#2563eb] transition-colors py-1 px-2 rounded hover:bg-gray-200"
+                className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-blue-600 transition-colors py-1 px-2 rounded hover:bg-gray-200"
                 onClick={() => setIsLangMenuOpen(!isLangMenuOpen)}
               >
                 <Globe className="w-3.5 h-3.5" />
@@ -229,7 +229,7 @@ export default function Footer() {
                     {languages.map((lang) => (
                       <button
                         key={lang.code}
-                        className={`block w-full text-left px-3 py-1.5 text-xs ${i18n.language === lang.code ? 'bg-blue-50 text-[#2563eb]' : 'text-gray-700 hover:bg-gray-100'}`}
+                        className={`block w-full text-left px-3 py-1.5 text-xs ${i18n.language === lang.code ? 'bg-blue-50 text-blue-600' : 'text-gray-700 hover:bg-gray-100'}`}
                         onClick={() => {
                           i18n.changeLanguage(lang.code);
                           setIsLangMenuOpen(false);

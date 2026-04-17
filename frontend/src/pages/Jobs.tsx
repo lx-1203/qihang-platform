@@ -157,7 +157,7 @@ export default function Jobs() {
   return (
     <div className="bg-gray-50 min-h-screen">
       {/* 1. 顶部搜索区域 */}
-      <section className="bg-[#111827] text-white py-16 lg:py-24 relative overflow-hidden">
+      <section className="bg-gray-900 text-white py-16 lg:py-24 relative overflow-hidden">
         <div className="absolute top-0 left-0 w-full h-full overflow-hidden opacity-20 pointer-events-none">
           <svg className="absolute w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
             <path d="M0,100 L100,0 L100,100 Z" fill="url(#gradJob)" />

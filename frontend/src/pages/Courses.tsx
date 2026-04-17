@@ -62,17 +62,17 @@ export default function Courses() {
   const hasMore = total > page * pageSize;
 
   return (
-    <div className="min-h-screen bg-[#f9fafb] pt-8 pb-12">
-      <div className="max-w-[1200px] mx-auto px-4 sm:px-6">
+    <div className="min-h-screen bg-gray-50 pt-8 pb-12">
+      <div className="container-main">
 
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-4">
           <div>
-            <h1 className="text-[32px] font-bold text-[#111827] flex items-center gap-2">
+            <h1 className="text-[32px] font-bold text-gray-900 flex items-center gap-2">
               <BookOpen className="w-8 h-8 text-primary-500" />
               干货资料库
             </h1>
-            <p className="text-[16px] text-[#4b5563] mt-2">海量免费干货视频，系统性提升你的求职硬实力</p>
+            <p className="text-[16px] text-gray-600 mt-2">海量免费干货视频，系统性提升你的求职硬实力</p>
           </div>
 
           {/* Search Bar */}
@@ -83,7 +83,7 @@ export default function Courses() {
               value={searchInput}
               onChange={e => setSearchInput(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && handleSearch()}
-              className="w-full pl-4 pr-10 py-2.5 bg-white border border-gray-200 rounded-xl text-sm text-[#111827] focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all shadow-sm"
+              className="w-full pl-4 pr-10 py-2.5 bg-white border border-gray-200 rounded-xl text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all shadow-sm"
             />
             <button onClick={handleSearch} className="absolute right-3 top-1/2 -translate-y-1/2">
               <Search className="w-5 h-5 text-gray-400 hover:text-primary-600 transition-colors" />
@@ -101,7 +101,7 @@ export default function Courses() {
                 className={`px-4 py-1.5 rounded-full text-[14px] font-medium transition-colors ${
                   activeCategory === cat
                     ? 'bg-primary-500 text-white'
-                    : 'bg-gray-100 text-[#4b5563] hover:bg-gray-200'
+                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                 }`}
               >
                 {cat}
@@ -138,7 +138,7 @@ export default function Courses() {
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
             {courses.map((course) => (
               <Link key={course.id} to={`/courses/${course.id}`} className="group block">
-                <div className="bg-white rounded-[16px] overflow-hidden border border-[#e5e7eb] shadow-[0_1px_3px_rgba(0,0,0,0.1)] hover:shadow-[0_10px_15px_-3px_rgba(0,0,0,0.1)] hover:-translate-y-1.5 transition-all duration-300 flex flex-col h-full">
+                <div className="bg-white rounded-[16px] overflow-hidden border border-gray-200 shadow-[0_1px_3px_rgba(0,0,0,0.1)] hover:shadow-[0_10px_15px_-3px_rgba(0,0,0,0.1)] hover:-translate-y-1.5 transition-all duration-300 flex flex-col h-full">
 
                   {/* Cover Image */}
                   <div className="relative aspect-video overflow-hidden">
@@ -167,7 +167,7 @@ export default function Courses() {
 
                   {/* Content */}
                   <div className="p-4 flex-grow flex flex-col">
-                    <h3 className="text-[16px] font-bold text-[#111827] line-clamp-2 leading-snug group-hover:text-primary-500 transition-colors mb-2">
+                    <h3 className="text-[16px] font-bold text-gray-900 line-clamp-2 leading-snug group-hover:text-primary-500 transition-colors mb-2">
                       {course.title}
                     </h3>
 
@@ -179,12 +179,12 @@ export default function Courses() {
                       ))}
                     </div>
 
-                    <div className="mt-auto pt-3 border-t border-gray-100 flex items-center justify-between text-[13px] text-[#9ca3af]">
+                    <div className="mt-auto pt-3 border-t border-gray-100 flex items-center justify-between text-[13px] text-gray-400">
                       <div className="flex items-center gap-1.5">
                         <div className="w-5 h-5 rounded-full bg-primary-500 text-white flex items-center justify-center text-[10px] font-bold">
                           {(course.mentor || course.mentor_name || '导')[0]}
                         </div>
-                        <span className="font-medium text-[#4b5563] truncate max-w-[100px]">
+                        <span className="font-medium text-gray-600 truncate max-w-[100px]">
                           {(course.mentor || course.mentor_name || '').split(' ')[0]}
                         </span>
                       </div>
@@ -192,8 +192,8 @@ export default function Courses() {
                       <div className="flex items-center gap-3">
                         {course.rating && (
                           <div className="flex items-center gap-1">
-                            <Star size={13} className="text-[#f97316]" fill="currentColor" />
-                            <span className="text-[#f97316] font-medium">{course.rating}</span>
+                            <Star size={13} className="text-orange-500" fill="currentColor" />
+                            <span className="text-orange-500 font-medium">{course.rating}</span>
                           </div>
                         )}
                         <div className="flex items-center gap-1">
@@ -215,7 +215,7 @@ export default function Courses() {
             <button
               onClick={() => setPage(p => p + 1)}
               disabled={loading}
-              className="px-6 py-2.5 border border-gray-300 text-[#4b5563] font-medium rounded-full hover:bg-gray-50 transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-6 py-2.5 border border-gray-300 text-gray-600 font-medium rounded-full hover:bg-gray-50 transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
               加载更多干货 <ChevronRight size={16} />

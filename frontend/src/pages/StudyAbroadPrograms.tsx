@@ -415,38 +415,38 @@ export default function StudyAbroadPrograms() {
   };
 
   return (
-    <div className="min-h-screen bg-[#f9fafb] pt-6 pb-16">
-      <div className="max-w-[1200px] mx-auto px-4 sm:px-6">
+    <div className="min-h-screen bg-gray-50 pt-6 pb-16">
+      <div className="container-main">
         {/* ====== 页面头部 ====== */}
         <div className="mb-6">
-          <div className="flex items-center gap-2 text-[13px] text-[#9ca3af] mb-4">
+          <div className="flex items-center gap-2 text-[13px] text-gray-400 mb-4">
             <Link to="/study-abroad" className="hover:text-primary-500 transition-colors">
               留学
             </Link>
             <ChevronRight className="w-3.5 h-3.5" />
-            <span className="text-[#4b5563]">选校</span>
+            <span className="text-gray-600">选校</span>
           </div>
           <div className="flex items-center justify-between flex-wrap gap-4">
             <div>
-              <h1 className="text-[30px] font-bold text-[#111827] flex items-center gap-3 mb-2">
+              <h1 className="text-[30px] font-bold text-gray-900 flex items-center gap-3 mb-2">
                 <GraduationCap className="w-8 h-8 text-primary-500" /> 院校与项目库
               </h1>
-              <p className="text-[15px] text-[#6b7280]">
+              <p className="text-[15px] text-gray-500">
                 覆盖全球{' '}
-                <span className="font-bold text-[#111827]">{countryFilters.length - 1}</span>{' '}
+                <span className="font-bold text-gray-900">{countryFilters.length - 1}</span>{' '}
                 个热门留学国家/地区，
-                <span className="font-bold text-[#111827]">{allPrograms.length}</span> 精选硕博项目
+                <span className="font-bold text-gray-900">{allPrograms.length}</span> 精选硕博项目
               </p>
             </div>
             {/* 快捷统计 */}
             <div className="flex items-center gap-4">
-              <div className="flex items-center gap-1.5 text-[13px] text-[#6b7280]">
+              <div className="flex items-center gap-1.5 text-[13px] text-gray-500">
                 <Building2 className="w-4 h-4 text-primary-500" />
-                <span className="font-bold text-[#111827]">{totalUniversities}</span> 合作院校
+                <span className="font-bold text-gray-900">{totalUniversities}</span> 合作院校
               </div>
-              <div className="flex items-center gap-1.5 text-[13px] text-[#6b7280]">
+              <div className="flex items-center gap-1.5 text-[13px] text-gray-500">
                 <Users className="w-4 h-4 text-primary-500" />
-                <span className="font-bold text-[#111827]">
+                <span className="font-bold text-gray-900">
                   {totalAdmitted.toLocaleString()}
                 </span>{' '}
                 录取案例
@@ -460,13 +460,13 @@ export default function StudyAbroadPrograms() {
           <div className="flex flex-col md:flex-row gap-3">
             {/* 搜索框（300ms 防抖） */}
             <div className="flex-grow relative">
-              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 text-[#9ca3af]" />
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
               <input
                 type="text"
                 placeholder="搜索院校、项目名称（如 Imperial、计算机、商业分析）..."
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
-                className="w-full pl-11 pr-4 py-3 bg-[#f9fafb] border border-gray-200 rounded-xl text-[14px] text-[#111827] focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent focus:bg-white placeholder-[#9ca3af] transition-all"
+                className="w-full pl-11 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-[14px] text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent focus:bg-white placeholder-gray-400 transition-all"
               />
             </div>
             {/* 筛选按钮 */}
@@ -475,7 +475,7 @@ export default function StudyAbroadPrograms() {
               className={`flex items-center justify-center gap-2 px-5 py-3 rounded-xl font-medium text-[14px] transition-colors shrink-0 ${
                 showFilters || activeFiltersCount > 0
                   ? 'bg-primary-500 text-white'
-                  : 'bg-[#f3f4f6] text-[#4b5563] hover:bg-gray-200'
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
               }`}
             >
               <SlidersHorizontal className="w-4 h-4" />
@@ -501,7 +501,7 @@ export default function StudyAbroadPrograms() {
                 <div className="pt-4 mt-4 border-t border-gray-100 space-y-4">
                   {/* 国家/地区（14 国 + 全部） */}
                   <div>
-                    <label className="text-[13px] font-medium text-[#6b7280] mb-2 block">
+                    <label className="text-[13px] font-medium text-gray-500 mb-2 block">
                       国家/地区
                     </label>
                     <div className="flex flex-wrap gap-2">
@@ -512,7 +512,7 @@ export default function StudyAbroadPrograms() {
                           className={`px-3 py-1.5 rounded-lg text-[13px] font-medium transition-all ${
                             selectedCountry === c.id
                               ? 'bg-primary-500 text-white shadow-sm'
-                              : 'bg-[#f3f4f6] text-[#4b5563] hover:bg-gray-200'
+                              : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                           }`}
                         >
                           {c.flag} {c.name}
@@ -526,7 +526,7 @@ export default function StudyAbroadPrograms() {
 
                   {/* 专业方向（6 大分类 + 全部） */}
                   <div>
-                    <label className="text-[13px] font-medium text-[#6b7280] mb-2 block">
+                    <label className="text-[13px] font-medium text-gray-500 mb-2 block">
                       专业方向
                     </label>
                     <div className="flex flex-wrap gap-2">
@@ -537,7 +537,7 @@ export default function StudyAbroadPrograms() {
                           className={`px-3 py-1.5 rounded-lg text-[13px] font-medium transition-all ${
                             selectedMajor === m
                               ? 'bg-primary-500 text-white shadow-sm'
-                              : 'bg-[#f3f4f6] text-[#4b5563] hover:bg-gray-200'
+                              : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                           }`}
                         >
                           {m}
@@ -548,7 +548,7 @@ export default function StudyAbroadPrograms() {
 
                   {/* QS 排名范围 */}
                   <div>
-                    <label className="text-[13px] font-medium text-[#6b7280] mb-2 block">
+                    <label className="text-[13px] font-medium text-gray-500 mb-2 block">
                       QS 世界排名
                     </label>
                     <div className="flex flex-wrap gap-2">
@@ -559,7 +559,7 @@ export default function StudyAbroadPrograms() {
                           className={`px-3 py-1.5 rounded-lg text-[13px] font-medium transition-all ${
                             selectedRanking === r
                               ? 'bg-primary-500 text-white shadow-sm'
-                              : 'bg-[#f3f4f6] text-[#4b5563] hover:bg-gray-200'
+                              : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                           }`}
                         >
                           {r}
@@ -570,7 +570,7 @@ export default function StudyAbroadPrograms() {
 
                   {/* 学位类型 */}
                   <div>
-                    <label className="text-[13px] font-medium text-[#6b7280] mb-2 block">
+                    <label className="text-[13px] font-medium text-gray-500 mb-2 block">
                       学位类型
                     </label>
                     <div className="flex flex-wrap gap-2">
@@ -581,7 +581,7 @@ export default function StudyAbroadPrograms() {
                           className={`px-3 py-1.5 rounded-lg text-[13px] font-medium transition-all ${
                             selectedDegree === d
                               ? 'bg-primary-500 text-white shadow-sm'
-                              : 'bg-[#f3f4f6] text-[#4b5563] hover:bg-gray-200'
+                              : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                           }`}
                         >
                           {d}
@@ -594,7 +594,7 @@ export default function StudyAbroadPrograms() {
                   {activeFiltersCount > 0 && (
                     <button
                       onClick={clearAllFilters}
-                      className="text-[13px] text-[#ef4444] hover:text-red-700 font-medium flex items-center gap-1 transition-colors"
+                      className="text-[13px] text-red-500 hover:text-red-700 font-medium flex items-center gap-1 transition-colors"
                     >
                       <X className="w-3.5 h-3.5" /> 清除所有筛选
                     </button>
@@ -607,18 +607,18 @@ export default function StudyAbroadPrograms() {
 
         {/* ====== 排序 + 结果计数 ====== */}
         <div className="flex items-center justify-between mb-5">
-          <span className="text-[14px] text-[#6b7280]">
-            共找到 <span className="font-bold text-[#111827]">{filtered.length}</span> 个项目
+          <span className="text-[14px] text-gray-500">
+            共找到 <span className="font-bold text-gray-900">{filtered.length}</span> 个项目
             {activeFiltersCount > 0 && (
               <span className="text-primary-500 ml-2">({activeFiltersCount} 个筛选条件)</span>
             )}
           </span>
           <div className="flex items-center gap-2">
-            <ArrowUpDown className="w-4 h-4 text-[#9ca3af]" />
+            <ArrowUpDown className="w-4 h-4 text-gray-400" />
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
-              className="text-[13px] text-[#4b5563] bg-white border border-gray-200 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-primary-500 cursor-pointer"
+              className="text-[13px] text-gray-600 bg-white border border-gray-200 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-primary-500 cursor-pointer"
             >
               <option value="ranking">按 QS 排名</option>
               <option value="deadline">按截止日期</option>
@@ -644,8 +644,8 @@ export default function StudyAbroadPrograms() {
         {filtered.length === 0 && (
           <div className="text-center py-20">
             <Search className="w-16 h-16 text-gray-200 mx-auto mb-4" />
-            <h3 className="text-[18px] font-bold text-[#6b7280] mb-2">没有找到匹配的项目</h3>
-            <p className="text-[14px] text-[#9ca3af] mb-4">尝试调整筛选条件或搜索关键词</p>
+            <h3 className="text-[18px] font-bold text-gray-500 mb-2">没有找到匹配的项目</h3>
+            <p className="text-[14px] text-gray-400 mb-4">尝试调整筛选条件或搜索关键词</p>
             <button
               onClick={clearAllFilters}
               className="text-[14px] text-primary-500 font-medium hover:underline"
@@ -662,14 +662,14 @@ export default function StudyAbroadPrograms() {
               <button
                 onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                 disabled={currentPage === 1}
-                className="px-4 h-10 rounded-xl bg-white text-[#6b7280] border border-gray-200 hover:border-primary-500 hover:text-primary-500 text-[14px] font-medium transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1"
+                className="px-4 h-10 rounded-xl bg-white text-gray-500 border border-gray-200 hover:border-primary-500 hover:text-primary-500 text-[14px] font-medium transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1"
               >
                 <ChevronLeft className="w-4 h-4" /> 上一页
               </button>
 
               {pageNumbers.map((page, idx) =>
                 page === '...' ? (
-                  <span key={`dots-${idx}`} className="text-[#9ca3af] px-2">
+                  <span key={`dots-${idx}`} className="text-gray-400 px-2">
                     ...
                   </span>
                 ) : (
@@ -679,7 +679,7 @@ export default function StudyAbroadPrograms() {
                     className={`w-10 h-10 rounded-xl text-[14px] font-medium transition-colors ${
                       currentPage === page
                         ? 'bg-primary-500 text-white shadow-sm'
-                        : 'bg-white text-[#6b7280] border border-gray-200 hover:border-primary-500 hover:text-primary-500'
+                        : 'bg-white text-gray-500 border border-gray-200 hover:border-primary-500 hover:text-primary-500'
                     }`}
                   >
                     {page}
@@ -690,7 +690,7 @@ export default function StudyAbroadPrograms() {
               <button
                 onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
                 disabled={currentPage === totalPages}
-                className="px-4 h-10 rounded-xl bg-white text-[#6b7280] border border-gray-200 hover:border-primary-500 hover:text-primary-500 text-[14px] font-medium transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1"
+                className="px-4 h-10 rounded-xl bg-white text-gray-500 border border-gray-200 hover:border-primary-500 hover:text-primary-500 text-[14px] font-medium transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1"
               >
                 下一页 <ChevronRight className="w-4 h-4" />
               </button>
@@ -699,7 +699,7 @@ export default function StudyAbroadPrograms() {
         )}
 
         {/* ====== CTA 底部引导 ====== */}
-        <div className="mt-12 bg-gradient-to-r from-[#111827] to-[#1e293b] rounded-2xl p-8 flex flex-col md:flex-row items-center justify-between gap-6">
+        <div className="mt-12 bg-gradient-to-r from-gray-900 to-slate-800 rounded-2xl p-8 flex flex-col md:flex-row items-center justify-between gap-6">
           <div>
             <h3 className="text-[20px] font-bold text-white mb-2">不确定如何选校？</h3>
             <p className="text-[14px] text-gray-400">

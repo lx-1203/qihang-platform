@@ -85,14 +85,14 @@ function CompactCard({ offer }: { offer: OfferData }) {
       {/* Middle: School + program info */}
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 flex-wrap">
-          <span className="font-semibold text-sm text-[#111827] truncate">
+          <span className="font-semibold text-sm text-gray-900 truncate">
             {offer.school}
           </span>
           <Tag variant="green" size="sm" className="gap-0.5">
             Offer <CheckCircle2 size={10} />
           </Tag>
         </div>
-        <p className="text-xs text-[#6b7280] truncate mt-0.5">
+        <p className="text-xs text-gray-500 truncate mt-0.5">
           {offer.program} · {offer.background}
         </p>
       </div>
@@ -117,7 +117,7 @@ function CompactCard({ offer }: { offer: OfferData }) {
       </div>
 
       {/* Far right: Date */}
-      <span className="text-[11px] text-[#9ca3af] flex-shrink-0 whitespace-nowrap">
+      <span className="text-[11px] text-gray-400 flex-shrink-0 whitespace-nowrap">
         {offer.date}
       </span>
     </motion.div>
@@ -142,7 +142,7 @@ function FullCard({ offer, index }: { offer: OfferData; index: number }) {
         <ResultIcon status={status} size={48} />
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
-            <h3 className="font-bold text-base text-[#111827]">{offer.school}</h3>
+            <h3 className="font-bold text-base text-gray-900">{offer.school}</h3>
             <Tag variant="blue" size="sm" className="gap-1">
               {offer.country}
             </Tag>
@@ -153,7 +153,7 @@ function FullCard({ offer, index }: { offer: OfferData; index: number }) {
               </Tag>
             )}
           </div>
-          <p className="text-sm text-[#6b7280] mt-1">{offer.program}</p>
+          <p className="text-sm text-gray-500 mt-1">{offer.program}</p>
         </div>
       </div>
 
@@ -173,26 +173,26 @@ function FullCard({ offer, index }: { offer: OfferData; index: number }) {
       <div className="flex items-center gap-3 flex-wrap">
         {offer.gpa && (
           <div className="flex flex-col items-center border border-gray-200 rounded-lg px-3 py-1.5 min-w-[64px]">
-            <span className="text-[10px] text-[#9ca3af] uppercase tracking-wide">GPA</span>
-            <span className="text-sm font-bold text-[#111827]">{offer.gpa}</span>
+            <span className="text-[10px] text-gray-400 uppercase tracking-wide">GPA</span>
+            <span className="text-sm font-bold text-gray-900">{offer.gpa}</span>
           </div>
         )}
         {offer.ielts && (
           <div className="flex flex-col items-center border border-gray-200 rounded-lg px-3 py-1.5 min-w-[64px]">
-            <span className="text-[10px] text-[#9ca3af] uppercase tracking-wide">IELTS</span>
-            <span className="text-sm font-bold text-[#111827]">{offer.ielts}</span>
+            <span className="text-[10px] text-gray-400 uppercase tracking-wide">IELTS</span>
+            <span className="text-sm font-bold text-gray-900">{offer.ielts}</span>
           </div>
         )}
         {offer.toefl && (
           <div className="flex flex-col items-center border border-gray-200 rounded-lg px-3 py-1.5 min-w-[64px]">
-            <span className="text-[10px] text-[#9ca3af] uppercase tracking-wide">TOEFL</span>
-            <span className="text-sm font-bold text-[#111827]">{offer.toefl}</span>
+            <span className="text-[10px] text-gray-400 uppercase tracking-wide">TOEFL</span>
+            <span className="text-sm font-bold text-gray-900">{offer.toefl}</span>
           </div>
         )}
         {offer.gre && (
           <div className="flex flex-col items-center border border-gray-200 rounded-lg px-3 py-1.5 min-w-[64px]">
-            <span className="text-[10px] text-[#9ca3af] uppercase tracking-wide">GRE</span>
-            <span className="text-sm font-bold text-[#111827]">{offer.gre}</span>
+            <span className="text-[10px] text-gray-400 uppercase tracking-wide">GRE</span>
+            <span className="text-sm font-bold text-gray-900">{offer.gre}</span>
           </div>
         )}
       </div>
@@ -217,15 +217,15 @@ function FullCard({ offer, index }: { offer: OfferData; index: number }) {
 
       {/* Story text */}
       {offer.story && (
-        <p className="text-sm text-[#6b7280] italic line-clamp-2 leading-relaxed">
+        <p className="text-sm text-gray-500 italic line-clamp-2 leading-relaxed">
           "{offer.story}"
         </p>
       )}
 
       {/* Bottom: Date + likes */}
       <div className="flex items-center justify-between pt-1 border-t border-gray-50">
-        <span className="text-xs text-[#9ca3af]">{offer.date}</span>
-        <div className="flex items-center gap-1 text-xs text-[#9ca3af]">
+        <span className="text-xs text-gray-400">{offer.date}</span>
+        <div className="flex items-center gap-1 text-xs text-gray-400">
           <ThumbsUp size={13} />
           <span>{offer.likes}</span>
         </div>

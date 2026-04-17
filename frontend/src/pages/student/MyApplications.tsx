@@ -151,8 +151,8 @@ export default function MyApplications() {
     return acc;
   }, {} as Record<string, number>);
 
-  if (loading) return <div className="max-w-4xl mx-auto px-4 py-8"><ListSkeleton count={5} /></div>;
-  if (error) return <div className="max-w-4xl mx-auto px-4 py-8"><ErrorState message={error} onRetry={() => { setError(null); fetchApplications(); }} onLoadMockData={() => { setApplications(mockApplications); setError(null); }} /></div>;
+  if (loading) return <div className="container-narrow py-8"><ListSkeleton count={5} /></div>;
+  if (error) return <div className="container-narrow py-8"><ErrorState message={error} onRetry={() => { setError(null); fetchApplications(); }} onLoadMockData={() => { setApplications(mockApplications); setError(null); }} /></div>;
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">

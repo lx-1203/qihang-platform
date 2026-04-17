@@ -74,7 +74,7 @@ export default function Mentors() {
   });
 
   return (
-    <div className="max-w-[1200px] mx-auto px-4 sm:px-6 py-8">
+    <div className="container-main py-8">
       {/* Hero */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}

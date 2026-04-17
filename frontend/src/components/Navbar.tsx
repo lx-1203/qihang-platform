@@ -199,7 +199,7 @@ export default function Navbar() {
           {announcement}
         </div>
       )}
-      <div className="max-w-[1200px] mx-auto px-4 sm:px-6">
+      <div className="container-main">
         <div className={`flex justify-between items-center transition-all duration-300 ${isScrolled ? 'h-12' : 'h-14'}`}>
           {/* Left section: Logo and Nav */}
           <div className="flex items-center">
@@ -211,7 +211,7 @@ export default function Navbar() {
                   {brandName.charAt(0)}
                 </div>
               )}
-              <span className={`font-bold text-[#111827] tracking-tight whitespace-nowrap transition-all duration-300 ${isScrolled ? 'text-lg lg:hidden' : 'text-xl'}`}>{brandName}</span>
+              <span className={`font-bold text-gray-900 tracking-tight whitespace-nowrap transition-all duration-300 ${isScrolled ? 'text-lg lg:hidden' : 'text-xl'}`}>{brandName}</span>
             </Link>
 
             {/* Navigation */}
@@ -227,7 +227,7 @@ export default function Navbar() {
                     to={item.path}
                     onMouseEnter={() => handlePrefetch(item.path)}
                     className={`relative px-3 py-4 transition-colors ${
-                      isActive ? 'text-primary-500 font-bold' : 'text-[#4b5563] hover:text-[#111827] font-medium'
+                      isActive ? 'text-primary-500 font-bold' : 'text-gray-600 hover:text-gray-900 font-medium'
                     }`}
                   >
                     {item.label}
@@ -268,13 +268,13 @@ export default function Navbar() {
                 onChange={e => setNavSearch(e.target.value)}
                 onKeyDown={handleSearchKeyDown}
                 onFocus={handleSearchFocus}
-                className={`${isScrolled ? 'w-[360px]' : 'w-[200px]'} pl-4 pr-10 py-1.5 bg-[#f3f4f6] border border-transparent rounded-full text-sm text-[#111827] focus:outline-none focus:ring-2 focus:ring-primary-500 focus:bg-white placeholder-[#9ca3af] transition-all duration-300`}
+                className={`${isScrolled ? 'w-[360px]' : 'w-[200px]'} pl-4 pr-10 py-1.5 bg-gray-100 border border-transparent rounded-full text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:bg-white placeholder-gray-400 transition-all duration-300`}
               />
               <div
                 className="absolute right-3 top-1/2 -translate-y-1/2"
                 onClick={handleNavSearch}
               >
-                <Search className="h-4 w-4 text-[#9ca3af] cursor-pointer hover:text-primary-500 transition-colors" />
+                <Search className="h-4 w-4 text-gray-400 cursor-pointer hover:text-primary-500 transition-colors" />
               </div>
 
               {/* 搜索历史下拉 */}
@@ -418,7 +418,7 @@ export default function Navbar() {
               </>
             ) : (
               <div className="flex items-center gap-3 sm:gap-4 pl-2 border-l border-gray-200">
-                <Link to="/login" className="flex items-center gap-1.5 text-[#4b5563] text-sm font-medium hover:text-primary-500 whitespace-nowrap transition-colors">
+                <Link to="/login" className="flex items-center gap-1.5 text-gray-600 text-sm font-medium hover:text-primary-500 whitespace-nowrap transition-colors">
                   <UserCircle className="w-5 h-5" />
                   登录 / 注册
                 </Link>

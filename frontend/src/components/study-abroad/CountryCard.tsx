@@ -55,14 +55,14 @@ export default function CountryCard({ country, variant }: CountryCardProps) {
               <span className="text-5xl leading-none shrink-0">{country.flag}</span>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-1">
-                  <h3 className="text-xl font-bold text-[#111827]">{country.name}</h3>
+                  <h3 className="text-xl font-bold text-gray-900">{country.name}</h3>
                   {country.hot && (
                     <Tag variant="red" size="sm" className="font-semibold">
                       HOT
                     </Tag>
                   )}
                 </div>
-                <p className="text-sm text-[#6b7280] leading-relaxed">{country.desc}</p>
+                <p className="text-sm text-gray-500 leading-relaxed">{country.desc}</p>
               </div>
             </div>
 
@@ -79,8 +79,8 @@ export default function CountryCard({ country, variant }: CountryCardProps) {
                       <Icon className="w-4.5 h-4.5 text-primary-500" size={18} />
                     </div>
                     <div className="min-w-0">
-                      <p className="text-xs text-[#9ca3af] mb-0.5">{item.label}</p>
-                      <p className="text-sm font-medium text-[#111827] truncate">
+                      <p className="text-xs text-gray-400 mb-0.5">{item.label}</p>
+                      <p className="text-sm font-medium text-gray-900 truncate">
                         {country[item.key]}
                       </p>
                     </div>
@@ -92,7 +92,7 @@ export default function CountryCard({ country, variant }: CountryCardProps) {
             {/* Bottom: top universities + link */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div className="flex flex-wrap items-center gap-2">
-                <MapPin className="w-4 h-4 text-[#9ca3af] shrink-0" size={16} />
+                <MapPin className="w-4 h-4 text-gray-400 shrink-0" size={16} />
                 {country.topUniversities.slice(0, 5).map((uni) => (
                   <Tag
                     key={uni}
@@ -138,7 +138,7 @@ export default function CountryCard({ country, variant }: CountryCardProps) {
           <span className="text-3xl leading-none shrink-0">{country.flag}</span>
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2">
-              <h4 className="text-base font-semibold text-[#111827] truncate">
+              <h4 className="text-base font-semibold text-gray-900 truncate">
                 {country.name}
               </h4>
               {country.hot && (
@@ -156,12 +156,12 @@ export default function CountryCard({ country, variant }: CountryCardProps) {
         </p>
 
         {/* Description */}
-        <p className="text-xs text-[#6b7280] leading-relaxed line-clamp-2 mb-3">
+        <p className="text-xs text-gray-500 leading-relaxed line-clamp-2 mb-3">
           {country.desc}
         </p>
 
         {/* Tuition range */}
-        <div className="flex items-center gap-1.5 text-xs text-[#9ca3af]">
+        <div className="flex items-center gap-1.5 text-xs text-gray-400">
           <DollarSign className="w-3.5 h-3.5" size={14} />
           <span>{country.tuitionRange}</span>
         </div>

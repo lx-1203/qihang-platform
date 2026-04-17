@@ -83,6 +83,33 @@
     "from-amber-400 to-orange-500"
   ],
 
+  "heroValueProps": [
+    {
+      "icon": "Target",
+      "title": "精准匹配",
+      "description": "智能算法推荐最适合你的岗位与导师，告别海投时代",
+      "color": "text-primary-600",
+      "bg": "bg-primary-50",
+      "borderColor": "border-primary-100"
+    },
+    {
+      "icon": "Zap",
+      "title": "极速响应",
+      "description": "在线客服即时答疑，导师预约快速确认，不让等待浪费你的时间",
+      "color": "text-amber-600",
+      "bg": "bg-amber-50",
+      "borderColor": "border-amber-100"
+    },
+    {
+      "icon": "ShieldCheck",
+      "title": "安全保障",
+      "description": "企业资质认证 + 导师背景审核 + 隐私保护，安心求职无顾虑",
+      "color": "text-blue-600",
+      "bg": "bg-blue-50",
+      "borderColor": "border-blue-100"
+    }
+  ],
+
   "valueSections": [
     {
       "role": "对学生",

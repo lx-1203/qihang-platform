@@ -1,8 +1,8 @@
 {
   "_meta": {
     "version": "1.0",
-    "lastUpdated": "2026-04-13",
-    "description": "留学板块UI配置 - 无需代码，修改此JSON即可更新页面"
+    "lastUpdated": "2026-04-17",
+    "description": "留学板块UI配置 - 无需代码，修改此JSON即可更新页面（含快捷入口、服务颜色映射）"
   },
 
   "heroSlides": [
@@ -207,6 +207,28 @@
       "image": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=1200&q=80"
     }
   ],
+
+  "quickActions": [
+    { "icon": "Search", "label": "智能选校", "color": "text-primary-500", "bg": "bg-primary-50", "link": "/study-abroad/programs" },
+    { "icon": "TrendingUp", "label": "Offer 榜", "color": "text-orange-500", "bg": "bg-orange-50", "link": "/study-abroad/offers" },
+    { "icon": "Target", "label": "背景评估", "color": "text-blue-500", "bg": "bg-blue-50", "link": "/study-abroad/background" },
+    { "icon": "Calendar", "label": "申请时间线", "color": "text-purple-500", "bg": "bg-purple-50", "link": "/study-abroad/articles" },
+    { "icon": "FileText", "label": "文书指导", "color": "text-green-500", "bg": "bg-green-50", "link": "/study-abroad/articles" },
+    { "icon": "BookOpen", "label": "语言备考", "color": "text-sky-500", "bg": "bg-sky-50", "link": "/study-abroad/articles" },
+    { "icon": "DollarSign", "label": "费用估算", "color": "text-amber-500", "bg": "bg-amber-50", "link": "/study-abroad/articles" },
+    { "icon": "Headphones", "label": "1v1 咨询", "color": "text-rose-500", "bg": "bg-rose-50", "link": "/study-abroad/background" }
+  ],
+
+  "serviceColorMap": {
+    "blue": "from-blue-600/80 to-blue-900/90",
+    "teal": "from-teal-600/80 to-teal-900/90",
+    "purple": "from-purple-600/80 to-purple-900/90",
+    "rose": "from-rose-600/80 to-rose-900/90",
+    "amber": "from-amber-600/80 to-amber-900/90",
+    "indigo": "from-indigo-600/80 to-indigo-900/90",
+    "emerald": "from-emerald-600/80 to-emerald-900/90",
+    "cyan": "from-cyan-600/80 to-cyan-900/90"
+  },
 
   "ctaButtons": [
     {

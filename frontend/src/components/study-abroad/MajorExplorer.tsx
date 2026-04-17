@@ -78,7 +78,7 @@ export default function MajorExplorer() {
         <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-primary-500/10">
           <Target className="text-primary-500" size={22} />
         </div>
-        <h2 className="text-2xl font-bold text-[#111827]">
+        <h2 className="text-2xl font-bold text-gray-900">
           <span className="mr-1">🎯</span>探索专业方向
         </h2>
       </div>
@@ -110,7 +110,7 @@ export default function MajorExplorer() {
                 >
                   <Icon className={colors.text} size={20} />
                 </div>
-                <h3 className="text-base font-bold text-[#111827]">
+                <h3 className="text-base font-bold text-gray-900">
                   {cat.category}
                 </h3>
                 <Tag variant="gray" size="sm" className="ml-auto">
@@ -126,7 +126,7 @@ export default function MajorExplorer() {
                       to={`/study-abroad/programs?major=${encodeURIComponent(major.name)}`}
                       className="group flex items-center justify-between rounded-lg px-3 py-2 hover:bg-gray-50 transition-colors"
                     >
-                      <span className="flex items-center gap-1.5 text-sm text-[#111827] group-hover:text-primary-500 transition-colors">
+                      <span className="flex items-center gap-1.5 text-sm text-gray-900 group-hover:text-primary-500 transition-colors">
                         {major.name}
                         {major.hot && (
                           <Flame
@@ -135,7 +135,7 @@ export default function MajorExplorer() {
                           />
                         )}
                       </span>
-                      <span className="flex items-center gap-1 text-xs text-[#9ca3af]">
+                      <span className="flex items-center gap-1 text-xs text-gray-400">
                         {major.avgSalary}
                         <ChevronRight
                           size={14}

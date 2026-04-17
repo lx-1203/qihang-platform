@@ -299,7 +299,7 @@ export default function StudentPortrait() {
 
   if (loading) {
     return (
-      <div className="max-w-4xl mx-auto py-8 px-4 space-y-6">
+      <div className="container-narrow py-8 space-y-6">
         {[1, 2, 3].map(i => (
           <div key={i} className="bg-white rounded-xl border border-gray-200 p-6 animate-pulse">
             <div className="h-5 bg-gray-200 rounded w-32 mb-4" />
@@ -312,7 +312,7 @@ export default function StudentPortrait() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto py-8 px-4 space-y-6">
+    <div className="container-narrow py-8 space-y-6">
       {/* 页头 */}
       <motion.div
         initial={{ opacity: 0, y: -10 }}

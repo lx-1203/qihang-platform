@@ -75,7 +75,7 @@ export default function GuidanceArticles() {
 
   return (
     <div className="min-h-screen bg-gray-50 pt-8 pb-16">
-      <div className="max-w-[1200px] mx-auto px-4 sm:px-6">
+      <div className="container-main">
         {/* 面包屑 */}
         <div className="flex items-center gap-2 text-sm text-gray-500 mb-6">
           <Link to="/guidance" className="hover:text-primary-600 transition-colors">就业指导</Link>
