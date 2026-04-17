@@ -172,7 +172,7 @@ export default function Login() {
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col md:flex-row">
       {/* 左侧：品牌展示/插画区域 */}
-      <div className="hidden md:flex md:w-1/2 bg-[#111827] relative overflow-hidden flex-col justify-between p-12 lg:p-24 text-white">
+      <div className="hidden md:flex md:w-1/2 bg-gray-900 relative overflow-hidden flex-col justify-between p-12 lg:p-24 text-white">
         {/* 背景装饰图案 */}
         <div className="absolute top-0 left-0 w-full h-full overflow-hidden opacity-20 pointer-events-none">
           <svg
@@ -182,6 +182,10 @@ export default function Login() {
           >
             <path d="M0,0 L100,0 L100,100 L0,100 Z" fill="url(#grad1)" />
             <defs>
+              {/* SVG 渐变色：使用原生 stopColor（CSS 变量无法在 SVG <stop> 元素中使用）
+                  - #14b8a6 ≈ teal-500 (Tailwind)
+                  - #0f766e ≈ teal-700 (Tailwind)
+              */}
               <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="100%">
                 <stop
                   offset="0%"
@@ -573,10 +577,11 @@ export default function Login() {
               </div>
 
               <div className="mt-6 grid grid-cols-2 gap-4">
+                {/* 微信登录按钮：使用 Tailwind green-500/600 作为微信品牌色 #07C160 的近似值 */}
                 <button
                   type="button"
                   onClick={() => showToast({ type: 'info', title: '功能开发中', message: '微信登录功能正在开发中，敬请期待' })}
-                  className="flex w-full items-center justify-center gap-3 rounded-lg bg-[#07C160] px-3 py-2.5 text-sm font-semibold text-white hover:bg-[#06ad56] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 transition-colors shadow-sm"
+                  className="flex w-full items-center justify-center gap-3 rounded-lg bg-green-500 hover:bg-green-600 px-3 py-2.5 text-sm font-semibold text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 transition-colors shadow-sm"
                 >
                   {/* WeChat Icon */}
                   <svg

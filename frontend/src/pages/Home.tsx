@@ -180,17 +180,24 @@ export default function Home() {
               <p className="text-lg text-white/80 mb-8 max-w-lg">{slides[currentSlide].sub}</p>
               <div className="flex items-center gap-4">
                 <Link to={slides[currentSlide].link}
-                  className="inline-flex items-center gap-2 bg-white text-gray-900 px-8 h-12 rounded-xl font-bold
-                    shadow-xl shadow-black/15 hover:shadow-2xl hover:-translate-y-0.5
-                    hover:bg-gray-50 active:scale-[0.97]
-                    transition-all duration-300"
+                  className="group relative inline-flex items-center justify-center gap-2 bg-white text-gray-900 px-10 h-[52px] rounded-xl font-bold text-base
+                    shadow-xl shadow-primary-500/20
+                    hover:shadow-2xl hover:shadow-primary-500/30 hover:-translate-y-1
+                    hover:bg-gray-50
+                    active:scale-[0.97]
+                    focus-visible:ring-2 focus-visible:ring-primary-400/50 focus-visible:outline-none
+                    transition-all duration-300 overflow-hidden"
                 >
-                  {slides[currentSlide].cta} <ArrowRight className="w-4 h-4" />
+                  {slides[currentSlide].cta}
+                  <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform duration-200" />
                 </Link>
                 <Link to="/register"
-                  className="inline-flex items-center gap-2 bg-white/15 backdrop-blur-sm text-white px-6 h-12 rounded-xl font-semibold
-                    border border-white/25 hover:bg-white/25 hover:-translate-y-0.5
-                    active:scale-[0.97] transition-all duration-300"
+                  className="inline-flex items-center justify-center gap-2 bg-white/15 backdrop-blur-sm text-white px-7 h-[52px] rounded-xl font-semibold
+                    border border-white/25
+                    hover:bg-white/25 hover:-translate-y-0.5 hover:border-white/40
+                    active:scale-[0.97]
+                    focus-visible:ring-2 focus-visible:ring-white/30 focus-visible:outline-none
+                    transition-all duration-300"
                 >
                   免费注册
                 </Link>
@@ -557,10 +564,14 @@ export default function Home() {
           {/* CTA */}
           <div className="text-center mt-10">
             <Link to="/register"
-              className="inline-flex items-center gap-2 rounded-full px-8 py-3 bg-primary-600 text-white font-semibold hover:bg-primary-700 hover:-translate-y-0.5 shadow-md hover:shadow-lg transition-all duration-300"
+              className="group inline-flex items-center justify-center gap-2 rounded-full px-10 py-3.5 bg-primary-600 text-white font-semibold text-base
+                hover:bg-primary-700 hover:-translate-y-1 hover:shadow-lg hover:shadow-primary-500/25
+                active:scale-[0.98]
+                focus-visible:ring-2 focus-visible:ring-primary-400/50 focus-visible:outline-none
+                transition-all duration-300"
             >
               立即开始你的求职之旅
-              <ArrowRight className="w-4 h-4" />
+              <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform duration-200" />
             </Link>
           </div>
         </section>

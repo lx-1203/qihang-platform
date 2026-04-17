@@ -22,6 +22,11 @@
   --color-warning: 234 179 8;       /* 警告黄 #eab308 */
   --color-danger: 239 68 68;        /* 危险红 #ef4444 */
 
+  /* 社交媒体品牌色（备用，优先使用 Tailwind 语义化类名） */
+  --color-social-instagram: 225 48 108;    /* Instagram #e1306c → pink-500 */
+  --color-social-wechat: 7 193 96;         /* 微信 #07c160 → green-500 */
+  --color-social-twitter: 29 161 242;      /* Twitter #1da1f2 → sky-500 */
+
   /* 圆角 */
   --radius-sm: 0.375rem;   /* 6px  — 小按钮、标签 */
   --radius-md: 0.5rem;     /* 8px  — 输入框、小卡片 */
