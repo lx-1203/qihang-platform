@@ -5,7 +5,7 @@ import homeConfig from '@/data/home-ui-config.json';
 
 // ====== 核心价值锚点组件 ======
 // 在 Hero 下方展示平台 3 个核心价值主张
-// 参考新东方设计语言：服务价值前置、信任建立优先
+// 服务价值前置、信任建立优先
 
 // 图标名称 → 组件映射
 const ICON_MAP: Record<string, LucideIcon> = { Target, Zap, ShieldCheck };
@@ -43,7 +43,7 @@ export default function HeroValueProps() {
         return (
           <motion.div
             key={item.title}
-            className={`relative overflow-hidden bg-gradient-to-br from-white to-gray-50/80 rounded-2xl p-6 border ${item.borderColor}
+            className={`relative overflow-hidden bg-gradient-to-br from-white to-gray-50/60 rounded-2xl p-6 border ${item.borderColor}
               shadow-lg hover:shadow-xl hover:-translate-y-2 transition-all duration-300 cursor-default group`}
             variants={{
               hidden: { opacity: 0, y: 24 },
@@ -54,16 +54,16 @@ export default function HeroValueProps() {
             {/* 顶部渐变装饰条 */}
             <div className={`absolute top-0 left-0 right-0 h-1 bg-gradient-to-r ${item.accent.gradient}`} />
 
-            {/* 背景装饰光晕 */}
-            <div className={`absolute -top-8 -right-8 w-32 h-32 rounded-full ${item.bg} opacity-40 blur-2xl
-              group-hover:opacity-60 transition-opacity duration-500`} />
+            {/* 背景装饰光晕 - 降低不透明度并增强模糊，减少对内容的视觉干扰 */}
+            <div className={`absolute -top-8 -right-8 w-32 h-32 rounded-full ${item.bg} opacity-20 blur-3xl
+              group-hover:opacity-30 transition-opacity duration-500`} />
 
-            <div className={`relative w-14 h-14 ${item.bg} rounded-xl flex items-center justify-center mb-4
+            <div className={`relative z-10 w-14 h-14 ${item.bg} rounded-xl flex items-center justify-center mb-4
               shadow-md ${item.accent.glow} group-hover:scale-110 transition-transform duration-300`}>
               <Icon className={`w-7 h-7 ${item.color}`} />
             </div>
-            <h3 className="relative text-lg font-bold text-gray-900 mb-2">{item.title}</h3>
-            <p className="relative text-sm text-gray-600 leading-relaxed">{item.description}</p>
+            <h3 className="relative z-10 text-lg font-bold text-gray-900 mb-2">{item.title}</h3>
+            <p className="relative z-10 text-sm text-gray-600 leading-relaxed">{item.description}</p>
           </motion.div>
         );
       })}

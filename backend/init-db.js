@@ -1260,6 +1260,20 @@ async function seedSiteConfigs(conn) {
     { key: 'home_hero_title', value: '你的职业发展，从启航开始', type: 'string', group: 'homepage', label: '首页主标题', desc: 'Hero区域大标题', sort: 10 },
     { key: 'home_hero_subtitle', value: '连接梦想与机遇，助力每一位大学生迈向理想职业', type: 'string', group: 'homepage', label: '首页副标题', desc: 'Hero区域副标题', sort: 11 },
     { key: 'home_hero_image', value: '', type: 'image', group: 'homepage', label: '首页背景图', desc: 'Hero区域背景图URL', sort: 12 },
+    { key: 'home_hero_slides', value: JSON.stringify([
+      { id: 'slide-1', title: '你的职业发展，\n从启航开始', subtitle: '连接梦想与机遇，助力每一位大学生迈向理想职业', gradient: 'from-primary-600 via-primary-700 to-primary-800', cta: '开始探索', ctaLink: '/jobs' },
+      { id: 'slide-2', title: '大咖导师\n1对1辅导', subtitle: '简历精修、模拟面试、职业规划，帮你拿到心仪Offer', gradient: 'from-teal-500 via-emerald-600 to-cyan-800', cta: '找导师', ctaLink: '/mentors' },
+      { id: 'slide-3', title: '留学 · 考研 · 创业\n一站全覆盖', subtitle: '无论你选择哪条路，我们都为你保驾护航', gradient: 'from-cyan-500 via-teal-600 to-slate-800', cta: '了解更多', ctaLink: '/study-abroad' }
+    ]), type: 'json', group: 'homepage', label: '首页Hero轮播配置', desc: '首页Hero区域轮播图配置（标题/副标题/渐变色/CTA）', sort: 12 },
+    { key: 'home_process_steps', value: JSON.stringify([
+      { icon: 'UserPlus', title: '注册账号', desc: '免费30秒快速注册', link: '/register' },
+      { icon: 'FileEdit', title: '完善资料', desc: 'AI智能诊断简历', link: '/student/profile' },
+      { icon: 'Search', title: '浏览岗位', desc: '智能推荐匹配职位', link: '/jobs' },
+      { icon: 'Send', title: '投递简历', desc: '一键投递多家企业', link: '/jobs' },
+      { icon: 'Mic', title: '面试辅导', desc: '1v1真实模拟面试', link: '/mentors' },
+      { icon: 'Award', title: '收获Offer', desc: '薪资谈判技巧指导', link: '/guidance' },
+      { icon: 'TrendingUp', title: '成长进阶', desc: '职场导师长期陪伴', link: '/courses' }
+    ]), type: 'json', group: 'homepage', label: '首页求职流程步骤', desc: '首页求职流程7步配置（图标/标题/描述/链接）', sort: 12 },
     { key: 'home_stats_jobs', value: '10000+', type: 'string', group: 'homepage', label: '职位总数展示', desc: '首页统计-职位数', sort: 13 },
     { key: 'home_stats_companies', value: '500+', type: 'string', group: 'homepage', label: '合作企业展示', desc: '首页统计-企业数', sort: 14 },
     { key: 'home_stats_mentors', value: '200+', type: 'string', group: 'homepage', label: '导师总数展示', desc: '首页统计-导师数', sort: 15 },

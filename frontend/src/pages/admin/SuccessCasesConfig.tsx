@@ -5,6 +5,7 @@ import http from '@/api/http';
 import { useToast } from '@/components/ui';
 import { useConfigStore } from '@/store/config';
 import { Skeleton, CardSkeleton } from '@/components/ui/Skeleton';
+import { handleApiFailure } from '@/utils/connectionStatus';
 
 // 默认配置
 const DEFAULT_SUCCESS_CASES_CONFIG = {
@@ -64,7 +65,7 @@ export default function SuccessCasesConfig() {
           }
         }
       } catch {
-        toast.info('使用本地默认配置', '无法连接服务器');
+        await handleApiFailure('成功案例');
       } finally {
         setLoading(false);
       }

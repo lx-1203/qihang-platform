@@ -5,6 +5,7 @@ import http from '@/api/http';
 import { useToast } from '@/components/ui';
 import { useConfigStore } from '@/store/config';
 import { Skeleton } from '@/components/ui/Skeleton';
+import { handleApiFailure } from '@/utils/connectionStatus';
 
 // 预设品牌色方案
 const PRESET_COLORS = [
@@ -94,7 +95,7 @@ export default function ThemeConfig() {
           }
         }
       } catch {
-        toast.info('使用默认主题', '无法连接服务器，当前使用默认主题配置');
+        await handleApiFailure('主题配置');
       } finally {
         setLoading(false);
       }

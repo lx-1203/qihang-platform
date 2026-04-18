@@ -26,7 +26,9 @@ import EmptyState from '@/components/ui/EmptyState';
 import { LazyImage } from '@/components/ui';
 import HeroValueProps from '@/components/HeroValueProps';
 import SocialProofWall from '@/components/SocialProofWall';
+import BusinessSectors from '@/components/BusinessSectors';
 import CountUp from '@/components/CountUp';
+import { heroContentVariants, heroBgVariants, getCarouselGPUStyle } from '@/utils/animations';
 
 // ====== JSON 配置导入 ======
 import homeConfig from '../data/home-ui-config.json';
@@ -123,14 +125,30 @@ export default function Home() {
     } catch { setCoursesError(true); }
   };
 
-  // 轮播（首条使用配置中心内容，其余从 JSON 读取）
-  const slides = homeConfig.heroSlides.map((s: { title: string; subtitle: string; gradient: string; cta: string; ctaLink: string }, idx: number) => ({
-    title: idx === 0 ? heroTitle.replace('，', '，\n') : s.title,
-    sub: idx === 0 ? heroSubtitle : s.subtitle,
-    bg: s.gradient,
-    cta: s.cta,
-    link: s.ctaLink,
-  }));
+  const rawHeroSlides = useConfigStore(s => s.configs['home_hero_slides']);
+  const [heroSlidesFromApi, setHeroSlidesFromApi] = useState<Array<{ id: string; title: string; subtitle: string; gradient: string; cta: string; ctaLink: string }>>([]);
+
+  useEffect(() => {
+    if (Array.isArray(rawHeroSlides) && rawHeroSlides.length > 0) {
+      setHeroSlidesFromApi(rawHeroSlides as typeof heroSlidesFromApi);
+    }
+  }, [rawHeroSlides]);
+
+  const slides = heroSlidesFromApi.length > 0
+    ? heroSlidesFromApi.map((s, idx) => ({
+        title: idx === 0 ? heroTitle.replace('，', '，\n') : s.title,
+        sub: idx === 0 ? heroSubtitle : s.subtitle,
+        bg: s.gradient,
+        cta: s.cta,
+        link: s.ctaLink,
+      }))
+    : homeConfig.heroSlides.map((s: { title: string; subtitle: string; gradient: string; cta: string; ctaLink: string }, idx: number) => ({
+        title: idx === 0 ? heroTitle.replace('，', '，\n') : s.title,
+        sub: idx === 0 ? heroSubtitle : s.subtitle,
+        bg: s.gradient,
+        cta: s.cta,
+        link: s.ctaLink,
+      }));
 
   useEffect(() => {
     timerRef.current = setInterval(() => setCurrentSlide(p => (p + 1) % slides.length), 5000);
@@ -158,32 +176,59 @@ export default function Home() {
   return (
     <div>
       {/* ====== Hero 轮播 ====== */}
-      <div className="relative h-[360px] sm:h-[400px] md:h-[480px] overflow-hidden">
+      <div className="relative h-[400px] sm:h-[480px] md:h-[600px] overflow-hidden">
         <AnimatePresence mode="wait">
           <motion.div key={currentSlide}
-            initial={{ opacity: 0, scale: 1.05 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }}
-            transition={{ duration: 0.35 }}
+            variants={heroBgVariants}
+            initial="hidden"
+            animate="visible"
+            exit="exit"
+            style={getCarouselGPUStyle()}
             className={`absolute inset-0 bg-gradient-to-br ${slides[currentSlide].bg}`}
           >
             <div className="absolute inset-0 bg-black/20" />
             <div className="absolute top-20 right-20 w-96 h-96 bg-white/5 rounded-full blur-3xl" />
             <div className="absolute -bottom-10 -left-20 w-72 h-72 bg-white/5 rounded-full blur-3xl" />
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-white/[0.03] rounded-full blur-3xl" />
+            <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, white 1px, transparent 0)', backgroundSize: '40px 40px' }} />
           </motion.div>
         </AnimatePresence>
+
+        {/* 左右箭头 */}
+        <button
+          onClick={() => { setCurrentSlide(p => (p - 1 + slides.length) % slides.length); clearInterval(timerRef.current); }}
+          className="absolute left-4 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-white/15 backdrop-blur-sm
+            flex items-center justify-center text-white/70 hover:text-white hover:bg-white/25
+            transition-all duration-200 focus-visible:ring-2 focus-visible:ring-white/30 focus-visible:outline-none"
+          aria-label="上一张"
+        >
+          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
+        </button>
+        <button
+          onClick={() => { setCurrentSlide(p => (p + 1) % slides.length); clearInterval(timerRef.current); }}
+          className="absolute right-4 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-white/15 backdrop-blur-sm
+            flex items-center justify-center text-white/70 hover:text-white hover:bg-white/25
+            transition-all duration-200 focus-visible:ring-2 focus-visible:ring-white/30 focus-visible:outline-none"
+          aria-label="下一张"
+        >
+          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+        </button>
 
         <div className="relative z-10 container-main h-full flex flex-col justify-center">
           <AnimatePresence mode="wait">
             <motion.div key={currentSlide}
-              initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}
-              transition={{ duration: 0.4 }}
+              variants={heroContentVariants}
+              initial="hidden"
+              animate="visible"
+              exit="exit"
             >
-              <h1 className="text-4xl md:text-5xl font-bold text-white leading-tight whitespace-pre-line mb-4">
+              <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold text-white leading-tight whitespace-pre-line mb-4 md:mb-6">
                 {slides[currentSlide].title}
               </h1>
-              <p className="text-lg text-white/80 mb-8 max-w-lg">{slides[currentSlide].sub}</p>
-              <div className="flex items-center gap-4">
+              <p className="text-base sm:text-lg md:text-xl text-white/80 mb-6 md:mb-10 max-w-lg">{slides[currentSlide].sub}</p>
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4">
                 <Link to={slides[currentSlide].link}
-                  className="group relative inline-flex items-center justify-center gap-2 bg-white text-gray-900 px-10 h-[52px] rounded-xl font-bold text-base
+                  className="group relative inline-flex items-center justify-center gap-2 bg-white text-gray-900 px-8 sm:px-10 h-[52px] rounded-xl font-bold text-base
                     shadow-xl shadow-primary-500/20
                     hover:shadow-2xl hover:shadow-primary-500/30 hover:-translate-y-1
                     hover:bg-gray-50
@@ -194,7 +239,7 @@ export default function Home() {
                   {slides[currentSlide].cta}
                   <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform duration-200" />
                 </Link>
-                <Link to="/register"
+                <Link to="/jobs"
                   className="inline-flex items-center justify-center gap-2 bg-white/15 backdrop-blur-sm text-white px-7 h-[52px] rounded-xl font-semibold
                     border border-white/25
                     hover:bg-white/25 hover:-translate-y-0.5 hover:border-white/40
@@ -202,16 +247,16 @@ export default function Home() {
                     focus-visible:ring-2 focus-visible:ring-white/30 focus-visible:outline-none
                     transition-all duration-300"
                 >
-                  {t.hero.registerBtn}
+                  搜索职位
                 </Link>
               </div>
             </motion.div>
           </AnimatePresence>
 
           {/* 搜索栏 */}
-          <div className="mt-8 max-w-xl">
+          <div className="mt-6 md:mt-8 max-w-xl">
             <div className="relative">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/50" />
               <input type="text" placeholder={t.hero.searchPlaceholder}
                 value={homeSearch}
                 onChange={e => setHomeSearch(e.target.value)}
@@ -221,18 +266,20 @@ export default function Home() {
                     navigate(`/jobs?keyword=${encodeURIComponent(homeSearch.trim())}`);
                   }
                 }}
-                className="w-full pl-12 pr-4 py-3.5 rounded-xl bg-white/95 backdrop-blur-sm text-gray-900 placeholder-gray-400
-                  focus:ring-2 focus:ring-white/50 focus:bg-white outline-none shadow-lg text-sm
+                className="w-full pl-12 pr-4 py-3.5 rounded-xl bg-white/10 backdrop-blur-xl text-white placeholder-white/40
+                  border border-white/20
+                  focus:ring-2 focus:ring-white/30 focus:bg-white/15 focus:border-white/30 outline-none shadow-lg text-sm
                   transition-all duration-200"
               />
             </div>
           </div>
 
           {/* 轮播指示器 */}
-          <div className="flex gap-2 mt-6">
+          <div className="flex gap-2 mt-5">
             {slides.map((_, i) => (
               <button key={i} onClick={() => { setCurrentSlide(i); clearInterval(timerRef.current); }}
-                className={`h-1.5 rounded-full transition-all ${i === currentSlide ? 'w-8 bg-white' : 'w-4 bg-white/40'}`}
+                className={`h-1.5 rounded-full transition-all duration-300 ${i === currentSlide ? 'w-8 bg-white' : 'w-4 bg-white/40 hover:bg-white/60'}`}
+                aria-label={`切换到第${i + 1}张`}
               />
             ))}
           </div>
@@ -294,6 +341,7 @@ export default function Home() {
                 hover:shadow-md hover:-translate-y-1 hover:border-primary-100 transition-all duration-300 group cursor-default"
             >
               <div className="w-10 h-10 bg-primary-50 rounded-lg flex items-center justify-center mx-auto mb-2
+                ring-1 ring-primary-100/50 shadow-sm shadow-primary-100/50
                 group-hover:bg-primary-100 group-hover:scale-110 transition-all duration-300">
                 <s.icon className="w-5 h-5 text-primary-600" />
               </div>
@@ -310,6 +358,9 @@ export default function Home() {
 
         {/* ====== 核心价值锚点 ====== */}
         <HeroValueProps />
+
+        {/* ====== 事业板块展示 ====== */}
+        <BusinessSectors />
 
         {/* ====== 快捷金刚区 ====== */}
         <div className="py-8">

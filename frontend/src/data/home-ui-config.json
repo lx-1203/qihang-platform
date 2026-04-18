@@ -18,7 +18,7 @@
       "id": "slide-2",
       "title": "大咖导师\n1对1辅导",
       "subtitle": "简历精修、模拟面试、职业规划，帮你拿到心仪Offer",
-      "gradient": "from-primary-500 via-blue-600 to-cyan-700",
+      "gradient": "from-teal-500 via-emerald-600 to-cyan-800",
       "cta": "找导师",
       "ctaLink": "/mentors"
     },
@@ -26,7 +26,7 @@
       "id": "slide-3",
       "title": "留学 · 考研 · 创业\n一站全覆盖",
       "subtitle": "无论你选择哪条路，我们都为你保驾护航",
-      "gradient": "from-fuchsia-500 via-pink-600 to-rose-700",
+      "gradient": "from-cyan-500 via-teal-600 to-slate-800",
       "cta": "了解更多",
       "ctaLink": "/study-abroad"
     }

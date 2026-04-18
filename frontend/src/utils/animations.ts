@@ -219,32 +219,184 @@ export const staggerItem: Variants = {
   },
 };
 
+export const heroSlideTransition: Transition = {
+  duration: 0.4,
+  type: 'spring',
+  stiffness: 300,
+  damping: 30,
+};
+
+export const carouselTransition: Transition = {
+  duration: 0.4,
+  ease: [0.4, 0, 0.2, 1],
+};
+
+export const testimonialTransition: Transition = {
+  duration: 0.4,
+  ease: [0.4, 0, 0.2, 1],
+};
+
+// ====== GPU 优化动画预设 ======
+
+export const fadeSlideUp: Variants = {
+  hidden: { opacity: 0, y: 24 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] },
+  },
+};
+
+export const fadeSlideDown: Variants = {
+  hidden: { opacity: 0, y: -24 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] },
+  },
+};
+
+export const scaleInOptimized: Variants = {
+  hidden: { opacity: 0, scale: 0.92 },
+  visible: {
+    opacity: 1,
+    scale: 1,
+    transition: { duration: 0.4, ease: [0.22, 1, 0.36, 1] },
+  },
+};
+
+export const slideInLeft: Variants = {
+  hidden: { opacity: 0, x: -30 },
+  visible: {
+    opacity: 1,
+    x: 0,
+    transition: { duration: 0.5, ease: [0.22, 1, 0.36, 1] },
+  },
+};
+
+export const slideInRight: Variants = {
+  hidden: { opacity: 0, x: 30 },
+  visible: {
+    opacity: 1,
+    x: 0,
+    transition: { duration: 0.5, ease: [0.22, 1, 0.36, 1] },
+  },
+};
+
+export const heroContentVariants: Variants = {
+  hidden: { opacity: 0, y: 30 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.5, ease: [0.22, 1, 0.36, 1] },
+  },
+  exit: {
+    opacity: 0,
+    y: -20,
+    transition: { duration: 0.3, ease: [0.4, 0, 1, 1] },
+  },
+};
+
+export const heroBgVariants: Variants = {
+  hidden: { opacity: 0, scale: 1.05 },
+  visible: {
+    opacity: 1,
+    scale: 1,
+    transition: { duration: 0.35, ease: [0.4, 0, 0.2, 1] },
+  },
+  exit: {
+    opacity: 0,
+    transition: { duration: 0.25, ease: [0.4, 0, 1, 1] },
+  },
+};
+
+export const sectorStaggerContainer: Variants = {
+  hidden: {},
+  visible: {
+    transition: {
+      staggerChildren: 0.1,
+      delayChildren: 0.15,
+    },
+  },
+};
+
+export const sectorCardVariants: Variants = {
+  hidden: { opacity: 0, y: 20, scale: 0.96 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    scale: 1,
+    transition: { duration: 0.4, ease: [0.22, 1, 0.36, 1] },
+  },
+};
+
+export const testimonialVariants: Variants = {
+  enter: (direction: number) => ({
+    x: direction > 0 ? 100 : -100,
+    opacity: 0,
+  }),
+  center: {
+    x: 0,
+    opacity: 1,
+    transition: { duration: 0.4, ease: [0.22, 1, 0.36, 1] },
+  },
+  exit: (direction: number) => ({
+    x: direction < 0 ? 100 : -100,
+    opacity: 0,
+    transition: { duration: 0.3, ease: [0.4, 0, 1, 1] },
+  }),
+};
+
+export const announcementVariants: Variants = {
+  hidden: { opacity: 0, y: -10 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.3, ease: [0.4, 0, 0.2, 1] },
+  },
+  exit: {
+    opacity: 0,
+    y: 10,
+    transition: { duration: 0.2, ease: [0.4, 0, 1, 1] },
+  },
+};
+
 // ====== 交互效果 ======
 
-/** 卡片悬停效果 */
 export const cardHover = {
   y: -4,
   shadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1)',
   transition: { duration: 0.2 },
 };
 
-/** 按钮悬停效果 */
 export const buttonHover = {
   scale: 1.02,
   transition: { duration: 0.15 },
 };
 
-/** 按钮点击效果 */
 export const buttonTap = {
   scale: 0.97,
 };
 
+// ====== GPU 性能工具 ======
+
+export function getGPUOptimizedStyle(): React.CSSProperties {
+  return {
+    willChange: 'transform, opacity',
+    contain: 'layout style paint',
+  };
+}
+
+export function getCarouselGPUStyle(): React.CSSProperties {
+  return {
+    willChange: 'transform',
+    backfaceVisibility: 'hidden',
+    contain: 'layout style paint',
+  };
+}
+
 // ====== 工具函数 ======
 
-/**
- * 生成延迟动画 props（用于列表项）
- * @example <motion.div {...staggerItemProps(index)} />
- */
 export function staggerItemProps(index: number, baseDelay = 0.05) {
   return {
     initial: { opacity: 0, y: 16 },
@@ -253,11 +405,6 @@ export function staggerItemProps(index: number, baseDelay = 0.05) {
   };
 }
 
-/**
- * 创建带退出动画的完整变体
- * @param entry 入场动画配置
- * @param exitConfig 退出动画配置（可选）
- */
 export function createAnimatedVariant(
   entry: { hidden?: Record<string, unknown>; visible: Record<string, unknown> },
   exitConfig?: Record<string, unknown>
@@ -277,14 +424,14 @@ export function createAnimatedVariant(
   };
 }
 
-/**
- * 获取降级后的动画 props（当用户偏好减少动画时使用）
- * 直接显示最终状态，无动画过程
- */
 export function getReducedMotionProps<T extends Record<string, unknown>>(props: T): T {
   return {
     ...props,
     initial: undefined as unknown as T['initial'],
     transition: { duration: 0 },
   } as T;
+}
+
+export function useReducedMotionValue<T>(normalValue: T, reducedValue: T, prefersReduced: boolean): T {
+  return prefersReduced ? reducedValue : normalValue;
 }

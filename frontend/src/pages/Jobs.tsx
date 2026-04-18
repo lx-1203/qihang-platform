@@ -16,6 +16,8 @@ import ErrorState from "@/components/ui/ErrorState";
 import EmptyState from "@/components/ui/EmptyState";
 import Tag from "@/components/ui/Tag";
 import { CardSkeleton } from '@/components/ui/Skeleton';
+import EmployeeTestimonials from '@/components/EmployeeTestimonials';
+import AnnouncementBar from '@/components/AnnouncementBar';
 import jobsConfig from '@/data/jobs-config.json';
 
 // ====== 岗位列表页 ======
@@ -26,6 +28,14 @@ const {
   emptyState: emptyStateConfig,
   errorMessages,
 } = jobsConfig;
+
+const QUICK_NAV_TAGS = [
+  { label: "全部", value: "全部" },
+  { label: "社会招聘", value: "社会招聘" },
+  { label: "校园招聘", value: "校园招聘" },
+  { label: "实习生招聘", value: "实习生招聘" },
+  { label: "海外校招", value: "海外校招" },
+];
 
 interface JobItem {
   id: number;
@@ -177,6 +187,9 @@ export default function Jobs() {
 
   return (
     <div className="bg-gray-50 min-h-screen">
+      {/* 公告栏 */}
+      <AnnouncementBar />
+
       {/* 1. 顶部搜索区域 */}
       <section className="bg-gradient-to-br from-primary-700 via-primary-800 to-primary-900 text-white py-16 lg:py-24 relative overflow-hidden">
         {/* 鲜亮装饰元素 */}
@@ -291,6 +304,33 @@ export default function Jobs() {
         </div>
       </section>
 
+      {/* 快捷导航标签 */}
+      <div className="bg-white border-b border-gray-100 shadow-sm">
+        <div className="container-main">
+          <div className="flex items-center gap-1 overflow-x-auto py-3 scrollbar-hide">
+            {QUICK_NAV_TAGS.map((tag) => (
+              <button
+                key={tag.value}
+                onClick={() => handleFilterChange(setActiveType, tag.value)}
+                className="relative flex-shrink-0 px-5 py-2 rounded-full text-sm font-medium transition-all duration-200
+                  focus-visible:ring-2 focus-visible:ring-primary-400/30 focus-visible:outline-none"
+              >
+                {activeType === tag.value ? (
+                  <motion.span
+                    layoutId="quickNavIndicator"
+                    className="absolute inset-0 bg-primary-600 text-white rounded-full"
+                    transition={{ type: "spring", stiffness: 350, damping: 30 }}
+                  />
+                ) : null}
+                <span className={`relative z-10 ${activeType === tag.value ? "text-white" : "text-gray-600 hover:text-primary-600"}`}>
+                  {tag.label}
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
       {/* 2. 岗位列表与筛选区 */}
       <section className="container-main py-12 flex flex-col lg:flex-row gap-8">
         {/* 左侧筛选 */}
@@ -395,6 +435,11 @@ export default function Jobs() {
                 </Link>
               </div>
               <Sparkles className="absolute -bottom-4 -right-4 w-24 h-24 text-primary-200 opacity-50" />
+            </div>
+
+            {/* 伙伴心声（侧边栏） */}
+            <div className="hidden lg:block">
+              <EmployeeTestimonials />
             </div>
           </div>
         </div>
@@ -591,6 +636,11 @@ export default function Jobs() {
           )}
         </div>
       </section>
+
+      {/* 移动端伙伴心声 */}
+      <div className="lg:hidden container-main pb-12">
+        <EmployeeTestimonials />
+      </div>
     </div>
   );
 }

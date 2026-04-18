@@ -48,7 +48,7 @@ export default function EntrepreneurshipConfig() {
           }
         }
       } catch {
-        toast.info('使用本地默认配置', '无法连接服务器，当前使用内置默认值');
+        await handleApiFailure('创业配置');
       } finally {
         setLoading(false);
       }

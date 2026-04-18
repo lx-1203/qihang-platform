@@ -5,6 +5,7 @@ import http from '@/api/http';
 import { useToast } from '@/components/ui';
 import { useConfigStore } from '@/store/config';
 import { Skeleton, CardSkeleton } from '@/components/ui/Skeleton';
+import { handleApiFailure } from '@/utils/connectionStatus';
 import uiConfig from '../../data/study-abroad-ui-config.json';
 
 type HeroSlide = typeof uiConfig.heroSlides[0];
@@ -49,7 +50,7 @@ export default function StudyAbroadConfig() {
           }
         }
       } catch {
-        toast.info('使用本地默认配置', '无法连接服务器，当前使用内置默认值');
+        await handleApiFailure('留学配置');
       } finally {
         setLoading(false);
       }

@@ -5,11 +5,12 @@ import { router } from './routes'
 import { initSiteConfig } from './store/config'
 import { ToastProvider } from './components/ui/ToastContainer'
 import ErrorBoundary from './components/ui/ErrorBoundary'
+import { startHealthCheck } from './utils/connectionStatus'
 import './index.css'
-import './i18n' // 引入 i18n 配置文件
+import './i18n'
 
-// 首屏加载站点配置（非阻塞，失败时 localStorage 缓存兜底）
 initSiteConfig();
+startHealthCheck();
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
