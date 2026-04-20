@@ -7,6 +7,7 @@ import {
   Users
 } from 'lucide-react';
 import http from '@/api/http';
+import { COURSE_CATEGORIES, DIFFICULTY_MAP } from '@/constants';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
 import { TableSkeleton } from '../../components/ui/Skeleton';
 import ErrorState from '../../components/ui/ErrorState';
@@ -28,11 +29,10 @@ interface Course {
   created_at: string;
 }
 
-const categories = ['简历指导', '面试辅导', '职业规划', '考研指导', '创业指导', '留学规划'];
-const difficultyMap = {
-  beginner: { label: '入门', color: 'bg-green-50 text-green-700' },
-  intermediate: { label: '进阶', color: 'bg-blue-50 text-blue-700' },
-  advanced: { label: '高级', color: 'bg-primary-50 text-primary-700' },
+const categories = COURSE_CATEGORIES;
+const difficultyMap: Record<string, { label: string; color: string }> = {
+  ...DIFFICULTY_MAP,
+  intermediate: { label: '进阶', color: DIFFICULTY_MAP.intermediate.color },
 };
 const statusMap = {
   active: { label: '已上线', color: 'bg-green-50 text-green-700' },

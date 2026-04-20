@@ -1,12 +1,23 @@
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Star, Quote } from 'lucide-react';
 import { useInViewAnimation } from '@/hooks/useInViewAnimation';
+import http from '@/api/http';
 
 // ====== 社会证明墙组件 ======
 // 展示已成功就业的学员评价，建立信任感
-// 使用 Mock 数据，后续可对接 API
 
-const TESTIMONIALS = [
+interface Testimonial {
+  name: string;
+  avatar: string;
+  school: string;
+  company: string;
+  position: string;
+  quote: string;
+  color: string;
+}
+
+const DEFAULT_TESTIMONIALS: Testimonial[] = [
   {
     name: '张同学',
     avatar: '张',
@@ -47,6 +58,21 @@ const TESTIMONIALS = [
 
 export default function SocialProofWall() {
   const { ref, isInView } = useInViewAnimation({ threshold: 0.15 });
+  const [testimonials, setTestimonials] = useState<Testimonial[]>(DEFAULT_TESTIMONIALS);
+
+  // 尝试从后端获取评价数据，失败则使用默认值
+  useEffect(() => {
+    http.get('/testimonials')
+      .then(res => {
+        const list = res.data?.data?.list || res.data?.data;
+        if (Array.isArray(list) && list.length > 0) {
+          setTestimonials(list);
+        }
+      })
+      .catch(() => {
+        // API 不可用，保留默认评价数据
+      });
+  }, []);
 
   return (
     <section className="py-12">
@@ -78,7 +104,7 @@ export default function SocialProofWall() {
 
         {/* 评价卡片网格 */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {TESTIMONIALS.map((t) => (
+          {testimonials.map((t) => (
             <motion.div
               key={t.name}
               className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm

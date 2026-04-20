@@ -491,6 +491,158 @@ const CREATE_STUDY_ABROAD_CONSULTANTS_TABLE = `
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='留学顾问表'
 `;
 
+// ====== 聊天会话表 ======
+const CREATE_CHAT_CONVERSATIONS_TABLE = `
+  CREATE TABLE IF NOT EXISTS chat_conversations (
+    id              INT AUTO_INCREMENT PRIMARY KEY,
+    user_id         INT NOT NULL COMMENT '发起用户ID',
+    type            VARCHAR(50) NOT NULL DEFAULT 'user_service' COMMENT '会话类型',
+    title           VARCHAR(200) DEFAULT '' COMMENT '会话标题',
+    status          ENUM('active','pending','closed') NOT NULL DEFAULT 'active' COMMENT '状态',
+    last_message    VARCHAR(300) DEFAULT '' COMMENT '最新消息摘要',
+    last_message_at TIMESTAMP NULL COMMENT '最新消息时间',
+    unread_user     INT NOT NULL DEFAULT 0 COMMENT '用户未读数',
+    unread_admin    INT NOT NULL DEFAULT 0 COMMENT '管理员未读数',
+    assigned_admin  INT DEFAULT NULL COMMENT '分配的管理员ID',
+    created_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_user_id (user_id),
+    INDEX idx_status (status),
+    INDEX idx_last_message_at (last_message_at)
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='聊天会话表'
+`;
+
+// ====== 聊天消息表 ======
+const CREATE_CHAT_MESSAGES_TABLE = `
+  CREATE TABLE IF NOT EXISTS chat_messages (
+    id              BIGINT AUTO_INCREMENT PRIMARY KEY,
+    conversation_id INT NOT NULL COMMENT '会话ID',
+    sender_id       INT NOT NULL DEFAULT 0 COMMENT '发送者ID (0=系统)',
+    sender_role     ENUM('system','user','admin') NOT NULL DEFAULT 'user' COMMENT '发送者角色',
+    content         TEXT NOT NULL COMMENT '消息内容',
+    msg_type        VARCHAR(20) NOT NULL DEFAULT 'text' COMMENT '消息类型: text/image/file',
+    file_url        VARCHAR(500) DEFAULT '' COMMENT '附件URL',
+    created_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_conversation_id (conversation_id),
+    INDEX idx_created_at (created_at)
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='聊天消息表'
+`;
+
+// ====== 导师资料库表 ======
+const CREATE_MENTOR_RESOURCES_TABLE = `
+  CREATE TABLE IF NOT EXISTS mentor_resources (
+    id              INT AUTO_INCREMENT PRIMARY KEY,
+    mentor_id       INT NOT NULL COMMENT '导师user_id',
+    title           VARCHAR(200) NOT NULL COMMENT '资料标题',
+    type            ENUM('pdf','doc','video','image','other') NOT NULL DEFAULT 'other' COMMENT '资料类型',
+    url             VARCHAR(500) NOT NULL COMMENT '文件URL',
+    size_bytes      BIGINT NOT NULL DEFAULT 0 COMMENT '文件大小（字节）',
+    download_count  INT NOT NULL DEFAULT 0 COMMENT '下载次数',
+    is_public       TINYINT NOT NULL DEFAULT 1 COMMENT '是否公开: 1=公开, 0=私密',
+    created_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_mentor_resources_mentor_id (mentor_id),
+    INDEX idx_created_at (created_at),
+    FOREIGN KEY (mentor_id) REFERENCES users(id) ON DELETE CASCADE
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='导师资料库表'
+`;
+
+// ====== 文章分类表 ======
+const CREATE_ARTICLE_CATEGORIES_TABLE = `
+  CREATE TABLE IF NOT EXISTS article_categories (
+    id          INT AUTO_INCREMENT PRIMARY KEY,
+    name        VARCHAR(50) NOT NULL COMMENT '分类名称',
+    slug        VARCHAR(50) NOT NULL UNIQUE COMMENT '分类标识',
+    sort_order  INT NOT NULL DEFAULT 0 COMMENT '排序权重（越小越前）',
+    created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    updated_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    INDEX idx_sort_order (sort_order)
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='文章分类表'
+`;
+
+// ====== 竞赛信息表 ======
+const CREATE_COMPETITIONS_TABLE = `
+  CREATE TABLE IF NOT EXISTS competitions (
+    id                INT AUTO_INCREMENT PRIMARY KEY,
+    name              VARCHAR(300) NOT NULL COMMENT '竞赛名称',
+    level             ENUM('国家级','省级','校级') NOT NULL DEFAULT '国家级' COMMENT '竞赛级别',
+    organizer         VARCHAR(200) DEFAULT '' COMMENT '主办方',
+    status            ENUM('报名中','进行中','已结束') NOT NULL DEFAULT '报名中' COMMENT '竞赛状态',
+    deadline          DATE DEFAULT NULL COMMENT '报名截止日期',
+    description       TEXT COMMENT '竞赛描述',
+    registration_url  VARCHAR(500) DEFAULT '' COMMENT '报名链接',
+    tags              JSON COMMENT '标签数组',
+    created_at        TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    updated_at        TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    INDEX idx_level (level),
+    INDEX idx_status (status),
+    INDEX idx_deadline (deadline)
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='竞赛信息表'
+`;
+
+// ====== 创业资料库表 ======
+const CREATE_RESOURCES_TABLE = `
+  CREATE TABLE IF NOT EXISTS resources (
+    id              INT AUTO_INCREMENT PRIMARY KEY,
+    title           VARCHAR(200) NOT NULL COMMENT '资料标题',
+    type            ENUM('template','policy','guide','tool') NOT NULL DEFAULT 'guide' COMMENT '资料类型',
+    description     TEXT COMMENT '资料描述',
+    file_url        VARCHAR(500) DEFAULT '' COMMENT '文件URL',
+    download_count  INT NOT NULL DEFAULT 0 COMMENT '下载次数',
+    created_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    updated_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    INDEX idx_type (type)
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='创业资料库表'
+`;
+
+// ====== 学员评价表 ======
+const CREATE_TESTIMONIALS_TABLE = `
+  CREATE TABLE IF NOT EXISTS testimonials (
+    id            INT AUTO_INCREMENT PRIMARY KEY,
+    name          VARCHAR(100) NOT NULL COMMENT '学员姓名',
+    avatar        VARCHAR(500) DEFAULT '' COMMENT '头像URL',
+    school        VARCHAR(200) DEFAULT '' COMMENT '学校',
+    major         VARCHAR(200) DEFAULT '' COMMENT '专业',
+    content       TEXT COMMENT '评价内容',
+    rating        INT NOT NULL DEFAULT 5 COMMENT '评分 (1-5)',
+    offer_company VARCHAR(200) DEFAULT '' COMMENT '拿到Offer的公司',
+    created_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    updated_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    INDEX idx_rating (rating)
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='学员评价表'
+`;
+
+// ====== 平台服务特色表 ======
+const CREATE_PLATFORM_FEATURES_TABLE = `
+  CREATE TABLE IF NOT EXISTS platform_features (
+    id          INT AUTO_INCREMENT PRIMARY KEY,
+    title       VARCHAR(100) NOT NULL COMMENT '特色标题',
+    description VARCHAR(500) DEFAULT '' COMMENT '特色描述',
+    icon        VARCHAR(50)  DEFAULT '' COMMENT '图标名称',
+    gradient    VARCHAR(100) DEFAULT '' COMMENT '渐变色CSS类',
+    link        VARCHAR(500) DEFAULT '' COMMENT '跳转链接',
+    sort_order  INT NOT NULL DEFAULT 0 COMMENT '排序权重（越小越前）',
+    created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    updated_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    INDEX idx_sort_order (sort_order)
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='平台服务特色表'
+`;
+
+// ====== 校招时间轴表 ======
+const CREATE_CAMPUS_TIMELINE_TABLE = `
+  CREATE TABLE IF NOT EXISTS campus_timeline (
+    id          INT AUTO_INCREMENT PRIMARY KEY,
+    month       VARCHAR(20)  NOT NULL COMMENT '月份标识（如 3月-5月）',
+    title       VARCHAR(200) NOT NULL COMMENT '阶段标题',
+    description TEXT COMMENT '阶段描述',
+    icon        VARCHAR(50)  DEFAULT '' COMMENT '图标名称',
+    color       VARCHAR(50)  DEFAULT '' COMMENT '颜色标识',
+    sort_order  INT NOT NULL DEFAULT 0 COMMENT '排序权重（越小越前）',
+    created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    updated_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    INDEX idx_sort_order (sort_order)
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='校招时间轴表'
+`;
+
 // ========== 按依赖关系排列的建表顺序 ==========
 const TABLE_DEFINITIONS = [
   { name: 'users',           sql: CREATE_USERS_TABLE },
@@ -514,6 +666,15 @@ const TABLE_DEFINITIONS = [
   { name: 'study_abroad_offers',     sql: CREATE_STUDY_ABROAD_OFFERS_TABLE },
   { name: 'study_abroad_timeline',   sql: CREATE_STUDY_ABROAD_TIMELINE_TABLE },
   { name: 'study_abroad_consultants', sql: CREATE_STUDY_ABROAD_CONSULTANTS_TABLE },
+  { name: 'chat_conversations',      sql: CREATE_CHAT_CONVERSATIONS_TABLE },
+  { name: 'chat_messages',           sql: CREATE_CHAT_MESSAGES_TABLE },
+  { name: 'mentor_resources',        sql: CREATE_MENTOR_RESOURCES_TABLE },
+  { name: 'article_categories',     sql: CREATE_ARTICLE_CATEGORIES_TABLE },
+  { name: 'competitions',           sql: CREATE_COMPETITIONS_TABLE },
+  { name: 'resources',              sql: CREATE_RESOURCES_TABLE },
+  { name: 'testimonials',           sql: CREATE_TESTIMONIALS_TABLE },
+  { name: 'platform_features',      sql: CREATE_PLATFORM_FEATURES_TABLE },
+  { name: 'campus_timeline',        sql: CREATE_CAMPUS_TIMELINE_TABLE },
 ];
 
 // ========== 种子数据 ==========
@@ -1820,6 +1981,347 @@ async function seedStudyAbroadConsultants(conn) {
   }
 }
 
+/**
+ * 插入导师资料库种子数据
+ */
+async function seedMentorResources(conn, userIdMap) {
+  const [existing] = await conn.query('SELECT COUNT(*) as count FROM mentor_resources');
+  if (existing[0].count > 0) return;
+
+  // 获取一个导师的 user_id
+  const mentorUserId = userIdMap['chen@mentor.com'] || userIdMap['zhang@mentor.com'] || 1;
+
+  const resources = [
+    { mentor_id: mentorUserId, title: '互联网校招简历模板（2026版）', type: 'pdf', url: '/uploads/resume-template-2026.pdf', size_bytes: 2048000, download_count: 156 },
+    { mentor_id: mentorUserId, title: '技术面试高频算法总结', type: 'doc', url: '/uploads/algorithm-summary.docx', size_bytes: 1536000, download_count: 89 },
+    { mentor_id: mentorUserId, title: '模拟面试流程讲解视频', type: 'video', url: '/uploads/mock-interview-guide.mp4', size_bytes: 52428800, download_count: 234 },
+  ];
+
+  for (const r of resources) {
+    await conn.query(
+      `INSERT INTO mentor_resources (mentor_id, title, type, url, size_bytes, download_count)
+       VALUES (?, ?, ?, ?, ?, ?)`,
+      [r.mentor_id, r.title, r.type, r.url, r.size_bytes, r.download_count]
+    );
+  }
+}
+
+/**
+ * 插入保研/留学/职业指导文章种子数据（补充）
+ */
+async function seedArticlesExtra(conn) {
+  // 检查是否已有这批补充文章（通过标题判断）
+  const [existing] = await conn.query("SELECT COUNT(*) as count FROM articles WHERE category IN ('校招指南','面试经验','政策解读') AND title LIKE '%保研%' OR title LIKE '%留学%'");
+  if (existing[0].count > 0) return;
+
+  const extraArticles = [
+    // 保研 2 条
+    {
+      title: '保研全流程攻略：从夏令营到推免面试',
+      summary: '系统梳理保研各阶段关键节点、材料准备和面试技巧，助你顺利上岸。',
+      content: `## 保研时间线\n\n### 大三下学期（3-5月）\n- 确定目标院校和导师\n- 准备个人陈述、推荐信、成绩单等材料\n- 关注目标院校夏令营报名通知\n\n### 暑期（6-8月）\n- 参加夏令营，展示科研能力和学术潜力\n- 夏令营面试通常包含：自我介绍、专业问答、英语面试\n\n### 大四上学期（9月）\n- 推免系统开放，填报志愿\n- 参加预推免面试\n- 确认录取，签订协议\n\n## 核心建议\n\n1. **GPA是基础**：保持年级前10%的成绩\n2. **科研加分**：本科阶段参与课题或发表论文\n3. **竞赛经历**：数学建模、ACM等含金量高的竞赛\n4. **提前联系导师**：邮件沟通展示学术兴趣`,
+      category: '校招指南',
+      cover: 'https://images.unsplash.com/photo-1523050854058-8df90110c476?w=600&q=80',
+      author: '启航升学研究院',
+    },
+    {
+      title: '985高校保研率排名与热门专业竞争分析',
+      summary: '汇总各985高校最新保研率数据，深度分析热门专业的推免竞争格局。',
+      content: `## 985高校保研率概览\n\n### 保研率Top10\n1. 北京大学 — 约50%\n2. 清华大学 — 约50%\n3. 中国科学技术大学 — 约40%\n4. 南京大学 — 约35%\n5. 复旦大学 — 约33%\n6. 上海交通大学 — 约32%\n7. 浙江大学 — 约30%\n8. 中国人民大学 — 约28%\n9. 北京航空航天大学 — 约27%\n10. 哈尔滨工业大学 — 约26%\n\n## 热门专业竞争分析\n\n### 计算机科学与技术\n- 竞争最为激烈，Top高校录取比通常在5:1以上\n- 科研论文和竞赛成果是核心区分因素\n\n### 金融学/经济学\n- 跨专业保研比例高，数学/统计背景受欢迎\n- 实习经历在面试中权重较大\n\n### 电子信息/人工智能\n- 近年热度持续上升\n- 导师项目匹配度是关键\n\n## 策略建议\n\n1. 合理定位：根据排名选择冲刺/稳妥/保底院校\n2. 多投夏令营：建议投5-8所\n3. 提前了解各校面试风格`,
+      category: '校招指南',
+      cover: 'https://images.unsplash.com/photo-1541339907198-e08756dedf3f?w=600&q=80',
+      author: '启航升学研究院',
+    },
+    // 留学 2 条
+    {
+      title: '2026年留学申请趋势：热门国家与专业深度解读',
+      summary: '分析英美港新澳等热门留学目的地最新申请趋势，助你做出最优选校决策。',
+      content: `## 各国留学趋势\n\n### 英国\n- 申请量持续增长，G5竞争白热化\n- 一年制硕士性价比高\n- 热门专业：商科、CS、传媒\n\n### 美国\n- 签证政策回暖，STEM专业OPT延长至3年\n- 大模型/AI方向申请火爆\n- 注意：部分Top30取消GRE要求\n\n### 中国香港\n- 距离近、文化适应成本低\n- 港三（港大/港中文/港科技）竞争极度激烈\n- 建议早轮申请，滚动录取占先机\n\n### 新加坡\n- NUS/NTU亚洲排名领先\n- CS和商科就业前景优越\n- 申请周期短，决策快\n\n### 澳大利亚\n- 移民政策友好，PSW工签2-4年\n- 墨大/悉大/ANU认可度高\n- 无背景可转专业项目多\n\n## 选校建议\n\n1. 明确目标：就业/科研/移民\n2. 控制申请数量：8-12所为宜\n3. 合理分配梯度：冲刺3 + 匹配5 + 保底3`,
+      category: '校招指南',
+      cover: 'https://images.unsplash.com/photo-1523050854058-8df90110c476?w=600&q=80',
+      author: '启航留学研究院',
+    },
+    {
+      title: '留学文书写作指南：PS/SOP/Essay的核心区别与写作技巧',
+      summary: '深入解析留学申请三大文书类型的区别和写作要点，附高分范文框架。',
+      content: `## 三大文书区别\n\n### Personal Statement (PS)\n- 英国/香港常用\n- 侧重：学术背景 + 学科热情 + 未来规划\n- 篇幅：500-800词\n\n### Statement of Purpose (SOP)\n- 美国研究生常用\n- 侧重：研究兴趣 + 科研经历 + 与项目匹配度\n- 篇幅：800-1200词\n\n### Essay\n- MBA/商科常用\n- 侧重：个人经历 + 领导力 + 职业目标\n- 通常有具体题目要求\n\n## 写作核心技巧\n\n### 1. 故事化表达\n- 用具体事件而非空洞形容\n- 错误示范："我对计算机充满热情"\n- 正确示范："大二暑假独立开发的选课助手被3000+同学使用"\n\n### 2. 展示匹配度\n- 研究目标校的课程设置和教授方向\n- 将自己的经历与项目特色建立连接\n\n### 3. 避免常见错误\n- 不要写成简历的散文版\n- 避免过度谦虚或过度自夸\n- 每所学校都要定制化修改\n\n## 文书时间规划\n\n1. 头脑风暴素材：申请前3个月\n2. 初稿写作：申请前2个月\n3. 修改打磨：至少3轮修改\n4. 母语者润色：提交前2周`,
+      category: '校招指南',
+      cover: 'https://images.unsplash.com/photo-1434030216411-0b793f4b4173?w=600&q=80',
+      author: '赵博士（常青藤海归）',
+    },
+    // 职业指导 2 条
+    {
+      title: '应届生职业规划：如何找到适合自己的第一份工作',
+      summary: '从自我认知到行业选择，系统性帮助应届生理清职业方向，避免入行后悔。',
+      content: `## 自我认知三步法\n\n### 第一步：兴趣盘点\n- 列出你愿意花时间钻研的领域\n- 区分"真兴趣"和"看起来光鲜"的方向\n\n### 第二步：能力评估\n- 硬技能：编程/设计/写作/数据分析等\n- 软技能：沟通/领导力/抗压/团队协作\n- 思考：哪些能力是你的核心竞争力？\n\n### 第三步：价值观排序\n- 高薪 vs 稳定 vs 成长 vs 工作生活平衡\n- 一线城市 vs 回老家 vs 考公上岸\n\n## 热门行业对比\n\n| 维度 | 互联网 | 金融 | 快消 | 体制内 |\n|------|--------|------|------|--------|\n| 薪资 | ⭐⭐⭐⭐⭐ | ⭐⭐⭐⭐ | ⭐⭐⭐ | ⭐⭐ |\n| 成长 | ⭐⭐⭐⭐⭐ | ⭐⭐⭐⭐ | ⭐⭐⭐⭐ | ⭐⭐ |\n| 稳定 | ⭐⭐ | ⭐⭐⭐ | ⭐⭐⭐⭐ | ⭐⭐⭐⭐⭐ |\n| WLB | ⭐⭐ | ⭐⭐ | ⭐⭐⭐⭐ | ⭐⭐⭐⭐ |\n\n## 避坑指南\n\n1. 不要只看薪资，关注长期发展天花板\n2. 不要盲目跟风，别人的好未必适合你\n3. 第一份工作不是终点，允许试错和调整\n4. 善用实习来验证想法，低成本试错`,
+      category: '校招指南',
+      cover: 'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=600&q=80',
+      author: '陈经理（资深HR）',
+    },
+    {
+      title: '职场新人必修课：入职第一年的生存法则',
+      summary: '从入职适应到人际关系，帮助职场新人快速融入团队、建立良好口碑。',
+      content: `## 入职前30天\n\n### 第一周：观察与学习\n- 了解公司文化和团队风格\n- 熟悉工作流程和常用工具\n- 主动认识团队成员\n\n### 第二至四周：融入与执行\n- 高质量完成分配的每一个小任务\n- 遇到问题先自己查资料，再请教同事\n- 养成记录工作日志的习惯\n\n## 职场沟通技巧\n\n### 向上沟通\n- 定期汇报工作进展（建议每周）\n- 遇到困难及时反馈，不要等到deadline\n- 理解领导的期望和工作风格\n\n### 横向协作\n- 尊重每个人的专业领域\n- 邮件/消息保持专业和清晰\n- 跨部门合作时明确分工和时间节点\n\n## 新人常犯的错误\n\n1. **过于被动**：等安排而不主动找事做\n2. **好高骛远**：嫌弃基础工作，急于表现\n3. **不会提问**：问题太宽泛或完全不问\n4. **忽视人际**：只顾埋头工作，不维护关系\n\n## 第一年KPI\n\n- 熟练掌握岗位核心技能\n- 建立3-5个可信赖的职场关系\n- 独立负责至少一个完整项目\n- 获得直属领导的正面评价`,
+      category: '面试经验',
+      cover: 'https://images.unsplash.com/photo-1521737604893-d14cc237f11d?w=600&q=80',
+      author: '王总监（品牌总监）',
+    },
+  ];
+
+  for (const a of extraArticles) {
+    // 避免重复插入
+    const [dup] = await conn.query('SELECT id FROM articles WHERE title = ?', [a.title]);
+    if (dup.length === 0) {
+      await conn.query(
+        `INSERT INTO articles (title, summary, content, category, cover, author) VALUES (?, ?, ?, ?, ?, ?)`,
+        [a.title, a.summary, a.content, a.category, a.cover, a.author]
+      );
+    }
+  }
+}
+
+/**
+ * 插入文章分类种子数据
+ */
+async function seedArticleCategories(conn) {
+  const [existing] = await conn.query('SELECT COUNT(*) as count FROM article_categories');
+  if (existing[0].count > 0) return;
+
+  const categories = [
+    { name: '校招指南', slug: 'campus-recruitment', sort_order: 1 },
+    { name: '简历技巧', slug: 'resume-tips', sort_order: 2 },
+    { name: '面试经验', slug: 'interview-experience', sort_order: 3 },
+    { name: '政策解读', slug: 'policy-interpretation', sort_order: 4 },
+    { name: '保研资讯', slug: 'postgrad-recommendation', sort_order: 5 },
+    { name: '留学指南', slug: 'study-abroad-guide', sort_order: 6 },
+  ];
+
+  for (const c of categories) {
+    await conn.query(
+      `INSERT INTO article_categories (name, slug, sort_order) VALUES (?, ?, ?)`,
+      [c.name, c.slug, c.sort_order]
+    );
+  }
+}
+
+/**
+ * 插入竞赛信息种子数据
+ */
+async function seedCompetitions(conn) {
+  const [existing] = await conn.query('SELECT COUNT(*) as count FROM competitions');
+  if (existing[0].count > 0) return;
+
+  const competitions = [
+    {
+      name: '"挑战杯"全国大学生课外学术科技作品竞赛',
+      level: '国家级',
+      organizer: '共青团中央、中国科协、教育部、全国学联',
+      status: '报名中',
+      deadline: '2026-05-30',
+      description: '被誉为中国大学生学术科技的"奥林匹克"，是目前国内大学生最关注的竞赛之一。竞赛分为自然科学类、哲学社会科学类和科技发明制作类三大板块。',
+      registration_url: 'https://www.tiaozhanbei.net',
+      tags: JSON.stringify(['学术研究', '科技创新', '含金量高']),
+    },
+    {
+      name: '中国国际"互联网+"大学生创新创业大赛',
+      level: '国家级',
+      organizer: '教育部、中央统战部、国家发改委等12部委',
+      status: '报名中',
+      deadline: '2026-06-15',
+      description: '中国规模最大、影响最广的大学生创新创业赛事，已成为高校创新创业教育的重要平台。涵盖高教主赛道、青年红色筑梦之旅赛道和产业命题赛道。',
+      registration_url: 'https://cy.ncss.cn',
+      tags: JSON.stringify(['创业项目', '商业计划', '影响力大']),
+    },
+    {
+      name: '"创青春"全国大学生创业大赛',
+      level: '国家级',
+      organizer: '共青团中央、教育部、人力资源社会保障部等',
+      status: '进行中',
+      deadline: '2026-04-20',
+      description: '由原"创业计划竞赛"升级而来，分为创业计划竞赛、创业实践挑战赛、公益创业赛三类。重点考察项目的商业可行性和社会价值。',
+      registration_url: 'https://www.chuangqingchun.net',
+      tags: JSON.stringify(['创业计划', '社会公益', '团队协作']),
+    },
+    {
+      name: '全国大学生数学建模竞赛（CUMCM）',
+      level: '国家级',
+      organizer: '中国工业与应用数学学会',
+      status: '报名中',
+      deadline: '2026-09-01',
+      description: '中国规模最大的基础性学科竞赛，每年约有14万支队伍参赛。三人一组，72小时内完成数学建模与论文撰写，培养学生的综合应用能力。',
+      registration_url: 'http://www.mcm.edu.cn',
+      tags: JSON.stringify(['数学建模', '算法', '数据分析']),
+    },
+    {
+      name: '全国大学生电子设计竞赛',
+      level: '国家级',
+      organizer: '教育部高等教育司、工业和信息化部人事教育司',
+      status: '已结束',
+      deadline: '2026-03-15',
+      description: '面向电子信息类专业的顶级赛事，考察学生的电路设计、嵌入式系统开发和创新能力。每两年举办一次全国赛，省赛每年举办。',
+      registration_url: 'https://www.nuedc-training.com.cn',
+      tags: JSON.stringify(['电子设计', '嵌入式', '硬件开发']),
+    },
+  ];
+
+  for (const c of competitions) {
+    await conn.query(
+      `INSERT INTO competitions (name, level, organizer, status, deadline, description, registration_url, tags)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [c.name, c.level, c.organizer, c.status, c.deadline, c.description, c.registration_url, c.tags]
+    );
+  }
+}
+
+/**
+ * 插入创业资料库种子数据
+ */
+async function seedResources(conn) {
+  const [existing] = await conn.query('SELECT COUNT(*) as count FROM resources');
+  if (existing[0].count > 0) return;
+
+  const resources = [
+    {
+      title: '大学生创业商业计划书模板（2026版）',
+      type: 'template',
+      description: '包含市场分析、产品规划、财务预测、团队介绍等完整模块的商业计划书Word模板，附填写指南和范例。适用于"互联网+"、"挑战杯"等创业大赛。',
+      file_url: '/uploads/resources/business-plan-template-2026.docx',
+      download_count: 1256,
+    },
+    {
+      title: '2026年大学生创业扶持政策汇编',
+      type: 'policy',
+      description: '汇总国家及各省市最新大学生创业扶持政策，包括创业补贴、税收优惠、场地支持、小额贷款等政策详解与申请流程。',
+      file_url: '/uploads/resources/startup-policy-2026.pdf',
+      download_count: 892,
+    },
+    {
+      title: '从0到1创业融资指南：天使轮到A轮',
+      type: 'guide',
+      description: '详细讲解创业公司早期融资全流程，包括商业计划书撰写、投资人沟通技巧、估值方法、条款清单解读和法律注意事项。',
+      file_url: '/uploads/resources/fundraising-guide.pdf',
+      download_count: 673,
+    },
+  ];
+
+  for (const r of resources) {
+    await conn.query(
+      `INSERT INTO resources (title, type, description, file_url, download_count)
+       VALUES (?, ?, ?, ?, ?)`,
+      [r.title, r.type, r.description, r.file_url, r.download_count]
+    );
+  }
+}
+
+/**
+ * 插入学员评价种子数据
+ */
+async function seedTestimonials(conn) {
+  const [existing] = await conn.query('SELECT COUNT(*) as count FROM testimonials');
+  if (existing[0].count > 0) return;
+
+  const testimonials = [
+    {
+      name: '李明',
+      avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop',
+      school: '浙江大学',
+      major: '计算机科学与技术',
+      content: '通过启航平台的1v1简历精修和模拟面试服务，我的简历通过率从30%提升到80%。最终拿到了字节跳动、腾讯、阿里三家大厂的offer，现在已经在字节跳动做前端开发了！',
+      rating: 5,
+      offer_company: '字节跳动',
+    },
+    {
+      name: '王小雨',
+      avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop',
+      school: '南京大学',
+      major: '金融学',
+      content: '考研失利后一度很迷茫，在启航平台预约了职业规划导师的咨询后重新找到方向。导师帮我分析了金融行业各赛道，最终我成功拿到了中金公司的校招offer！',
+      rating: 5,
+      offer_company: '中金公司',
+    },
+    {
+      name: '陈思远',
+      avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop',
+      school: '华中科技大学',
+      major: '电子信息工程',
+      content: '作为非科班转码的同学，我通过平台的课程系统学习了前端开发，加上导师的技术面辅导，成功从EE转到了互联网行业。感谢启航让我实现了职业转型！',
+      rating: 4,
+      offer_company: '美团',
+    },
+    {
+      name: '张雅琳',
+      avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&h=100&fit=crop',
+      school: '上海外国语大学',
+      major: '英语翻译',
+      content: '平台上的快消行业导师给了我非常专业的群面辅导，从无领导小组讨论的角色选择到案例分析方法，每个细节都指导到位。最后成功拿到联合利华管培生offer！',
+      rating: 5,
+      offer_company: '联合利华',
+    },
+  ];
+
+  for (const t of testimonials) {
+    await conn.query(
+      `INSERT INTO testimonials (name, avatar, school, major, content, rating, offer_company)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      [t.name, t.avatar, t.school, t.major, t.content, t.rating, t.offer_company]
+    );
+  }
+}
+
+/**
+ * 插入平台服务特色种子数据
+ */
+async function seedPlatformFeatures(conn) {
+  const [existing] = await conn.query('SELECT COUNT(*) as count FROM platform_features');
+  if (existing[0].count > 0) return;
+
+  const features = [
+    { title: '精准匹配', description: 'AI智能推荐算法，根据你的专业、技能和意向精准匹配岗位', icon: 'Target', gradient: 'from-teal-500 to-emerald-500', link: '/jobs', sort_order: 1 },
+    { title: '名企直招', description: '500+知名企业入驻，校招/实习岗位直达，无中间商', icon: 'Building2', gradient: 'from-blue-500 to-indigo-500', link: '/jobs', sort_order: 2 },
+    { title: '导师1v1', description: '行业资深导师一对一辅导，简历精修+模拟面试+职业规划', icon: 'Users', gradient: 'from-purple-500 to-pink-500', link: '/mentors', sort_order: 3 },
+    { title: '考研保研', description: '全网最全的升学资讯与院校分析，学长学姐真实经验分享', icon: 'GraduationCap', gradient: 'from-orange-500 to-red-500', link: '/postgrad', sort_order: 4 },
+    { title: '留学申请', description: '覆盖全球Top100院校库，背景评估+选校方案+文书指导', icon: 'Globe', gradient: 'from-cyan-500 to-blue-500', link: '/study-abroad', sort_order: 5 },
+    { title: '创业孵化', description: '商业计划书模板、创业大赛信息、项目路演和投资对接', icon: 'Rocket', gradient: 'from-amber-500 to-orange-500', link: '/entrepreneurship', sort_order: 6 },
+    { title: '技能课程', description: '涵盖技术/产品/设计/金融等方向的实战课程和面经分享', icon: 'BookOpen', gradient: 'from-green-500 to-teal-500', link: '/courses', sort_order: 7 },
+    { title: '全程护航', description: '从职业规划到入职辅导，覆盖求职全生命周期的贴心服务', icon: 'Shield', gradient: 'from-rose-500 to-pink-500', link: '/guidance', sort_order: 8 },
+  ];
+
+  for (const f of features) {
+    await conn.query(
+      `INSERT INTO platform_features (title, description, icon, gradient, link, sort_order)
+       VALUES (?, ?, ?, ?, ?, ?)`,
+      [f.title, f.description, f.icon, f.gradient, f.link, f.sort_order]
+    );
+  }
+}
+
+/**
+ * 插入校招时间轴种子数据
+ */
+async function seedCampusTimeline(conn) {
+  const [existing] = await conn.query('SELECT COUNT(*) as count FROM campus_timeline');
+  if (existing[0].count > 0) return;
+
+  const timeline = [
+    { month: '3月-5月', title: '春招实习黄金期', description: '各大厂春招实习启动，重点关注字节、腾讯、阿里、美团等头部企业的实习生招聘。准备好简历，保持日常投递节奏，积累面试经验。', icon: 'Sprout', color: 'green', sort_order: 1 },
+    { month: '6月-7月', title: '暑期实习 & 提前批', description: '暑期实习期间争取转正机会。7月起部分头部企业（字节跳动、快手等）开启秋招提前批，务必密切关注官方招聘公众号。', icon: 'Sun', color: 'amber', sort_order: 2 },
+    { month: '8月-9月', title: '秋招正式批启动', description: '秋招主战场！互联网、金融、快消、央国企等行业集中发布校招岗位。建议每天保持3-5个岗位的投递频率，同步准备各类面试。', icon: 'Zap', color: 'orange', sort_order: 3 },
+    { month: '9月-10月', title: '面试密集期', description: '笔试和面试高峰期，技术岗需准备算法/系统设计/项目深挖，非技术岗需准备群面/Case/行为面。每次面试后及时复盘。', icon: 'Mic', color: 'red', sort_order: 4 },
+    { month: '10月-11月', title: 'Offer收割季', description: '开始陆续收到offer，注意比较薪资包（base+股票+签字费）、城市、团队和发展空间。签约前务必了解三方协议和违约金条款。', icon: 'Trophy', color: 'yellow', sort_order: 5 },
+    { month: '11月-12月', title: '秋招补录 & 考研初试', description: '部分企业开启秋招补录，适合前期错过的同学。12月下旬是考研初试时间，考研/就业并行的同学需要合理分配精力。', icon: 'RefreshCw', color: 'blue', sort_order: 6 },
+    { month: '次年2月-3月', title: '春招启动', description: '最后的校招机会。春招岗位相对较少但竞争也小，适合秋招不理想或考研/考公失利后的同学。部分央国企春招规模较大。', icon: 'Flower', color: 'pink', sort_order: 7 },
+    { month: '次年4月-6月', title: '签约 & 入职准备', description: '确认最终去向，签订三方协议或劳动合同。利用毕业前的时间提前学习岗位相关技能，为职场生涯做好充分准备。', icon: 'CheckCircle', color: 'teal', sort_order: 8 },
+  ];
+
+  for (const t of timeline) {
+    await conn.query(
+      `INSERT INTO campus_timeline (month, title, description, icon, color, sort_order)
+       VALUES (?, ?, ?, ?, ?, ?)`,
+      [t.month, t.title, t.description, t.icon, t.color, t.sort_order]
+    );
+  }
+}
+
 // ========== 主流程 ==========
 
 async function initDatabase() {
@@ -1928,6 +2430,30 @@ async function initDatabase() {
 
     await seedStudyAbroadConsultants(conn);
     console.log('        ✔ 留学顾问数据');
+
+    await seedMentorResources(conn, userIdMap);
+    console.log('        ✔ 导师资料库数据');
+
+    await seedArticlesExtra(conn);
+    console.log('        ✔ 补充文章数据（保研/留学/职业指导）');
+
+    await seedArticleCategories(conn);
+    console.log('        ✔ 文章分类数据');
+
+    await seedCompetitions(conn);
+    console.log('        ✔ 竞赛信息数据');
+
+    await seedResources(conn);
+    console.log('        ✔ 创业资料库数据');
+
+    await seedTestimonials(conn);
+    console.log('        ✔ 学员评价数据');
+
+    await seedPlatformFeatures(conn);
+    console.log('        ✔ 平台服务特色数据');
+
+    await seedCampusTimeline(conn);
+    console.log('        ✔ 校招时间轴数据');
   } catch (err) {
     console.error('  ❌ 插入种子数据失败:', err.message);
     console.error(err.stack);
@@ -1937,7 +2463,7 @@ async function initDatabase() {
   await conn.end();
 
   console.log('\n  ✅ 数据库初始化完成！');
-  console.log('  📊 已创建 20 张表 + 种子数据');
+  console.log('  📊 已创建 26 张表 + 种子数据');
   console.log('  🔑 种子用户密码统一为: password123 (管理员为 admin123)\n');
 }
 

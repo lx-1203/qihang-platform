@@ -114,8 +114,10 @@ http.interceptors.response.use(
     } else if (error.code === 'ECONNABORTED') {
       showToast({ type: 'error', title: '请求超时', message: '请检查网络连接后重试' });
       if (import.meta.env.DEV) console.error('[请求超时]', config?.url);
-    } else if (error.name !== 'CanceledError') {
-      // AbortController 取消的请求不弹 Toast（搜索竞态场景正常行为）
+    } else if (error.name === 'CanceledError' || error.code === 'ERR_CANCELED') {
+      // AbortController 取消的请求不弹 Toast，保留 name 字段供调用方判断
+      return Promise.reject(error);
+    } else {
       showToast({ type: 'error', title: '网络连接失败', message: '请检查网络连接' });
       if (import.meta.env.DEV) console.error('[网络异常]', error.message);
     }

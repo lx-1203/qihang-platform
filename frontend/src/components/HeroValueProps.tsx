@@ -30,7 +30,7 @@ export default function HeroValueProps() {
   return (
     <motion.div
       ref={ref}
-      className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 -mt-8 relative z-20 mb-10"
+      className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 mt-10 mb-10"
       initial="hidden"
       animate={isInView ? 'visible' : 'hidden'}
       variants={{

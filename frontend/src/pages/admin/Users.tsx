@@ -94,8 +94,11 @@ export default function AdminUsers() {
         setError('数据加载失败，请刷新重试');
       }
     } catch (err: unknown) {
-      // 忽略因取消请求导致的错误
+      // 忽略取消请求（AbortController）
       if (err && typeof err === 'object' && 'name' in err && (err as { name: string }).name === 'CanceledError') return;
+      if (err && typeof err === 'object' && 'code' in err && (err as { code: string }).code === 'ERR_CANCELED') return;
+      // 401 由 http.ts 统一处理（弹 toast + 跳转登录），此处不重复设置 error
+      if (err && typeof err === 'object' && 'code' in err && (err as { code: number }).code === 401) return;
       setError('数据加载失败，请刷新重试');
       if (import.meta.env.DEV) console.error('[DEV] API error:', err);
     } finally {

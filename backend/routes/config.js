@@ -142,4 +142,34 @@ router.post('/batch', authMiddleware, requireRole('admin'), auditMiddleware('upd
   }
 });
 
+// ====== 公开静态配置接口（无需认证）======
+
+// GET /api/config/categories - 课程分类列表
+router.get('/categories', (_req, res) => {
+  res.json({
+    code: 200,
+    data: ['简历指导', '面试辅导', '职业规划', '考研指导', '创业指导', '留学规划'],
+  });
+});
+
+// GET /api/config/skills - 常用技能列表
+router.get('/skills', (_req, res) => {
+  res.json({
+    code: 200,
+    data: [
+      'React', 'Vue', 'TypeScript', 'Python', 'Java', 'Go', 'Node.js', 'MySQL',
+      'Docker', 'Git', 'Linux', 'Spring', 'Django', 'Flask', 'TensorFlow',
+      '数据分析', '产品设计', '市场营销', '财务分析', '人力资源',
+    ],
+  });
+});
+
+// GET /api/config/grades - 年级选项
+router.get('/grades', (_req, res) => {
+  res.json({
+    code: 200,
+    data: ['大一', '大二', '大三', '大四', '研一', '研二', '研三', '博士'],
+  });
+});
+
 export default router;

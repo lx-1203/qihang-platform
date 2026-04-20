@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import {
@@ -9,8 +9,11 @@ import {
 import Tag from '@/components/ui/Tag';
 import { useCountUp } from '@/hooks/useCountUp';
 import { useInViewAnimation } from '@/hooks/useInViewAnimation';
+import { useConfigStore } from '@/store/config';
+import http from '@/api/http';
 
-const DEFAULT_CONFIG = {
+// 仅在配置中心无数据时兜底的默认值
+const FALLBACK_CONFIG = {
   categories: [
     { key: "all", label: "全部", icon: "Star" },
     { key: "job", label: "求职成功", icon: "Briefcase" },
@@ -19,104 +22,23 @@ const DEFAULT_CONFIG = {
     { key: "startup", label: "创业成功", icon: "Rocket" }
   ],
   stats: [
-    { label: "求职成功", value: 12800, suffix: "+", icon: "Briefcase" },
-    { label: "考研上岸", value: 5600, suffix: "+", icon: "GraduationCap" },
-    { label: "留学录取", value: 3200, suffix: "+", icon: "Globe" },
-    { label: "创业成功", value: 860, suffix: "+", icon: "Rocket" }
+    { label: "求职成功", value: 0, suffix: "+", icon: "Briefcase" },
+    { label: "考研上岸", value: 0, suffix: "+", icon: "GraduationCap" },
+    { label: "留学录取", value: 0, suffix: "+", icon: "Globe" },
+    { label: "创业成功", value: 0, suffix: "+", icon: "Rocket" }
   ],
-  cases: [
-    {
-      id: 1, name: "张同学", avatar: "张",
-      school: "南京大学 · 计算机科学与技术", category: "job",
-      achievement: "斩获腾讯 PCG 产品经理 Offer",
-      quote: "在启航平台上预约了3次模拟面试，导师的反馈非常精准，帮我找到了自我介绍和项目阐述中的短板。最终群面和终面都很顺利，拿到了SP Offer！",
-      tags: ["互联网大厂", "产品经理", "校招"],
-      color: "from-blue-500 to-cyan-500", bgLight: "bg-blue-50", textColor: "text-blue-600"
-    },
-    {
-      id: 2, name: "李同学", avatar: "李",
-      school: "浙江大学 · 金融学", category: "job",
-      achievement: "成功入职中金公司投资银行部",
-      quote: "平台上的简历精修服务让我的简历焕然一新，行业导师还帮我梳理了金融建模和估值分析的面试思路。从实习到正式offer，启航一路陪伴。",
-      tags: ["金融行业", "投行", "秋招"],
-      color: "from-amber-500 to-orange-500", bgLight: "bg-amber-50", textColor: "text-amber-600"
-    },
-    {
-      id: 3, name: "王同学", avatar: "王",
-      school: "华中科技大学 · 机械工程", category: "postgrad",
-      achievement: "跨考上海交通大学计算机专业 初试 410 分",
-      quote: "作为跨考生压力很大，但启航平台的考研课程体系很完整，尤其是数据结构和算法课程帮了大忙。学长学姐的经验分享也给了我很大的信心。",
-      tags: ["跨考", "985院校", "计算机"],
-      color: "from-primary-500 to-primary-600", bgLight: "bg-primary-50", textColor: "text-primary-600"
-    },
-    {
-      id: 4, name: "赵同学", avatar: "赵",
-      school: "武汉大学 · 英语语言文学", category: "abroad",
-      achievement: "收获伦敦大学学院 (UCL) 教育学硕士录取",
-      quote: "平台留学专区的文书写作指导课程非常实用，导师帮我反复打磨PS和推荐信。从选校定位到签证办理，每一步都有清晰的指引。",
-      tags: ["英国G5", "教育学", "DIY申请"],
-      color: "from-sky-500 to-blue-500", bgLight: "bg-sky-50", textColor: "text-sky-600"
-    },
-    {
-      id: 5, name: "陈同学", avatar: "陈",
-      school: "东南大学 · 电子信息工程", category: "startup",
-      achievement: "创立智能硬件公司，获天使轮融资 200 万",
-      quote: "在启航平台的创业专区找到了技术合伙人和设计师，还参加了平台组织的路演活动，直接对接到了投资人。从想法到公司成立只用了半年！",
-      tags: ["智能硬件", "天使投资", "大学生创业"],
-      color: "from-emerald-500 to-teal-500", bgLight: "bg-emerald-50", textColor: "text-emerald-600"
-    },
-    {
-      id: 6, name: "刘同学", avatar: "刘",
-      school: "北京师范大学 · 心理学", category: "postgrad",
-      achievement: "保研至北京大学心理与认知科学学院",
-      quote: "大三暑假通过平台了解到各校夏令营信息并提前准备，导师帮我准备了研究计划书和面试答辩。最终拿到了北大优秀营员资格，顺利推免。",
-      tags: ["保研", "夏令营", "心理学"],
-      color: "from-rose-500 to-pink-500", bgLight: "bg-rose-50", textColor: "text-rose-600"
-    },
-    {
-      id: 7, name: "孙同学", avatar: "孙",
-      school: "同济大学 · 建筑学", category: "abroad",
-      achievement: "获得哈佛大学 GSD 建筑学硕士全额奖学金",
-      quote: "平台上有很多海外名校的学长分享作品集制作经验，导师还帮我联系了在GSD就读的学姐做portfolio review。这些资源对建筑留学生来说太宝贵了。",
-      tags: ["美国藤校", "建筑学", "全额奖学金"],
-      color: "from-primary-400 to-primary-500", bgLight: "bg-primary-50", textColor: "text-primary-600"
-    },
-    {
-      id: 8, name: "周同学", avatar: "周",
-      school: "中山大学 · 市场营销", category: "job",
-      achievement: "拿下字节跳动商业化运营管培生 Offer",
-      quote: "从简历海投石沉大海到精准投递，启航平台彻底改变了我的求职策略。职业导师帮我做了SWOT分析，定位到了最适合我的赛道。两个月内拿到4个offer！",
-      tags: ["互联网", "运营", "管培生"],
-      color: "from-cyan-500 to-teal-500", bgLight: "bg-cyan-50", textColor: "text-cyan-600"
-    },
-    {
-      id: 9, name: "吴同学", avatar: "吴",
-      school: "复旦大学 · 数据科学", category: "startup",
-      achievement: "创办 AI 教育科技公司，入选国家级孵化器",
-      quote: "启航平台的创新创业课程体系帮我理清了商业模式，还在平台上认识了现在的CTO。我们的AI自适应学习产品已经服务了3000多名学生。",
-      tags: ["AI教育", "科技创业", "孵化器"],
-      color: "from-teal-500 to-green-500", bgLight: "bg-teal-50", textColor: "text-teal-600"
-    },
-    {
-      id: 10, name: "郑同学", avatar: "郑",
-      school: "西安交通大学 · 临床医学", category: "postgrad",
-      achievement: "考研至协和医学院 初试专业课满分",
-      quote: "医学考研复习量巨大，平台上系统的备考规划帮我合理分配时间。还有同校学长一对一辅导西医综合，针对性特别强。感谢启航让我实现了梦想！",
-      tags: ["医学考研", "协和", "专业课高分"],
-      color: "from-red-500 to-rose-500", bgLight: "bg-red-50", textColor: "text-red-600"
-    },
-  ]
+  cases: [] as Array<{
+    id: number; name: string; avatar: string; school: string; category: string;
+    achievement: string; quote: string; tags: string[];
+    color: string; bgLight: string; textColor: string;
+  }>
 };
-
-const CATEGORIES = DEFAULT_CONFIG.categories;
-const STATS = DEFAULT_CONFIG.stats;
-const CASES = DEFAULT_CONFIG.cases;
 
 const ICON_MAP: Record<string, LucideIcon> = {
   Star, Briefcase, GraduationCap, Globe, Rocket, Trophy, TrendingUp, Users,
 };
 
-function StatCard({ stat, index }: { stat: typeof STATS[number]; index: number }) {
+function StatCard({ stat, index }: { stat: typeof FALLBACK_CONFIG.stats[number]; index: number }) {
   const { ref, isInView } = useInViewAnimation({ threshold: 0.3 });
   const count = useCountUp({ end: stat.value, enabled: isInView });
 
@@ -142,11 +64,32 @@ function StatCard({ stat, index }: { stat: typeof STATS[number]; index: number }
 
 export default function SuccessCases() {
   const [activeCategory, setActiveCategory] = useState('all');
+  const [platformStats, setPlatformStats] = useState<{ students?: number } | null>(null);
+
+  // 从配置中心读取成功案例数据
+  const config = useConfigStore(s => s.getJson('success_cases_page_config', FALLBACK_CONFIG));
+  const CATEGORIES = config.categories || FALLBACK_CONFIG.categories;
+  const STATS = config.stats || FALLBACK_CONFIG.stats;
+  const CASES = config.cases || FALLBACK_CONFIG.cases;
+
+  // 从统计数据计算总数
+  const totalHelped = STATS.reduce((sum: number, s: { value: number }) => sum + s.value, 0);
+
+  // 获取平台真实统计数据
+  useEffect(() => {
+    http.get('/stats/public')
+      .then(res => {
+        if (res.data?.code === 200 && res.data.data) {
+          setPlatformStats(res.data.data);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   const filteredCases =
     activeCategory === 'all'
       ? CASES
-      : CASES.filter((c) => c.category === activeCategory);
+      : CASES.filter((c: { category: string }) => c.category === activeCategory);
 
   return (
     <div className="min-h-screen bg-gray-50 pb-16">
@@ -179,7 +122,7 @@ export default function SuccessCases() {
 
       <div className="container-main">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 -mt-10 relative z-20 mb-12">
-          {STATS.map((stat, i) => (
+          {STATS.map((stat: typeof FALLBACK_CONFIG.stats[number], i: number) => (
             <StatCard key={stat.label} stat={stat} index={i} />
           ))}
         </div>
@@ -193,17 +136,19 @@ export default function SuccessCases() {
           <div className="flex items-center justify-center gap-3">
             <TrendingUp className="w-6 h-6 text-primary-600" />
             <p className="text-lg font-bold text-gray-900">
-              已帮助 <span className="text-primary-600 text-2xl">22,460+</span> 名学生实现目标
+              已帮助 <span className="text-primary-600 text-2xl">{totalHelped.toLocaleString()}+</span> 名学生实现目标
             </p>
           </div>
           <p className="text-sm text-gray-500 mt-1">
-            覆盖全国 200+ 所高校，服务满意度 98.6%
+            {platformStats?.students
+              ? `覆盖全国众多高校，已服务 ${platformStats.students.toLocaleString()}+ 名学生`
+              : '助力大学生求职、考研、留学、创业'}
           </p>
         </motion.div>
 
         <div className="flex items-center gap-2 mb-8 overflow-x-auto pb-2 scrollbar-hide">
           <Filter className="w-4 h-4 text-gray-400 shrink-0" />
-          {CATEGORIES.map((cat) => (
+          {CATEGORIES.map((cat: { key: string; label: string; icon: string }) => (
             <button
               key={cat.key}
               onClick={() => setActiveCategory(cat.key)}
@@ -231,7 +176,7 @@ export default function SuccessCases() {
             layout
             className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-16"
           >
-            {filteredCases.map((item, i) => (
+            {filteredCases.map((item: typeof FALLBACK_CONFIG.cases[number], i: number) => (
               <motion.div
                 key={item.id}
                 layout
@@ -273,7 +218,7 @@ export default function SuccessCases() {
                   </div>
 
                   <div className="flex flex-wrap gap-1.5">
-                    {item.tags.map((tag) => (
+                    {item.tags.map((tag: string) => (
                       <Tag
                         key={tag}
                         variant="gray"

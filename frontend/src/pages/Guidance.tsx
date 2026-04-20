@@ -3,7 +3,8 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import http from '@/api/http';
 
-const SERVICES = [
+// 服务卡片配置（前端常量，服务描述无需频繁变动，未来可迁移至后端配置化）
+const GUIDANCE_SERVICES_CONFIG = [
   {
     id: 1,
     title: '1v1 简历精修',
@@ -84,7 +85,7 @@ export default function Guidance() {
 
         {/* Services Grid */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
-          {SERVICES.map((service) => {
+          {GUIDANCE_SERVICES_CONFIG.map((service) => {
             const Icon = service.icon;
             return (
               <div key={service.id} className="bg-white rounded-[20px] p-8 border border-gray-100 shadow-sm hover:shadow-md transition-all duration-300 relative overflow-hidden group">

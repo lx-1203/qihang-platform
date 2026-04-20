@@ -7,6 +7,7 @@ import {
   Save, X,
 } from 'lucide-react';
 import http from '@/api/http';
+import { COURSE_CATEGORIES } from '@/constants';
 import { showToast } from '@/components/ui/ToastContainer';
 
 // ====== 导师端 - 课程创建/编辑全页面表单 ======
@@ -33,9 +34,9 @@ const EMPTY_FORM: CourseFormData = {
   tags: [],
 };
 
-const CATEGORIES = ['简历指导', '面试辅导', '职业规划', '考研指导', '创业指导', '留学规划'];
+const CATEGORIES = COURSE_CATEGORIES;
 
-const DIFFICULTY_OPTIONS = [
+const LOCAL_DIFFICULTY_OPTIONS = [
   { value: 'beginner', label: '入门', desc: '适合零基础学员' },
   { value: 'intermediate', label: '进阶', desc: '需要一定基础知识' },
   { value: 'advanced', label: '高级', desc: '适合有经验的学员' },
@@ -335,7 +336,7 @@ export default function CourseForm() {
                 onChange={e => updateField('difficulty', e.target.value as CourseFormData['difficulty'])}
                 className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm appearance-none bg-white focus:ring-2 focus:ring-primary-500 outline-none"
               >
-                {DIFFICULTY_OPTIONS.map(opt => (
+                {LOCAL_DIFFICULTY_OPTIONS.map(opt => (
                   <option key={opt.value} value={opt.value}>
                     {opt.label} — {opt.desc}
                   </option>

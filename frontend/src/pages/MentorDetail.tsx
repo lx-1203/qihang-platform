@@ -3,6 +3,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { Star, Clock, Video, ChevronRight, MessageCircle, Calendar, Loader2, AlertCircle, Users } from 'lucide-react';
 import { motion } from 'framer-motion';
 import http from '@/api/http';
+import { DEFAULT_AVATAR } from '@/constants';
 import { useAuthStore } from '@/store/auth';
 
 // 导师详情数据结构（匹配后端 mentor_profiles 表）
@@ -153,11 +154,11 @@ export default function MentorDetail() {
             className="flex flex-col md:flex-row items-start md:items-center gap-8"
           >
             <img
-              src={mentor.avatar || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&q=80&w=400'}
+              src={mentor.avatar || DEFAULT_AVATAR}
               alt={mentor.name}
               className="w-32 h-32 rounded-full object-cover border-4 border-primary-50 shadow-md"
               onError={(e) => {
-                (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&q=80&w=400';
+                (e.target as HTMLImageElement).src = DEFAULT_AVATAR;
               }}
             />
             <div className="flex-1">

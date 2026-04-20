@@ -4,6 +4,7 @@ import { Star, Clock, BookOpen, Users, Play, ArrowLeft, Heart, Share2, Loader2, 
 import TagComponent from '@/components/ui/Tag';
 import { motion } from 'framer-motion';
 import http from '@/api/http';
+import { DIFFICULTY_MAP } from '@/constants';
 import { useAuthStore } from '@/store/auth';
 
 // 课程详情数据结构（匹配后端 courses 表）
@@ -39,11 +40,11 @@ interface RelatedCourse {
   price: number;
 }
 
-// 难度标签映射
+// 难度标签映射（使用统一常量，CourseDetail 页使用不同色阶）
 const difficultyMap: Record<string, { label: string; color: string }> = {
-  beginner: { label: '入门', color: 'bg-green-100 text-green-700' },
-  intermediate: { label: '进阶', color: 'bg-blue-100 text-blue-700' },
-  advanced: { label: '高级', color: 'bg-primary-100 text-primary-700' },
+  beginner: { label: DIFFICULTY_MAP.beginner.label, color: 'bg-green-100 text-green-700' },
+  intermediate: { label: DIFFICULTY_MAP.intermediate.label, color: 'bg-blue-100 text-blue-700' },
+  advanced: { label: DIFFICULTY_MAP.advanced.label, color: 'bg-primary-100 text-primary-700' },
 };
 
 export default function CourseDetail() {

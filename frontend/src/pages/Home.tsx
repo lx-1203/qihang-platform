@@ -62,13 +62,22 @@ export default function Home() {
   const [mentorsError, setMentorsError] = useState(false);
   const [coursesError, setCoursesError] = useState(false);
 
-  // 从配置中心读取首页内容
+  // 从配置中心读取首页文案
   const heroTitle = useConfigStore(s => s.getString('home_hero_title', '你的职业发展，从启航开始'));
   const heroSubtitle = useConfigStore(s => s.getString('home_hero_subtitle', '连接梦想与机遇，助力每一位大学生迈向理想职业'));
-  const statsJobs = useConfigStore(s => s.getString('home_stats_jobs', '10000+'));
-  const statsCompanies = useConfigStore(s => s.getString('home_stats_companies', '500+'));
-  const statsMentors = useConfigStore(s => s.getString('home_stats_mentors', '200+'));
-  const statsStudents = useConfigStore(s => s.getString('home_stats_students', '50000+'));
+
+  // 平台统计数字（从 /stats/public API 获取真实数据）
+  const [platformStatsData, setPlatformStatsData] = useState<{ jobs: number; companies: number; mentors: number; students: number } | null>(null);
+
+  useEffect(() => {
+    http.get('/stats/public')
+      .then(res => {
+        if (res.data?.code === 200 && res.data.data) {
+          setPlatformStatsData(res.data.data);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   // 首页推荐数据从 API 加载
   useEffect(() => {
@@ -155,12 +164,12 @@ export default function Home() {
     return () => clearInterval(timerRef.current);
   }, [slides.length]);
 
-  // 统计数字（从配置中心读取展示值）
+  // 统计数字（从 API 获取真实数据，加载前显示 0）
   const platformStats = [
-    { label: '注册学生', value: statsStudents, icon: Users },
-    { label: '合作企业', value: statsCompanies, icon: Building2 },
-    { label: '认证导师', value: statsMentors, icon: Award },
-    { label: '成功投递', value: statsJobs, icon: FileText },
+    { label: '注册学生', value: platformStatsData ? `${platformStatsData.students}+` : '0', icon: Users },
+    { label: '合作企业', value: platformStatsData ? `${platformStatsData.companies}+` : '0', icon: Building2 },
+    { label: '认证导师', value: platformStatsData ? `${platformStatsData.mentors}+` : '0', icon: Award },
+    { label: '在招职位', value: platformStatsData ? `${platformStatsData.jobs}+` : '0', icon: FileText },
   ];
 
   // 快捷入口（从 JSON 配置读取，图标字符串映射为组件）
@@ -329,7 +338,7 @@ export default function Home() {
         )}
 
         {/* ====== 平台数据（带 CountUp 动画） ====== */}
-        <div className={`grid grid-cols-2 md:grid-cols-4 gap-4 ${isAuthenticated ? '' : '-mt-8 relative z-20 mb-8'}`}>
+        <div className={`grid grid-cols-2 md:grid-cols-4 gap-4 ${isAuthenticated ? 'mb-8' : '-mt-8 relative z-20 mb-8'}`}>
           {platformStats.map((s, i) => {
             // 从统计值中提取数字和后缀（如 "10000+" → 10000 + "+"）
             const numMatch = s.value.match(/^(\d+)/);

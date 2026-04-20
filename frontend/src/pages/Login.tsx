@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import {
   Mail,
@@ -71,6 +71,19 @@ export default function Login() {
   const location = useLocation();
   const { setAuth } = useAuthStore();
   const brandName = useConfigStore(s => s.getString('brand_name', '启航平台'));
+
+  // 平台统计数据（用于社交证明展示）
+  const [studentCount, setStudentCount] = useState<number | null>(null);
+
+  useEffect(() => {
+    http.get('/stats/public')
+      .then(res => {
+        if (res.data?.code === 200 && res.data.data) {
+          setStudentCount(res.data.data.students || 0);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   // 密码强度（注册时实时计算）
   const strength = getPasswordStrength(password);
@@ -254,11 +267,11 @@ export default function Login() {
               alt=""
             />
             <div className="w-12 h-12 rounded-full border-2 border-primary-900 bg-primary-800 flex items-center justify-center text-xs font-medium">
-              +10k
+              +{studentCount !== null ? (studentCount >= 1000 ? `${Math.floor(studentCount / 1000)}k` : studentCount) : '...'}
             </div>
           </div>
           <p className="text-sm text-primary-200">
-            已有超过10,000名同学在这里找到心仪工作
+            已有超过{studentCount !== null ? studentCount.toLocaleString() : '...'}名同学在这里找到心仪工作
           </p>
         </div>
       </div>
@@ -267,9 +280,10 @@ export default function Login() {
       <div className="flex-1 flex flex-col justify-center px-4 sm:px-6 lg:flex-none lg:w-1/2 lg:px-20 xl:px-24 bg-white relative">
         <button
           onClick={() => navigate("/")}
-          className="absolute top-6 left-6 md:hidden text-gray-500 hover:text-gray-900 p-2 rounded-full hover:bg-gray-100 transition-colors"
+          className="absolute top-6 left-6 text-gray-500 hover:text-gray-900 p-2 rounded-full hover:bg-gray-100 transition-colors flex items-center gap-1"
         >
-          <ChevronLeft size={24} />
+          <ChevronLeft size={20} />
+          <span className="text-sm hidden sm:inline">返回首页</span>
         </button>
 
         <div className="mx-auto w-full max-w-sm lg:max-w-md py-12">

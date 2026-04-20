@@ -20,6 +20,10 @@ import articlesRouter from './routes/articles.js';
 import searchHistoryRouter from './routes/searchHistory.js';
 import studyAbroadRouter from './routes/study-abroad.js';
 import chatRouter from './routes/chat.js';
+import statsRouter from './routes/stats.js';
+import competitionsRouter from './routes/competitions.js';
+import resourcesRouter from './routes/resources.js';
+import testimonialsRouter from './routes/testimonials.js';
 import { testConnection } from './db.js';
 import pool from './db.js';
 import { sqlInjectionGuard } from './middleware/sqlInjectionGuard.js';
@@ -79,7 +83,7 @@ app.use((req, res, next) => {
       "style-src 'self' 'unsafe-inline'",
       "img-src 'self' data: https:",          // 允许 HTTPS 图片
       "font-src 'self' data:",
-      "connect-src 'self' http://localhost:*", // 允许本地 API 调用
+      "connect-src 'self'",                    // 允许同源 API 调用
       "frame-ancestors 'none'",               // 禁止被 iframe 嵌入
       "base-uri 'self'",
       "form-action 'self'",
@@ -176,6 +180,10 @@ app.use('/api/articles', articlesRouter);
 app.use('/api/search-history', searchHistoryRouter);
 app.use('/api/study-abroad', studyAbroadRouter);
 app.use('/api/chat', chatRouter);
+app.use('/api/stats', statsRouter);
+app.use('/api/competitions', competitionsRouter);
+app.use('/api/resources', resourcesRouter);
+app.use('/api/testimonials', testimonialsRouter);
 
 // ====== 健康检查（SEC-006：深度检查，含数据库连接验证）======
 app.get('/api/health', async (_req, res) => {
@@ -215,10 +223,26 @@ app.use((err, req, res, _next) => {
   });
 });
 
-// ====== 404 处理 ======
-app.use((req, res) => {
-  res.status(404).json({ code: 404, message: `接口 ${req.method} ${req.path} 不存在` });
-});
+// ====== 生产环境：托管前端静态文件 ======
+if (process.env.NODE_ENV === 'production') {
+  const frontendDist = path.join(__dirname, '..', 'frontend', 'dist');
+  app.use(express.static(frontendDist, {
+    maxAge: '30d',           // 静态资源长缓存（文件名含 hash）
+    immutable: true,
+  }));
+  // SPA fallback：所有非 /api、非 /uploads 的请求返回 index.html
+  app.get('*', (req, res) => {
+    if (req.path.startsWith('/api') || req.path.startsWith('/uploads')) {
+      return res.status(404).json({ code: 404, message: `接口 ${req.method} ${req.path} 不存在` });
+    }
+    res.sendFile(path.join(frontendDist, 'index.html'));
+  });
+} else {
+  // 开发环境：直接返回 404 JSON
+  app.use((req, res) => {
+    res.status(404).json({ code: 404, message: `接口 ${req.method} ${req.path} 不存在` });
+  });
+}
 
 // ====== 启动服务器 ======
 app.listen(PORT, async () => {

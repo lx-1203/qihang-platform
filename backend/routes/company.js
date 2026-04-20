@@ -132,18 +132,23 @@ router.get('/jobs', async (req, res) => {
   try {
     const companyId = await getCompanyId(req.user.id);
     if (!companyId) {
-      return res.json({ code: 200, data: { jobs: [], pagination: { page: 1, pageSize: 10, total: 0, totalPages: 0 } } });
+      return res.json({ code: 200, data: { list: [], total: 0, page: 1, pageSize: 10 } });
     }
 
-    const { status, keyword, page = 1, pageSize = 10 } = req.query;
+    const { status, type, keyword, page = 1, pageSize = 10 } = req.query;
     const offset = (Number(page) - 1) * Number(pageSize);
 
     let sql = 'SELECT * FROM jobs WHERE company_id = ?';
     const params = [companyId];
 
-    if (status) {
+    if (status && status !== 'all') {
       sql += ' AND status = ?';
       params.push(status);
+    }
+
+    if (type && type !== 'all') {
+      sql += ' AND type = ?';
+      params.push(type);
     }
 
     if (keyword) {
@@ -166,13 +171,10 @@ router.get('/jobs', async (req, res) => {
     res.json({
       code: 200,
       data: {
-        jobs: rows,
-        pagination: {
-          page: Number(page),
-          pageSize: Number(pageSize),
-          total,
-          totalPages: Math.ceil(total / Number(pageSize)),
-        },
+        list: rows,
+        total,
+        page: Number(page),
+        pageSize: Number(pageSize),
       },
     });
   } catch (err) {
@@ -397,54 +399,58 @@ router.get('/resumes', async (req, res) => {
     }
 
     const { job_id, status, keyword, page = 1, pageSize = 10 } = req.query;
-    const offset = (Number(page) - 1) * Number(pageSize);
+    const pageNum = Math.max(1, parseInt(page) || 1);
+    const pageSizeNum = Math.min(100, Math.max(1, parseInt(pageSize) || 10));
+    const offset = (pageNum - 1) * pageSizeNum;
 
-    let sql = `
-      SELECT r.*, j.title AS job_title,
-             u.nickname AS student_name, u.email AS student_email, u.avatar AS student_avatar,
-             s.school, s.major, s.grade
+    const joins = `
       FROM resumes r
       LEFT JOIN jobs j ON r.job_id = j.id
       LEFT JOIN users u ON r.student_id = u.id
       LEFT JOIN students s ON r.student_id = s.user_id
       WHERE j.company_id = ?
     `;
+    let where = '';
     const params = [companyId];
 
     if (job_id) {
-      sql += ' AND r.job_id = ?';
+      where += ' AND r.job_id = ?';
       params.push(job_id);
     }
     if (status) {
-      sql += ' AND r.status = ?';
+      where += ' AND r.status = ?';
       params.push(status);
     }
     if (keyword) {
-      sql += ' AND (u.nickname LIKE ? OR s.school LIKE ? OR s.major LIKE ?)';
+      where += ' AND (u.nickname LIKE ? OR s.school LIKE ? OR s.major LIKE ?)';
       params.push(`%${keyword}%`, `%${keyword}%`, `%${keyword}%`);
     }
 
-    sql += ' ORDER BY r.created_at DESC';
-
     // 查询总数
-    const countSql = sql.replace(/SELECT r\.\*.*?FROM resumes r/, 'SELECT COUNT(*) as total FROM resumes r');
+    const countSql = `SELECT COUNT(*) as total ${joins} ${where}`;
     const [countResult] = await pool.query(countSql, params);
     const total = countResult[0].total;
 
     // 分页查询
-    sql += ' LIMIT ? OFFSET ?';
-    params.push(Number(pageSize), offset);
-    const [rows] = await pool.query(sql, params);
+    const dataSql = `
+      SELECT r.*, j.title AS job_title,
+             u.nickname AS student_name, u.email AS student_email, u.avatar AS student_avatar,
+             s.school, s.major, s.grade
+      ${joins} ${where}
+      ORDER BY r.created_at DESC
+      LIMIT ? OFFSET ?
+    `;
+    const [rows] = await pool.query(dataSql, [...params, pageSizeNum, offset]);
 
     res.json({
       code: 200,
       data: {
         resumes: rows,
         pagination: {
-          page: Number(page),
-          pageSize: Number(pageSize),
+          page: pageNum,
+          pageSize: pageSizeNum,
           total,
-          totalPages: Math.ceil(total / Number(pageSize)),
+          totalPages: Math.ceil(total / pageSizeNum),
         },
       },
     });
@@ -613,38 +619,40 @@ router.get('/talent', async (req, res) => {
     const { keyword, school, major, page = 1, pageSize = 10 } = req.query;
     const offset = (Number(page) - 1) * Number(pageSize);
 
-    let sql = `
-      SELECT s.*, u.nickname, u.email, u.avatar
+    const joins = `
       FROM students s
       JOIN users u ON s.user_id = u.id
       WHERE u.status = 1
     `;
+    let where = '';
     const params = [];
 
     if (keyword) {
-      sql += ' AND (u.nickname LIKE ? OR s.job_intention LIKE ?)';
+      where += ' AND (u.nickname LIKE ? OR s.job_intention LIKE ?)';
       params.push(`%${keyword}%`, `%${keyword}%`);
     }
     if (school) {
-      sql += ' AND s.school LIKE ?';
+      where += ' AND s.school LIKE ?';
       params.push(`%${school}%`);
     }
     if (major) {
-      sql += ' AND s.major LIKE ?';
+      where += ' AND s.major LIKE ?';
       params.push(`%${major}%`);
     }
 
-    sql += ' ORDER BY s.updated_at DESC';
-
     // 查询总数
-    const countSql = sql.replace(/SELECT s\.\*.*?FROM students s/, 'SELECT COUNT(*) as total FROM students s');
+    const countSql = `SELECT COUNT(*) as total ${joins} ${where}`;
     const [countResult] = await pool.query(countSql, params);
     const total = countResult[0].total;
 
     // 分页
-    sql += ' LIMIT ? OFFSET ?';
-    params.push(Number(pageSize), offset);
-    const [rows] = await pool.query(sql, params);
+    const dataSql = `
+      SELECT s.*, u.nickname, u.email, u.avatar
+      ${joins} ${where}
+      ORDER BY s.updated_at DESC
+      LIMIT ? OFFSET ?
+    `;
+    const [rows] = await pool.query(dataSql, [...params, Number(pageSize), offset]);
 
     res.json({
       code: 200,
@@ -660,6 +668,48 @@ router.get('/talent', async (req, res) => {
     });
   } catch (err) {
     console.error('搜索人才失败:', err);
+    res.status(500).json({ code: 500, message: '服务器内部错误' });
+  }
+});
+
+// ==================== 3.12 联系学生 ====================
+
+// POST /api/company/contact - 企业主动联系学生
+router.post('/contact', async (req, res) => {
+  try {
+    const { student_id, message } = req.body;
+
+    if (!student_id || !message) {
+      return res.status(400).json({ code: 400, message: '学生ID和消息内容不能为空' });
+    }
+
+    // 验证学生用户存在
+    const [studentRows] = await pool.query(
+      "SELECT id, nickname FROM users WHERE id = ? AND role = 'student' AND status = 1",
+      [student_id]
+    );
+
+    if (studentRows.length === 0) {
+      return res.status(404).json({ code: 404, message: '学生用户不存在或已禁用' });
+    }
+
+    // 获取企业信息
+    const [companyRows] = await pool.query(
+      'SELECT company_name FROM companies WHERE user_id = ?',
+      [req.user.id]
+    );
+    const companyName = companyRows.length > 0 ? companyRows[0].company_name : '企业';
+
+    // 发送通知给学生
+    await NotificationTemplates.companyContact(
+      Number(student_id),
+      companyName,
+      message
+    );
+
+    res.json({ code: 200, message: '联系请求已发送' });
+  } catch (err) {
+    console.error('联系学生失败:', err);
     res.status(500).json({ code: 500, message: '服务器内部错误' });
   }
 });

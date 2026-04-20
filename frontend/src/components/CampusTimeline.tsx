@@ -16,7 +16,7 @@ const typeConfig = {
   tips: { color: 'bg-amber-500', ring: 'ring-amber-200', badge: 'bg-amber-50 text-amber-700', label: '提醒' },
 } as const;
 
-const timelineEvents = [
+const DEFAULT_TIMELINE = [
   {
     date: '9月1日',
     title: '秋招正式开启',
@@ -106,7 +106,7 @@ export default function CampusTimeline() {
         <div className="absolute left-5 md:left-6 top-0 bottom-0 w-0.5 bg-gradient-to-b from-primary-300 via-primary-200 to-gray-200" />
 
         <div className="space-y-6">
-          {timelineEvents.map((event, i) => {
+          {DEFAULT_TIMELINE.map((event, i) => {
             const config = typeConfig[event.type];
             return (
               <motion.div

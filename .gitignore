@@ -44,3 +44,14 @@ logs
 # temporary files
 *.tmp
 *.temp
+
+# claude code
+.claude/
+
+# test output & overnight logs
+overnight-logs/
+frontend/test-results/
+frontend/test-output.txt
+
+# uploads
+backend/uploads/

@@ -196,4 +196,14 @@ export const NotificationTemplates = {
       content: `${mentorName} 申请成为平台认证导师，请审核其资质。`,
       link: '/admin/mentors',
     }),
+
+  /** 企业主动联系学生 */
+  companyContact: (studentUserId, companyName, message) =>
+    createNotification({
+      userId: studentUserId,
+      type: 'general',
+      title: `来自企业「${companyName}」的消息`,
+      content: message,
+      link: '/student/profile',
+    }),
 };

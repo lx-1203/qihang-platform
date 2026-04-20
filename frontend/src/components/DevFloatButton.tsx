@@ -4,9 +4,10 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Bug, X, Home, Briefcase, BookOpen, Users, Globe,
   Shield, Building2, GraduationCap, Bell, User,
-  LayoutDashboard, ChevronRight
+  LayoutDashboard, ChevronRight, Loader2
 } from 'lucide-react';
 import { useAuthStore } from '@/store/auth';
+import http from '@/api/http';
 
 // ====== 开发调试悬浮按钮 ======
 // 固定在屏幕右下角，点击展开快捷导航面板
@@ -69,6 +70,7 @@ const QUICK_LINKS: { group: string; color: string; links: QuickLink[] }[] = [
 
 export default function DevFloatButton() {
   const [open, setOpen] = useState(false);
+  const [switching, setSwitching] = useState(false);
   const location = useLocation();
   const { user, setAuth, logout, isAuthenticated } = useAuthStore();
 
@@ -77,14 +79,36 @@ export default function DevFloatButton() {
   // /dev 页面本身不显示
   if (location.pathname === '/dev') return null;
 
-  function switchRole(role: 'admin' | 'company' | 'mentor' | 'student') {
-    const mockUsers = {
-      admin: { id: 1, email: 'admin@qihang.com', nickname: '超级管理员', role: 'admin' as const, avatar: '', phone: '', status: 1, created_at: '' },
-      company: { id: 3, email: 'hr@bytedance.com', nickname: '字节跳动HR', role: 'company' as const, avatar: '', phone: '', status: 1, created_at: '' },
-      mentor: { id: 10, email: 'chen@mentor.com', nickname: '陈经理', role: 'mentor' as const, avatar: '', phone: '', status: 1, created_at: '' },
-      student: { id: 2, email: 'student@example.com', nickname: '张同学', role: 'student' as const, avatar: '', phone: '', status: 1, created_at: '' },
-    };
-    setAuth('dev-token-' + role, mockUsers[role]);
+  // 种子用户账号（密码统一为 password123，管理员为 admin123）
+  const DEV_ACCOUNTS = {
+    admin:   { email: 'admin@example.com',    password: 'admin123' },
+    company: { email: 'hr@bytedance.com',    password: 'password123' },
+    mentor:  { email: 'chen@mentor.com',     password: 'password123' },
+    student: { email: 'student@example.com', password: 'password123' },
+  };
+
+  async function switchRole(role: 'admin' | 'company' | 'mentor' | 'student') {
+    if (switching) return;
+    setSwitching(true);
+    try {
+      // 先登出当前用户
+      if (isAuthenticated) {
+        await logout();
+      }
+      // 调用真实登录 API
+      const account = DEV_ACCOUNTS[role];
+      const res = await http.post('/auth/login', {
+        email: account.email,
+        password: account.password,
+      });
+      const { token, refreshToken, user: loginUser } = res.data.data;
+      setAuth(token, loginUser, refreshToken);
+    } catch (err: any) {
+      console.error('[DEV] 角色切换失败:', err?.response?.data?.message || err.message);
+      alert(`切换失败: ${err?.response?.data?.message || '请确认后端已启动且种子数据已初始化'}`);
+    } finally {
+      setSwitching(false);
+    }
   }
 
   return (
@@ -139,7 +163,7 @@ export default function DevFloatButton() {
 
                 {/* 角色切换 */}
                 <div className="mt-3">
-                  <p className="text-[10px] text-slate-400 mb-1.5 font-medium">快速切换角色</p>
+                  <p className="text-[10px] text-slate-400 mb-1.5 font-medium">快速切换角色{switching && ' (切换中...)'}</p>
                   <div className="flex gap-1.5">
                     {([
                       { role: 'admin' as const, label: '管理员', color: 'bg-red-600 hover:bg-red-700' },

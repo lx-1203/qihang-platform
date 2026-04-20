@@ -8,7 +8,7 @@ import {
 
 // ====== 服务特色卡片网格（8宫格） ======
 
-const services = [
+const DEFAULT_SERVICES = [
   {
     title: '精准匹配',
     desc: 'AI智能岗位推荐',
@@ -98,7 +98,7 @@ export default function ServiceGrid() {
 
       {/* 卡片网格 */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-5">
-        {services.map((s, i) => (
+        {DEFAULT_SERVICES.map((s, i) => (
           <motion.div
             key={s.title}
             initial={{ opacity: 0, y: 24 }}

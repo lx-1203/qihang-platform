@@ -54,7 +54,7 @@ export default function Mentors() {
       setError(null);
       const res = await http.get('/mentors');
       if (res.data?.code === 200 && res.data.data) {
-        const list = res.data.data.list || res.data.data;
+        const list = res.data.data.list || res.data.data.mentors || (Array.isArray(res.data.data) ? res.data.data : []);
         setMentors(list);
       } else {
         setError(errorMessages.fetchFailed);
@@ -110,6 +110,7 @@ export default function Mentors() {
         <div className="flex flex-wrap gap-2">
           {expertiseOptions.map(opt => (
             <button
+                key={opt}
                 onClick={() => setExpertiseFilter(opt)}
                 className={`px-4 py-2 rounded-lg text-sm font-bold transition-all duration-200 ${
                   expertiseFilter === opt

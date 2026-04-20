@@ -57,6 +57,19 @@ router.get('/', async (req, res) => {
   }
 });
 
+// GET /api/articles/categories - 文章分类列表
+router.get('/categories', async (req, res) => {
+  try {
+    const [rows] = await pool.query(
+      'SELECT * FROM article_categories ORDER BY sort_order ASC, id ASC'
+    );
+    res.json({ code: 200, data: rows });
+  } catch (err) {
+    console.error('获取文章分类失败:', err);
+    res.status(500).json({ code: 500, message: '服务器内部错误' });
+  }
+});
+
 // GET /api/articles/:id - 文章详情
 router.get('/:id', async (req, res) => {
   try {

@@ -477,4 +477,152 @@ router.get('/stats', async (req, res) => {
   }
 });
 
+// ==================== 4.11 辅导方向统计 ====================
+
+// GET /api/mentor/stats/directions - 按辅导方向聚合统计
+router.get('/stats/directions', async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    // 从 appointments 表按 service 字段聚合统计
+    const [rows] = await pool.query(
+      `SELECT service AS direction, COUNT(*) AS count
+       FROM appointments
+       WHERE mentor_id = ? AND service IS NOT NULL AND service != ''
+       GROUP BY service
+       ORDER BY count DESC`,
+      [userId]
+    );
+
+    res.json({
+      code: 200,
+      data: {
+        directions: rows,
+      },
+    });
+  } catch (err) {
+    console.error('获取辅导方向统计失败:', err);
+    res.status(500).json({ code: 500, message: '服务器内部错误' });
+  }
+});
+
+// ==================== 资料库管理 ====================
+
+// GET /api/mentor/resources - 获取当前导师的资料列表
+router.get('/resources', async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { type, keyword } = req.query;
+
+    let sql = 'SELECT * FROM mentor_resources WHERE mentor_id = ?';
+    const params = [userId];
+
+    if (type) {
+      sql += ' AND type = ?';
+      params.push(type);
+    }
+    if (keyword) {
+      sql += ' AND title LIKE ?';
+      params.push(`%${keyword}%`);
+    }
+    sql += ' ORDER BY created_at DESC';
+
+    const [rows] = await pool.query(sql, params);
+    res.json({ code: 200, data: { resources: rows, total: rows.length } });
+  } catch (err) {
+    console.error('获取资料列表失败:', err);
+    res.status(500).json({ code: 500, message: '服务器内部错误' });
+  }
+});
+
+// POST /api/mentor/resources - 新增资料记录
+router.post('/resources', async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { title, type, url, size_bytes, is_public } = req.body;
+
+    if (!title || !url) {
+      return res.status(400).json({ code: 400, message: '标题和文件URL不能为空' });
+    }
+
+    const allowedTypes = ['pdf', 'doc', 'video', 'image', 'other'];
+    if (type && !allowedTypes.includes(type)) {
+      return res.status(400).json({ code: 400, message: '资料类型不正确' });
+    }
+
+    const [result] = await pool.query(
+      `INSERT INTO mentor_resources (mentor_id, title, type, url, size_bytes, is_public)
+       VALUES (?, ?, ?, ?, ?, ?)`,
+      [userId, title, type || 'other', url, size_bytes || 0, is_public !== undefined ? is_public : 1]
+    );
+
+    const [rows] = await pool.query('SELECT * FROM mentor_resources WHERE id = ?', [result.insertId]);
+    res.status(201).json({ code: 201, message: '资料上传成功', data: { resource: rows[0] } });
+  } catch (err) {
+    console.error('新增资料失败:', err);
+    res.status(500).json({ code: 500, message: '服务器内部错误' });
+  }
+});
+
+// PUT /api/mentor/resources/:id - 更新资料（标题/是否公开）
+router.put('/resources/:id', async (req, res) => {
+  try {
+    const resourceId = Number(req.params.id);
+    const userId = req.user.id;
+
+    const [existing] = await pool.query(
+      'SELECT id FROM mentor_resources WHERE id = ? AND mentor_id = ?',
+      [resourceId, userId]
+    );
+    if (existing.length === 0) {
+      return res.status(404).json({ code: 404, message: '资料不存在或无权修改' });
+    }
+
+    const { title, is_public } = req.body;
+    const fields = [];
+    const params = [];
+
+    if (title !== undefined) { fields.push('title = ?'); params.push(title); }
+    if (is_public !== undefined) { fields.push('is_public = ?'); params.push(is_public); }
+
+    if (fields.length === 0) {
+      return res.status(400).json({ code: 400, message: '没有需要更新的字段' });
+    }
+
+    params.push(resourceId, userId);
+    await pool.query(
+      `UPDATE mentor_resources SET ${fields.join(', ')} WHERE id = ? AND mentor_id = ?`,
+      params
+    );
+
+    const [rows] = await pool.query('SELECT * FROM mentor_resources WHERE id = ?', [resourceId]);
+    res.json({ code: 200, message: '资料更新成功', data: { resource: rows[0] } });
+  } catch (err) {
+    console.error('更新资料失败:', err);
+    res.status(500).json({ code: 500, message: '服务器内部错误' });
+  }
+});
+
+// DELETE /api/mentor/resources/:id - 删除资料
+router.delete('/resources/:id', async (req, res) => {
+  try {
+    const resourceId = Number(req.params.id);
+    const userId = req.user.id;
+
+    const [existing] = await pool.query(
+      'SELECT id FROM mentor_resources WHERE id = ? AND mentor_id = ?',
+      [resourceId, userId]
+    );
+    if (existing.length === 0) {
+      return res.status(404).json({ code: 404, message: '资料不存在或无权删除' });
+    }
+
+    await pool.query('DELETE FROM mentor_resources WHERE id = ? AND mentor_id = ?', [resourceId, userId]);
+    res.json({ code: 200, message: '资料删除成功' });
+  } catch (err) {
+    console.error('删除资料失败:', err);
+    res.status(500).json({ code: 500, message: '服务器内部错误' });
+  }
+});
+
 export default router;

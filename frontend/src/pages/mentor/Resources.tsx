@@ -1,64 +1,66 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   FileText, Upload, Folder, Search, Plus, X, Download,
   Eye, Trash2, File, Image, Video, Link2, Clock,
-  BookOpen
+  BookOpen, Loader2
 } from 'lucide-react';
 import { useToast } from '../../components/ui';
 import Tag from '@/components/ui/Tag';
+import FileUpload from '@/components/ui/FileUpload';
+import http from '@/api/http';
 
-// ====== 资料类型 ======
-type ResourceType = 'document' | 'video' | 'link' | 'image';
+// ====== 资料类型（与后端 ENUM 对应） ======
+type ResourceType = 'pdf' | 'doc' | 'video' | 'image' | 'other';
+
+// 前端展示分类映射
+type DisplayType = 'document' | 'video' | 'link' | 'image';
 
 interface Resource {
   id: number;
+  mentor_id: number;
   title: string;
-  description: string;
   type: ResourceType;
-  category: string;
   url: string;
-  size?: string;
-  downloads: number;
-  createdAt: string;
+  size_bytes: number;
+  download_count: number;
+  is_public: number;
+  created_at: string;
 }
 
-// TODO: 资料库功能需要后端创建 resources 表并提供 API 后对接
-// 当前使用本地 Mock 数据，后续应替换为 http.get('/mentor/resources') 等 API 调用
-// Mock 数据（后续对接 API）
-const MOCK_RESOURCES: Resource[] = [
-  {
-    id: 1, title: '前端面试高频题汇总', description: 'React/Vue/JS 核心知识点整理，覆盖 90% 面试场景',
-    type: 'document', category: '面试准备', url: '#', size: '2.3 MB', downloads: 156, createdAt: '2026-04-10',
-  },
-  {
-    id: 2, title: '简历撰写模板（技术岗）', description: '适合计算机相关专业学生的简历模板，含填写指南',
-    type: 'document', category: '简历指导', url: '#', size: '1.1 MB', downloads: 243, createdAt: '2026-04-08',
-  },
-  {
-    id: 3, title: '系统设计入门讲座', description: '1小时带你了解大厂系统设计面试的核心思路',
-    type: 'video', category: '技术提升', url: '#', size: '320 MB', downloads: 89, createdAt: '2026-04-05',
-  },
-  {
-    id: 4, title: 'LeetCode 刷题路线图', description: '按难度和频率排序的刷题计划，附解题思路',
-    type: 'link', category: '技术提升', url: 'https://leetcode.cn', downloads: 312, createdAt: '2026-04-01',
-  },
-  {
-    id: 5, title: '职业规划思维导图', description: '帮助学生梳理职业发展路径的思维导图模板',
-    type: 'image', category: '职业规划', url: '#', size: '800 KB', downloads: 67, createdAt: '2026-03-28',
-  },
+// 后端类型 → 前端展示类型
+const toDisplayType = (type: ResourceType): DisplayType => {
+  if (type === 'pdf' || type === 'doc' || type === 'other') return 'document';
+  if (type === 'video') return 'video';
+  if (type === 'image') return 'image';
+  return 'document';
+};
+
+// 格式化文件大小
+const formatSize = (bytes: number): string => {
+  if (!bytes || bytes === 0) return '';
+  if (bytes < 1024) return bytes + ' B';
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+  return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+};
+
+const TYPE_FILTER_OPTIONS: { label: string; value: string }[] = [
+  { label: '全部', value: '' },
+  { label: '文档', value: 'pdf' },
+  { label: 'DOC', value: 'doc' },
+  { label: '视频', value: 'video' },
+  { label: '图片', value: 'image' },
+  { label: '其他', value: 'other' },
 ];
 
-const CATEGORIES = ['全部', '面试准备', '简历指导', '技术提升', '职业规划', '行业分析'];
-
-const TYPE_ICONS: Record<ResourceType, typeof FileText> = {
+const TYPE_ICONS: Record<DisplayType, typeof FileText> = {
   document: FileText,
   video: Video,
   link: Link2,
   image: Image,
 };
 
-const TYPE_COLORS: Record<ResourceType, { text: string; bg: string; tagVariant: 'blue' | 'primary' | 'orange' }> = {
+const TYPE_COLORS: Record<DisplayType, { text: string; bg: string; tagVariant: 'blue' | 'primary' | 'orange' }> = {
   document: { text: 'text-blue-600', bg: 'bg-blue-50', tagVariant: 'blue' },
   video: { text: 'text-primary-600', bg: 'bg-primary-50', tagVariant: 'primary' },
   link: { text: 'text-primary-600', bg: 'bg-primary-50', tagVariant: 'primary' },
@@ -67,44 +69,91 @@ const TYPE_COLORS: Record<ResourceType, { text: string; bg: string; tagVariant: 
 
 export default function MentorResources() {
   const toast = useToast();
-  const [resources, setResources] = useState<Resource[]>(MOCK_RESOURCES);
+  const [resources, setResources] = useState<Resource[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [activeCategory, setActiveCategory] = useState('全部');
+  const [activeType, setActiveType] = useState('');
   const [showUploadModal, setShowUploadModal] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
   // 上传表单
   const [uploadForm, setUploadForm] = useState({
-    title: '', description: '', type: 'document' as ResourceType, category: '面试准备', url: '',
+    title: '',
+    type: 'pdf' as ResourceType,
+    is_public: 1,
   });
+  // 文件上传结果
+  const [uploadedFile, setUploadedFile] = useState<{ url: string; size: number } | null>(null);
 
-  const filtered = resources.filter(r => {
-    const matchCategory = activeCategory === '全部' || r.category === activeCategory;
-    const matchSearch = !searchQuery ||
-      r.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      r.description.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchCategory && matchSearch;
-  });
+  // 加载资料列表
+  const fetchResources = useCallback(async () => {
+    try {
+      setLoading(true);
+      const params: Record<string, string> = {};
+      if (activeType) params.type = activeType;
+      if (searchQuery) params.keyword = searchQuery;
+      const res = await http.get('/mentor/resources', { params });
+      if (res.data?.code === 200) {
+        setResources(res.data.data.resources);
+      }
+    } catch (err) {
+      console.error('获取资料列表失败:', err);
+      toast.error('获取资料列表失败');
+    } finally {
+      setLoading(false);
+    }
+  }, [activeType, searchQuery, toast]);
 
-  const handleUpload = () => {
+  useEffect(() => {
+    fetchResources();
+  }, [fetchResources]);
+
+  // 上传确认：先上传文件，再创建资料记录
+  const handleUpload = async () => {
     if (!uploadForm.title.trim()) {
       toast.warning('请填写资料标题');
       return;
     }
-    const newResource: Resource = {
-      id: Date.now(),
-      ...uploadForm,
-      downloads: 0,
-      createdAt: new Date().toISOString().split('T')[0],
-    };
-    setResources(prev => [newResource, ...prev]);
-    setShowUploadModal(false);
-    setUploadForm({ title: '', description: '', type: 'document', category: '面试准备', url: '' });
-    toast.success('资料上传成功', '学生可以在你的主页查看该资料');
+    if (!uploadedFile) {
+      toast.warning('请先上传文件');
+      return;
+    }
+
+    try {
+      setSubmitting(true);
+      const res = await http.post('/mentor/resources', {
+        title: uploadForm.title,
+        type: uploadForm.type,
+        url: uploadedFile.url,
+        size_bytes: uploadedFile.size,
+        is_public: uploadForm.is_public,
+      });
+      if (res.data?.code === 201) {
+        toast.success('资料上传成功', '学生可以在你的主页查看该资料');
+        setShowUploadModal(false);
+        setUploadForm({ title: '', type: 'pdf', is_public: 1 });
+        setUploadedFile(null);
+        fetchResources();
+      }
+    } catch (err) {
+      console.error('创建资料记录失败:', err);
+      toast.error('上传失败，请重试');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
-  const handleDelete = (id: number) => {
-    setResources(prev => prev.filter(r => r.id !== id));
-    toast.success('资料已删除');
+  const handleDelete = async (id: number) => {
+    try {
+      const res = await http.delete(`/mentor/resources/${id}`);
+      if (res.data?.code === 200) {
+        setResources(prev => prev.filter(r => r.id !== id));
+        toast.success('资料已删除');
+      }
+    } catch (err) {
+      console.error('删除资料失败:', err);
+      toast.error('删除失败');
+    }
   };
 
   return (
@@ -131,8 +180,8 @@ export default function MentorResources() {
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         {[
           { label: '总资料数', value: resources.length, icon: Folder, color: 'text-blue-600', bg: 'bg-blue-50' },
-          { label: '总下载量', value: resources.reduce((s, r) => s + r.downloads, 0), icon: Download, color: 'text-green-600', bg: 'bg-green-50' },
-          { label: '文档类', value: resources.filter(r => r.type === 'document').length, icon: FileText, color: 'text-primary-600', bg: 'bg-primary-50' },
+          { label: '总下载量', value: resources.reduce((s, r) => s + r.download_count, 0), icon: Download, color: 'text-green-600', bg: 'bg-green-50' },
+          { label: '文档类', value: resources.filter(r => r.type === 'pdf' || r.type === 'doc').length, icon: FileText, color: 'text-primary-600', bg: 'bg-primary-50' },
           { label: '视频类', value: resources.filter(r => r.type === 'video').length, icon: Video, color: 'text-amber-600', bg: 'bg-amber-50' },
         ].map(stat => (
           <div key={stat.label} className="bg-white rounded-xl border border-gray-200 p-4">
@@ -149,14 +198,14 @@ export default function MentorResources() {
         ))}
       </div>
 
-      {/* 搜索 + 分类筛选 */}
+      {/* 搜索 + 类型筛选 */}
       <div className="bg-white rounded-xl border border-gray-200 p-4">
         <div className="flex flex-col sm:flex-row gap-3 mb-4">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
             <input
               type="text"
-              placeholder="搜索资料标题或描述..."
+              placeholder="搜索资料标题..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-10 pr-4 py-2 rounded-lg border border-gray-200 focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none text-sm"
@@ -164,24 +213,29 @@ export default function MentorResources() {
           </div>
         </div>
         <div className="flex flex-wrap gap-2">
-          {CATEGORIES.map(cat => (
+          {TYPE_FILTER_OPTIONS.map(opt => (
             <button
-              key={cat}
-              onClick={() => setActiveCategory(cat)}
+              key={opt.value}
+              onClick={() => setActiveType(opt.value)}
               className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
-                activeCategory === cat
+                activeType === opt.value
                   ? 'bg-primary-500 text-white'
                   : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
               }`}
             >
-              {cat}
+              {opt.label}
             </button>
           ))}
         </div>
       </div>
 
       {/* 资料列表 */}
-      {filtered.length === 0 ? (
+      {loading ? (
+        <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
+          <Loader2 className="w-10 h-10 text-primary-500 animate-spin mx-auto mb-3" />
+          <p className="text-sm text-gray-500">加载中...</p>
+        </div>
+      ) : resources.length === 0 ? (
         <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
           <Folder className="w-16 h-16 text-gray-200 mx-auto mb-4" />
           <h3 className="text-lg font-medium text-gray-700 mb-2">暂无资料</h3>
@@ -189,9 +243,10 @@ export default function MentorResources() {
         </div>
       ) : (
         <div className="space-y-3">
-          {filtered.map((resource, idx) => {
-            const TypeIcon = TYPE_ICONS[resource.type];
-            const colors = TYPE_COLORS[resource.type];
+          {resources.map((resource, idx) => {
+            const displayType = toDisplayType(resource.type);
+            const TypeIcon = TYPE_ICONS[displayType];
+            const colors = TYPE_COLORS[displayType];
             return (
               <motion.div
                 key={resource.id}
@@ -208,12 +263,19 @@ export default function MentorResources() {
                     <div className="flex items-start justify-between gap-3">
                       <div>
                         <h3 className="text-base font-bold text-gray-900">{resource.title}</h3>
-                        <p className="text-sm text-gray-500 mt-1 line-clamp-1">{resource.description}</p>
+                        <p className="text-sm text-gray-500 mt-1 line-clamp-1">
+                          {resource.is_public ? '公开资料' : '私密资料'}
+                        </p>
                       </div>
                       <div className="flex items-center gap-1 shrink-0">
-                        <button className="p-1.5 text-gray-400 hover:text-primary-600 rounded-lg hover:bg-primary-50 transition-colors">
+                        <a
+                          href={resource.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="p-1.5 text-gray-400 hover:text-primary-600 rounded-lg hover:bg-primary-50 transition-colors"
+                        >
                           <Eye className="w-4 h-4" />
-                        </button>
+                        </a>
                         <button
                           onClick={() => handleDelete(resource.id)}
                           className="p-1.5 text-gray-400 hover:text-red-600 rounded-lg hover:bg-red-50 transition-colors"
@@ -224,21 +286,21 @@ export default function MentorResources() {
                     </div>
                     <div className="flex flex-wrap items-center gap-3 mt-3 text-xs text-gray-400">
                       <Tag variant={colors.tagVariant} size="sm">
-                        {resource.category}
+                        {resource.type.toUpperCase()}
                       </Tag>
-                      {resource.size && (
+                      {resource.size_bytes > 0 && (
                         <span className="flex items-center gap-1">
                           <File className="w-3 h-3" />
-                          {resource.size}
+                          {formatSize(resource.size_bytes)}
                         </span>
                       )}
                       <span className="flex items-center gap-1">
                         <Download className="w-3 h-3" />
-                        {resource.downloads} 次下载
+                        {resource.download_count} 次下载
                       </span>
                       <span className="flex items-center gap-1">
                         <Clock className="w-3 h-3" />
-                        {resource.createdAt}
+                        {resource.created_at?.split('T')[0]}
                       </span>
                     </div>
                   </div>
@@ -285,17 +347,6 @@ export default function MentorResources() {
                   />
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">描述</label>
-                  <textarea
-                    value={uploadForm.description}
-                    onChange={(e) => setUploadForm(prev => ({ ...prev, description: e.target.value }))}
-                    placeholder="简要描述资料内容"
-                    rows={2}
-                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-400 resize-none"
-                  />
-                </div>
-
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">类型</label>
@@ -304,45 +355,40 @@ export default function MentorResources() {
                       onChange={(e) => setUploadForm(prev => ({ ...prev, type: e.target.value as ResourceType }))}
                       className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-400"
                     >
-                      <option value="document">文档</option>
+                      <option value="pdf">PDF 文档</option>
+                      <option value="doc">DOC 文档</option>
                       <option value="video">视频</option>
-                      <option value="link">链接</option>
                       <option value="image">图片</option>
+                      <option value="other">其他</option>
                     </select>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">分类</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">可见性</label>
                     <select
-                      value={uploadForm.category}
-                      onChange={(e) => setUploadForm(prev => ({ ...prev, category: e.target.value }))}
+                      value={uploadForm.is_public}
+                      onChange={(e) => setUploadForm(prev => ({ ...prev, is_public: Number(e.target.value) }))}
                       className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-400"
                     >
-                      {CATEGORIES.filter(c => c !== '全部').map(cat => (
-                        <option key={cat} value={cat}>{cat}</option>
-                      ))}
+                      <option value={1}>公开</option>
+                      <option value={0}>私密</option>
                     </select>
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    {uploadForm.type === 'link' ? '链接地址' : '文件上传'}
-                  </label>
-                  {uploadForm.type === 'link' ? (
-                    <input
-                      type="url"
-                      value={uploadForm.url}
-                      onChange={(e) => setUploadForm(prev => ({ ...prev, url: e.target.value }))}
-                      placeholder="https://..."
-                      className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-400"
-                    />
-                  ) : (
-                    <div className="border-2 border-dashed border-gray-200 rounded-xl p-6 text-center hover:border-primary-400 transition-colors cursor-pointer">
-                      <Upload className="w-8 h-8 text-gray-300 mx-auto mb-2" />
-                      <p className="text-sm text-gray-500">点击或拖拽文件到此处上传</p>
-                      <p className="text-xs text-gray-400 mt-1">支持 PDF、DOC、MP4、PNG 等格式</p>
-                    </div>
-                  )}
+                  <label className="block text-sm font-medium text-gray-700 mb-1">文件上传 *</label>
+                  <FileUpload
+                    category="general"
+                    accept="image/jpeg,image/png,image/gif,image/webp,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,video/mp4,video/webm"
+                    onSuccess={(result) => {
+                      setUploadedFile({ url: result.url, size: result.size });
+                      toast.success('文件上传成功');
+                    }}
+                    onError={(error) => {
+                      toast.error(error);
+                    }}
+                    placeholder="点击或拖拽文件到此处上传（支持 PDF、DOC、MP4、PNG 等格式）"
+                  />
                 </div>
               </div>
 
@@ -355,8 +401,10 @@ export default function MentorResources() {
                 </button>
                 <button
                   onClick={handleUpload}
-                  className="px-5 py-2 bg-primary-500 text-white rounded-lg text-sm font-medium hover:bg-primary-600 transition-colors"
+                  disabled={submitting}
+                  className="px-5 py-2 bg-primary-500 text-white rounded-lg text-sm font-medium hover:bg-primary-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center gap-2"
                 >
+                  {submitting && <Loader2 className="w-4 h-4 animate-spin" />}
                   确认上传
                 </button>
               </div>

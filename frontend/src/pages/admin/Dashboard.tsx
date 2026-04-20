@@ -36,17 +36,28 @@ export default function AdminDashboard() {
   const weekDays = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
 
   const [statsLoading, setStatsLoading] = useState(true);
+  const [healthData, setHealthData] = useState<{
+    status: string;
+    uptime: number;
+    database: { status: string; latency: string | null };
+  } | null>(null);
 
   useEffect(() => {
     (async () => {
       try {
         setStatsLoading(true);
         setStatsError(null);
-        const res = await http.get('/admin/stats');
-        if (res.data?.code === 200 && res.data.data) {
-          setStats(res.data.data);
+        const [statsRes, healthRes] = await Promise.all([
+          http.get('/admin/stats'),
+          http.get('/health').catch(() => null),
+        ]);
+        if (statsRes.data?.code === 200 && statsRes.data.data) {
+          setStats(statsRes.data.data);
         } else {
           setStatsError('数据加载失败，请稍后重试');
+        }
+        if (healthRes?.data) {
+          setHealthData(healthRes.data);
         }
       } catch {
         setStatsError('数据加载失败，请稍后重试');
@@ -59,8 +70,30 @@ export default function AdminDashboard() {
   const regTrend = stats?.regTrend || [0, 0, 0, 0, 0, 0, 0];
   const regMax = Math.max(...regTrend, 1);
 
-  const auditLogs: { time: string; action: string; type: 'success' | 'warning' | 'error' | 'info' }[] = [];
+  const [auditLogs, setAuditLogs] = useState<{ time: string; action: string; type: 'success' | 'warning' | 'error' | 'info' }[]>([]);
   const logColors = { success: 'bg-green-500', warning: 'bg-amber-500', error: 'bg-red-500', info: 'bg-blue-500' };
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await http.get('/admin/audit-logs', { params: { page: 1, pageSize: 10 } });
+        if (res.data?.code === 200 && res.data.data) {
+          const list = res.data.data.list || res.data.data || [];
+          const ACTION_TYPE_MAP: Record<string, 'success' | 'warning' | 'error' | 'info'> = {
+            create: 'success', update: 'info', delete: 'error', login: 'info',
+          };
+          const mapped = list.map((log: Record<string, unknown>) => ({
+            time: new Date(log.created_at as string).toLocaleString('zh-CN'),
+            action: `${log.operator_name || '系统'} ${log.action || '操作'}了 ${log.target_type || '资源'}${log.target_id ? ' #' + log.target_id : ''}`,
+            type: ACTION_TYPE_MAP[log.action as string] || 'info',
+          }));
+          setAuditLogs(mapped);
+        }
+      } catch {
+        // 审计日志加载失败静默处理
+      }
+    })();
+  }, []);
 
   const roleData = stats?.roleDistribution || [
     { role: '学生', count: 0, pct: 0, color: 'bg-primary-500' },
@@ -129,7 +162,7 @@ export default function AdminDashboard() {
                 <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
                 <span className="text-green-300">系统运行正常</span>
               </div>
-              <span className="text-slate-400">在线 <span className="text-white font-bold">1,234</span></span>
+              <span className="text-slate-400">在线 <span className="text-white font-bold">{stats?.weekActive ? stats.weekActive.toLocaleString() : '—'}</span></span>
             </div>
           </div>
           <div className="flex flex-wrap gap-3 mt-5">
@@ -193,20 +226,33 @@ export default function AdminDashboard() {
             <Server className="w-4 h-4 text-primary-500" /> 系统状态
           </h3>
           <div className="bg-slate-900 rounded-xl p-4 space-y-3 text-sm">
-            {[
-              { label: '数据库连接', value: '正常', icon: Database, ok: true },
-              { label: 'API 响应', value: '45ms', icon: Activity, ok: true },
-              { label: '存储使用', value: '23.5 / 100 GB', icon: HardDrive, ok: true },
-              { label: '运行时长', value: '15 天', icon: Clock, ok: true },
-            ].map((s, i) => (
-              <div key={i} className="flex items-center justify-between">
-                <span className="flex items-center gap-2 text-slate-400"><s.icon className="w-3.5 h-3.5" /> {s.label}</span>
-                <span className="flex items-center gap-1.5">
-                  <span className={`w-1.5 h-1.5 rounded-full ${s.ok ? 'bg-green-400' : 'bg-red-400'}`} />
-                  <span className="text-slate-200 font-medium text-xs">{s.value}</span>
-                </span>
-              </div>
-            ))}
+            {(() => {
+              const formatUptime = (seconds: number) => {
+                const days = Math.floor(seconds / 86400);
+                const hours = Math.floor((seconds % 86400) / 3600);
+                return days > 0 ? `${days} 天 ${hours} 小时` : `${hours} 小时`;
+              };
+              const items = healthData ? [
+                { label: '数据库连接', value: healthData.database.status === 'connected' ? '正常' : '异常', icon: Database, ok: healthData.database.status === 'connected' },
+                { label: 'API 响应', value: healthData.database.latency || '—', icon: Activity, ok: healthData.status === 'ok' },
+                { label: '系统状态', value: healthData.status === 'ok' ? '正常' : '降级', icon: HardDrive, ok: healthData.status === 'ok' },
+                { label: '运行时长', value: formatUptime(healthData.uptime), icon: Clock, ok: true },
+              ] : [
+                { label: '数据库连接', value: '加载中...', icon: Database, ok: true },
+                { label: 'API 响应', value: '加载中...', icon: Activity, ok: true },
+                { label: '系统状态', value: '加载中...', icon: HardDrive, ok: true },
+                { label: '运行时长', value: '加载中...', icon: Clock, ok: true },
+              ];
+              return items.map((s, i) => (
+                <div key={i} className="flex items-center justify-between">
+                  <span className="flex items-center gap-2 text-slate-400"><s.icon className="w-3.5 h-3.5" /> {s.label}</span>
+                  <span className="flex items-center gap-1.5">
+                    <span className={`w-1.5 h-1.5 rounded-full ${s.ok ? 'bg-green-400' : 'bg-red-400'}`} />
+                    <span className="text-slate-200 font-medium text-xs">{s.value}</span>
+                  </span>
+                </div>
+              ));
+            })()}
           </div>
         </div>
 

@@ -30,8 +30,10 @@ export default function MentorDashboardPage() {
     monthSessions: 0, pendingAppts: 0, monthRevenue: 0, ratingTrend: 0,
   });
   const [todaySchedule, setTodaySchedule] = useState<Array<{
+    id: number;
     time: string; endTime: string; student: string; service: string;
     status: '已完成' | '进行中' | '即将开始' | '待确认'; avatar: string;
+    videoUrl?: string;
   }>>([]);
   const [courses, setCourses] = useState<Array<{
     title: string; students: number; rating: number; status: 'active' | 'draft';
@@ -84,12 +86,14 @@ export default function MentorDashboardPage() {
           const endTime = (apt.end_time as string) || (apt.endTime as string) || '';
 
           return {
+            id: (apt.id as number) || 0,
             time: startTime.slice(0, 5),
             endTime: endTime.slice(0, 5),
             student: studentName,
             service: (apt.service as string) || (apt.course_title as string) || '辅导服务',
             status: statusLabel,
             avatar: studentName.charAt(0),
+            videoUrl: (apt.video_url as string) || (apt.videoUrl as string) || '',
           };
         });
         setTodaySchedule(mapped);
@@ -167,7 +171,7 @@ export default function MentorDashboardPage() {
               </div>
             </div>
             <div className="flex flex-col items-end gap-1">
-              <Link to="/mentors/10" className="text-xs bg-white/20 hover:bg-white/30 px-3 py-1.5 rounded-lg transition-colors">
+              <Link to={`/mentors/${user?.id}`} className="text-xs bg-white/20 hover:bg-white/30 px-3 py-1.5 rounded-lg transition-colors">
                 查看我的主页 →
               </Link>
               <p className="text-xs text-emerald-200 mt-1">
@@ -245,12 +249,32 @@ export default function MentorDashboardPage() {
                         <p className="text-xs opacity-70 mt-0.5">{item.service}</p>
                       </div>
                       {item.status === '进行中' && (
-                        <button onClick={() => showToast({ type: 'info', title: '功能开发中', message: '该功能正在开发中，敬请期待' })} className="text-xs bg-emerald-600 text-white px-3 py-1.5 rounded-lg font-medium hover:bg-emerald-700 transition-colors">
+                        <button
+                          onClick={() => {
+                            if (item.videoUrl) {
+                              window.open(item.videoUrl, '_blank', 'noopener,noreferrer');
+                            } else {
+                              showToast({ type: 'warning', title: '暂无会议链接', message: '请先填写会议链接' });
+                            }
+                          }}
+                          className="text-xs bg-emerald-600 text-white px-3 py-1.5 rounded-lg font-medium hover:bg-emerald-700 transition-colors"
+                        >
                           进入辅导
                         </button>
                       )}
                       {item.status === '待确认' && (
-                        <button onClick={() => showToast({ type: 'info', title: '功能开发中', message: '该功能正在开发中，敬请期待' })} className="text-xs bg-blue-600 text-white px-3 py-1.5 rounded-lg font-medium hover:bg-blue-700 transition-colors">
+                        <button
+                          onClick={async () => {
+                            try {
+                              await http.put(`/mentor/appointments/${item.id}/confirm`);
+                              showToast({ type: 'success', title: '确认成功', message: '预约已确认' });
+                              fetchDashboardData();
+                            } catch (err) {
+                              if (import.meta.env.DEV) console.error('[DEV] Confirm appointment error:', err);
+                            }
+                          }}
+                          className="text-xs bg-blue-600 text-white px-3 py-1.5 rounded-lg font-medium hover:bg-blue-700 transition-colors"
+                        >
                           确认预约
                         </button>
                       )}

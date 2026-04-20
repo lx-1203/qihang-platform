@@ -104,11 +104,11 @@ router.get('/users', async (req, res) => {
       where += ' AND (email LIKE ? OR nickname LIKE ?)';
       params.push(`%${keyword}%`, `%${keyword}%`);
     }
-    if (role) {
+    if (role && role !== 'all') {
       where += ' AND role = ?';
       params.push(role);
     }
-    if (status !== '') {
+    if (status !== '' && status !== 'all') {
       where += ' AND status = ?';
       params.push(Number(status));
     }
@@ -141,6 +141,93 @@ router.get('/users', async (req, res) => {
     });
   } catch (err) {
     console.error('获取用户列表失败:', err);
+    res.status(500).json({ code: 500, message: '服务器内部错误' });
+  }
+});
+
+// ==================== 2.2.1 导出用户列表为 CSV ====================
+router.get('/users/export', async (req, res) => {
+  try {
+    const { role = '', status = '', keyword = '' } = req.query;
+
+    let where = 'WHERE 1=1';
+    const params = [];
+
+    if (keyword) {
+      where += ' AND (email LIKE ? OR nickname LIKE ?)';
+      params.push(`%${keyword}%`, `%${keyword}%`);
+    }
+    if (role && role !== 'all') {
+      where += ' AND role = ?';
+      params.push(role);
+    }
+    if (status !== '' && status !== 'all') {
+      where += ' AND status = ?';
+      params.push(Number(status));
+    }
+
+    const [users] = await pool.query(
+      `SELECT id, nickname AS name, email, role, status, phone, created_at
+       FROM users ${where} ORDER BY created_at DESC`,
+      params
+    );
+
+    // 生成 CSV 内容（UTF-8 BOM）
+    const BOM = '\uFEFF';
+    const headers = 'id,name,email,role,status,phone,created_at\n';
+    const rows = users.map(u =>
+      `${u.id},"${u.name || ''}","${u.email}","${u.role}",${u.status},"${u.phone || ''}","${u.created_at}"`
+    ).join('\n');
+    const csv = BOM + headers + rows;
+
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', `attachment; filename="users_${Date.now()}.csv"`);
+    res.send(csv);
+  } catch (err) {
+    console.error('导出用户列表失败:', err);
+    res.status(500).json({ code: 500, message: '服务器内部错误' });
+  }
+});
+
+// ==================== 2.2.2 获取单个用户详情（含关联资料） ====================
+router.get('/users/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // 查询用户基本信息
+    const [userRows] = await pool.query(
+      'SELECT id, email, nickname, role, avatar, phone, status, created_at, updated_at FROM users WHERE id = ?',
+      [id]
+    );
+
+    if (userRows.length === 0) {
+      return res.status(404).json({ code: 404, message: '用户不存在' });
+    }
+
+    const user = userRows[0];
+    let profile = null;
+
+    // 根据角色查询关联资料
+    if (user.role === 'student') {
+      const [studentRows] = await pool.query('SELECT * FROM students WHERE user_id = ?', [id]);
+      profile = studentRows.length > 0 ? studentRows[0] : null;
+    } else if (user.role === 'company') {
+      const [companyRows] = await pool.query('SELECT * FROM companies WHERE user_id = ?', [id]);
+      profile = companyRows.length > 0 ? companyRows[0] : null;
+    } else if (user.role === 'mentor') {
+      const [mentorRows] = await pool.query('SELECT * FROM mentor_profiles WHERE user_id = ?', [id]);
+      profile = mentorRows.length > 0 ? mentorRows[0] : null;
+    }
+
+    res.json({
+      code: 200,
+      data: {
+        user,
+        profile,
+      },
+    });
+  } catch (err) {
+    console.error('获取用户详情失败:', err);
     res.status(500).json({ code: 500, message: '服务器内部错误' });
   }
 });
@@ -232,34 +319,42 @@ router.delete('/users/:id', async (req, res) => {
 });
 
 // ==================== 2.6 企业列表 ====================
-// 注：当前无 companies 表，从 users 中筛选 role='company' 用户
 router.get('/companies', async (req, res) => {
   try {
     const { page = 1, pageSize = 20, keyword = '', status = '' } = req.query;
     const offset = (Number(page) - 1) * Number(pageSize);
     const limit = Number(pageSize);
 
-    let where = "WHERE role = 'company'";
+    let where = "WHERE u.role = 'company'";
     const params = [];
 
     if (keyword) {
-      where += ' AND (email LIKE ? OR nickname LIKE ?)';
-      params.push(`%${keyword}%`, `%${keyword}%`);
+      where += ' AND (u.email LIKE ? OR u.nickname LIKE ? OR c.company_name LIKE ?)';
+      params.push(`%${keyword}%`, `%${keyword}%`, `%${keyword}%`);
     }
-    if (status !== '') {
-      where += ' AND status = ?';
-      params.push(Number(status));
+    if (status !== '' && status !== 'all') {
+      where += ' AND COALESCE(c.verify_status, \'pending\') = ?';
+      params.push(status);
     }
 
     const [countRows] = await pool.query(
-      `SELECT COUNT(*) AS total FROM users ${where}`,
+      `SELECT COUNT(*) AS total FROM users u
+       LEFT JOIN companies c ON c.user_id = u.id
+       ${where}`,
       params
     );
     const total = countRows[0].total;
 
     const [companies] = await pool.query(
-      `SELECT id, email, nickname, role, avatar, phone, status, created_at, updated_at
-       FROM users ${where} ORDER BY created_at DESC LIMIT ? OFFSET ?`,
+      `SELECT u.id, u.email, u.nickname, u.avatar, u.phone, u.status AS user_status, u.created_at,
+              c.id AS company_id, c.company_name, c.industry, c.scale, c.description,
+              c.logo, c.website, c.address,
+              COALESCE(c.verify_status, 'pending') AS verify_status,
+              c.verify_remark
+       FROM users u
+       LEFT JOIN companies c ON c.user_id = u.id
+       ${where}
+       ORDER BY u.created_at DESC LIMIT ? OFFSET ?`,
       [...params, limit, offset]
     );
 
@@ -285,10 +380,10 @@ router.get('/companies', async (req, res) => {
 router.put('/companies/:id/verify', async (req, res) => {
   try {
     const { id } = req.params;
-    const { status } = req.body; // 1=通过(启用), 0=拒绝(禁用)
+    const { status, remark = '' } = req.body; // status: 'approved' | 'rejected'
 
-    if (status === undefined || ![0, 1].includes(Number(status))) {
-      return res.status(400).json({ code: 400, message: 'status 必须为 0 或 1' });
+    if (!['approved', 'rejected'].includes(status)) {
+      return res.status(400).json({ code: 400, message: 'status 必须为 approved 或 rejected' });
     }
 
     // 确认是企业用户
@@ -300,19 +395,33 @@ router.put('/companies/:id/verify', async (req, res) => {
       return res.status(404).json({ code: 404, message: '企业用户不存在' });
     }
 
-    await pool.query('UPDATE users SET status = ? WHERE id = ?', [Number(status), id]);
+    // 更新 companies 表的审核状态（若无记录则插入）
+    const [existing] = await pool.query('SELECT id FROM companies WHERE user_id = ?', [id]);
+    if (existing.length > 0) {
+      await pool.query(
+        'UPDATE companies SET verify_status = ?, verify_remark = ? WHERE user_id = ?',
+        [status, remark, id]
+      );
+    } else {
+      await pool.query(
+        'INSERT INTO companies (user_id, verify_status, verify_remark) VALUES (?, ?, ?)',
+        [id, status, remark]
+      );
+    }
+
+    // 同步 users.status（approved → 1，rejected → 0）
+    await pool.query('UPDATE users SET status = ? WHERE id = ?', [status === 'approved' ? 1 : 0, id]);
 
     // 通知企业用户审核结果
     try {
-      const approved = Number(status) === 1;
-      await NotificationTemplates.companyVerified(Number(id), approved, '');
+      await NotificationTemplates.companyVerified(Number(id), status === 'approved', remark);
     } catch (notifyErr) {
       console.error('发送企业审核通知失败(不影响主流程):', notifyErr);
     }
 
     res.json({
       code: 200,
-      message: Number(status) === 1 ? '企业认证已通过' : '企业认证已拒绝',
+      message: status === 'approved' ? '企业认证已通过' : '企业认证已拒绝',
     });
   } catch (err) {
     console.error('审核企业失败:', err);
@@ -327,27 +436,36 @@ router.get('/mentors', async (req, res) => {
     const offset = (Number(page) - 1) * Number(pageSize);
     const limit = Number(pageSize);
 
-    let where = "WHERE role = 'mentor'";
+    let where = "WHERE u.role = 'mentor'";
     const params = [];
 
     if (keyword) {
-      where += ' AND (email LIKE ? OR nickname LIKE ?)';
-      params.push(`%${keyword}%`, `%${keyword}%`);
+      where += ' AND (u.email LIKE ? OR u.nickname LIKE ? OR mp.name LIKE ?)';
+      params.push(`%${keyword}%`, `%${keyword}%`, `%${keyword}%`);
     }
-    if (status !== '') {
-      where += ' AND status = ?';
-      params.push(Number(status));
+    if (status !== '' && status !== 'all') {
+      where += ' AND COALESCE(mp.verify_status, \'pending\') = ?';
+      params.push(status);
     }
 
     const [countRows] = await pool.query(
-      `SELECT COUNT(*) AS total FROM users ${where}`,
+      `SELECT COUNT(*) AS total FROM users u
+       LEFT JOIN mentor_profiles mp ON mp.user_id = u.id
+       ${where}`,
       params
     );
     const total = countRows[0].total;
 
     const [mentors] = await pool.query(
-      `SELECT id, email, nickname, role, avatar, phone, status, created_at, updated_at
-       FROM users ${where} ORDER BY created_at DESC LIMIT ? OFFSET ?`,
+      `SELECT u.id, u.email, u.nickname, u.avatar, u.phone, u.status AS user_status, u.created_at,
+              mp.id AS profile_id, mp.name, mp.title, mp.bio, mp.expertise, mp.tags,
+              mp.rating, mp.price, mp.available_time,
+              COALESCE(mp.verify_status, 'pending') AS verify_status,
+              mp.verify_remark
+       FROM users u
+       LEFT JOIN mentor_profiles mp ON mp.user_id = u.id
+       ${where}
+       ORDER BY u.created_at DESC LIMIT ? OFFSET ?`,
       [...params, limit, offset]
     );
 
@@ -1348,6 +1466,45 @@ router.delete('/study-abroad-consultants/:id', async (req, res) => {
   } catch (err) {
     console.error('删除顾问失败:', err);
     res.status(500).json({ code: 500, message: '服务器内部错误' });
+  }
+});
+
+// ==================== 深度健康检查 ====================
+
+// GET /api/admin/health - 深度健康检查（含数据库连接验证）
+router.get('/health', async (_req, res) => {
+  try {
+    const dbStatus = { status: 'ok', latency: 0 };
+
+    // 测量数据库延迟
+    const start = Date.now();
+    await pool.query('SELECT 1');
+    dbStatus.latency = Date.now() - start;
+
+    res.json({
+      code: 200,
+      data: {
+        database: dbStatus,
+        server: {
+          uptime: process.uptime(),
+          memoryUsage: process.memoryUsage(),
+        },
+        timestamp: Date.now(),
+      },
+    });
+  } catch (err) {
+    console.error('健康检查失败:', err);
+    res.json({
+      code: 200,
+      data: {
+        database: { status: 'error', latency: 0 },
+        server: {
+          uptime: process.uptime(),
+          memoryUsage: process.memoryUsage(),
+        },
+        timestamp: Date.now(),
+      },
+    });
   }
 });
 

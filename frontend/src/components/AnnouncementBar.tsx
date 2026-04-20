@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Megaphone, X } from 'lucide-react';
 import { announcementVariants } from '@/utils/animations';
+import http from '@/api/http';
 
 interface Announcement {
   id: number;
@@ -16,9 +17,23 @@ const DEFAULT_ANNOUNCEMENTS: Announcement[] = [
 ];
 
 export default function AnnouncementBar() {
-  const [announcements] = useState<Announcement[]>(DEFAULT_ANNOUNCEMENTS);
+  const [announcements, setAnnouncements] = useState<Announcement[]>(DEFAULT_ANNOUNCEMENTS);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [visible, setVisible] = useState(true);
+
+  // 从后端获取公告数据，失败则使用默认值
+  useEffect(() => {
+    http.get('/config/public')
+      .then(res => {
+        const data = res.data?.data;
+        if (data?.announcements && Array.isArray(data.announcements) && data.announcements.length > 0) {
+          setAnnouncements(data.announcements);
+        }
+      })
+      .catch(() => {
+        // API 失败，保留默认公告
+      });
+  }, []);
 
   useEffect(() => {
     if (announcements.length <= 1 || !visible) return;

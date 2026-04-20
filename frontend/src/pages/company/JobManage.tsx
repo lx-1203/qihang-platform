@@ -109,8 +109,8 @@ export default function CompanyJobManage() {
         signal: controller.signal,
       });
       if (res.data?.code === 200 && res.data.data) {
-        setJobs(res.data.data.list);
-        setTotal(res.data.data.total);
+        setJobs(res.data.data.list || []);
+        setTotal(res.data.data.total || 0);
       } else {
         setError('获取职位数据失败，服务器返回异常');
       }

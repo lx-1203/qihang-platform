@@ -1,6 +1,6 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Search, UserCircle, Bell, LogOut, Settings, User, ChevronDown, Clock, X, Menu } from 'lucide-react';
+import { Search, UserCircle, Bell, LogOut, Settings, User, ChevronDown, Clock, X, Menu, Briefcase, BookOpen, Award, GraduationCap, Globe, Rocket, Compass, FileText } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuthStore } from '@/store/auth';
 import { useConfigStore } from '@/store/config';
@@ -22,7 +22,9 @@ export default function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
+  const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const userMenuRef = useRef<HTMLDivElement>(null);
+  const dropdownTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // 搜索相关状态
   const [navSearch, setNavSearch] = useState('');
@@ -37,16 +39,59 @@ export default function Navbar() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  const navItems = [
+  // 组件卸载时清除下拉菜单定时器
+  useEffect(() => {
+    return () => {
+      if (dropdownTimeoutRef.current) clearTimeout(dropdownTimeoutRef.current);
+    };
+  }, []);
+
+  // 导航结构：分组收纳
+  type NavItem = { path: string; label: string; icon?: typeof Briefcase };
+  type NavGroup = { label: string; children: NavItem[] };
+  type NavEntry = NavItem | NavGroup;
+
+  const isGroup = (entry: NavEntry): entry is NavGroup => 'children' in entry;
+
+  const navEntries: NavEntry[] = [
     { path: '/', label: '首页' },
-    { path: '/jobs', label: '求职招聘' },
-    { path: '/courses', label: '干货资料库' },
-    { path: '/guidance', label: '就业指导' },
-    { path: '/postgrad', label: '考研保研' },
-    { path: '/entrepreneurship', label: '创新创业' },
-    { path: '/study-abroad', label: '留学申请' },
-    { path: '/success-cases', label: '成功案例' },
+    { path: '/jobs', label: '求职招聘', icon: Briefcase },
+    {
+      label: '职业发展',
+      children: [
+        { path: '/guidance', label: '就业指导', icon: Compass },
+        { path: '/courses', label: '干货资料库', icon: BookOpen },
+        { path: '/success-cases', label: '成功案例', icon: Award },
+      ],
+    },
+    {
+      label: '升学深造',
+      children: [
+        { path: '/postgrad', label: '考研保研', icon: GraduationCap },
+        { path: '/study-abroad', label: '留学申请', icon: Globe },
+      ],
+    },
+    { path: '/entrepreneurship', label: '创新创业', icon: Rocket },
   ];
+
+  // 所有叶子路径（用于 prefetch 和移动端展开）
+  const allNavItems: NavItem[] = navEntries.flatMap(e => isGroup(e) ? e.children : [e]);
+
+  // 下拉菜单 hover 控制（带延迟关闭防误触）
+  const handleDropdownEnter = (label: string) => {
+    if (dropdownTimeoutRef.current) {
+      clearTimeout(dropdownTimeoutRef.current);
+      dropdownTimeoutRef.current = null;
+    }
+    setOpenDropdown(label);
+  };
+  const handleDropdownLeave = () => {
+    dropdownTimeoutRef.current = setTimeout(() => setOpenDropdown(null), 150);
+  };
+
+  // 判断分组是否处于激活状态
+  const isGroupActive = (group: NavGroup) =>
+    group.children.some(c => location.pathname.startsWith(c.path));
 
   // 获取未读通知数 + 30s 轮询（6.1）
   useEffect(() => {
@@ -213,31 +258,90 @@ export default function Navbar() {
             </Link>
 
             {/* Navigation */}
-            <nav className={`hidden md:flex space-x-1 text-[14px] whitespace-nowrap ${isScrolled ? 'lg:hidden' : ''}`}>
-              {navItems.map((item) => {
-                const isActive = item.path === '/'
-                  ? location.pathname === '/'
-                  : location.pathname.startsWith(item.path);
+            <nav className="hidden md:flex items-center space-x-1 text-[14px] whitespace-nowrap">
+              {navEntries.map((entry) => {
+                if (isGroup(entry)) {
+                  const active = isGroupActive(entry);
+                  return (
+                    <div
+                      key={entry.label}
+                      className="relative"
+                      onMouseEnter={() => handleDropdownEnter(entry.label)}
+                      onMouseLeave={handleDropdownLeave}
+                    >
+                      <button
+                        className={`relative flex items-center gap-1 px-3 py-4 transition-colors ${
+                          active ? 'text-primary-500 font-bold' : 'text-gray-600 hover:text-gray-900 font-medium'
+                        }`}
+                      >
+                        {entry.label}
+                        <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${openDropdown === entry.label ? 'rotate-180' : ''}`} />
+                        {active && (
+                          <motion.div
+                            layoutId="navbar-indicator"
+                            className="absolute bottom-2 left-0 right-0 h-[3px] bg-primary-500 rounded-full mx-3"
+                            transition={{ type: 'spring', stiffness: 500, damping: 35 }}
+                          />
+                        )}
+                      </button>
 
+                      <AnimatePresence>
+                        {openDropdown === entry.label && (
+                          <motion.div
+                            initial={{ opacity: 0, y: -6, scale: 0.97 }}
+                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                            exit={{ opacity: 0, y: -6, scale: 0.97 }}
+                            transition={{ duration: 0.15 }}
+                            className="absolute top-full left-0 mt-1 w-44 bg-white rounded-xl shadow-lg border border-gray-100 py-1.5 z-50"
+                            onMouseEnter={() => handleDropdownEnter(entry.label)}
+                            onMouseLeave={handleDropdownLeave}
+                          >
+                            {entry.children.map((child) => {
+                              const childActive = location.pathname.startsWith(child.path);
+                              const Icon = child.icon;
+                              return (
+                                <Link
+                                  key={child.path}
+                                  to={child.path}
+                                  onMouseEnter={() => handlePrefetch(child.path)}
+                                  onClick={() => setOpenDropdown(null)}
+                                  className={`flex items-center gap-2.5 px-4 py-2.5 text-sm transition-colors ${
+                                    childActive
+                                      ? 'text-primary-600 bg-primary-50 font-medium'
+                                      : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
+                                  }`}
+                                >
+                                  {Icon && <Icon className={`w-4 h-4 flex-shrink-0 ${childActive ? 'text-primary-500' : 'text-gray-400'}`} />}
+                                  {child.label}
+                                </Link>
+                              );
+                            })}
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
+                  );
+                }
+
+                // 普通链接
+                const isActive = entry.path === '/'
+                  ? location.pathname === '/'
+                  : location.pathname.startsWith(entry.path);
                 return (
                   <Link
-                    key={item.path}
-                    to={item.path}
-                    onMouseEnter={() => handlePrefetch(item.path)}
+                    key={entry.path}
+                    to={entry.path}
+                    onMouseEnter={() => handlePrefetch(entry.path)}
                     className={`relative px-3 py-4 transition-colors ${
                       isActive ? 'text-primary-500 font-bold' : 'text-gray-600 hover:text-gray-900 font-medium'
                     }`}
                   >
-                    {item.label}
+                    {entry.label}
                     {isActive && (
                       <motion.div
                         layoutId="navbar-indicator"
                         className="absolute bottom-2 left-0 right-0 h-[3px] bg-primary-500 rounded-full mx-3"
-                        transition={{
-                          type: "spring",
-                          stiffness: 500,
-                          damping: 35
-                        }}
+                        transition={{ type: 'spring', stiffness: 500, damping: 35 }}
                       />
                     )}
                   </Link>
@@ -488,19 +592,45 @@ export default function Navbar() {
           >
             {/* Nav items */}
             <nav className="px-4 py-2 space-y-1">
-              {navItems.map((item) => {
-                const isActive = item.path === '/'
+              {navEntries.map((entry) => {
+                if (isGroup(entry)) {
+                  const active = isGroupActive(entry);
+                  return (
+                    <div key={entry.label}>
+                      <div className={`px-3 py-1.5 text-xs font-semibold uppercase tracking-wider ${active ? 'text-primary-500' : 'text-gray-400'}`}>
+                        {entry.label}
+                      </div>
+                      {entry.children.map((child) => {
+                        const childActive = location.pathname.startsWith(child.path);
+                        const Icon = child.icon;
+                        return (
+                          <Link
+                            key={child.path}
+                            to={child.path}
+                            className={`flex items-center gap-3 pl-6 pr-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                              childActive ? 'bg-primary-50 text-primary-600' : 'text-gray-700 hover:bg-gray-50'
+                            }`}
+                          >
+                            {Icon && <Icon className={`w-4 h-4 ${childActive ? 'text-primary-500' : 'text-gray-400'}`} />}
+                            {child.label}
+                          </Link>
+                        );
+                      })}
+                    </div>
+                  );
+                }
+                const isActive = entry.path === '/'
                   ? location.pathname === '/'
-                  : location.pathname.startsWith(item.path);
+                  : location.pathname.startsWith(entry.path);
                 return (
                   <Link
-                    key={item.path}
-                    to={item.path}
+                    key={entry.path}
+                    to={entry.path}
                     className={`block px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
                       isActive ? 'bg-primary-50 text-primary-600' : 'text-gray-700 hover:bg-gray-50'
                     }`}
                   >
-                    {item.label}
+                    {entry.label}
                   </Link>
                 );
               })}

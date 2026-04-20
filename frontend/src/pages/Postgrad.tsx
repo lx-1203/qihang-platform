@@ -1,7 +1,10 @@
-import { GraduationCap, Globe, Clock, ChevronRight, Award } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { GraduationCap, Globe, Clock, ChevronRight, Award, Loader2 } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { useConfigStore } from '@/store/config';
+import http from '@/api/http';
 
-// 默认配置（当后端不可用时使用）
+// 默认文案配置（从配置中心读取，不含动态数据）
 const DEFAULT_POSTGRAD_CONFIG = {
   timelines: [
     { month: '3月-5月', title: '基础复习阶段', desc: '确定目标院校和专业，搜集考研大纲和真题，开始英语和专业课基础轮复习。' },
@@ -13,15 +16,50 @@ const DEFAULT_POSTGRAD_CONFIG = {
   heroDesc: '汇集全网最全的升学资讯、学长学姐真实经验贴、院校专业分析报告，助你顺利迈向人生的下一个台阶。'
 };
 
+interface ArticleItem {
+  id: number;
+  title: string;
+  category: string;
+}
+
 export default function Postgrad() {
   const postgradConfig = useConfigStore(s => s.getJson('postgrad_page_config', DEFAULT_POSTGRAD_CONFIG));
   const TIMELINES = postgradConfig.timelines || DEFAULT_POSTGRAD_CONFIG.timelines;
   const heroTitle = postgradConfig.heroTitle || DEFAULT_POSTGRAD_CONFIG.heroTitle;
   const heroDesc = postgradConfig.heroDesc || DEFAULT_POSTGRAD_CONFIG.heroDesc;
+
+  // 保研文章
+  const [postgradArticles, setPostgradArticles] = useState<ArticleItem[]>([]);
+  const [postgradLoading, setPostgradLoading] = useState(true);
+
+  // 留学文章
+  const [abroadArticles, setAbroadArticles] = useState<ArticleItem[]>([]);
+  const [abroadLoading, setAbroadLoading] = useState(true);
+
+  useEffect(() => {
+    http.get('/articles', { params: { category: 'postgrad', pageSize: 5 } })
+      .then(res => {
+        if (res.data?.code === 200) {
+          setPostgradArticles(res.data.data.articles || []);
+        }
+      })
+      .catch(() => {})
+      .finally(() => setPostgradLoading(false));
+
+    http.get('/articles', { params: { category: 'abroad', pageSize: 5 } })
+      .then(res => {
+        if (res.data?.code === 200) {
+          setAbroadArticles(res.data.data.articles || []);
+        }
+      })
+      .catch(() => {})
+      .finally(() => setAbroadLoading(false));
+  }, []);
+
   return (
     <div className="min-h-screen bg-gray-50 pt-8 pb-16">
       <div className="container-main">
-        
+
         {/* Header */}
         <div className="flex flex-col md:flex-row items-center justify-between bg-white rounded-[24px] p-8 md:p-12 mb-12 shadow-sm border border-gray-100">
           <div className="max-w-xl mb-8 md:mb-0">
@@ -71,9 +109,24 @@ export default function Postgrad() {
             <h3 className="text-[24px] font-bold text-gray-900 mb-2">保研专区 (推免)</h3>
             <p className="text-gray-600 mb-6">夏令营通知、九推捡漏、导师套磁信模板、专业笔面试面经汇总。</p>
             <ul className="space-y-3 mb-8">
-              <li className="flex items-center text-[14px] text-gray-600 hover:text-primary-600 cursor-pointer"><ChevronRight className="w-4 h-4 mr-1"/> 2024年全国高校夏令营入营要求盘点</li>
-              <li className="flex items-center text-[14px] text-gray-600 hover:text-primary-600 cursor-pointer"><ChevronRight className="w-4 h-4 mr-1"/> 计算机专业保研机试常见题型解析</li>
-              <li className="flex items-center text-[14px] text-gray-600 hover:text-primary-600 cursor-pointer"><ChevronRight className="w-4 h-4 mr-1"/> 如何给心仪的导师发一封高回复率的邮件？</li>
+              {postgradLoading ? (
+                <li className="flex items-center justify-center py-2">
+                  <Loader2 className="w-4 h-4 text-primary-500 animate-spin" />
+                </li>
+              ) : postgradArticles.length === 0 ? (
+                <li className="text-[14px] text-gray-400">暂无相关文章</li>
+              ) : (
+                postgradArticles.map(article => (
+                  <li key={article.id}>
+                    <Link
+                      to={`/guidance/articles/${article.id}`}
+                      className="flex items-center text-[14px] text-gray-600 hover:text-primary-600 cursor-pointer"
+                    >
+                      <ChevronRight className="w-4 h-4 mr-1" /> {article.title}
+                    </Link>
+                  </li>
+                ))
+              )}
             </ul>
             <button className="text-primary-600 font-medium text-[15px] flex items-center gap-1 hover:gap-2 transition-all">
               进入保研社区 <ChevronRight className="w-5 h-5" />
@@ -86,9 +139,24 @@ export default function Postgrad() {
             <h3 className="text-[24px] font-bold text-gray-900 mb-2">留学专区</h3>
             <p className="text-gray-600 mb-6">QS前100院校申请要求、雅思/托福备考、文书写作指南、签证办理流程。</p>
             <ul className="space-y-3 mb-8">
-              <li className="flex items-center text-[14px] text-gray-600 hover:text-sky-600 cursor-pointer"><ChevronRight className="w-4 h-4 mr-1"/> 英国G5一年制硕士真实就读体验分享</li>
-              <li className="flex items-center text-[14px] text-gray-600 hover:text-sky-600 cursor-pointer"><ChevronRight className="w-4 h-4 mr-1"/> 香港地区八大名校跨考商科难度评估</li>
-              <li className="flex items-center text-[14px] text-gray-600 hover:text-sky-600 cursor-pointer"><ChevronRight className="w-4 h-4 mr-1"/> 零中介费DIY申请美国CS硕士全攻略</li>
+              {abroadLoading ? (
+                <li className="flex items-center justify-center py-2">
+                  <Loader2 className="w-4 h-4 text-sky-500 animate-spin" />
+                </li>
+              ) : abroadArticles.length === 0 ? (
+                <li className="text-[14px] text-gray-400">暂无相关文章</li>
+              ) : (
+                abroadArticles.map(article => (
+                  <li key={article.id}>
+                    <Link
+                      to={`/guidance/articles/${article.id}`}
+                      className="flex items-center text-[14px] text-gray-600 hover:text-sky-600 cursor-pointer"
+                    >
+                      <ChevronRight className="w-4 h-4 mr-1" /> {article.title}
+                    </Link>
+                  </li>
+                ))
+              )}
             </ul>
             <button className="text-sky-600 font-medium text-[15px] flex items-center gap-1 hover:gap-2 transition-all">
               进入留学社区 <ChevronRight className="w-5 h-5" />

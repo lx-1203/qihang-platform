@@ -2,10 +2,22 @@ import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronLeft, ChevronRight, Quote, ArrowRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import http from '@/api/http';
 
 // ====== 学员故事墙 ======
 
-const stories = [
+interface Story {
+  name: string;
+  role: string;
+  company: string;
+  year: string;
+  quote: string;
+  content: string;
+  gradient: string;
+  initial: string;
+}
+
+const DEFAULT_STORIES: Story[] = [
   {
     name: '李明',
     role: '产品经理',
@@ -49,8 +61,34 @@ const stories = [
 ];
 
 export default function StudentStories() {
+  const [stories, setStories] = useState<Story[]>(DEFAULT_STORIES);
   const [current, setCurrent] = useState(0);
   const timerRef = useRef<ReturnType<typeof setInterval>>();
+
+  // 尝试从后端获取成功案例数据
+  useEffect(() => {
+    http.get('/config/public')
+      .then(res => {
+        const config = res.data?.data?.success_cases_page_config;
+        if (config?.cases && Array.isArray(config.cases) && config.cases.length > 0) {
+          // 将后端数据映射为组件所需格式
+          const mapped: Story[] = config.cases.slice(0, 4).map((c: Record<string, string>) => ({
+            name: c.name,
+            role: c.achievement || '',
+            company: c.school?.split('·')[0]?.trim() || '',
+            year: '',
+            quote: c.quote,
+            content: c.quote,
+            gradient: c.color || 'from-primary-500 to-primary-600',
+            initial: c.avatar || c.name?.[0] || '',
+          }));
+          setStories(mapped);
+        }
+      })
+      .catch(() => {
+        // API 不可用，保留默认故事
+      });
+  }, []);
 
   // 自动轮播 6s
   useEffect(() => {
@@ -58,7 +96,7 @@ export default function StudentStories() {
       setCurrent(p => (p + 1) % stories.length);
     }, 6000);
     return () => clearInterval(timerRef.current);
-  }, []);
+  }, [stories.length]);
 
   const go = (dir: 'prev' | 'next') => {
     clearInterval(timerRef.current);

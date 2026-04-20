@@ -10,6 +10,7 @@ import { ListSkeleton } from '../../components/ui/Skeleton';
 import ErrorState from '../../components/ui/ErrorState';
 import { showToast } from '@/components/ui/ToastContainer';
 import Tag from '@/components/ui/Tag';
+import ConfirmDialog from '@/components/ui/ConfirmDialog';
 
 // ====== 我的预约（导师预约管理） ======
 // 预约列表、状态筛选、完成后评价（星级+文本）
@@ -61,6 +62,9 @@ export default function MyAppointments() {
   const [reviewForm, setReviewForm] = useState<ReviewForm>({ appointmentId: 0, rating: 5, content: '' });
   const [submittingReview, setSubmittingReview] = useState(false);
   const [hoverRating, setHoverRating] = useState(0);
+  const [showCancelDialog, setShowCancelDialog] = useState(false);
+  const [cancellingId, setCancellingId] = useState<number | null>(null);
+  const [cancelling, setCancelling] = useState(false);
 
   useEffect(() => {
     fetchAppointments();
@@ -125,6 +129,29 @@ export default function MyAppointments() {
       ));
       setShowReviewModal(false);
       setSubmittingReview(false);
+    }
+  }
+
+  function openCancelDialog(appointmentId: number) {
+    setCancellingId(appointmentId);
+    setShowCancelDialog(true);
+  }
+
+  async function handleCancelAppointment() {
+    if (!cancellingId) return;
+    try {
+      setCancelling(true);
+      await http.put(`/student/appointments/${cancellingId}/cancel`);
+      showToast({ type: 'success', title: '取消成功', message: '预约已取消' });
+      // 刷新列表
+      await fetchAppointments();
+    } catch (err) {
+      showToast({ type: 'error', title: '取消失败', message: '请稍后重试' });
+      if (import.meta.env.DEV) console.error('[DEV] Cancel error:', err);
+    } finally {
+      setCancelling(false);
+      setShowCancelDialog(false);
+      setCancellingId(null);
     }
   }
 
@@ -286,7 +313,7 @@ export default function MyAppointments() {
                           <Video className="w-4 h-4" />
                           进入会议
                         </button>
-                        <button onClick={() => showToast({ type: 'info', title: '功能开发中', message: '取消预约功能正在开发中，请联系导师' })} className="px-4 py-2 border border-gray-300 text-gray-600 rounded-lg hover:bg-gray-50 transition-colors text-sm">
+                        <button onClick={() => openCancelDialog(app.id)} className="px-4 py-2 border border-gray-300 text-gray-600 rounded-lg hover:bg-gray-50 transition-colors text-sm">
                           取消预约
                         </button>
                       </div>
@@ -305,6 +332,21 @@ export default function MyAppointments() {
           共 {filtered.length} 条预约记录
         </div>
       )}
+
+      {/* ===== 取消预约确认弹窗 ===== */}
+      <ConfirmDialog
+        open={showCancelDialog}
+        title="确认取消预约？"
+        description="取消后将无法恢复，如需重新预约请联系导师"
+        variant="warning"
+        confirmText="确认取消"
+        loading={cancelling}
+        onConfirm={handleCancelAppointment}
+        onCancel={() => {
+          setShowCancelDialog(false);
+          setCancellingId(null);
+        }}
+      />
 
       {/* ===== 评价弹窗 ===== */}
       <AnimatePresence>

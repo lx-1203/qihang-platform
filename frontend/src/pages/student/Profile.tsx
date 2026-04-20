@@ -2,13 +2,13 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import {
   User, Phone, School, BookOpen, GraduationCap,
-  Tag, Target, FileText, Upload, Save,
+  Tag, Target, FileText, Save,
   Pencil, X, Check, Link, Briefcase
 } from 'lucide-react';
 import http from '@/api/http';
-import FeatureStatus from '@/components/FeatureStatus';
 import { DetailSkeleton } from '../../components/ui/Skeleton';
 import ErrorState from '../../components/ui/ErrorState';
+import FileUpload from '@/components/ui/FileUpload';
 
 // ====== 学生个人资料页 ======
 // 支持查看/编辑模式切换，个人信息编辑、技能标签管理、简历上传
@@ -432,12 +432,13 @@ export default function Profile() {
                   </div>
                   <p className="text-xs text-gray-400 mt-1.5">支持在线简历链接或网盘分享地址，后续将支持文件直传</p>
                 </div>
-                {/* 上传区域（预留） */}
-                <div className="border-2 border-dashed border-gray-200 rounded-xl p-8 text-center hover:border-primary-300 transition-colors">
-                  <Upload className="w-10 h-10 text-gray-300 mx-auto mb-3" />
-                  <div className="flex justify-center mb-2"><FeatureStatus status="coming" label="文件上传即将上线" size="md" /></div>
-                  <p className="text-xs text-gray-400">目前请使用简历链接方式，文件直传功能开发中</p>
-                </div>
+                {/* 上传区域 */}
+                <FileUpload
+                  category="resume"
+                  accept=".pdf,.doc,.docx"
+                  maxSize={10 * 1024 * 1024}
+                  onSuccess={(result) => setEditData({ ...editData, resumeUrl: result.url })}
+                />
               </div>
             ) : (
               <div>
