@@ -43,9 +43,16 @@ if [ ! -d "$PROJECT_DIR" ]; then
 fi
 echo "✅ 项目目录: $PROJECT_DIR"
 
-# 4. 安装后端依赖
+# 4. 安装依赖并构建前端
 echo ""
-echo "[4/6] 安装后端依赖..."
+echo "[4/6] 安装依赖并构建前端..."
+cd "$PROJECT_DIR/frontend"
+npm install
+NODE_OPTIONS="--max-old-space-size=4096" npm run build
+echo "✅ 前端构建完成"
+
+echo ""
+echo "[5/6] 安装后端依赖..."
 cd "$PROJECT_DIR/backend"
 if [ ! -f ".env" ]; then
     echo "⚠️  后端 .env 文件不存在！"
@@ -57,7 +64,7 @@ echo "✅ 后端依赖安装完成"
 
 # 5. 初始化数据库
 echo ""
-echo "[5/6] 初始化数据库..."
+echo "[6/6] 初始化数据库..."
 echo "是否需要初始化数据库？(首次部署选 y)"
 read -p "(y/n): " INIT_DB
 if [ "$INIT_DB" = "y" ]; then
@@ -69,7 +76,7 @@ fi
 
 # 6. 启动服务
 echo ""
-echo "[6/6] 启动后端服务..."
+echo "[7/7] 启动后端服务..."
 echo "建议使用 PM2 管理 Node.js 进程："
 echo ""
 echo "  npm install -g pm2"

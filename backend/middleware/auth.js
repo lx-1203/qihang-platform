@@ -27,8 +27,20 @@ export function generateToken(user) {
 /**
  * 验证 JWT 中间件
  * 将解码后的用户信息挂载到 req.user
+ *
+ * 开发模式：设置环境变量 DEV_MODE=true 可跳过认证
  */
 export function authMiddleware(req, res, next) {
+  // 开发模式：跳过认证
+  if (process.env.DEV_MODE === 'true') {
+    req.user = {
+      id: 1,
+      email: 'dev@test.com',
+      role: 'admin' // 开发模式默认管理员权限
+    };
+    return next();
+  }
+
   const authHeader = req.headers.authorization;
 
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -49,9 +61,16 @@ export function authMiddleware(req, res, next) {
 /**
  * 角色权限中间件
  * @param  {...string} roles 允许的角色列表
+ *
+ * 开发模式：设置环境变量 DEV_MODE=true 可跳过权限检查
  */
 export function requireRole(...roles) {
   return (req, res, next) => {
+    // 开发模式：跳过权限检查
+    if (process.env.DEV_MODE === 'true') {
+      return next();
+    }
+
     if (!req.user) {
       return res.status(401).json({ code: 401, message: '未登录' });
     }

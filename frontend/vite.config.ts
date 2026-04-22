@@ -44,6 +44,8 @@ export default defineConfig(({ mode }) => {
     // 构建优化：代码分割 + chunk 大小控制
     build: {
       chunkSizeWarningLimit: 800,
+      sourcemap: false, // 禁用 sourcemap 减少内存占用
+      minify: 'esbuild', // 使用更快的 esbuild 压缩
       rollupOptions: {
         output: {
           manualChunks: {

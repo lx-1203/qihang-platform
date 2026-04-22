@@ -10,7 +10,7 @@
 | 项目类型   | B/S 架构 Web 应用（前后端分离）                        |
 | 服务对象   | 在校大学生、应届毕业生、企业招聘方、职业导师            |
 | 主品牌色   | `#14b8a6`（湖绿/Teal）                                |
-| 项目状态   | **前后端全栈搭建完成，四端页面就绪，安全加固已完成**  |
+| 项目状态   | **✅ 已完成开发，生产环境就绪，进入用户测试阶段**  |
 | 立项单位   | 江苏初晓云网络科技有限公司技术组                       |
 
 ### 核心定位
@@ -73,11 +73,13 @@
 │   └── package.json
 │
 ├── database/                      # SQL 备份文件
-├── deploy/                        # 部署配置（nginx + .env.production）
+├── deploy/                        # 部署配置（nginx + .env.production + deploy.sh）
 ├── docs/                          # 项目文档
 │   ├── 功能设计文档.md
 │   └── 项目立项书.docx            # 权威文档，一切以此为准
 ├── scraper/                       # Python 数据采集脚本
+├── DEPLOYMENT.md                  # 生产环境部署指南
+├── USER_TESTING_GUIDE.md          # 用户测试指南
 ├── start.bat                      # Windows 一键启动（前端+后端）
 ├── start.sh                       # Linux/Mac 一键启动
 └── CLAUDE.md                      # 本文件
@@ -90,6 +92,12 @@
 - ✅ Zustand 认证 store + Axios JWT 拦截器
 - ✅ ProtectedRoute RBAC 路由守卫
 - ✅ `start.bat`/`start.sh` 同时启动前后端
+- ✅ 合伙人招募功能（全栈 MVP）
+- ✅ 留学板块优化（数据库配置）
+- ✅ 全局 Toast 通知系统（替换所有 alert）
+- ✅ 生产环境构建优化（4GB 内存限制 + sourcemap 禁用）
+- ✅ 部署文档完善（DEPLOYMENT.md）
+- ✅ 用户测试指南（USER_TESTING_GUIDE.md）
 - ⚠️ 留学板块及部分首页组件使用 JSON 静态数据（非 API）
 - ⚠️ `Login.tsx` 的第三方登录按钮仅为 UI 装饰，无实际功能
 

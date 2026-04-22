@@ -25,10 +25,17 @@ interface ProtectedRouteProps {
  *
  * 未登录 → 重定向到 /login（携带 returnUrl）
  * 角色不匹配 → 重定向到对应角色首页
+ *
+ * 开发模式：设置 localStorage.DEV_MODE=true 可跳过权限检查
  */
 export default function ProtectedRoute({ allowedRoles, children }: ProtectedRouteProps) {
   const { isAuthenticated, user } = useAuthStore();
   const location = useLocation();
+
+  // 开发模式：跳过所有权限检查
+  if (import.meta.env.DEV && localStorage.getItem('DEV_MODE') === 'true') {
+    return <>{children}</>;
+  }
 
   // 未登录 → 跳转登录页，保存当前路径用于登录后回跳
   if (!isAuthenticated || !user) {
