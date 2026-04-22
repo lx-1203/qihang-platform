@@ -6,6 +6,7 @@ import { useToast } from '@/components/ui';
 import { useConfigStore } from '@/store/config';
 import { Skeleton, CardSkeleton } from '@/components/ui/Skeleton';
 import { handleApiFailure } from '@/utils/connectionStatus';
+import FileUpload from '@/components/ui/FileUpload';
 import uiConfig from '../../data/study-abroad-ui-config.json';
 
 type HeroSlide = typeof uiConfig.heroSlides[0];
@@ -74,14 +75,14 @@ export default function StudyAbroadConfig() {
     // 验证必填字段
     for (let i = 0; i < heroSlides.length; i++) {
       if (!heroSlides[i].title.trim()) {
-        toast.error('验证失败', `轮播图 #${i + 1} 的标题不能为空`);
+        toast.error('验证失败', `轮播图 第${i + 1}项 的标题不能为空`);
         setActiveTab('hero');
         return;
       }
     }
     for (let i = 0; i < serviceCards.length; i++) {
       if (!serviceCards[i].title.trim()) {
-        toast.error('验证失败', `服务卡片 #${i + 1} 的标题不能为空`);
+        toast.error('验证失败', `服务卡片 第${i + 1}项 的标题不能为空`);
         setActiveTab('services');
         return;
       }
@@ -267,6 +268,8 @@ export default function StudyAbroadConfig() {
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1.5">副标题</label>
                         <textarea
+                          id={`hero-subtitle-${index}`}
+                          name={`subtitle-${index}`}
                           value={slide.subtitle}
                           onChange={(e) => {
                             const newSlides = [...heroSlides];
@@ -307,20 +310,26 @@ export default function StudyAbroadConfig() {
                     <div className="space-y-4">
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1.5">图片链接</label>
-                        <div className="flex gap-2">
-                          <input
-                            value={slide.image}
-                            onChange={(e) => {
-                              const newSlides = [...heroSlides];
-                              newSlides[index].image = e.target.value;
-                              setHeroSlides(newSlides);
-                            }}
-                            className="flex-1 px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent text-sm"
-                          />
-                          <button className="px-4 py-2.5 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200">
-                            <Upload className="w-4 h-4" />
-                          </button>
-                        </div>
+                        <input
+                          value={slide.image}
+                          onChange={(e) => {
+                            const newSlides = [...heroSlides];
+                            newSlides[index].image = e.target.value;
+                            setHeroSlides(newSlides);
+                          }}
+                          className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent text-sm"
+                        />
+                        <FileUpload
+                          category="cover"
+                          accept="image/*"
+                          placeholder="点击或拖拽上传轮播图片"
+                          className="mt-2"
+                          onSuccess={(result) => {
+                            const newSlides = [...heroSlides];
+                            newSlides[index].image = result.url;
+                            setHeroSlides(newSlides);
+                          }}
+                        />
                       </div>
                       <div className="relative aspect-video bg-gray-100 rounded-xl overflow-hidden">
                         <img src={slide.image} alt="" className="w-full h-full object-cover" />
@@ -338,6 +347,12 @@ export default function StudyAbroadConfig() {
           <div className="space-y-6">
             <div className="flex items-center justify-between">
               <h2 className="text-xl font-bold text-gray-900">8宫格服务卡片</h2>
+              <button
+                onClick={() => setServiceCards([...serviceCards, { ...serviceCards[0], id: `service-${Date.now()}`, title: '', subtitle: '', description: '', image: '' }])}
+                className="flex items-center gap-2 px-4 py-2 bg-gray-900 text-white rounded-lg text-sm hover:bg-gray-800"
+              >
+                <Plus className="w-4 h-4" /> 新增卡片
+              </button>
             </div>
 
             <div className="grid md:grid-cols-2 gap-6">
@@ -351,6 +366,12 @@ export default function StudyAbroadConfig() {
                 >
                   <div className="flex items-start justify-between mb-4">
                     <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">卡片 {index + 1}</span>
+                    <button
+                      onClick={() => setDeleteConfirm({ type: 'service', index: index })}
+                      className="text-red-500 hover:text-red-600 p-1"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
                   </div>
 
                   <div className="space-y-4">
@@ -402,6 +423,17 @@ export default function StudyAbroadConfig() {
                           setServiceCards(newCards);
                         }}
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                      />
+                      <FileUpload
+                        category="cover"
+                        accept="image/*"
+                        placeholder="上传服务卡片图片"
+                        className="mt-2"
+                        onSuccess={(result) => {
+                          const newCards = [...serviceCards];
+                          newCards[index].image = result.url;
+                          setServiceCards(newCards);
+                        }}
                       />
                     </div>
                     <div className="aspect-video bg-gray-100 rounded-lg overflow-hidden">
@@ -505,6 +537,8 @@ export default function StudyAbroadConfig() {
                       <div>
                         <label className="block text-xs font-medium text-gray-500 mb-1">完整故事</label>
                         <textarea
+                          id={`story-content-${index}`}
+                          name={`story-${index}`}
                           value={story.story}
                           onChange={(e) => {
                             const newStories = [...studentStories];
@@ -568,7 +602,17 @@ export default function StudyAbroadConfig() {
                             newStories[index].image = e.target.value;
                             setStudentStories(newStories);
                           }}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm mb-3"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm mb-2"
+                        />
+                        <FileUpload
+                          category="avatar"
+                          accept="image/*"
+                          placeholder="上传学员照片"
+                          onSuccess={(result) => {
+                            const newStories = [...studentStories];
+                            newStories[index].image = result.url;
+                            setStudentStories(newStories);
+                          }}
                         />
                       </div>
                       <div className="aspect-square bg-gray-100 rounded-xl overflow-hidden">
@@ -618,6 +662,8 @@ export default function StudyAbroadConfig() {
                     <div>
                       <label className="block text-xs font-medium text-gray-500 mb-1">语录</label>
                       <textarea
+                        id={`quote-content-${index}`}
+                        name={`quote-${index}`}
                         value={quote.quote}
                         onChange={(e) => {
                           const newQuotes = [...newcomerQuotes];
@@ -663,7 +709,17 @@ export default function StudyAbroadConfig() {
                           newQuotes[index].image = e.target.value;
                           setNewcomerQuotes(newQuotes);
                         }}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm mb-3"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm mb-2"
+                      />
+                      <FileUpload
+                        category="cover"
+                        accept="image/*"
+                        placeholder="上传背景图片"
+                        onSuccess={(result) => {
+                          const newQuotes = [...newcomerQuotes];
+                          newQuotes[index].image = result.url;
+                          setNewcomerQuotes(newQuotes);
+                        }}
                       />
                     </div>
                     <div className="aspect-video bg-gray-100 rounded-lg overflow-hidden">
@@ -707,6 +763,8 @@ export default function StudyAbroadConfig() {
                 onClick={() => {
                   if (deleteConfirm.type === 'hero') {
                     setHeroSlides(heroSlides.filter((_, i) => i !== deleteConfirm.index));
+                  } else if (deleteConfirm.type === 'service') {
+                    setServiceCards(serviceCards.filter((_, i) => i !== deleteConfirm.index));
                   } else if (deleteConfirm.type === 'story') {
                     setStudentStories(studentStories.filter((_, i) => i !== deleteConfirm.index));
                   } else if (deleteConfirm.type === 'quote') {

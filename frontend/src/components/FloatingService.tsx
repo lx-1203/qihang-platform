@@ -268,7 +268,7 @@ export default function FloatingService() {
               {/* 呼吸光圈 */}
               <span className="absolute inset-0 rounded-full bg-primary-400/30 animate-ping" style={{ animationDuration: '3s' }} />
             </div>
-            <span className="text-[10px] text-gray-500 font-medium mt-1">启小航</span>
+            <span className="text-xs text-primary-600 font-bold mt-1.5 drop-shadow-sm">启小航</span>
           </motion.button>
         )}
       </AnimatePresence>

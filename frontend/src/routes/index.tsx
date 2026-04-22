@@ -1,17 +1,19 @@
 import { createBrowserRouter, Navigate } from 'react-router-dom';
 import { lazy, Suspense } from 'react';
 import MainLayout from '../layouts/MainLayout';
-import MentorLayout from '../layouts/MentorLayout';
-import CompanyLayout from '../layouts/CompanyLayout';
-import AdminLayout from '../layouts/AdminLayout';
+const MentorLayout = lazy(() => import('../layouts/MentorLayout'));
+const CompanyLayout = lazy(() => import('../layouts/CompanyLayout'));
+const AdminLayout = lazy(() => import('../layouts/AdminLayout'));
 import ProtectedRoute from '../components/ProtectedRoute';
 
 // 通用页面（立即加载）
 import NotFound from '../pages/NotFound';
 import ServerError from '../pages/ServerError';
 import Login from '../pages/Login';
-import DevNav from '../pages/DevNav';
 import Home from '../pages/Home';
+
+// 开发调试页（仅开发环境加载）
+const DevNav = import.meta.env.DEV ? lazy(() => import('../pages/DevNav')) : () => null;
 
 // 懒加载页面 - 主布局下的页面（按访问频率排序）
 const Mentors = lazy(() => import('../pages/Mentors'));
@@ -25,6 +27,8 @@ const GuidanceArticles = lazy(() => import('../pages/GuidanceArticles'));
 const GuidanceArticleDetail = lazy(() => import('../pages/GuidanceArticleDetail'));
 const Postgrad = lazy(() => import('../pages/Postgrad'));
 const Entrepreneurship = lazy(() => import('../pages/Entrepreneurship'));
+const Partners = lazy(() => import('../pages/Partners'));
+const PartnerDetail = lazy(() => import('../pages/PartnerDetail'));
 const StudyAbroad = lazy(() => import('../pages/StudyAbroad'));
 const StudyAbroadPrograms = lazy(() => import('../pages/StudyAbroadPrograms'));
 const StudyAbroadDetail = lazy(() => import('../pages/StudyAbroadDetail'));
@@ -138,6 +142,14 @@ export const router = createBrowserRouter([
         element: <Suspense fallback={<LoadingFallback />}><Entrepreneurship /></Suspense>
       },
       {
+        path: 'partners',
+        element: <Suspense fallback={<LoadingFallback />}><Partners /></Suspense>
+      },
+      {
+        path: 'partners/:id',
+        element: <Suspense fallback={<LoadingFallback />}><PartnerDetail /></Suspense>
+      },
+      {
         path: 'study-abroad',
         element: <Suspense fallback={<LoadingFallback />}><StudyAbroad /></Suspense>
       },
@@ -204,7 +216,9 @@ export const router = createBrowserRouter([
     path: '/mentor',
     element: (
       <ProtectedRoute allowedRoles={['mentor']}>
-        <MentorLayout />
+        <Suspense fallback={<LoadingFallback />}>
+          <MentorLayout />
+        </Suspense>
       </ProtectedRoute>
     ),
     children: [
@@ -250,7 +264,9 @@ export const router = createBrowserRouter([
     path: '/company',
     element: (
       <ProtectedRoute allowedRoles={['company']}>
-        <CompanyLayout />
+        <Suspense fallback={<LoadingFallback />}>
+          <CompanyLayout />
+        </Suspense>
       </ProtectedRoute>
     ),
     children: [
@@ -292,7 +308,9 @@ export const router = createBrowserRouter([
     path: '/admin',
     element: (
       <ProtectedRoute allowedRoles={['admin']}>
-        <AdminLayout />
+        <Suspense fallback={<LoadingFallback />}>
+          <AdminLayout />
+        </Suspense>
       </ProtectedRoute>
     ),
     children: [
@@ -378,11 +396,11 @@ export const router = createBrowserRouter([
     path: '/register',
     element: <Login />
   },
-  // ====== 开发调试页 (上线前移除) ======
-  {
+  // ====== 开发调试页 (仅开发环境注册) ======
+  ...(import.meta.env.DEV ? [{
     path: '/dev',
     element: <DevNav />
-  },
+  }] : []),
   // ====== 错误页面 ======
   {
     path: '/500',

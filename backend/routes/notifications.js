@@ -39,12 +39,15 @@ router.get('/', async (req, res) => {
     let whereClauses = ['user_id = ?', 'deleted_at IS NULL'];
     let params = [userId];
 
-    if (is_read !== undefined && is_read !== '') {
-      whereClauses.push('is_read = ?');
-      params.push(parseInt(is_read));
+    if (is_read !== undefined && is_read !== '' && is_read !== 'all') {
+      const parsed = parseInt(is_read);
+      if (!isNaN(parsed)) {
+        whereClauses.push('is_read = ?');
+        params.push(parsed);
+      }
     }
 
-    if (type) {
+    if (type && type !== 'all') {
       whereClauses.push('type = ?');
       params.push(type);
     }

@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import {
   DollarSign,
   GraduationCap,
@@ -9,8 +9,8 @@ import {
   Calculator,
 } from 'lucide-react';
 import { motion } from 'framer-motion';
-import costsData from '../../data/study-abroad-costs.json';
-import countriesData from '../../data/study-abroad-countries.json';
+import { useConfigStore } from '@/store/config';
+import http from '@/api/http';
 import Tag from '@/components/ui/Tag';
 
 // ---------- 类型定义 ----------
@@ -64,6 +64,14 @@ interface CountryBasic {
   scholarships: Scholarship[];
 }
 
+// ---------- 默认费用配置兜底 ----------
+
+const DEFAULT_COSTS_CONFIG: CostData[] = [
+  { id: 'uk', country: '英国', currency: '£', currencyCode: 'GBP', exchangeRate: 9.2, freeTuition: false, specialNotes: null, undergraduate: { min: 15000, max: 45000, unit: '年' }, master: { min: 15000, max: 45000, unit: '年' }, phd: { min: 15000, max: 25000, unit: '年' }, living: { tier1: { city: 'London', min: 15000, max: 18000 }, tier2: { city: 'Manchester', min: 10000, max: 14000 } }, other: { visa: 348, insurance: 470, flight: 6000 } },
+  { id: 'us', country: '美国', currency: '$', currencyCode: 'USD', exchangeRate: 7.2, freeTuition: false, specialNotes: '博士阶段多数理工科项目提供全额奖学金（TA/RA），学费全免并提供生活津贴', undergraduate: { min: 30000, max: 65000, unit: '年' }, master: { min: 30000, max: 65000, unit: '年' }, phd: { min: 0, max: 35000, unit: '年' }, living: { tier1: { city: 'New York', min: 20000, max: 25000 }, tier2: { city: 'Columbus', min: 12000, max: 16000 } }, other: { visa: 160, insurance: 2000, flight: 8000 } },
+  { id: 'hk', country: '中国香港', currency: 'HK$', currencyCode: 'HKD', exchangeRate: 0.92, freeTuition: false, specialNotes: '博士阶段可申请HKPFS（香港博士研究生奖学金），每月津贴HK$27,600，学费全免', undergraduate: { min: 150000, max: 350000, unit: '年' }, master: { min: 150000, max: 350000, unit: '年' }, phd: { min: 42100, max: 42100, unit: '年' }, living: { tier1: { city: '港岛', min: 100000, max: 120000 }, tier2: { city: '新界', min: 70000, max: 90000 } }, other: { visa: 530, insurance: 5000, flight: 2000 } },
+];
+
 // ---------- 学位类型选项 ----------
 
 type DegreeType = 'undergraduate' | 'master' | 'phd';
@@ -84,8 +92,27 @@ function fmtNum(n: number): string {
 // ---------- 组件 ----------
 
 export default function CostEstimator() {
-  const costs = costsData as CostData[];
-  const countries = countriesData as CountryBasic[];
+  // 费用数据从 config store 获取
+  const costs = useConfigStore().getJson<CostData[]>('study_abroad_costs_config', DEFAULT_COSTS_CONFIG);
+
+  // 国家基本信息从 API 获取
+  const [countries, setCountries] = useState<CountryBasic[]>([]);
+  const [countriesLoading, setCountriesLoading] = useState(true);
+
+  useEffect(() => {
+    http.get('/study-abroad/countries')
+      .then((res) => {
+        if (res.data?.code === 200 && Array.isArray(res.data.data)) {
+          setCountries(res.data.data);
+        }
+      })
+      .catch(() => {
+        // 静默失败，国家信息主要用于显示国旗和奖学金
+      })
+      .finally(() => {
+        setCountriesLoading(false);
+      });
+  }, []);
 
   // 选择状态
   const [selectedCountry, setSelectedCountry] = useState('uk');

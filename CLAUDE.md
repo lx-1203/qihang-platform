@@ -30,59 +30,67 @@
 
 ```
 .
-├── frontend/                      # 前端工程（已搭建骨架）
+├── frontend/                      # 前端工程（已完成）
 │   ├── src/
 │   │   ├── main.tsx               # 应用入口
 │   │   ├── index.css              # 全局样式 (Tailwind)
 │   │   ├── i18n.ts                # i18next 配置
-│   │   ├── routes/index.tsx       # 路由定义
+│   │   ├── routes/index.tsx       # 路由定义（懒加载 + RBAC 守卫）
 │   │   ├── layouts/               # 4 种布局模板
-│   │   │   ├── MainLayout.tsx     # C 端学生布局
-│   │   │   ├── MentorLayout.tsx   # 导师端布局
-│   │   │   ├── CompanyLayout.tsx  # 企业端布局
-│   │   │   └── AdminLayout.tsx    # 管理后台布局
-│   │   ├── components/
-│   │   │   ├── Navbar.tsx         # 顶部导航
-│   │   │   └── Footer.tsx         # 页脚 (含 i18n)
-│   │   ├── pages/                 # 12 个骨架页面（全部硬编码 Mock 数据）
-│   │   │   ├── Home.tsx
-│   │   │   ├── Jobs.tsx
-│   │   │   ├── Courses.tsx
-│   │   │   ├── CourseDetail.tsx
-│   │   │   ├── Guidance.tsx
-│   │   │   ├── Postgrad.tsx
-│   │   │   ├── Entrepreneurship.tsx
-│   │   │   ├── MentorDetail.tsx
-│   │   │   ├── Login.tsx
-│   │   │   ├── AdminDashboard.tsx
-│   │   │   ├── CompanyDashboard.tsx
-│   │   │   └── MentorDashboard.tsx
+│   │   ├── api/http.ts            # Axios 实例 + JWT 拦截器 + Token 自动刷新
+│   │   ├── store/                 # Zustand 状态管理
+│   │   │   ├── auth.ts            # 认证 store + persist
+│   │   │   ├── chat.ts            # 聊天 store
+│   │   │   └── config.ts          # 站点配置 store
+│   │   ├── types/index.ts         # TypeScript 类型定义
+│   │   ├── components/            # 30+ 组件（含 ProtectedRoute、UI 组件库）
+│   │   ├── pages/                 # 25+ C 端页面
+│   │   │   ├── admin/             # 16 个管理后台页面
+│   │   │   ├── company/           # 6 个企业端页面
+│   │   │   ├── mentor/            # 7 个导师端页面
+│   │   │   └── student/           # 5 个学生端页面
+│   │   ├── data/                  # 18 个 JSON 配置/静态数据文件
+│   │   ├── hooks/                 # 4 个自定义 Hook
+│   │   ├── utils/                 # 5 个工具模块
 │   │   ├── locales/               # 国际化翻译 (zh/en/ja)
-│   │   └── assets/                # 静态资源
-│   ├── vite.config.ts
+│   │   └── __tests__/             # Vitest 单元测试
+│   ├── tests/e2e/                 # Playwright E2E 测试
+│   ├── vite.config.ts             # 含 /api 代理 + 代码分割
 │   ├── tailwind.config.js         # 主色: #14b8a6
 │   └── package.json
 │
-├── backend/                       # ❌ 完全不存在，需要从零搭建
+├── backend/                       # ✅ Express 后端（已完成）
+│   ├── server.js                  # 入口（21 个路由模块 + 安全中间件）
+│   ├── db.js                      # MySQL 连接池
+│   ├── init-db.js                 # 数据库初始化（26 张表 + 种子数据）
+│   ├── middleware/                # 6 个中间件（auth/audit/csrf/限流/幂等/SQL注入防护）
+│   ├── routes/                    # 21 个路由模块
+│   ├── services/                  # AI 聊天服务（默认 mock 模式）
+│   ├── utils/notification.js      # 通知工具
+│   ├── uploads/                   # 文件上传目录（自动创建子目录）
+│   ├── .env                       # 环境变量（不提交到 Git）
+│   ├── .env.example               # 环境变量模板
+│   └── package.json
 │
-├── start.bat                      # 启动脚本（当前仅启动前端）
-├── start.sh
-├── 功能设计文档.md                # 产品 UI/UX 设计规范
-├── 项目立项书.docx                # 项目立项书（权威文档，一切以此为准）
+├── database/                      # SQL 备份文件
+├── deploy/                        # 部署配置（nginx + .env.production）
+├── docs/                          # 项目文档
+│   ├── 功能设计文档.md
+│   └── 项目立项书.docx            # 权威文档，一切以此为准
+├── scraper/                       # Python 数据采集脚本
+├── start.bat                      # Windows 一键启动（前端+后端）
+├── start.sh                       # Linux/Mac 一键启动
 └── CLAUDE.md                      # 本文件
 ```
 
-**关键事实：**
-- ❌ `backend/` 目录完全不存在 — 没有 `server.js`、`db.js`、`init-db.js`、`routes/`、`middleware/`
-- ❌ 没有 API 配置 — 没有 `api/http.ts`、没有 Axios 实例
-- ❌ 没有状态管理 — 没有 `store/auth.ts`、没有 Zustand store
-- ❌ 没有 TypeScript 类型 — 没有 `types/` 目录
-- ❌ 没有路由守卫 — 没有 `ProtectedRoute` 组件
-- ❌ 没有 B 端页面 — `pages/admin/`、`pages/company/`、`pages/mentor/`、`pages/student/` 目录均不存在
-- ❌ 没有 `Mentors.tsx` 列表页（现有 `MentorDetail.tsx` 仅有骨架）
-- ⚠️ 所有 12 个页面组件使用硬编码 Mock 数据
-- ⚠️ `start.bat`/`start.sh` 只启动前端，没有后端启动逻辑
-- ⚠️ Vite 未配置 `/api` 代理
+**当前状态：**
+- ✅ 前后端全栈搭建完成，四端页面就绪
+- ✅ 21 个后端路由模块，6 个安全中间件
+- ✅ Vite 已配置 `/api` 代理到 `localhost:3001`
+- ✅ Zustand 认证 store + Axios JWT 拦截器
+- ✅ ProtectedRoute RBAC 路由守卫
+- ✅ `start.bat`/`start.sh` 同时启动前后端
+- ⚠️ 留学板块及部分首页组件使用 JSON 静态数据（非 API）
 - ⚠️ `Login.tsx` 的第三方登录按钮仅为 UI 装饰，无实际功能
 
 ---
@@ -99,22 +107,22 @@
 | Tailwind CSS | 3.4.17  | 样式框架           | ✅ 已配置     |
 | React Router | 7.2.0   | 路由管理           | ✅ 已配置     |
 | Framer Motion| 12.38.0 | 动画效果           | ✅ 已安装     |
-| i18next      | 25.x    | 国际化(中/英/日)   | ⚠️ 仅 Footer |
+| i18next      | 25.x    | 国际化(中/英/日)   | ✅ 已配置     |
 | Lucide React | 0.475.0 | 图标库             | ✅ 已安装     |
-| Zustand      | 5.0.3   | 状态管理           | ❌ 未使用     |
-| Axios        | 1.7.9   | HTTP 客户端        | ❌ 未配置     |
+| Zustand      | 5.0.3   | 状态管理           | ✅ 已配置     |
+| Axios        | 1.7.9   | HTTP 客户端        | ✅ 已配置     |
 
-### 后端（全部待搭建）
+### 后端（已完成搭建）
 
 | 技术           | 版本    | 用途               | 当前状态     |
 | -------------- | ------- | ------------------ | ------------ |
-| Express        | ^4.21.2 | Web 框架           | ❌ 待搭建    |
-| mysql2         | ^3.20.0 | MySQL 驱动         | ❌ 待搭建    |
-| bcryptjs       | ^3.0.3  | 密码哈希           | ❌ 待搭建    |
-| jsonwebtoken   | ^9.0.3  | JWT 认证           | ❌ 待搭建    |
-| cors           | ^2.8.5  | 跨域支持           | ❌ 待搭建    |
-| dotenv         | ^17.4.0 | 环境变量           | ❌ 待搭建    |
-| multer         | -       | 文件上传           | ❌ 待搭建    |
+| Express        | ^4.21.2 | Web 框架           | ✅ 已搭建    |
+| mysql2         | ^3.20.0 | MySQL 驱动         | ✅ 已搭建    |
+| bcryptjs       | ^3.0.3  | 密码哈希           | ✅ 已搭建    |
+| jsonwebtoken   | ^9.0.3  | JWT 认证           | ✅ 已搭建    |
+| cors           | ^2.8.5  | 跨域支持           | ✅ 已搭建    |
+| dotenv         | ^17.4.0 | 环境变量           | ✅ 已搭建    |
+| multer         | ^2.1.1  | 文件上传           | ✅ 已搭建    |
 
 ### 基础设施
 
@@ -478,4 +486,4 @@ cd backend && npm start          # 启动后端服务
 
 ---
 
-*最后更新：2026-04-07*
+*最后更新：2026-04-21*

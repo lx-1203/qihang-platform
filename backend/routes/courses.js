@@ -76,7 +76,7 @@ router.get('/:id', async (req, res) => {
   try {
     const [rows] = await pool.query('SELECT * FROM courses WHERE id = ? AND deleted_at IS NULL', [req.params.id]);
     if (rows.length === 0) {
-      return res.status(404).json({ error: '课程不存在' });
+      return res.status(404).json({ code: 404, message: '课程不存在' });
     }
 
     const course = rows[0];

@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { ChevronRight, Eye, Clock, User, ArrowLeft, Loader2, FileText } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { marked } from 'marked';
+import DOMPurify from 'dompurify';
 import http from '@/api/http';
 
 interface ArticleDetail {
@@ -55,30 +57,9 @@ export default function GuidanceArticleDetail() {
     return `${d.getFullYear()}年${d.getMonth() + 1}月${d.getDate()}日`;
   };
 
-  // 简单的 Markdown 转 HTML（处理标题、列表、粗体、代码块等）
-  const renderMarkdown = (text: string) => {
-    const html = text
-      // 标题
-      .replace(/^### (.+)$/gm, '<h3 class="text-lg font-bold text-gray-900 mt-6 mb-3">$1</h3>')
-      .replace(/^## (.+)$/gm, '<h2 class="text-xl font-bold text-gray-900 mt-8 mb-4">$1</h2>')
-      .replace(/^# (.+)$/gm, '<h1 class="text-2xl font-bold text-gray-900 mt-8 mb-4">$1</h1>')
-      // 粗体
-      .replace(/\*\*(.+?)\*\*/g, '<strong class="font-semibold text-gray-900">$1</strong>')
-      // 引用块
-      .replace(/^> (.+)$/gm, '<blockquote class="border-l-4 border-primary-300 bg-primary-50 pl-4 py-3 pr-4 my-4 text-sm text-gray-700 rounded-r-lg">$1</blockquote>')
-      // 无序列表
-      .replace(/^- (.+)$/gm, '<li class="flex items-start gap-2 text-gray-700 mb-1.5"><span class="w-1.5 h-1.5 bg-primary-500 rounded-full mt-2 shrink-0"></span><span>$1</span></li>')
-      // 有序列表
-      .replace(/^(\d+)\. (.+)$/gm, '<li class="flex items-start gap-2 text-gray-700 mb-1.5"><span class="text-primary-600 font-bold shrink-0">$1.</span><span>$2</span></li>')
-      // checkbox
-      .replace(/^- \[ \] (.+)$/gm, '<li class="flex items-center gap-2 text-gray-700 mb-1.5"><input type="checkbox" disabled class="rounded"/><span>$1</span></li>')
-      .replace(/^- \[x\] (.+)$/gm, '<li class="flex items-center gap-2 text-gray-700 mb-1.5"><input type="checkbox" checked disabled class="rounded"/><span>$1</span></li>')
-      // 段落（空行分隔）
-      .replace(/\n\n/g, '</p><p class="text-gray-700 leading-relaxed mb-4">')
-      // 单换行
-      .replace(/\n/g, '<br/>');
-
-    return `<p class="text-gray-700 leading-relaxed mb-4">${html}</p>`;
+  // Markdown → 安全 HTML（使用 marked + DOMPurify 防 XSS）
+  const renderMarkdown = (text: string): string => {
+    return DOMPurify.sanitize(marked.parse(text, { async: false }) as string);
   };
 
   if (loading) {

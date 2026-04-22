@@ -19,7 +19,7 @@ router.get('/', async (req, res) => {
     const params = [];
 
     if (category) {
-      sql += ' AND category = ?';
+      sql += ' AND type = ?';
       params.push(category);
     }
     if (keyword) {

@@ -1,9 +1,17 @@
 import { Router } from 'express';
 import pool from '../db.js';
 import { authMiddleware, requireRole } from '../middleware/auth.js';
-import { NotificationTemplates } from '../utils/notification.js';
+import { NotificationTemplates, createNotification } from '../utils/notification.js';
 
 const router = Router();
+
+// CSV 注入防护：转义公式触发字符（SEC-008）
+function sanitizeCsvField(value) {
+  if (value == null) return '';
+  const str = String(value).replace(/"/g, '""');
+  if (/^[=+\-@\t\r]/.test(str)) return "'" + str;
+  return str;
+}
 
 // ============ 所有 admin 路由都需要 登录 + admin 角色 ============
 router.use(authMiddleware, requireRole('admin'));
@@ -11,36 +19,27 @@ router.use(authMiddleware, requireRole('admin'));
 // ==================== 2.1 平台数据统计 ====================
 router.get('/stats', async (req, res) => {
   try {
-    // 用户总数 & 按角色分布
-    const [totalRows] = await pool.query('SELECT COUNT(*) AS total FROM users');
-    const [roleRows] = await pool.query(
-      'SELECT role, COUNT(*) AS count FROM users GROUP BY role'
-    );
-
-    // 按状态分布
-    const [statusRows] = await pool.query(
-      'SELECT status, COUNT(*) AS count FROM users GROUP BY status'
-    );
-
-    // 本月新增用户
-    const [monthlyRows] = await pool.query(
-      `SELECT COUNT(*) AS count FROM users
-       WHERE created_at >= DATE_FORMAT(CURDATE(), '%Y-%m-01')`
-    );
-
-    // 今日新增用户
-    const [todayRows] = await pool.query(
-      `SELECT COUNT(*) AS count FROM users WHERE DATE(created_at) = CURDATE()`
-    );
-
-    // 最近 7 天每日注册趋势
-    const [trendRows] = await pool.query(
-      `SELECT DATE(created_at) AS date, COUNT(*) AS count
+    // 所有统计查询互不依赖，并行执行提升性能
+    const [
+      [totalRows], [roleRows], [statusRows], [monthlyRows],
+      [todayRows], [trendRows],
+      [jobsCountRows], [coursesCountRows], [mentorsCountRows],
+    ] = await Promise.all([
+      pool.query('SELECT COUNT(*) AS total FROM users'),
+      pool.query('SELECT role, COUNT(*) AS count FROM users GROUP BY role'),
+      pool.query('SELECT status, COUNT(*) AS count FROM users GROUP BY status'),
+      pool.query(`SELECT COUNT(*) AS count FROM users
+       WHERE created_at >= DATE_FORMAT(CURDATE(), '%Y-%m-01')`),
+      pool.query('SELECT COUNT(*) AS count FROM users WHERE DATE(created_at) = CURDATE()'),
+      pool.query(`SELECT DATE(created_at) AS date, COUNT(*) AS count
        FROM users
        WHERE created_at >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)
        GROUP BY DATE(created_at)
-       ORDER BY date ASC`
-    );
+       ORDER BY date ASC`),
+      pool.query('SELECT COUNT(*) AS total FROM jobs'),
+      pool.query('SELECT COUNT(*) AS total FROM courses'),
+      pool.query('SELECT COUNT(*) AS total FROM mentor_profiles'),
+    ]);
 
     // 角色分布转为 map
     const roleDistribution = {};
@@ -52,10 +51,6 @@ router.get('/stats', async (req, res) => {
     const activeCount = statusRows.find(s => s.status === 1)?.count || 0;
     const disabledCount = statusRows.find(s => s.status === 0)?.count || 0;
 
-    // 从数据库查询 jobs/courses/mentors 统计
-    const [jobsCountRows] = await pool.query('SELECT COUNT(*) AS total FROM jobs');
-    const [coursesCountRows] = await pool.query('SELECT COUNT(*) AS total FROM courses');
-    const [mentorsCountRows] = await pool.query('SELECT COUNT(*) AS total FROM mentor_profiles');
     const jobsCount = jobsCountRows[0].total;
     const coursesCount = coursesCountRows[0].total;
     const mentorsCount = mentorsCountRows[0].total;
@@ -176,7 +171,7 @@ router.get('/users/export', async (req, res) => {
     const BOM = '\uFEFF';
     const headers = 'id,name,email,role,status,phone,created_at\n';
     const rows = users.map(u =>
-      `${u.id},"${u.name || ''}","${u.email}","${u.role}",${u.status},"${u.phone || ''}","${u.created_at}"`
+      `${u.id},"${sanitizeCsvField(u.name)}","${sanitizeCsvField(u.email)}","${sanitizeCsvField(u.role)}",${u.status},"${sanitizeCsvField(u.phone)}","${u.created_at}"`
     ).join('\n');
     const csv = BOM + headers + rows;
 
@@ -505,6 +500,22 @@ router.put('/mentors/:id/verify', async (req, res) => {
       return res.status(404).json({ code: 404, message: '导师用户不存在' });
     }
 
+    // 同步更新 mentor_profiles 表的审核状态（approved/rejected）
+    const verifyStatus = Number(status) === 1 ? 'approved' : 'rejected';
+    const [existing] = await pool.query('SELECT id FROM mentor_profiles WHERE user_id = ?', [id]);
+    if (existing.length > 0) {
+      await pool.query(
+        'UPDATE mentor_profiles SET verify_status = ? WHERE user_id = ?',
+        [verifyStatus, id]
+      );
+    } else {
+      await pool.query(
+        'INSERT INTO mentor_profiles (user_id, verify_status) VALUES (?, ?)',
+        [id, verifyStatus]
+      );
+    }
+
+    // 同步 users.status（1 = 通过，0 = 拒绝）
     await pool.query('UPDATE users SET status = ? WHERE id = ?', [Number(status), id]);
 
     // 通知导师用户审核结果
@@ -528,27 +539,37 @@ router.put('/mentors/:id/verify', async (req, res) => {
 // ==================== 2.10 全平台职位管理 ====================
 router.get('/jobs', async (req, res) => {
   try {
-    const { keyword = '', type = '', status = '' } = req.query;
+    const { keyword = '', type = '', status = '', page = 1, pageSize = 20 } = req.query;
 
-    let sql = 'SELECT * FROM jobs WHERE 1=1';
+    const offset = (Number(page) - 1) * Number(pageSize);
+    const limit = Number(pageSize);
+
+    let where = 'WHERE 1=1';
     const params = [];
 
     if (keyword) {
-      sql += ' AND (title LIKE ? OR company_name LIKE ?)';
+      where += ' AND (title LIKE ? OR company_name LIKE ?)';
       const kw = `%${keyword}%`;
       params.push(kw, kw);
     }
     if (type && type !== '全部') {
-      sql += ' AND type = ?';
+      where += ' AND type = ?';
       params.push(type);
     }
     if (status) {
-      sql += ' AND status = ?';
+      where += ' AND status = ?';
       params.push(status);
     }
 
-    sql += ' ORDER BY created_at DESC';
-    const [jobs] = await pool.query(sql, params);
+    // 总数
+    const [countRows] = await pool.query(`SELECT COUNT(*) AS total FROM jobs ${where}`, params);
+    const total = countRows[0].total;
+
+    // 分页查询
+    const [jobs] = await pool.query(
+      `SELECT * FROM jobs ${where} ORDER BY created_at DESC LIMIT ? OFFSET ?`,
+      [...params, limit, offset]
+    );
 
     // 解析 tags JSON 字段
     const parsedJobs = jobs.map(job => ({
@@ -560,7 +581,12 @@ router.get('/jobs', async (req, res) => {
       code: 200,
       data: {
         jobs: parsedJobs,
-        total: parsedJobs.length,
+        pagination: {
+          page: Number(page),
+          pageSize: limit,
+          total,
+          totalPages: Math.ceil(total / limit),
+        },
       },
     });
   } catch (err) {
@@ -574,6 +600,12 @@ router.put('/jobs/:id/status', async (req, res) => {
   try {
     const { id } = req.params;
     const { status } = req.body;
+
+    // 校验 status 参数，仅允许 active 或 inactive（与 jobs 表 ENUM 一致）
+    const allowedJobStatus = ['active', 'inactive'];
+    if (!status || !allowedJobStatus.includes(status)) {
+      return res.status(400).json({ code: 400, message: 'status 必须为 active 或 inactive' });
+    }
 
     const [rows] = await pool.query('SELECT id FROM jobs WHERE id = ?', [id]);
     if (rows.length === 0) {
@@ -595,19 +627,29 @@ router.put('/jobs/:id/status', async (req, res) => {
 // ==================== 2.12 全平台课程管理 ====================
 router.get('/courses', async (req, res) => {
   try {
-    const { keyword = '' } = req.query;
+    const { keyword = '', page = 1, pageSize = 20 } = req.query;
 
-    let sql = 'SELECT * FROM courses WHERE 1=1';
+    const offset = (Number(page) - 1) * Number(pageSize);
+    const limit = Number(pageSize);
+
+    let where = 'WHERE 1=1';
     const params = [];
 
     if (keyword) {
-      sql += ' AND (title LIKE ? OR mentor_name LIKE ?)';
+      where += ' AND (title LIKE ? OR mentor_name LIKE ?)';
       const kw = `%${keyword}%`;
       params.push(kw, kw);
     }
 
-    sql += ' ORDER BY created_at DESC';
-    const [courses] = await pool.query(sql, params);
+    // 总数
+    const [countRows] = await pool.query(`SELECT COUNT(*) AS total FROM courses ${where}`, params);
+    const total = countRows[0].total;
+
+    // 分页查询
+    const [courses] = await pool.query(
+      `SELECT * FROM courses ${where} ORDER BY created_at DESC LIMIT ? OFFSET ?`,
+      [...params, limit, offset]
+    );
 
     // 解析 tags JSON 字段
     const parsedCourses = courses.map(course => ({
@@ -620,7 +662,12 @@ router.get('/courses', async (req, res) => {
       code: 200,
       data: {
         courses: parsedCourses,
-        total: parsedCourses.length,
+        pagination: {
+          page: Number(page),
+          pageSize: limit,
+          total,
+          totalPages: Math.ceil(total / limit),
+        },
       },
     });
   } catch (err) {
@@ -634,6 +681,12 @@ router.put('/courses/:id/status', async (req, res) => {
   try {
     const { id } = req.params;
     const { status } = req.body;
+
+    // 校验 status 参数，仅允许 active 或 inactive（与 courses 表 ENUM 一致）
+    const allowedCourseStatus = ['active', 'inactive'];
+    if (!status || !allowedCourseStatus.includes(status)) {
+      return res.status(400).json({ code: 400, message: 'status 必须为 active 或 inactive' });
+    }
 
     const [rows] = await pool.query('SELECT id FROM courses WHERE id = ?', [id]);
     if (rows.length === 0) {
@@ -1505,6 +1558,61 @@ router.get('/health', async (_req, res) => {
         timestamp: Date.now(),
       },
     });
+  }
+});
+
+// ==================== 职位详情 ====================
+router.get('/jobs/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const [rows] = await pool.query('SELECT * FROM jobs WHERE id = ?', [id]);
+    if (rows.length === 0) {
+      return res.status(404).json({ code: 404, message: '职位不存在' });
+    }
+    const job = rows[0];
+    job.tags = typeof job.tags === 'string' ? JSON.parse(job.tags) : (job.tags || []);
+    res.json({ code: 200, data: job });
+  } catch (err) {
+    console.error('获取职位详情失败:', err);
+    res.status(500).json({ code: 500, message: '服务器内部错误' });
+  }
+});
+
+// ==================== 课程详情 ====================
+router.get('/courses/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const [rows] = await pool.query('SELECT * FROM courses WHERE id = ?', [id]);
+    if (rows.length === 0) {
+      return res.status(404).json({ code: 404, message: '课程不存在' });
+    }
+    const course = rows[0];
+    course.tags = typeof course.tags === 'string' ? JSON.parse(course.tags) : (course.tags || []);
+    res.json({ code: 200, data: course });
+  } catch (err) {
+    console.error('获取课程详情失败:', err);
+    res.status(500).json({ code: 500, message: '服务器内部错误' });
+  }
+});
+
+// ==================== 管理员反馈 ====================
+router.post('/feedback', async (req, res) => {
+  try {
+    const { userId, title, content } = req.body;
+    if (!userId || !title) {
+      return res.status(400).json({ code: 400, message: '缺少必填参数' });
+    }
+    await createNotification({
+      userId,
+      type: 'review',
+      title,
+      content: content || '',
+      link: '/notifications',
+    });
+    res.json({ code: 200, message: '反馈已发送' });
+  } catch (err) {
+    console.error('发送反馈失败:', err);
+    res.status(500).json({ code: 500, message: '服务器内部错误' });
   }
 });
 

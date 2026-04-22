@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import {
   Search, CheckCircle, XCircle, Clock, Eye,
   Building2, Globe, MapPin, Users as UsersIcon,
-  ChevronLeft, ChevronRight
+  ChevronLeft, ChevronRight, X, MessageSquare, Loader2
 } from 'lucide-react';
 import http from '@/api/http';
 import Tag from '@/components/ui/Tag';
@@ -47,6 +47,9 @@ export default function AdminCompanies() {
   const [reviewRemark, setReviewRemark] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [detailCompany, setDetailCompany] = useState<CompanyRecord | null>(null);
+  const [feedbackText, setFeedbackText] = useState('');
+  const [feedbackSending, setFeedbackSending] = useState(false);
 
   useEffect(() => {
     fetchCompanies();
@@ -87,6 +90,24 @@ export default function AdminCompanies() {
     setReviewModal(null);
     setReviewRemark('');
     fetchCompanies();
+  }
+
+  async function sendCompanyFeedback() {
+    if (!detailCompany || !feedbackText.trim()) return;
+    setFeedbackSending(true);
+    try {
+      await http.post('/admin/feedback', {
+        userId: detailCompany.user_id,
+        title: `关于企业「${detailCompany.company_name}」的审核反馈`,
+        content: feedbackText,
+      });
+      showToast({ type: 'success', title: '反馈已发送' });
+      setFeedbackText('');
+    } catch {
+      showToast({ type: 'error', title: '发送失败，请重试' });
+    } finally {
+      setFeedbackSending(false);
+    }
   }
 
   const totalPages = Math.ceil(total / pageSize);
@@ -139,13 +160,15 @@ export default function AdminCompanies() {
       {/* 搜索和筛选 */}
       <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 flex flex-wrap items-center gap-4">
         <div className="relative flex-1 min-w-[280px]">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
           <input
+            id="company-search"
+            name="company-search"
             type="text"
             placeholder="搜索企业名称..."
             value={search}
             onChange={e => setSearch(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none"
+            className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-lg text-base focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none"
           />
         </div>
         <div className="flex gap-2">
@@ -229,7 +252,7 @@ export default function AdminCompanies() {
                       </button>
                     </>
                   )}
-                  <button className="p-2 rounded-lg hover:bg-gray-100 transition-colors">
+                  <button onClick={() => setDetailCompany(company)} className="p-2 rounded-lg hover:bg-gray-100 transition-colors" title="查看详情">
                     <Eye className="w-4 h-4 text-gray-400" />
                   </button>
                 </div>
@@ -255,6 +278,98 @@ export default function AdminCompanies() {
         </div>
       </div>
 
+      {/* 企业详情弹窗 */}
+      {detailCompany && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => { setDetailCompany(null); setFeedbackText(''); }}>
+          <motion.div
+            initial={{ scale: 0.95, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            onClick={e => e.stopPropagation()}
+            className="bg-white rounded-2xl w-full max-w-lg max-h-[80vh] overflow-y-auto shadow-2xl"
+          >
+            <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between sticky top-0 bg-white rounded-t-2xl">
+              <h3 className="text-lg font-bold text-gray-900">企业详情</h3>
+              <button onClick={() => { setDetailCompany(null); setFeedbackText(''); }} className="p-1.5 rounded-lg hover:bg-gray-100">
+                <X className="w-5 h-5 text-gray-400" />
+              </button>
+            </div>
+            <div className="px-6 py-4 space-y-4">
+              <div className="flex items-center gap-4">
+                {detailCompany.logo ? (
+                  <img src={detailCompany.logo} alt={detailCompany.company_name} className="w-16 h-16 rounded-xl object-cover" />
+                ) : (
+                  <div className="w-16 h-16 bg-blue-100 rounded-xl flex items-center justify-center">
+                    <Building2 className="w-8 h-8 text-blue-600" />
+                  </div>
+                )}
+                <div>
+                  <h4 className="text-xl font-bold text-gray-900">{detailCompany.company_name}</h4>
+                  <div className="flex items-center gap-3 mt-1 text-sm text-gray-500">
+                    <span>{detailCompany.industry}</span>
+                    <span>{detailCompany.scale}</span>
+                  </div>
+                </div>
+              </div>
+              <div>
+                <p className="text-sm font-medium text-gray-700 mb-1">企业简介</p>
+                <p className="text-sm text-gray-600 bg-gray-50 rounded-lg p-3">{detailCompany.description || '暂无简介'}</p>
+              </div>
+              {detailCompany.address && (
+                <div className="flex items-center gap-2 text-sm text-gray-600">
+                  <MapPin className="w-4 h-4 text-gray-400" />
+                  {detailCompany.address}
+                </div>
+              )}
+              {detailCompany.website && (
+                <div className="flex items-center gap-2 text-sm text-gray-600">
+                  <Globe className="w-4 h-4 text-gray-400" />
+                  {detailCompany.website}
+                </div>
+              )}
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-gray-500">审核状态</span>
+                <Tag
+                  variant={detailCompany.verify_status === 'pending' ? 'yellow' : detailCompany.verify_status === 'approved' ? 'green' : 'red'}
+                  size="sm"
+                >
+                  {STATUS_MAP[detailCompany.verify_status].label}
+                </Tag>
+              </div>
+              {detailCompany.verify_remark && (
+                <p className="text-xs text-red-500 bg-red-50 px-3 py-1.5 rounded-lg">
+                  驳回原因：{detailCompany.verify_remark}
+                </p>
+              )}
+              <p className="text-xs text-gray-400">注册时间：{new Date(detailCompany.created_at).toLocaleString('zh-CN')}</p>
+            </div>
+            {/* 审核反馈 */}
+            <div className="px-6 py-4 border-t border-gray-100">
+              <p className="text-sm font-medium text-gray-700 mb-2 flex items-center gap-1">
+                <MessageSquare className="w-4 h-4" />
+                发送审核反馈
+              </p>
+              <textarea
+                id="company-feedback"
+                name="company-feedback"
+                value={feedbackText}
+                onChange={e => setFeedbackText(e.target.value)}
+                placeholder="输入反馈内容，将以通知形式发送给该企业..."
+                rows={3}
+                className="w-full border border-gray-200 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-primary-500 outline-none resize-none"
+              />
+              <button
+                onClick={sendCompanyFeedback}
+                disabled={!feedbackText.trim() || feedbackSending}
+                className="mt-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-40 text-sm font-medium flex items-center gap-1"
+              >
+                {feedbackSending ? <Loader2 className="w-4 h-4 animate-spin" /> : <MessageSquare className="w-4 h-4" />}
+                发送反馈
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
+
       {/* 驳回弹窗 */}
       {reviewModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => setReviewModal(null)}>
@@ -267,6 +382,8 @@ export default function AdminCompanies() {
             <h3 className="text-lg font-bold text-gray-900 mb-2">驳回企业审核</h3>
             <p className="text-sm text-gray-500 mb-4">驳回「{reviewModal.company_name}」的认证申请</p>
             <textarea
+              id="company-reject-reason"
+              name="reject-reason"
               value={reviewRemark}
               onChange={e => setReviewRemark(e.target.value)}
               placeholder="请输入驳回原因（必填）..."

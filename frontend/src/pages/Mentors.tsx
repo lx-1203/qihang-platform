@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
-  Search, Star, Users, Award, MessageCircle
+  Search, Star, Users, Award, MessageCircle, ChevronDown, Filter, SlidersHorizontal
 } from 'lucide-react';
 import http from '@/api/http';
 import { CardSkeleton } from '../components/ui/Skeleton';
@@ -10,6 +10,7 @@ import ErrorState from '../components/ui/ErrorState';
 import EmptyState from '../components/ui/EmptyState';
 import Tag from '@/components/ui/Tag';
 import mentorsConfig from '@/data/mentors-config.json';
+import { DEFAULT_AVATAR } from '@/constants';
 
 // ====== 导师列表页 ======
 // 数据从 /api/mentors 获取，筛选选项和文案从 mentors-config.json 配置文件读取
@@ -43,6 +44,16 @@ export default function Mentors() {
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [expertiseFilter, setExpertiseFilter] = useState('全部');
+  const [sortBy, setSortBy] = useState('default');
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
+
+  const SORT_OPTIONS = [
+    { value: 'default', label: '默认排序' },
+    { value: 'rating', label: '评分最高' },
+    { value: 'rating_count', label: '评价最多' },
+    { value: 'price_low', label: '价格从低到高' },
+    { value: 'price_high', label: '价格从高到低' },
+  ];
 
   useEffect(() => {
     fetchMentors();
@@ -70,11 +81,20 @@ export default function Mentors() {
     if (search && !m.name.includes(search) && !m.title.includes(search) && !m.bio.includes(search)) return false;
     if (expertiseFilter !== '全部' && !(m.expertise || []).includes(expertiseFilter)) return false;
     return true;
+  }).sort((a, b) => {
+    switch (sortBy) {
+      case 'rating': return b.rating - a.rating;
+      case 'rating_count': return b.rating_count - a.rating_count;
+      case 'price_low': return a.price - b.price;
+      case 'price_high': return b.price - a.price;
+      default: return 0;
+    }
   });
 
   const handleClearFilters = () => {
     setSearch('');
     setExpertiseFilter('全部');
+    setSortBy('default');
   };
 
   return (
@@ -94,33 +114,101 @@ export default function Mentors() {
       </motion.div>
 
       {/* 搜索和筛选 */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 mb-8">
-        <div className="relative flex-1 w-full sm:max-w-md">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-          <input
-            type="text"
-            placeholder={pageMeta.searchPlaceholder}
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            className="w-full pl-12 pr-4 py-3 border border-gray-200 rounded-xl text-sm
-              focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500
-              outline-none bg-white transition-all duration-200"
-          />
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 sm:p-6 mb-8">
+        {/* 搜索栏 */}
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 mb-4">
+          <div className="relative flex-1">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+            <input
+              id="mentors-search"
+              name="mentors-search"
+              type="text"
+              placeholder={pageMeta.searchPlaceholder}
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              className="w-full pl-12 pr-4 py-3 border border-gray-200 rounded-xl text-base
+                focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500
+                outline-none bg-gray-50 focus:bg-white transition-all duration-200"
+            />
+          </div>
+          {/* 移动端筛选折叠 */}
+          <button
+            onClick={() => setIsFilterOpen(!isFilterOpen)}
+            className="sm:hidden flex items-center justify-center gap-2 px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-600 hover:text-primary-600 transition-colors"
+          >
+            <SlidersHorizontal size={16} />
+            筛选条件
+            <ChevronDown className={`w-4 h-4 transition-transform ${isFilterOpen ? 'rotate-180' : ''}`} />
+          </button>
         </div>
-        <div className="flex flex-wrap gap-2">
-          {expertiseOptions.map(opt => (
-            <button
+
+        {/* 下拉筛选行 */}
+        <div className={`flex flex-col sm:flex-row items-stretch sm:items-center gap-3 ${isFilterOpen ? 'flex' : 'hidden sm:flex'}`}>
+          {/* 专业领域下拉 */}
+          <div className="relative flex-1 sm:flex-none sm:w-52">
+            <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+            <select
+              id="mentor-expertise"
+              name="expertise"
+              value={expertiseFilter}
+              onChange={e => setExpertiseFilter(e.target.value)}
+              className="w-full appearance-none pl-9 pr-8 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-700
+                focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 focus:bg-white
+                outline-none transition-all duration-200 cursor-pointer"
+            >
+              {expertiseOptions.map(opt => (
+                <option key={opt} value={opt}>{opt === '全部' ? '专业领域：全部' : opt}</option>
+              ))}
+            </select>
+            <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+          </div>
+
+          {/* 排序方式下拉 */}
+          <div className="relative flex-1 sm:flex-none sm:w-48">
+            <SlidersHorizontal className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+            <select
+              id="mentor-sort"
+              name="sort"
+              value={sortBy}
+              onChange={e => setSortBy(e.target.value)}
+              className="w-full appearance-none pl-9 pr-8 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-700
+                focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 focus:bg-white
+                outline-none transition-all duration-200 cursor-pointer"
+            >
+              {SORT_OPTIONS.map(opt => (
+                <option key={opt.value} value={opt.value}>{opt.label}</option>
+              ))}
+            </select>
+            <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+          </div>
+
+          {/* 快捷专业标签（仅桌面端可见） */}
+          <div className="hidden lg:flex flex-wrap gap-2 flex-1">
+            {expertiseOptions.slice(0, 5).map(opt => (
+              <button
                 key={opt}
                 onClick={() => setExpertiseFilter(opt)}
-                className={`px-4 py-2 rounded-lg text-sm font-bold transition-all duration-200 ${
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 ${
                   expertiseFilter === opt
-                    ? 'bg-gradient-to-r from-primary-500 to-primary-600 text-white shadow-lg shadow-primary-500/30'
-                    : 'bg-white border-2 border-gray-200 text-gray-600 hover:bg-primary-50 hover:border-primary-300 hover:text-primary-700 active:scale-[0.97] focus-visible:ring-2 focus-visible:ring-primary-400/30 focus-visible:outline-none'
+                    ? 'bg-primary-50 text-primary-700 border border-primary-200'
+                    : 'bg-gray-50 text-gray-500 border border-transparent hover:bg-gray-100 hover:text-gray-700'
                 }`}
               >
-              {opt}
+                {opt}
+              </button>
+            ))}
+          </div>
+
+          {/* 清除筛选 */}
+          {(expertiseFilter !== '全部' || sortBy !== 'default' || search) && (
+            <button
+              onClick={handleClearFilters}
+              className="text-sm text-primary-600 hover:text-primary-700 font-medium whitespace-nowrap
+                hover:underline transition-colors px-2 py-2.5"
+            >
+              清除筛选
             </button>
-          ))}
+          )}
         </div>
       </div>
 
@@ -169,7 +257,7 @@ export default function Mentors() {
               {/* 头像 + 基本信息 */}
               <div className="flex items-start gap-4">
                 <img
-                  src={mentor.avatar}
+                  src={mentor.avatar || DEFAULT_AVATAR}
                   alt={mentor.name}
                   className="w-16 h-16 rounded-xl object-cover border-2 border-gray-100 group-hover:border-primary-200 transition-colors"
                 />

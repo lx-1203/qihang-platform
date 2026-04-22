@@ -19,6 +19,7 @@ import StudentStories from '@/components/StudentStories';
 import ProcessSteps from '@/components/ProcessSteps';
 import Tag from '@/components/ui/Tag';
 import CampusTimeline from '@/components/CampusTimeline';
+import { DEFAULT_AVATAR } from '@/constants';
 import SceneBanner from '@/components/SceneBanner';
 import { CardSkeleton } from '@/components/ui/Skeleton';
 import ErrorState from '@/components/ui/ErrorState';
@@ -490,7 +491,7 @@ export default function Home() {
                 <Link to={`/mentors/${m.id}`} className="block bg-white rounded-xl p-5 border border-gray-100 cursor-pointer transition-all duration-300 hover:shadow-lg hover:-translate-y-1 hover:border-primary-200 active:scale-[0.98] touch-manipulation focus-visible:ring-2 focus-visible:ring-primary-500/30 focus-visible:outline-none group">
                   <div className="flex items-center gap-3 mb-3">
                     {m.avatar ? (
-                      <LazyImage src={m.avatar} alt={m.name} variant="avatar" className="w-12 h-12 border border-gray-100" />
+                      <LazyImage src={m.avatar || DEFAULT_AVATAR} alt={m.name} variant="avatar" className="w-12 h-12 border border-gray-100" />
                     ) : (
                       <div className="w-12 h-12 rounded-xl bg-primary-100 flex items-center justify-center text-primary-700 font-bold">
                         {(m.name || t.sections.mentors.mentorFallback)[0]}

@@ -127,7 +127,7 @@ router.get('/courses', async (req, res) => {
     }
     const mentorProfileId = mpRows[0].id;
 
-    let sql = 'SELECT * FROM courses WHERE mentor_id = ?';
+    let sql = 'SELECT * FROM courses WHERE mentor_id = ? AND deleted_at IS NULL';
     const params = [mentorProfileId];
 
     if (status) {
@@ -163,7 +163,7 @@ router.put('/courses/:id', async (req, res) => {
 
     // 验证课程归属
     const [existing] = await pool.query(
-      'SELECT id FROM courses WHERE id = ? AND mentor_id = ?',
+      'SELECT id FROM courses WHERE id = ? AND mentor_id = ? AND deleted_at IS NULL',
       [courseId, mentorProfileId]
     );
     if (existing.length === 0) {
@@ -219,7 +219,7 @@ router.delete('/courses/:id', async (req, res) => {
     const mentorProfileId = mpRows[0].id;
 
     const [existing] = await pool.query(
-      'SELECT id FROM courses WHERE id = ? AND mentor_id = ?',
+      'SELECT id FROM courses WHERE id = ? AND mentor_id = ? AND deleted_at IS NULL',
       [courseId, mentorProfileId]
     );
     if (existing.length === 0) {
@@ -423,7 +423,7 @@ router.get('/stats', async (req, res) => {
 
     // 课程数
     const [courseCount] = await pool.query(
-      'SELECT COUNT(*) AS count FROM courses WHERE mentor_id = ?',
+      'SELECT COUNT(*) AS count FROM courses WHERE mentor_id = ? AND deleted_at IS NULL',
       [mentorProfileId]
     );
 
@@ -484,12 +484,12 @@ router.get('/stats/directions', async (req, res) => {
   try {
     const userId = req.user.id;
 
-    // 从 appointments 表按 service 字段聚合统计
+    // 从 appointments 表按 service_title 字段聚合统计
     const [rows] = await pool.query(
-      `SELECT service AS direction, COUNT(*) AS count
+      `SELECT service_title AS direction, COUNT(*) AS count
        FROM appointments
-       WHERE mentor_id = ? AND service IS NOT NULL AND service != ''
-       GROUP BY service
+       WHERE mentor_id = ? AND service_title IS NOT NULL AND service_title != ''
+       GROUP BY service_title
        ORDER BY count DESC`,
       [userId]
     );

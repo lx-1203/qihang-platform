@@ -13,5 +13,8 @@ export const DIFFICULTY_MAP: Record<string, { label: string; color: string }> = 
 // 难度选项（用于下拉框）
 export const DIFFICULTY_OPTIONS = Object.entries(DIFFICULTY_MAP).map(([value, { label }]) => ({ value, label }));
 
-// 默认头像（替代 Unsplash URL）
-export const DEFAULT_AVATAR = '/default-avatar.png';
+// 默认头像（替代空字符串和 Unsplash URL）
+export const DEFAULT_AVATAR = '/default-avatar.svg';
+
+// 默认封面占位图
+export const PLACEHOLDER_COVER = '/placeholder-cover.svg';

@@ -41,6 +41,20 @@ export interface BubbleGuideStep {
   icon?: typeof User;
 }
 
+// 颜色映射：将 text-* 类转换为对应的 bg-* 类（用于按钮背景）
+const getButtonBgClass = (textColor: string): string => {
+  const colorMap: Record<string, string> = {
+    'text-primary-600': 'bg-primary-500',
+    'text-blue-600': 'bg-blue-500',
+    'text-amber-600': 'bg-amber-500',
+    'text-rose-600': 'bg-rose-500',
+    'text-green-600': 'bg-green-500',
+    'text-purple-600': 'bg-purple-500',
+    'text-indigo-600': 'bg-indigo-500',
+  };
+  return colorMap[textColor] || 'bg-primary-500';
+};
+
 const ROLE_GUIDES: Record<GuideRole, { welcome: string; subtitle: string; steps: GuideStep[] }> = {
   student: {
     welcome: '欢迎来到启航平台！',
@@ -502,7 +516,7 @@ export default function OnboardingGuide({ role, inline = false, bubbleMode = fal
         {/* 跳过按钮 */}
         <button
           onClick={handleClose}
-          className="fixed bottom-8 left-1/2 -translate-x-1/2 z-[9991] text-xs text-white/70 hover:text-white underline"
+          className="fixed bottom-8 left-1/2 -translate-x-1/2 z-[9991] text-sm text-white bg-black/40 px-4 py-2 rounded-full"
         >
           跳过引导
         </button>
@@ -548,11 +562,11 @@ export default function OnboardingGuide({ role, inline = false, bubbleMode = fal
                     {completed.has(idx) ? '已完成' : `${idx + 1}/${steps.length}`}
                   </Tag>
                 </div>
-                <p className="text-xs text-gray-500 mt-1 leading-relaxed">{step.desc}</p>
+                <p className="text-sm text-gray-600 mt-1 leading-relaxed">{step.desc}</p>
                 {!completed.has(idx) && step.tips && (
                   <ul className="mt-2 space-y-1">
                     {step.tips.map((tip, ti) => (
-                      <li key={ti} className="text-[11px] text-gray-400 flex items-start gap-1.5">
+                      <li key={ti} className="text-xs text-gray-600 flex items-start gap-1.5">
                         <Zap className="w-3 h-3 text-amber-400 shrink-0 mt-0.5" />
                         {tip}
                       </li>
@@ -564,7 +578,7 @@ export default function OnboardingGuide({ role, inline = false, bubbleMode = fal
                     <Link
                       to={step.link}
                       className={`text-xs font-medium px-3 py-1.5 rounded-lg text-white transition-colors ${
-                        step.color.replace('text-', 'bg-').replace('-600', '-500')
+                        getButtonBgClass(step.color)
                       } hover:opacity-90`}
                     >
                       {step.linkText} →
@@ -573,7 +587,7 @@ export default function OnboardingGuide({ role, inline = false, bubbleMode = fal
                   {!completed.has(idx) && (
                     <button
                       onClick={() => markDone(idx)}
-                      className="text-xs text-gray-400 hover:text-green-600 font-medium transition-colors"
+                      className="text-xs text-primary-500 font-medium hover:text-green-600 transition-colors"
                     >
                       标记已完成
                     </button>

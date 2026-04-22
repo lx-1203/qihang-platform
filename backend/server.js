@@ -24,6 +24,9 @@ import statsRouter from './routes/stats.js';
 import competitionsRouter from './routes/competitions.js';
 import resourcesRouter from './routes/resources.js';
 import testimonialsRouter from './routes/testimonials.js';
+import platformFeaturesRouter from './routes/platformFeatures.js';
+import campusTimelineRouter from './routes/campusTimeline.js';
+import partnersRouter from './routes/partners.js';
 import { testConnection } from './db.js';
 import pool from './db.js';
 import { sqlInjectionGuard } from './middleware/sqlInjectionGuard.js';
@@ -56,8 +59,13 @@ const PORT = process.env.PORT || 3001;
 // ====== 安全中间件 ======
 
 // CORS 白名单机制（商业级安全要求）
+const corsOrigins = (process.env.CORS_ORIGIN || 'http://localhost:5173')
+  .split(',')
+  .map(origin => origin.trim())
+  .filter(Boolean);
+
 const corsOptions = {
-  origin: process.env.CORS_ORIGIN || 'http://localhost:5173',
+  origin: corsOrigins,
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Idempotency-Key'],
@@ -107,7 +115,7 @@ app.use((req, res, next) => {
 //   - 迁移时保持相同的限流参数（100 req/min/IP），仅替换存储后端
 const rateLimitMap = new Map();
 const RATE_LIMIT_WINDOW = 60000; // 1分钟窗口
-const RATE_LIMIT_MAX = 100; // 每分钟最大请求数
+const RATE_LIMIT_MAX = process.env.NODE_ENV === 'production' ? 100 : 300; // 每分钟最大请求数（开发环境放宽）
 
 app.use('/api', (req, res, next) => {
   const clientIp = req.ip || req.headers['x-forwarded-for'] || 'unknown';
@@ -184,6 +192,9 @@ app.use('/api/stats', statsRouter);
 app.use('/api/competitions', competitionsRouter);
 app.use('/api/resources', resourcesRouter);
 app.use('/api/testimonials', testimonialsRouter);
+app.use('/api/platform-features', platformFeaturesRouter);
+app.use('/api/campus-timeline', campusTimelineRouter);
+app.use('/api/partners', partnersRouter);
 
 // ====== 健康检查（SEC-006：深度检查，含数据库连接验证）======
 app.get('/api/health', async (_req, res) => {

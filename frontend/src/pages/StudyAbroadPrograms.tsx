@@ -14,10 +14,8 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import ProgramCard from '../components/study-abroad/ProgramCard';
-import countriesData from '../data/study-abroad-countries.json';
-import universitiesData from '../data/study-abroad-universities.json';
-import majorsData from '../data/study-abroad-majors.json';
 import http from '../api/http';
+import { useConfigStore } from '@/store/config';
 
 // ====== 类型定义 ======
 
@@ -155,11 +153,11 @@ function matchDegreeType(program: ProgramItem): string {
 }
 
 /** URL ?major= 参数 → 专业分类名（支持传入分类名或具体专业名） */
-function resolveInitialMajor(param: string | null): string {
+function resolveInitialMajor(param: string | null, majors: MajorCategory[]): string {
   if (!param) return '全部专业';
-  const categories = (majorsData as MajorCategory[]).map((c) => c.category);
+  const categories = majors.map((c) => c.category);
   if (categories.includes(param)) return param;
-  for (const cat of majorsData as MajorCategory[]) {
+  for (const cat of majors) {
     for (const m of cat.majors) {
       if (m.name === param || m.nameEn === param || m.id === param) {
         return cat.category;
@@ -217,9 +215,12 @@ function mapApiProgram(row: ApiProgramRow): FlatProgram {
 export default function StudyAbroadPrograms() {
   const [searchParams] = useSearchParams();
 
+  // 从配置 store 获取专业分类数据
+  const majorsData = useConfigStore().getJson<MajorCategory[]>('study_abroad_majors_config', []);
+
   // 从 URL 参数初始化筛选状态
   const initialCountry = searchParams.get('country') || 'all';
-  const initialMajor = resolveInitialMajor(searchParams.get('major'));
+  const initialMajor = resolveInitialMajor(searchParams.get('major'), majorsData);
 
   // ---------- 筛选状态 ----------
   const [searchInput, setSearchInput] = useState('');
@@ -235,6 +236,10 @@ export default function StudyAbroadPrograms() {
     'ranking',
   );
   const [currentPage, setCurrentPage] = useState(1);
+  const [loading, setLoading] = useState(true);
+
+  // 国家数据（从 API 加载）
+  const [countries, setCountries] = useState<CountryItem[]>([]);
 
   // 搜索 300ms 防抖
   useEffect(() => {
@@ -249,61 +254,51 @@ export default function StudyAbroadPrograms() {
 
   // ---------- 筛选选项 ----------
 
-  /** 国家筛选按钮（14 国 + 全部） */
+  /** 国家筛选按钮（国家 + 全部） */
   const countryFilters = useMemo(() => {
-    const countries = countriesData as CountryItem[];
     return [
       { id: 'all', name: '全部地区', flag: '🌍', count: 0 },
       ...countries.map((c) => ({ id: c.id, name: c.name, flag: c.flag, count: c.projectCount })),
     ];
-  }, []);
+  }, [countries]);
 
-  /** 专业方向筛选按钮（6 大类 + 全部） */
+  /** 专业方向筛选按钮（大类 + 全部） */
   const majorFilters = useMemo(
-    () => ['全部专业', ...(majorsData as MajorCategory[]).map((c) => c.category)],
-    [],
+    () => ['全部专业', ...majorsData.map((c) => c.category)],
+    [majorsData],
   );
 
-  // ---------- 数据展平 ----------
+  // ---------- 数据加载 ----------
 
-  /** 将所有大学的项目展平为扁平列表（JSON 兜底数据） */
-  const jsonPrograms = useMemo(() => {
-    const universities = universitiesData as UniversityItem[];
-    const flat: FlatProgram[] = [];
-    universities.forEach((uni) => {
-      uni.programs.forEach((prog) => {
-        flat.push({
-          program: prog,
-          university: {
-            id: uni.id,
-            school: uni.school,
-            schoolEn: uni.schoolEn,
-            country: uni.country.toUpperCase(), // ProgramCard countryFlag() 需要大写
-            ranking: uni.ranking,
-            logo: uni.logo,
-          },
-          countryId: uni.country, // 小写用于筛选
-          majorCategory: matchMajorCategory(prog),
-        });
-      });
-    });
-    return flat;
-  }, []);
+  const [allPrograms, setAllPrograms] = useState<FlatProgram[]>([]);
 
-  const [allPrograms, setAllPrograms] = useState<FlatProgram[]>(jsonPrograms);
-
-  // 尝试从 API 加载数据，失败则保持 JSON 数据
+  // 从 API 加载项目数据和国家数据
   useEffect(() => {
-    http.get('/study-abroad/programs', { params: { pageSize: 200 } })
+    setLoading(true);
+
+    const loadPrograms = http.get('/study-abroad/programs', { params: { pageSize: 200 } })
       .then(res => {
         const apiList = res.data.data?.list;
-        if (Array.isArray(apiList) && apiList.length > 0) {
+        if (Array.isArray(apiList)) {
           setAllPrograms(apiList.map(mapApiProgram));
         }
       })
       .catch(() => {
-        // API 不可用时静默使用 JSON 数据
+        if (import.meta.env.DEV) console.warn('[StudyAbroadPrograms] Programs API 加载失败');
       });
+
+    const loadCountries = http.get('/study-abroad/countries')
+      .then(res => {
+        const apiList = res.data.data;
+        if (Array.isArray(apiList)) {
+          setCountries(apiList as CountryItem[]);
+        }
+      })
+      .catch(() => {
+        if (import.meta.env.DEV) console.warn('[StudyAbroadPrograms] Countries API 加载失败');
+      });
+
+    Promise.all([loadPrograms, loadCountries]).finally(() => setLoading(false));
   }, []);
 
   // ---------- 统计 ----------
@@ -645,6 +640,23 @@ export default function StudyAbroadPrograms() {
         </div>
 
         {/* ====== 项目列表（ProgramCard 详细模式） ====== */}
+        {loading ? (
+          <div className="space-y-4">
+            {[1, 2, 3, 4].map(i => (
+              <div key={i} className="animate-pulse bg-white rounded-2xl border border-gray-100 p-6">
+                <div className="flex items-center gap-4 mb-4">
+                  <div className="w-12 h-12 bg-gray-200 rounded-xl" />
+                  <div className="flex-1">
+                    <div className="h-4 bg-gray-200 rounded w-1/3 mb-2" />
+                    <div className="h-3 bg-gray-100 rounded w-1/4" />
+                  </div>
+                </div>
+                <div className="h-3 bg-gray-100 rounded w-3/4 mb-2" />
+                <div className="h-3 bg-gray-100 rounded w-1/2" />
+              </div>
+            ))}
+          </div>
+        ) : (
         <div className="space-y-4">
           {paginatedPrograms.map((item) => (
             <ProgramCard
@@ -655,9 +667,10 @@ export default function StudyAbroadPrograms() {
             />
           ))}
         </div>
+        )}
 
         {/* 空状态 */}
-        {filtered.length === 0 && (
+        {!loading && filtered.length === 0 && (
           <div className="text-center py-20">
             <Search className="w-16 h-16 text-gray-200 mx-auto mb-4" />
             <h3 className="text-[18px] font-bold text-gray-500 mb-2">没有找到匹配的项目</h3>

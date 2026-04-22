@@ -328,7 +328,7 @@ export default function JobDetail() {
             {/* 公司 Logo */}
             <div className="w-20 h-20 rounded-2xl bg-gray-100 border border-gray-200 flex items-center justify-center overflow-hidden flex-shrink-0">
               {job.logo ? (
-                <img src={job.logo} alt={job.company_name} className="w-full h-full object-cover" />
+                <img src={job.logo} alt={job.company_name} className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).src = '/placeholder-cover.svg' }} />
               ) : (
                 <Building2 className="w-10 h-10 text-gray-300" />
               )}
@@ -508,7 +508,7 @@ export default function JobDetail() {
               <div className="flex items-center gap-4 mb-6">
                 <div className="w-14 h-14 rounded-xl bg-gray-100 border border-gray-200 flex items-center justify-center overflow-hidden flex-shrink-0">
                   {job.logo ? (
-                    <img src={job.logo} alt={job.company_name} className="w-full h-full object-cover" />
+                    <img src={job.logo} alt={job.company_name} className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).src = '/placeholder-cover.svg' }} />
                   ) : (
                     <Building2 className="w-7 h-7 text-gray-300" />
                   )}

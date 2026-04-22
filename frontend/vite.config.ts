@@ -53,8 +53,6 @@ export default defineConfig(({ mode }) => {
             'router-vendor': ['react-router-dom'],
             // 动画
             'motion-vendor': ['framer-motion'],
-            // 图标
-            'icons-vendor': ['lucide-react'],
             // 国际化
             'i18n-vendor': ['i18next', 'react-i18next'],
           },

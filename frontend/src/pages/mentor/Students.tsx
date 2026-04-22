@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import http from '@/api/http';
 import ErrorState from '@/components/ui/ErrorState';
+import { DEFAULT_AVATAR } from '@/constants';
 
 // 学生数据结构（匹配后端 /api/mentor/students 返回）
 interface StudentItem {
@@ -123,7 +124,7 @@ export default function MentorStudents() {
               <div className="flex items-start gap-4 mb-4">
                 {student.avatar ? (
                   <img
-                    src={student.avatar}
+                    src={student.avatar || DEFAULT_AVATAR}
                     alt={student.nickname}
                     className="w-12 h-12 rounded-full object-cover border-2 border-gray-100"
                   />

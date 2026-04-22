@@ -1,14 +1,45 @@
 import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronLeft, ChevronRight, Quote } from 'lucide-react';
-import testimonialsData from '@/data/employee-testimonials.json';
+import { ChevronLeft, ChevronRight, Quote, Loader2 } from 'lucide-react';
+import http from '@/api/http';
 import { testimonialVariants, getCarouselGPUStyle } from '@/utils/animations';
 
+interface Testimonial {
+  id: number;
+  name: string;
+  department: string;
+  title: string;
+  school: string;
+  major: string;
+  quote: string;
+  avatar: string | null;
+}
+
 export default function EmployeeTestimonials() {
+  const [testimonials, setTestimonials] = useState<Testimonial[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [current, setCurrent] = useState(0);
   const [direction, setDirection] = useState(1);
-  const testimonials = testimonialsData.testimonials;
   const total = testimonials.length;
+
+  // 从后端 API 获取伙伴心声数据
+  useEffect(() => {
+    http.get('/testimonials')
+      .then((res) => {
+        if (res.data?.code === 200 && Array.isArray(res.data.data)) {
+          setTestimonials(res.data.data);
+        } else {
+          setError('数据格式异常');
+        }
+      })
+      .catch(() => {
+        setError('加载失败');
+      })
+      .finally(() => {
+        setLoading(false);
+      });
+  }, []);
 
   const goTo = useCallback((index: number, dir: number) => {
     setDirection(dir);
@@ -28,7 +59,39 @@ export default function EmployeeTestimonials() {
     return () => clearInterval(timer);
   }, [next]);
 
-  if (total === 0) return null;
+  // 加载状态
+  if (loading) {
+    return (
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+        <div className="p-5 border-b border-gray-100">
+          <h3 className="font-bold text-gray-900 flex items-center gap-2">
+            <Quote className="w-5 h-5 text-primary-600" />
+            伙伴心声
+          </h3>
+        </div>
+        <div className="flex items-center justify-center py-16">
+          <Loader2 className="w-6 h-6 text-primary-500 animate-spin" />
+        </div>
+      </div>
+    );
+  }
+
+  // 错误或无数据
+  if (error || total === 0) {
+    return (
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+        <div className="p-5 border-b border-gray-100">
+          <h3 className="font-bold text-gray-900 flex items-center gap-2">
+            <Quote className="w-5 h-5 text-primary-600" />
+            伙伴心声
+          </h3>
+        </div>
+        <div className="flex items-center justify-center py-16 text-sm text-gray-400">
+          {error || '暂无数据'}
+        </div>
+      </div>
+    );
+  }
 
   const item = testimonials[current];
 

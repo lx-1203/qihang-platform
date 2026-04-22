@@ -2,14 +2,18 @@ import { Briefcase, Target, FileText, Users, ChevronRight, CheckCircle2, ArrowRi
 import { Link, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import http from '@/api/http';
+import { useConfigStore } from '@/store/config';
 
-// 服务卡片配置（前端常量，服务描述无需频繁变动，未来可迁移至后端配置化）
-const GUIDANCE_SERVICES_CONFIG = [
+// 图标映射表（用于从配置动态解析图标名）
+const ICON_MAP: Record<string, typeof FileText> = { FileText, Users, Target };
+
+// 服务卡片默认配置（当后端配置不可用时作为 fallback）
+const DEFAULT_GUIDANCE_SERVICES = [
   {
     id: 1,
     title: '1v1 简历精修',
     desc: 'BAT大厂资深HR/业务主管亲自操刀，深挖个人亮点，打造高转化率简历。',
-    icon: FileText,
+    icon: 'FileText',
     color: 'text-blue-500',
     bgColor: 'bg-blue-50',
     features: ['逐字逐句精修', '匹配目标岗位', '突出核心竞争力', '不限次修改直至满意'],
@@ -19,7 +23,7 @@ const GUIDANCE_SERVICES_CONFIG = [
     id: 2,
     title: '全真模拟面试',
     desc: '还原大厂真实面试场景，涵盖群面、单面、专业面、HR面，全方位提升面试技巧。',
-    icon: Users,
+    icon: 'Users',
     color: 'text-primary-500',
     bgColor: 'bg-primary-50',
     features: ['真实题库抽取', '现场录像复盘', '深入点评弱项', '面试礼仪指导'],
@@ -29,7 +33,7 @@ const GUIDANCE_SERVICES_CONFIG = [
     id: 3,
     title: '职业生涯规划',
     desc: '通过专业的测评工具结合导师经验，帮你理清职业发展方向，少走弯路。',
-    icon: Target,
+    icon: 'Target',
     color: 'text-primary-500',
     bgColor: 'bg-primary-50',
     features: ['MBTI/霍兰德测评', '行业前景分析', '个人优劣势挖掘', '制定3-5年发展路径'],
@@ -47,6 +51,10 @@ interface ArticleItem {
 
 export default function Guidance() {
   const navigate = useNavigate();
+
+  // 从 config store 读取服务卡片配置，fallback 到默认值
+  const services = useConfigStore().getJson('guidance_services_config') || DEFAULT_GUIDANCE_SERVICES;
+
   const [articles, setArticles] = useState<ArticleItem[]>([]);
   const [articlesLoading, setArticlesLoading] = useState(true);
 
@@ -85,8 +93,8 @@ export default function Guidance() {
 
         {/* Services Grid */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
-          {GUIDANCE_SERVICES_CONFIG.map((service) => {
-            const Icon = service.icon;
+          {services.map((service) => {
+            const Icon = ICON_MAP[service.icon] || FileText;
             return (
               <div key={service.id} className="bg-white rounded-[20px] p-8 border border-gray-100 shadow-sm hover:shadow-md transition-all duration-300 relative overflow-hidden group">
                 <div className={`w-14 h-14 rounded-2xl ${service.bgColor} flex items-center justify-center mb-6`}>

@@ -7,6 +7,7 @@ import {
   X,
 } from 'lucide-react';
 import http from '@/api/http';
+import CityPicker from '@/components/ui/CityPicker';
 import { showToast } from '@/components/ui/ToastContainer';
 
 // ====== 企业端 - 职位发布/编辑全页面表单 ======
@@ -300,18 +301,12 @@ export default function JobForm() {
             <label className="block text-sm font-medium text-gray-700 mb-1.5">
               工作地点 <span className="text-red-500">*</span>
             </label>
-            <div className="relative">
-              <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-              <input
-                type="text"
-                value={form.location}
-                onChange={e => updateField('location', e.target.value)}
-                className={`w-full pl-10 pr-4 py-2.5 border rounded-lg text-sm focus:ring-2 focus:ring-primary-500 outline-none ${
-                  errors.location ? 'border-red-300 bg-red-50' : 'border-gray-200'
-                }`}
-                placeholder="如：北京/上海"
-              />
-            </div>
+            <CityPicker
+              value={form.location}
+              onChange={val => updateField('location', val)}
+              placeholder="选择城市"
+              className={errors.location ? 'border-red-300 bg-red-50' : ''}
+            />
             {errors.location && (
               <p className="mt-1 text-xs text-red-500 flex items-center gap-1">
                 <AlertCircle className="w-3 h-3" /> {errors.location}
@@ -349,6 +344,8 @@ export default function JobForm() {
               职位类型 <span className="text-red-500">*</span>
             </label>
             <select
+              id="job-type"
+              name="type"
               value={form.type}
               onChange={e => updateField('type', e.target.value as JobFormData['type'])}
               className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 outline-none bg-white"
@@ -408,6 +405,8 @@ export default function JobForm() {
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1.5">岗位职责</label>
             <textarea
+              id="job-description"
+              name="description"
               value={form.description}
               onChange={e => updateField('description', e.target.value)}
               rows={6}
@@ -418,6 +417,8 @@ export default function JobForm() {
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1.5">任职要求</label>
             <textarea
+              id="job-requirements"
+              name="requirements"
               value={form.requirements}
               onChange={e => updateField('requirements', e.target.value)}
               rows={6}
@@ -482,6 +483,8 @@ export default function JobForm() {
           <div className="max-w-xs">
             <label className="block text-sm font-medium text-gray-700 mb-1.5">发布状态</label>
             <select
+              id="job-status"
+              name="status"
               value={form.status}
               onChange={e => updateField('status', e.target.value as 'active' | 'inactive')}
               className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 outline-none bg-white"

@@ -11,12 +11,15 @@ import {
   Loader2,
   Eye,
   EyeOff,
+  Phone,
+  Bug,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuthStore } from "@/store/auth";
 import { useConfigStore } from "@/store/config";
 import http from "@/api/http";
 import { showToast } from "@/components/ui/ToastContainer";
+import { DEFAULT_AVATAR } from "@/constants";
 
 // 🔴 安全校验：仅允许本站相对路径，禁止跨站跳转（防开放重定向攻击）
 function isValidReturnUrl(url: string): boolean {
@@ -70,6 +73,41 @@ export default function Login() {
   const navigate = useNavigate();
   const location = useLocation();
   const { setAuth } = useAuthStore();
+  // 🔧 开发模式快速登录账号
+  const DEV_ACCOUNTS = [
+    { label: '管理员', email: 'admin@example.com', password: 'admin123', color: 'bg-red-100 text-red-700 border-red-200' },
+    { label: '学生', email: 'student1@example.com', password: 'password123', color: 'bg-blue-100 text-blue-700 border-blue-200' },
+    { label: '企业', email: 'hr@bytedance.com', password: 'password123', color: 'bg-green-100 text-green-700 border-green-200' },
+    { label: '导师', email: 'chen@mentor.com', password: 'password123', color: 'bg-purple-100 text-purple-700 border-purple-200' },
+  ];
+
+  async function handleDevQuickLogin(accountEmail: string, accountPassword: string) {
+    setError('');
+    setLoading(true);
+    try {
+      const res = await http.post('/auth/login', { email: accountEmail, password: accountPassword });
+      if (res.data?.code === 200 && res.data.data) {
+        const { token, user, refreshToken } = res.data.data;
+        setAuth(token, user, refreshToken);
+        if (returnUrl && isValidReturnUrl(returnUrl)) {
+          navigate(returnUrl);
+        } else {
+          navigate(roleDefaultPath[user.role] || '/');
+        }
+      } else {
+        setError(res.data?.message || '快速登录失败');
+      }
+    } catch (err: unknown) {
+      if (err && typeof err === 'object' && 'message' in err) {
+        setError((err as { message?: string }).message || '网络错误');
+      } else {
+        setError('网络错误，请稍后重试');
+      }
+    } finally {
+      setLoading(false);
+    }
+  }
+
   const brandName = useConfigStore(s => s.getString('brand_name', '启航平台'));
 
   // 平台统计数据（用于社交证明展示）
@@ -253,17 +291,17 @@ export default function Login() {
           <div className="flex -space-x-4 mb-4">
             <img
               className="w-12 h-12 rounded-full border-2 border-primary-900 object-cover"
-              src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80"
+              src={DEFAULT_AVATAR}
               alt=""
             />
             <img
               className="w-12 h-12 rounded-full border-2 border-primary-900 object-cover"
-              src="https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=100&q=80"
+              src={DEFAULT_AVATAR}
               alt=""
             />
             <img
               className="w-12 h-12 rounded-full border-2 border-primary-900 object-cover"
-              src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=100&q=80"
+              src={DEFAULT_AVATAR}
               alt=""
             />
             <div className="w-12 h-12 rounded-full border-2 border-primary-900 bg-primary-800 flex items-center justify-center text-xs font-medium">
@@ -573,6 +611,29 @@ export default function Login() {
                   {!loading && <ArrowRight size={18} />}
                 </button>
               </div>
+
+              {/* 🔧 开发模式：快速登录按钮 */}
+              {import.meta.env.DEV && isLogin && (
+                <div className="border border-dashed border-amber-300 bg-amber-50/50 rounded-lg p-3">
+                  <div className="flex items-center gap-1.5 mb-2 text-xs text-amber-700 font-medium">
+                    <Bug size={14} />
+                    <span>开发模式 · 一键登录</span>
+                  </div>
+                  <div className="grid grid-cols-4 gap-2">
+                    {DEV_ACCOUNTS.map(acc => (
+                      <button
+                        key={acc.email}
+                        type="button"
+                        disabled={loading}
+                        onClick={() => handleDevQuickLogin(acc.email, acc.password)}
+                        className={`px-2 py-1.5 rounded-md text-xs font-medium border transition-colors hover:opacity-80 disabled:opacity-50 ${acc.color}`}
+                      >
+                        {acc.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </form>
 
             <div className="mt-10">
@@ -590,47 +651,39 @@ export default function Login() {
                 </div>
               </div>
 
-              <div className="mt-6 grid grid-cols-2 gap-4">
-                {/* 微信登录按钮：使用 Tailwind green-500/600 作为微信品牌色 #07C160 的近似值 */}
+              <div className="mt-6 grid grid-cols-3 gap-3">
+                {/* 手机号登录 */}
+                <button
+                  type="button"
+                  onClick={() => showToast({ type: 'info', title: '功能开发中', message: '手机号登录功能正在开发中，敬请期待' })}
+                  className="flex w-full items-center justify-center gap-2 rounded-lg bg-blue-500 hover:bg-blue-600 px-3 py-2.5 text-sm font-semibold text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 transition-colors shadow-sm"
+                >
+                  <Phone className="h-5 w-5" />
+                  <span className="hidden sm:inline">手机号</span>
+                  <span className="sm:hidden">手机</span>
+                </button>
+                {/* 微信登录 */}
                 <button
                   type="button"
                   onClick={() => showToast({ type: 'info', title: '功能开发中', message: '微信登录功能正在开发中，敬请期待' })}
-                  className="flex w-full items-center justify-center gap-3 rounded-lg bg-green-500 hover:bg-green-600 px-3 py-2.5 text-sm font-semibold text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 transition-colors shadow-sm"
+                  className="flex w-full items-center justify-center gap-2 rounded-lg bg-green-500 hover:bg-green-600 px-3 py-2.5 text-sm font-semibold text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 transition-colors shadow-sm"
                 >
-                  {/* WeChat Icon */}
-                  <svg
-                    className="h-5 w-5"
-                    fill="currentColor"
-                    viewBox="0 0 24 24"
-                    aria-hidden="true"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M16.57 6.643c-3.149 0-5.702 2.115-5.702 4.723 0 2.607 2.553 4.722 5.702 4.722 3.149 0 5.702-2.115 5.702-4.722 0-2.608-2.553-4.723-5.702-4.723zM15.42 10.3c-.495 0-.897-.402-.897-.897 0-.495.402-.897.897-.897.495 0 .897.402.897.897 0 .495-.402.897-.897.897zm2.3 0c-.495 0-.897-.402-.897-.897 0-.495.402-.897.897-.897.495 0 .897.402.897.897 0 .495-.402.897-.897.897zM8.285 3C3.71 3 0 6.035 0 9.78c0 2.053.993 3.89 2.555 5.127l-.66 2.052 2.376-1.18c1.238.358 2.585.556 4.014.556 4.576 0 8.286-3.036 8.286-6.78C16.571 6.035 12.861 3 8.286 3zm-1.65 5.845c-.66 0-1.196-.536-1.196-1.196s.536-1.196 1.196-1.196c.66 0 1.196.536 1.196 1.196s-.536 1.196-1.196 1.196zm4.6 0c-.66 0-1.196-.536-1.196-1.196s.536-1.196 1.196-1.196c.66 0 1.196.536 1.196 1.196s-.536 1.196-1.196 1.196z"
-                      clipRule="evenodd"
-                    />
+                  <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                    <path fillRule="evenodd" d="M16.57 6.643c-3.149 0-5.702 2.115-5.702 4.723 0 2.607 2.553 4.722 5.702 4.722 3.149 0 5.702-2.115 5.702-4.722 0-2.608-2.553-4.723-5.702-4.723zM15.42 10.3c-.495 0-.897-.402-.897-.897 0-.495.402-.897.897-.897.495 0 .897.402.897.897 0 .495-.402.897-.897.897zm2.3 0c-.495 0-.897-.402-.897-.897 0-.495.402-.897.897-.897.495 0 .897.402.897.897 0 .495-.402.897-.897.897zM8.285 3C3.71 3 0 6.035 0 9.78c0 2.053.993 3.89 2.555 5.127l-.66 2.052 2.376-1.18c1.238.358 2.585.556 4.014.556 4.576 0 8.286-3.036 8.286-6.78C16.571 6.035 12.861 3 8.286 3zm-1.65 5.845c-.66 0-1.196-.536-1.196-1.196s.536-1.196 1.196-1.196c.66 0 1.196.536 1.196 1.196s-.536 1.196-1.196 1.196zm4.6 0c-.66 0-1.196-.536-1.196-1.196s.536-1.196 1.196-1.196c.66 0 1.196.536 1.196 1.196s-.536 1.196-1.196 1.196z" clipRule="evenodd" />
                   </svg>
-                  微信登录
+                  微信
                 </button>
+                {/* QQ登录 */}
                 <button
                   type="button"
-                  onClick={() => showToast({ type: 'info', title: '功能开发中', message: 'GitHub 登录功能正在开发中，敬请期待' })}
-                  className="flex w-full items-center justify-center gap-3 rounded-lg bg-white px-3 py-2.5 text-sm font-semibold text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 transition-colors shadow-sm"
+                  onClick={() => showToast({ type: 'info', title: '功能开发中', message: 'QQ登录功能正在开发中，敬请期待' })}
+                  className="flex w-full items-center justify-center gap-2 rounded-lg bg-sky-500 hover:bg-sky-600 px-3 py-2.5 text-sm font-semibold text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 transition-colors shadow-sm"
                 >
-                  {/* GitHub Icon */}
-                  <svg
-                    className="h-5 w-5"
-                    fill="currentColor"
-                    viewBox="0 0 24 24"
-                    aria-hidden="true"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"
-                      clipRule="evenodd"
-                    />
+                  {/* QQ Penguin Icon */}
+                  <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M12 2C7.589 2 4 5.589 4 9.996c0 1.928.691 3.691 1.835 5.07-.12.563-.29 1.1-.512 1.596-.32.718-.7 1.3-1.128 1.734-.158.16-.058.424.166.47.78.158 1.612.112 2.376-.158.576-.204 1.1-.512 1.554-.9A8.013 8.013 0 0012 18c4.411 0 8-3.589 8-8.004C20 5.589 16.411 2 12 2zm-2.4 10.8c-.662 0-1.2-.538-1.2-1.2s.538-1.2 1.2-1.2 1.2.538 1.2 1.2-.538 1.2-1.2 1.2zm4.8 0c-.662 0-1.2-.538-1.2-1.2s.538-1.2 1.2-1.2 1.2.538 1.2 1.2-.538 1.2-1.2 1.2z" />
                   </svg>
-                  GitHub
+                  QQ
                 </button>
               </div>
             </div>

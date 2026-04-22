@@ -150,7 +150,7 @@ const ICON_MAP: Record<string, unknown> = {
 };
 
 export default function BackgroundBoost() {
-  const bgBoostConfig = useConfigStore(s => s.getJson('background_boost_page_config', DEFAULT_BG_BOOST_CONFIG));
+  const bgBoostConfig = useConfigStore().getJson('background_boost_config') || DEFAULT_BG_BOOST_CONFIG;
   const SERVICES = bgBoostConfig.services || DEFAULT_BG_BOOST_CONFIG.services;
   const PROCESS_STEPS = bgBoostConfig.processSteps || DEFAULT_BG_BOOST_CONFIG.processSteps;
   const GUARANTEES = bgBoostConfig.guarantees || DEFAULT_BG_BOOST_CONFIG.guarantees;
@@ -183,10 +183,16 @@ export default function BackgroundBoost() {
                   实习 · 科研 · 论文 · 竞赛 · 志愿者 · 语言，六大维度全面提升软实力，已帮助 <span className="text-white font-bold">3,200+</span> 名学员斩获世界名校 Offer。
                 </p>
                 <div className="flex flex-wrap gap-3">
-                  <button className="bg-primary-500 text-white px-8 py-3.5 rounded-xl font-bold hover:bg-primary-700 transition-colors shadow-lg shadow-primary-500/20 flex items-center gap-2">
+                  <button
+                    onClick={() => navigate('/chat')}
+                    className="bg-primary-500 text-white px-8 py-3.5 rounded-xl font-bold hover:bg-primary-700 transition-colors shadow-lg shadow-primary-500/20 flex items-center gap-2"
+                  >
                     <MessageCircle className="w-4 h-4" /> 免费评估背景
                   </button>
-                  <button className="bg-white/20 backdrop-blur text-white px-8 py-3.5 rounded-xl font-bold hover:bg-white/30 transition-colors border border-white/20 flex items-center gap-2">
+                  <button
+                    onClick={() => navigate('/success-cases')}
+                    className="bg-white text-primary-600 px-8 py-3.5 rounded-xl font-bold hover:bg-primary-50 transition-colors border-2 border-white shadow-lg flex items-center gap-2"
+                  >
                     <BookOpen className="w-4 h-4" /> 查看成功案例
                   </button>
                 </div>
@@ -376,7 +382,10 @@ export default function BackgroundBoost() {
           <div className="max-w-lg mx-auto">
             <h2 className="text-[24px] font-bold text-gray-900 mb-3">不确定需要哪些背景提升？</h2>
             <p className="text-[15px] text-gray-500 mb-6">资深留学顾问免费评估你的现有背景，根据目标院校定制专属提升方案，让每一分努力都花在刀刃上</p>
-            <button className="bg-primary-500 text-white px-10 py-4 rounded-xl font-bold text-[16px] hover:bg-primary-700 transition-colors shadow-lg shadow-primary-500/20 flex items-center gap-2 mx-auto">
+            <button
+              onClick={() => navigate('/chat')}
+              className="bg-primary-500 text-white px-10 py-4 rounded-xl font-bold text-[16px] hover:bg-primary-700 transition-colors shadow-lg shadow-primary-500/20 flex items-center gap-2 mx-auto"
+            >
               <MessageCircle className="w-5 h-5" /> 免费咨询
             </button>
             <p className="text-[12px] text-gray-400 mt-4 flex items-center justify-center gap-1">

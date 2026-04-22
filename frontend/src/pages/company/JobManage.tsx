@@ -244,8 +244,8 @@ export default function CompanyJobManage() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
           { label: '在招职位', value: jobs.filter(j => j.status === 'active').length, icon: Briefcase, color: 'text-primary-600', bg: 'bg-primary-50' },
-          { label: '总浏览量', value: jobs.reduce((a, j) => a + j.view_count, 0).toLocaleString(), icon: Eye, color: 'text-blue-600', bg: 'bg-blue-50' },
-          { label: '总投递数', value: jobs.reduce((a, j) => a + j.applications, 0), icon: FileText, color: 'text-primary-600', bg: 'bg-primary-50' },
+          { label: '总浏览量', value: jobs.reduce((a, j) => a + (j.view_count || 0), 0).toLocaleString(), icon: Eye, color: 'text-blue-600', bg: 'bg-blue-50' },
+          { label: '总投递数', value: jobs.reduce((a, j) => a + (j.applications || 0), 0), icon: FileText, color: 'text-primary-600', bg: 'bg-primary-50' },
           { label: '已下架', value: jobs.filter(j => j.status === 'inactive').length, icon: EyeOff, color: 'text-gray-500', bg: 'bg-gray-50' },
         ].map((item) => (
           <div key={item.label} className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 flex items-center gap-3">
@@ -319,10 +319,10 @@ export default function CompanyJobManage() {
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-3 text-sm">
                       <span className="text-gray-500 flex items-center gap-1">
-                        <Eye className="w-3.5 h-3.5" /> {job.view_count.toLocaleString()}
+                        <Eye className="w-3.5 h-3.5" /> {(job.view_count || 0).toLocaleString()}
                       </span>
                       <span className="text-primary-600 font-medium flex items-center gap-1">
-                        <FileText className="w-3.5 h-3.5" /> {job.applications}
+                        <FileText className="w-3.5 h-3.5" /> {job.applications || 0}
                       </span>
                     </div>
                   </td>

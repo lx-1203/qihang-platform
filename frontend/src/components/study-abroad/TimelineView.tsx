@@ -2,7 +2,6 @@ import { useState, useMemo, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Calendar, Clock, AlertTriangle, Video, Lightbulb, ChevronRight } from 'lucide-react';
 import { motion } from 'framer-motion';
-import timelineData from '../../data/study-abroad-timeline.json';
 import http from '../../api/http';
 import Tag from '@/components/ui/Tag';
 
@@ -84,21 +83,24 @@ function mapApiTimeline(row: Record<string, unknown>): TimelineEvent {
 }
 
 export default function TimelineView() {
-  const [events, setEvents] = useState<TimelineEvent[]>(timelineData as TimelineEvent[]);
+  const [events, setEvents] = useState<TimelineEvent[]>([]);
+  const [loading, setLoading] = useState(true);
   const [selectedMonth, setSelectedMonth] = useState<string | null>(null);
 
-  // 尝试从 API 加载数据，失败则保持 JSON 数据
+  // 从 API 加载时间线数据
   useEffect(() => {
+    setLoading(true);
     http.get('/study-abroad/timeline')
       .then(res => {
         const apiList = res.data.data;
-        if (Array.isArray(apiList) && apiList.length > 0) {
+        if (Array.isArray(apiList)) {
           setEvents(apiList.map(mapApiTimeline));
         }
       })
       .catch(() => {
-        // API 不可用时静默使用 JSON 数据
-      });
+        if (import.meta.env.DEV) console.warn('[TimelineView] Timeline API 加载失败');
+      })
+      .finally(() => setLoading(false));
   }, []);
 
   // Group events by month and get sorted month keys
@@ -150,6 +152,29 @@ export default function TimelineView() {
         </h2>
       </div>
 
+      {/* 加载状态 */}
+      {loading && (
+        <div className="space-y-3">
+          {[1, 2, 3].map(i => (
+            <div key={i} className="animate-pulse bg-white rounded-2xl border border-gray-100 p-4">
+              <div className="h-4 bg-gray-200 rounded w-1/4 mb-2" />
+              <div className="h-3 bg-gray-200 rounded w-3/4 mb-1" />
+              <div className="h-3 bg-gray-100 rounded w-1/2" />
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* 空状态（API 加载完但无数据） */}
+      {!loading && events.length === 0 && (
+        <div className="text-center py-12">
+          <Calendar className="w-12 h-12 text-gray-200 mx-auto mb-3" />
+          <p className="text-sm text-gray-400">暂无时间节点数据</p>
+        </div>
+      )}
+
+      {!loading && events.length > 0 && (
+        <>
       {/* Month cards row */}
       <div className="overflow-x-auto flex gap-2 snap-x snap-mandatory pb-2 scrollbar-hide">
         {/* "All" button */}
@@ -300,6 +325,8 @@ export default function TimelineView() {
           scrollbar-width: none;
         }
       `}</style>
+        </>
+      )}
     </section>
   );
 }

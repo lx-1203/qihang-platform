@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import DevFloatButton from '../components/DevFloatButton';
 import { useAuthStore } from '../store/auth';
+import { DEFAULT_AVATAR } from '../constants';
 
 const SIDEBAR_NAV = [
   { name: '企业总览', href: '/company/dashboard', icon: Building2 },
@@ -152,7 +153,7 @@ export default function CompanyLayout() {
               <Mail className="w-6 h-6" />
             </button>
             <div className="flex items-center gap-3 pl-4 md:pl-6 border-l border-gray-200">
-              <img src={user?.avatar || 'https://images.unsplash.com/photo-1611162617474-5b21e879e113?w=100&h=100&fit=crop'} alt="Company Logo" className="w-8 h-8 rounded-md border border-gray-200 object-cover" />
+              <img src={user?.avatar || DEFAULT_AVATAR} onError={(e) => { (e.target as HTMLImageElement).src = DEFAULT_AVATAR }} alt="Company Logo" className="w-8 h-8 rounded-md border border-gray-200 object-cover" />
               <div className="hidden sm:flex flex-col">
                 <span className="text-sm font-bold text-gray-900 leading-tight">{user?.name || '企业用户'}</span>
                 <span className="text-xs text-gray-500">已认证</span>

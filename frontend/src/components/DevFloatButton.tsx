@@ -81,10 +81,10 @@ export default function DevFloatButton() {
 
   // 种子用户账号（密码统一为 password123，管理员为 admin123）
   const DEV_ACCOUNTS = {
-    admin:   { email: 'admin@example.com',    password: 'admin123' },
-    company: { email: 'hr@bytedance.com',    password: 'password123' },
-    mentor:  { email: 'chen@mentor.com',     password: 'password123' },
-    student: { email: 'student@example.com', password: 'password123' },
+    admin:   { email: 'admin@example.com',       password: 'admin123' },
+    company: { email: 'hr@bytedance.com',        password: 'password123' },
+    mentor:  { email: 'chen@mentor.com',         password: 'password123' },
+    student: { email: 'student1@example.com',    password: 'password123' },
   };
 
   async function switchRole(role: 'admin' | 'company' | 'mentor' | 'student') {
@@ -116,7 +116,7 @@ export default function DevFloatButton() {
       {/* 悬浮按钮 */}
       <motion.button
         onClick={() => setOpen(!open)}
-        className="fixed bottom-6 left-6 z-[9999] w-14 h-14 bg-amber-500 hover:bg-amber-600 text-white rounded-full shadow-2xl flex items-center justify-center transition-colors"
+        className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[9999] w-14 h-14 bg-amber-500 hover:bg-amber-600 text-white rounded-full shadow-2xl flex items-center justify-center transition-colors"
         whileHover={{ scale: 1.1 }}
         whileTap={{ scale: 0.95 }}
         title="开发调试导航"
@@ -143,7 +143,7 @@ export default function DevFloatButton() {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 20, scale: 0.95 }}
               transition={{ type: 'spring', stiffness: 400, damping: 30 }}
-              className="fixed bottom-24 left-6 z-[9999] w-[340px] max-h-[70vh] bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden flex flex-col"
+              className="fixed bottom-24 left-1/2 -translate-x-1/2 z-[9999] w-[340px] max-h-[70vh] bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden flex flex-col"
             >
               {/* 头部 */}
               <div className="bg-slate-900 text-white px-5 py-4">

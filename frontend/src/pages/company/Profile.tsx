@@ -6,6 +6,7 @@ import {
   Camera, Users, FileText, ExternalLink
 } from 'lucide-react';
 import http from '@/api/http';
+import CityPicker from '@/components/ui/CityPicker';
 import { DetailSkeleton } from '../../components/ui/Skeleton';
 import ErrorState from '../../components/ui/ErrorState';
 import { showToast } from '../../components/ui/ToastContainer';
@@ -218,6 +219,8 @@ export default function CompanyProfile() {
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1.5">所属行业 <span className="text-red-500">*</span></label>
             <select
+              id="company-industry"
+              name="industry"
               value={profile.industry}
               onChange={e => updateField('industry', e.target.value)}
               className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none bg-white"
@@ -232,6 +235,8 @@ export default function CompanyProfile() {
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1.5">企业规模 <span className="text-red-500">*</span></label>
             <select
+              id="company-scale"
+              name="scale"
               value={profile.scale}
               onChange={e => updateField('scale', e.target.value)}
               className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none bg-white"
@@ -272,22 +277,19 @@ export default function CompanyProfile() {
           {/* 企业地址 */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1.5">企业地址 <span className="text-red-500">*</span></label>
-            <div className="relative">
-              <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-              <input
-                type="text"
-                value={profile.address}
-                onChange={e => updateField('address', e.target.value)}
-                className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none"
-                placeholder="请输入详细地址"
-              />
-            </div>
+            <CityPicker
+              value={profile.address}
+              onChange={val => updateField('address', val)}
+              placeholder="选择城市"
+            />
           </div>
 
           {/* 企业简介 - 跨两列 */}
           <div className="md:col-span-2">
             <label className="block text-sm font-medium text-gray-700 mb-1.5">企业简介 <span className="text-red-500">*</span></label>
             <textarea
+              id="company-description"
+              name="description"
               value={profile.description}
               onChange={e => updateField('description', e.target.value)}
               rows={4}

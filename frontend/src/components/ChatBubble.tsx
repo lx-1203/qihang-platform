@@ -1,4 +1,6 @@
 import { Bot, ShieldCheck, Info, Check, CheckCheck, Clock, AlertCircle } from 'lucide-react';
+import { marked } from 'marked';
+import DOMPurify from 'dompurify';
 import type { ChatMessage } from '@/store/chat';
 import Tag from '@/components/ui/Tag';
 
@@ -81,7 +83,10 @@ export default function ChatBubble({ message, isCurrentUser, onResend }: ChatBub
             <Tag variant="primary" size="xs">AI</Tag>
           </div>
           <div className="bg-gray-100 text-gray-800 px-4 py-2.5 rounded-2xl rounded-bl-md">
-            <p className="text-sm whitespace-pre-wrap break-words leading-relaxed">{content}</p>
+            <div
+              className="text-sm break-words leading-relaxed prose prose-sm max-w-none prose-p:my-1 prose-headings:my-2 prose-ul:my-1 prose-ol:my-1"
+              dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(marked.parse(content, { async: false }) as string) }}
+            />
           </div>
           <p className="text-[10px] text-gray-400 mt-1">{formatTime(created_at)}</p>
         </div>

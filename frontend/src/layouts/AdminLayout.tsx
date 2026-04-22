@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import DevFloatButton from '../components/DevFloatButton';
 import { useReducedMotion } from '../hooks/useReducedMotion';
+import { useAuthStore } from '../store/auth';
 
 const SIDEBAR_NAV = [
   { name: '数据总览', href: '/admin/dashboard', icon: BarChart },
@@ -46,6 +47,7 @@ export default function AdminLayout() {
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const prefersReduced = useReducedMotion();
+  const { user } = useAuthStore();
 
   // 根据用户动画偏好选择过渡配置
   const sidebarTransition = prefersReduced
@@ -171,10 +173,10 @@ export default function AdminLayout() {
           <div className="flex items-center gap-6">
             <div className="flex items-center gap-3 pl-6 border-l border-gray-200">
               <div className="w-8 h-8 rounded-full bg-primary-100 text-primary-700 flex items-center justify-center font-bold">
-                超
+                {(user?.name || user?.email || '管理')[0]}
               </div>
               <div className="hidden sm:flex flex-col">
-                <span className="text-sm font-bold text-gray-900 leading-tight">超级管理员</span>
+                <span className="text-sm font-bold text-gray-900 leading-tight">{user?.name || user?.email || '管理员'}</span>
                 <span className="text-xs text-green-500 font-medium">在线</span>
               </div>
             </div>

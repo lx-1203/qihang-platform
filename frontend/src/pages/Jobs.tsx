@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import http from "@/api/http";
+import CityPicker from '@/components/ui/CityPicker';
 import { addSearchHistory } from "@/utils/searchHistory";
 import ErrorState from "@/components/ui/ErrorState";
 import EmptyState from "@/components/ui/EmptyState";
@@ -60,6 +61,7 @@ export default function Jobs() {
   const [searchInput, setSearchInput] = useState("");
   const [locationInput, setLocationInput] = useState("");
   const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [isDropdownFilterOpen, setIsDropdownFilterOpen] = useState(false);
 
   // API 数据
   const [jobs, setJobs] = useState<JobItem[]>([]);
@@ -222,6 +224,8 @@ export default function Jobs() {
             <div className="flex-1 flex items-center bg-gray-50 rounded-xl px-4 py-3 sm:py-0 border border-transparent focus-within:border-primary-500 focus-within:bg-white transition-colors relative">
               <Search className="text-gray-400 w-5 h-5 shrink-0" />
               <input
+                id="jobs-search"
+                name="jobs-search"
                 type="text"
                 placeholder="搜索职位、公司或关键词 (例如：前端、字节跳动)"
                 value={searchInput}
@@ -267,15 +271,11 @@ export default function Jobs() {
                 )}
               </AnimatePresence>
             </div>
-            <div className="sm:w-48 flex items-center bg-gray-50 rounded-xl px-4 py-3 sm:py-0 border border-transparent focus-within:border-primary-500 focus-within:bg-white transition-colors border-t sm:border-t-0 sm:border-l border-gray-200">
-              <MapPin className="text-gray-400 w-5 h-5 shrink-0" />
-              <input
-                type="text"
-                placeholder="工作城市"
+            <div className="sm:w-48">
+              <CityPicker
                 value={locationInput}
-                onChange={e => setLocationInput(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && handleSearch()}
-                className="w-full bg-transparent border-none focus:ring-0 text-gray-900 placeholder:text-gray-400 ml-3 text-base"
+                onChange={val => setLocationInput(val)}
+                placeholder="工作城市"
               />
             </div>
             <button
@@ -327,6 +327,94 @@ export default function Jobs() {
                 </span>
               </button>
             ))}
+          </div>
+        </div>
+      </div>
+
+      {/* 下拉筛选栏 */}
+      <div className="bg-white border-b border-gray-100">
+        <div className="container-main py-3">
+          {/* 移动端折叠按钮 */}
+          <button
+            onClick={() => setIsDropdownFilterOpen(!isDropdownFilterOpen)}
+            className="sm:hidden flex items-center gap-2 text-gray-600 hover:text-primary-600 text-sm font-medium mb-2 transition-colors"
+          >
+            <Filter size={16} />
+            快速筛选
+            <ChevronDown className={`w-4 h-4 transition-transform ${isDropdownFilterOpen ? 'rotate-180' : ''}`} />
+          </button>
+          <div className={`flex flex-col sm:flex-row items-stretch sm:items-center gap-3 ${isDropdownFilterOpen ? 'block' : 'hidden sm:flex'}`}>
+            {/* 职位类型 */}
+            <div className="relative flex-1 sm:flex-none sm:w-44">
+              <Briefcase className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+              <select
+                id="job-type"
+                name="type"
+                value={activeType}
+                onChange={e => handleFilterChange(setActiveType, e.target.value)}
+                className="w-full appearance-none pl-9 pr-8 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-700
+                  focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 focus:bg-white
+                  outline-none transition-all duration-200 cursor-pointer"
+              >
+                {types.map(t => (
+                  <option key={t} value={t}>{t === '全部' ? '职位类型：全部' : t}</option>
+                ))}
+              </select>
+              <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+            </div>
+
+            {/* 工作城市 */}
+            <div className="relative flex-1 sm:flex-none sm:w-44">
+              <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+              <select
+                id="job-location"
+                name="location"
+                value={activeLocation}
+                onChange={e => handleFilterChange(setActiveLocation, e.target.value)}
+                className="w-full appearance-none pl-9 pr-8 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-700
+                  focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 focus:bg-white
+                  outline-none transition-all duration-200 cursor-pointer"
+              >
+                {locations.map(l => (
+                  <option key={l} value={l}>{l === '全国' ? '工作城市：全国' : l}</option>
+                ))}
+              </select>
+              <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+            </div>
+
+            {/* 职位类别 */}
+            <div className="relative flex-1 sm:flex-none sm:w-44">
+              <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+              <select
+                id="job-category"
+                name="category"
+                value={activeCategory}
+                onChange={e => handleFilterChange(setActiveCategory, e.target.value)}
+                className="w-full appearance-none pl-9 pr-8 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-700
+                  focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 focus:bg-white
+                  outline-none transition-all duration-200 cursor-pointer"
+              >
+                {categories.map(c => (
+                  <option key={c} value={c}>{c === '全部' ? '职位类别：全部' : c}</option>
+                ))}
+              </select>
+              <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+            </div>
+
+            {/* 清除筛选 */}
+            {(activeType !== '全部' || activeLocation !== '全国' || activeCategory !== '全部') && (
+              <button
+                onClick={() => {
+                  handleFilterChange(setActiveType, '全部');
+                  handleFilterChange(setActiveLocation, '全国');
+                  handleFilterChange(setActiveCategory, '全部');
+                }}
+                className="text-sm text-primary-600 hover:text-primary-700 font-medium whitespace-nowrap
+                  hover:underline transition-colors px-2 py-2.5"
+              >
+                清除筛选
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -542,6 +630,7 @@ export default function Jobs() {
                             src={job.logo}
                             alt={job.company_name}
                             className="w-12 h-12 rounded-xl object-cover border border-gray-100 shadow-sm"
+                            onError={(e) => { (e.target as HTMLImageElement).src = '/placeholder-cover.svg' }}
                           />
                         ) : (
                           <div className="w-12 h-12 rounded-xl bg-gray-100 flex items-center justify-center text-gray-600 font-bold">

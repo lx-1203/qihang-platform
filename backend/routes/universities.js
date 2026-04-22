@@ -83,7 +83,7 @@ router.get('/:id', async (req, res) => {
       [id]
     );
     if (rows.length === 0) {
-      return res.status(404).json({ error: '院校不存在' });
+      return res.status(404).json({ code: 404, message: '院校不存在' });
     }
 
     // 浏览量 +1

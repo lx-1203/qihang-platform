@@ -45,15 +45,16 @@ export default function BackgroundBoostConfig() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'services' | 'process' | 'guarantees'>('services');
   const [deleteConfirm, setDeleteConfirm] = useState<{ type: string; index: number } | null>(null);
+  const [expandedIndex, setExpandedIndex] = useState<number | null>(null);
 
   useEffect(() => {
     async function loadConfig() {
       try {
         setLoading(true);
         const res = await http.get('/config/public');
-        if (res.data?.code === 200 && res.data.data?.background_boost_page_config) {
+        if (res.data?.code === 200 && res.data.data?.background_boost_config) {
           try {
-            const config = res.data.data.background_boost_page_config;
+            const config = res.data.data.background_boost_config;
             if (config.services) setServices(config.services);
             if (config.processSteps) setProcessSteps(config.processSteps);
             if (config.guarantees) setGuarantees(config.guarantees);
@@ -80,7 +81,7 @@ export default function BackgroundBoostConfig() {
 
     for (let i = 0; i < services.length; i++) {
       if (!services[i].title.trim()) {
-        toast.error('验证失败', `服务 #${i + 1} 的标题不能为空`);
+        toast.error('验证失败', `服务 第${i + 1}项 的标题不能为空`);
         setActiveTab('services');
         return;
       }
@@ -97,7 +98,7 @@ export default function BackgroundBoostConfig() {
 
     try {
       const res = await http.post('/config/batch', {
-        configs: { 'background_boost_page_config': JSON.stringify(newConfig) },
+        configs: { 'background_boost_config': JSON.stringify(newConfig) },
       });
 
       if (res.data?.code === 200) {
@@ -183,14 +184,33 @@ export default function BackgroundBoostConfig() {
           <div className="space-y-4">
             {services.map((svc, idx) => (
               <motion.div key={svc.id || idx} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: idx * 0.05 }} className="bg-white rounded-xl border border-gray-200 p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-sm font-bold text-gray-900">服务 #{idx + 1}: {svc.title || '未命名'}</h3>
-                  {services.length > 1 && (
-                    <button onClick={() => setDeleteConfirm({ type: 'service', index: idx })}
-                      className="text-red-400 hover:text-red-600 transition-colors"><Trash2 className="w-4 h-4" /></button>
-                  )}
+                transition={{ delay: idx * 0.05 }} className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                {/* 折叠头部 */}
+                <div
+                  className="flex items-center justify-between p-4 cursor-pointer hover:bg-gray-50 transition-colors"
+                  onClick={() => setExpandedIndex(expandedIndex === idx ? null : idx)}
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="w-8 h-8 bg-primary-500 text-white rounded-lg flex items-center justify-center font-bold text-sm shrink-0">
+                      {idx + 1}
+                    </span>
+                    <div>
+                      <h3 className="text-sm font-bold text-gray-900">{svc.title || '未命名服务'}</h3>
+                      <p className="text-xs text-gray-500">{svc.icon} · {svc.features.length} 个特性 · {svc.stats.count} {svc.stats.label}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {services.length > 1 && (
+                      <button onClick={(e) => { e.stopPropagation(); setDeleteConfirm({ type: 'service', index: idx }); }}
+                        className="text-red-400 hover:text-red-600 p-1"><Trash2 className="w-4 h-4" /></button>
+                    )}
+                  </div>
                 </div>
+
+                {/* 展开的编辑区域 */}
+                {expandedIndex === idx && (
+                  <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }}
+                    className="border-t border-gray-100 p-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
                   <div>
                     <label className="block text-xs font-medium text-gray-500 mb-1">服务名称</label>
@@ -230,7 +250,11 @@ export default function BackgroundBoostConfig() {
                 </div>
                 <div className="mb-4">
                   <label className="block text-xs font-medium text-gray-500 mb-1">特性列表（每行一条）</label>
-                  <textarea value={svc.features.join('\n')} rows={3}
+                  <textarea
+                    id={`service-features-${idx}`}
+                    name={`features-${idx}`}
+                    value={svc.features.join('\n')}
+                    rows={3}
                     onChange={e => updateFeatures(idx, e.target.value)}
                     className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                     placeholder={'每行一个特性\n如：字节跳动、腾讯、阿里'} />
@@ -258,6 +282,8 @@ export default function BackgroundBoostConfig() {
                       placeholder="查看详情" />
                   </div>
                 </div>
+                  </motion.div>
+                )}
               </motion.div>
             ))}
             <button onClick={() => setServices([...services, {
@@ -277,14 +303,33 @@ export default function BackgroundBoostConfig() {
           <div className="space-y-4">
             {processSteps.map((step, idx) => (
               <motion.div key={idx} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: idx * 0.05 }} className="bg-white rounded-xl border border-gray-200 p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-sm font-bold text-gray-900">步骤 #{step.step}</h3>
-                  {processSteps.length > 1 && (
-                    <button onClick={() => setDeleteConfirm({ type: 'process', index: idx })}
-                      className="text-red-400 hover:text-red-600 transition-colors"><Trash2 className="w-4 h-4" /></button>
-                  )}
+                transition={{ delay: idx * 0.05 }} className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                {/* 折叠头部 */}
+                <div
+                  className="flex items-center justify-between p-4 cursor-pointer hover:bg-gray-50 transition-colors"
+                  onClick={() => setExpandedIndex(expandedIndex === idx ? null : idx)}
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="w-8 h-8 bg-primary-500 text-white rounded-lg flex items-center justify-center font-bold text-sm shrink-0">
+                      {step.step}
+                    </span>
+                    <div>
+                      <h3 className="text-sm font-bold text-gray-900">{step.title || '未命名步骤'}</h3>
+                      <p className="text-xs text-gray-500">{step.desc}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {processSteps.length > 1 && (
+                      <button onClick={(e) => { e.stopPropagation(); setDeleteConfirm({ type: 'process', index: idx }); }}
+                        className="text-red-400 hover:text-red-600 p-1"><Trash2 className="w-4 h-4" /></button>
+                    )}
+                  </div>
                 </div>
+
+                {/* 展开的编辑区域 */}
+                {expandedIndex === idx && (
+                  <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }}
+                    className="border-t border-gray-100 p-6">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div>
                     <label className="block text-xs font-medium text-gray-500 mb-1">步骤标题</label>
@@ -305,6 +350,8 @@ export default function BackgroundBoostConfig() {
                       className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm font-mono focus:ring-2 focus:ring-primary-500 focus:border-transparent" />
                   </div>
                 </div>
+                  </motion.div>
+                )}
               </motion.div>
             ))}
             <button onClick={() => setProcessSteps([...processSteps, {
@@ -321,14 +368,33 @@ export default function BackgroundBoostConfig() {
           <div className="space-y-4">
             {guarantees.map((g, idx) => (
               <motion.div key={idx} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: idx * 0.05 }} className="bg-white rounded-xl border border-gray-200 p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-sm font-bold text-gray-900">保障 #{idx + 1}</h3>
-                  {guarantees.length > 1 && (
-                    <button onClick={() => setDeleteConfirm({ type: 'guarantee', index: idx })}
-                      className="text-red-400 hover:text-red-600 transition-colors"><Trash2 className="w-4 h-4" /></button>
-                  )}
+                transition={{ delay: idx * 0.05 }} className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                {/* 折叠头部 */}
+                <div
+                  className="flex items-center justify-between p-4 cursor-pointer hover:bg-gray-50 transition-colors"
+                  onClick={() => setExpandedIndex(expandedIndex === idx ? null : idx)}
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="w-8 h-8 bg-primary-500 text-white rounded-lg flex items-center justify-center font-bold text-sm shrink-0">
+                      {idx + 1}
+                    </span>
+                    <div>
+                      <h3 className="text-sm font-bold text-gray-900">{g.title || '未命名保障'}</h3>
+                      <p className="text-xs text-gray-500">{g.desc}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {guarantees.length > 1 && (
+                      <button onClick={(e) => { e.stopPropagation(); setDeleteConfirm({ type: 'guarantee', index: idx }); }}
+                        className="text-red-400 hover:text-red-600 p-1"><Trash2 className="w-4 h-4" /></button>
+                    )}
+                  </div>
                 </div>
+
+                {/* 展开的编辑区域 */}
+                {expandedIndex === idx && (
+                  <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }}
+                    className="border-t border-gray-100 p-6">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div>
                     <label className="block text-xs font-medium text-gray-500 mb-1">保障标题</label>
@@ -349,6 +415,8 @@ export default function BackgroundBoostConfig() {
                       className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm font-mono focus:ring-2 focus:ring-primary-500 focus:border-transparent" />
                   </div>
                 </div>
+                  </motion.div>
+                )}
               </motion.div>
             ))}
             <button onClick={() => setGuarantees([...guarantees, { title: '', desc: '', icon: 'Shield' }])}

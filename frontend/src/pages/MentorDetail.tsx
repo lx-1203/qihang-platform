@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import http from '@/api/http';
 import { DEFAULT_AVATAR } from '@/constants';
 import { useAuthStore } from '@/store/auth';
+import { useToast } from '@/components/ui/ToastContainer';
 
 // 导师详情数据结构（匹配后端 mentor_profiles 表）
 interface MentorDetailData {
@@ -39,6 +40,7 @@ export default function MentorDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { isAuthenticated } = useAuthStore();
+  const toast = useToast();
 
   const [mentor, setMentor] = useState<MentorDetailData | null>(null);
   const [courses, setCourses] = useState<MentorCourse[]>([]);
@@ -106,10 +108,10 @@ export default function MentorDetail() {
         type: '1v1辅导',
         note: `预约${mentor?.name}老师的1v1辅导服务`,
       });
-      alert('预约申请已提交，请等待导师确认！');
+      toast.success('预约成功', '您的预约申请已提交，请等待导师确认');
     } catch (err: unknown) {
       const error = err as { message?: string };
-      alert(error?.message || '预约失败，请稍后重试');
+      toast.error('预约失败', error?.message || '请稍后重试');
     } finally {
       setBookingLoading(false);
     }
@@ -192,7 +194,16 @@ export default function MentorDetail() {
               </div>
             </div>
             <div className="w-full md:w-auto mt-6 md:mt-0 flex gap-4">
-               <button className="flex-1 md:flex-none flex items-center justify-center gap-2 bg-white border border-gray-300 text-gray-700 px-6 py-3 rounded-lg font-medium hover:bg-gray-50 transition-colors shadow-sm">
+               <button
+                 onClick={() => {
+                   if (!isAuthenticated) {
+                     navigate('/login', { state: { from: `/mentors/${id}` } });
+                     return;
+                   }
+                   navigate('/chat');
+                 }}
+                 className="flex-1 md:flex-none flex items-center justify-center gap-2 bg-white border border-gray-300 text-gray-700 px-6 py-3 rounded-lg font-medium hover:bg-gray-50 transition-colors shadow-sm"
+               >
                  <MessageCircle size={18} />
                  私信咨询
                </button>

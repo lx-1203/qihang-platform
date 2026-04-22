@@ -5,7 +5,7 @@
  * 功能:
  *   1. 如果数据库不存在则创建
  *   2. 创建所有业务表 (users / jobs / courses / mentors / companies / students / appointments / resumes / favorites / notifications)
- *   3. 插入默认管理员账号 (admin@example.com / admin123)
+ *   3. 插入默认管理员账号 (admin@qihang.com / admin123)
  *   4. 插入种子数据 (示例企业用户 / 导师用户 / 职位 / 课程 / 导师资料)
  */
 
@@ -15,7 +15,7 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-const DB_NAME = process.env.DB_NAME || 'career_platform';
+const DB_NAME = process.env.DB_NAME || 'qihang_platform';
 
 // ========== 建表 SQL ==========
 
@@ -234,7 +234,7 @@ const CREATE_NOTIFICATIONS_TABLE = `
   CREATE TABLE IF NOT EXISTS notifications (
     id              INT AUTO_INCREMENT PRIMARY KEY,
     user_id         INT NOT NULL COMMENT '接收通知的用户ID',
-    type            ENUM('system','job','appointment','course','announcement','other') NOT NULL DEFAULT 'system' COMMENT '通知类型',
+    type            ENUM('system','job','appointment','course','announcement','resume','review','approval','general','other') NOT NULL DEFAULT 'system' COMMENT '通知类型',
     title           VARCHAR(200) NOT NULL COMMENT '通知标题',
     content         TEXT COMMENT '通知内容',
     link            VARCHAR(500) DEFAULT NULL COMMENT '关联链接',
@@ -517,10 +517,11 @@ const CREATE_CHAT_MESSAGES_TABLE = `
     id              BIGINT AUTO_INCREMENT PRIMARY KEY,
     conversation_id INT NOT NULL COMMENT '会话ID',
     sender_id       INT NOT NULL DEFAULT 0 COMMENT '发送者ID (0=系统)',
-    sender_role     ENUM('system','user','admin') NOT NULL DEFAULT 'user' COMMENT '发送者角色',
+    sender_role     ENUM('system','user','admin','ai') NOT NULL DEFAULT 'user' COMMENT '发送者角色',
     content         TEXT NOT NULL COMMENT '消息内容',
     msg_type        VARCHAR(20) NOT NULL DEFAULT 'text' COMMENT '消息类型: text/image/file',
     file_url        VARCHAR(500) DEFAULT '' COMMENT '附件URL',
+    is_read         TINYINT(1) NOT NULL DEFAULT 0 COMMENT '是否已读: 0=未读, 1=已读',
     created_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     INDEX idx_conversation_id (conversation_id),
     INDEX idx_created_at (created_at)
@@ -688,6 +689,8 @@ async function seedUsers(conn) {
   // 学生用户
   const studentUsers = [
     { email: 'student@example.com', nickname: '张同学', role: 'student' },
+    { email: 'student2@example.com', nickname: '刘同学', role: 'student' },
+    { email: 'student3@example.com', nickname: '周同学', role: 'student' },
   ];
 
   // 企业用户
@@ -702,10 +705,10 @@ async function seedUsers(conn) {
 
   // 导师用户
   const mentorUsers = [
-    { email: 'chen@mentor.com',  nickname: '陈经理', role: 'mentor' },
+    { email: 'chen@mentor.com',  nickname: '陈教授', role: 'mentor' },
     { email: 'zhang@mentor.com', nickname: '张工',   role: 'mentor' },
     { email: 'wang@mentor.com',  nickname: '王总监', role: 'mentor' },
-    { email: 'li@mentor.com',    nickname: '李行长', role: 'mentor' },
+    { email: 'li@mentor.com',    nickname: '李导师', role: 'mentor' },
     { email: 'zhao@mentor.com',  nickname: '赵博士', role: 'mentor' },
   ];
 
@@ -735,68 +738,68 @@ async function seedCompanies(conn, userIdMap) {
   const companies = [
     {
       userEmail: 'hr@bytedance.com',
-      company_name: '字节跳动',
+      company_name: '字节跳动（南京）科技有限公司',
       industry: '互联网/科技',
       scale: '10000人以上',
-      description: '字节跳动是一家全球化的科技公司,旗下产品包括抖音、TikTok、今日头条等。致力于用技术连接人与信息,让创作者被看见。',
-      logo: 'https://images.unsplash.com/photo-1611162617474-5b21e879e113?w=100&h=100&fit=crop',
+      description: '字节跳动是一家全球化的科技公司,旗下产品包括抖音、TikTok、今日头条等。致力于用技术连接人与信息,让创作者被看见。南京研发中心位于建邺区河西CBD,主要承担抖音电商、飞书等核心业务线的研发工作。',
+      logo: '/default-avatar.svg',
       website: 'https://www.bytedance.com',
-      address: '北京市海淀区',
+      address: '南京市建邺区江东中路108号万达广场',
       verify_status: 'approved',
     },
     {
       userEmail: 'hr@tencent.com',
-      company_name: '腾讯',
+      company_name: '深圳市腾讯计算机系统有限公司',
       industry: '互联网/科技',
       scale: '10000人以上',
-      description: '腾讯是一家世界领先的互联网科技公司,以"用户为本,科技向善"为使命,通过技术丰富互联网用户的生活。',
-      logo: 'https://images.unsplash.com/photo-1611162616475-46b635cb6868?w=100&h=100&fit=crop',
+      description: '腾讯是一家世界领先的互联网科技公司,以"用户为本,科技向善"为使命,通过技术丰富互联网用户的生活。总部位于深圳市南山区科技园,业务覆盖社交、游戏、金融科技、云计算等多个领域。',
+      logo: '/default-avatar.svg',
       website: 'https://www.tencent.com',
-      address: '深圳市南山区',
+      address: '深圳市南山区科技中一路腾讯大厦',
       verify_status: 'approved',
     },
     {
       userEmail: 'hr@baidu.com',
-      company_name: '百度',
+      company_name: '北京百度网讯科技有限公司',
       industry: '互联网/人工智能',
       scale: '10000人以上',
-      description: '百度是全球最大的中文搜索引擎和领先的AI公司,在搜索、AI云、自动驾驶等领域持续创新。',
-      logo: 'https://images.unsplash.com/photo-1611162616305-c69b3fa7fbe0?w=100&h=100&fit=crop',
+      description: '百度是全球最大的中文搜索引擎和领先的AI公司,在搜索、AI云、自动驾驶等领域持续创新。总部位于北京市海淀区百度科技园,是国内人工智能技术的领军企业。',
+      logo: '/default-avatar.svg',
       website: 'https://www.baidu.com',
-      address: '北京市海淀区',
+      address: '北京市海淀区上地十街10号百度大厦',
       verify_status: 'approved',
     },
     {
       userEmail: 'hr@mihoyo.com',
-      company_name: '米哈游',
+      company_name: '上海米哈游网络科技股份有限公司',
       industry: '游戏/科技',
       scale: '5000-10000人',
-      description: '米哈游成立于2012年,是中国领先的ACG内容创作公司,代表作品有《原神》《崩坏》系列。',
-      logo: 'https://images.unsplash.com/photo-1542751371-adc38448a05e?w=100&h=100&fit=crop',
+      description: '米哈游成立于2012年,是中国领先的ACG内容创作公司,代表作品有《原神》《崩坏》系列。总部位于上海市徐汇区,在蒙特利尔、东京、首尔等地设有海外工作室。',
+      logo: '/default-avatar.svg',
       website: 'https://www.mihoyo.com',
-      address: '上海市徐汇区',
+      address: '上海市徐汇区虹漕路68号锦和中心',
       verify_status: 'approved',
     },
     {
       userEmail: 'hr@xiaohongshu.com',
-      company_name: '小红书',
+      company_name: '行吟信息科技（上海）有限公司',
       industry: '互联网/社交',
       scale: '5000-10000人',
-      description: '小红书是中国领先的生活方式平台和消费决策入口,用户可以通过短视频、图文等形式记录生活点滴。',
-      logo: 'https://images.unsplash.com/photo-1611162618071-b39a2ec055fb?w=100&h=100&fit=crop',
+      description: '小红书是中国领先的生活方式平台和消费决策入口,用户可以通过短视频、图文等形式记录生活点滴。公司总部位于上海市黄浦区,致力于打造全球最大的消费类内容社区。',
+      logo: '/default-avatar.svg',
       website: 'https://www.xiaohongshu.com',
-      address: '上海市黄浦区',
+      address: '上海市黄浦区马当路388号SOHO复兴广场',
       verify_status: 'approved',
     },
     {
       userEmail: 'hr@unilever.com',
-      company_name: '联合利华',
+      company_name: '联合利华（中国）投资有限公司',
       industry: '快消品',
       scale: '10000人以上',
-      description: '联合利华是全球领先的快消品公司,旗下品牌包括力士、多芬、清扬、和路雪等,业务遍及190多个国家。',
-      logo: 'https://images.unsplash.com/photo-1560179707-f14e90ef3623?w=100&h=100&fit=crop',
+      description: '联合利华是全球领先的快消品公司,旗下品牌包括力士、多芬、清扬、和路雪等,业务遍及190多个国家。中国区总部位于上海市长宁区临空经济园区,是公司全球第二大市场。',
+      logo: '/default-avatar.svg',
       website: 'https://www.unilever.com.cn',
-      address: '上海市长宁区',
+      address: '上海市长宁区福泉北路33号联合利华大楼',
       verify_status: 'approved',
     },
   ];
@@ -831,8 +834,8 @@ async function seedJobs(conn, userIdMap) {
     {
       title: '前端开发工程师 (2026届校招)',
       companyEmail: 'hr@bytedance.com',
-      company_name: '字节跳动',
-      logo: 'https://images.unsplash.com/photo-1611162617474-5b21e879e113?w=100&h=100&fit=crop',
+      company_name: '字节跳动（南京）科技有限公司',
+      logo: '/default-avatar.svg',
       location: '北京/上海/杭州',
       salary: '25k-40k',
       type: '校招',
@@ -845,8 +848,8 @@ async function seedJobs(conn, userIdMap) {
     {
       title: '产品经理实习生 - 商业化方向',
       companyEmail: 'hr@tencent.com',
-      company_name: '腾讯',
-      logo: 'https://images.unsplash.com/photo-1611162616475-46b635cb6868?w=100&h=100&fit=crop',
+      company_name: '深圳市腾讯计算机系统有限公司',
+      logo: '/default-avatar.svg',
       location: '深圳',
       salary: '200-300/天',
       type: '实习',
@@ -859,8 +862,8 @@ async function seedJobs(conn, userIdMap) {
     {
       title: 'AIGC 算法研究员',
       companyEmail: 'hr@baidu.com',
-      company_name: '百度',
-      logo: 'https://images.unsplash.com/photo-1611162616305-c69b3fa7fbe0?w=100&h=100&fit=crop',
+      company_name: '北京百度网讯科技有限公司',
+      logo: '/default-avatar.svg',
       location: '北京',
       salary: '30k-60k',
       type: '校招',
@@ -873,8 +876,8 @@ async function seedJobs(conn, userIdMap) {
     {
       title: '海外市场运营专员',
       companyEmail: 'hr@mihoyo.com',
-      company_name: '米哈游',
-      logo: 'https://images.unsplash.com/photo-1542751371-adc38448a05e?w=100&h=100&fit=crop',
+      company_name: '上海米哈游网络科技股份有限公司',
+      logo: '/default-avatar.svg',
       location: '上海',
       salary: '15k-25k',
       type: '校招',
@@ -887,8 +890,8 @@ async function seedJobs(conn, userIdMap) {
     {
       title: 'UI/UX 设计师实习',
       companyEmail: 'hr@xiaohongshu.com',
-      company_name: '小红书',
-      logo: 'https://images.unsplash.com/photo-1611162618071-b39a2ec055fb?w=100&h=100&fit=crop',
+      company_name: '行吟信息科技（上海）有限公司',
+      logo: '/default-avatar.svg',
       location: '上海',
       salary: '250/天',
       type: '实习',
@@ -901,8 +904,8 @@ async function seedJobs(conn, userIdMap) {
     {
       title: '管培生 (2026届)',
       companyEmail: 'hr@unilever.com',
-      company_name: '联合利华',
-      logo: 'https://images.unsplash.com/photo-1560179707-f14e90ef3623?w=100&h=100&fit=crop',
+      company_name: '联合利华（中国）投资有限公司',
+      logo: '/default-avatar.svg',
       location: '全国分配',
       salary: '12k-18k',
       type: '校招',
@@ -934,21 +937,21 @@ async function seedMentorProfiles(conn, userIdMap) {
   const mentors = [
     {
       userEmail: 'chen@mentor.com',
-      name: '陈经理',
-      title: '某头部互联网大厂HRD',
-      avatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=400',
-      bio: '10年以上人力资源管理经验,曾就职于多家互联网大厂,对校招流程和面试评估有深入理解。',
-      expertise: JSON.stringify(['简历优化', '面试辅导', 'HR视角', '职业规划']),
-      tags: JSON.stringify(['简历精修', '模拟面试']),
+      name: '陈教授',
+      title: '南京大学计算机科学与技术学院教授，博士生导师',
+      avatar: '/default-avatar.svg',
+      bio: '南京大学计算机科学与技术学院教授、博士生导师,IEEE高级会员。主要研究方向为软件工程与人工智能,主持国家自然科学基金重点项目3项,发表CCF-A类论文50余篇。长期指导本科生科研训练和研究生学术规划,对计算机专业学生的学术发展和就业方向有深入理解。',
+      expertise: JSON.stringify(['学术规划', '考研辅导', '科研指导', '计算机方向']),
+      tags: JSON.stringify(['学术规划', '考研指导']),
       rating: 4.9,
       price: 299.00,
     },
     {
       userEmail: 'zhang@mentor.com',
       name: '张工',
-      title: '高级前端架构师',
-      avatar: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&q=80&w=400',
-      bio: '8年前端开发经验,参与过多个大型前端项目的架构设计,对前端技术栈和行业趋势有深刻洞察。',
+      title: '华为技术有限公司高级软件工程师',
+      avatar: '/default-avatar.svg',
+      bio: '华为技术有限公司南京研究所高级软件工程师,8年一线开发经验。先后参与华为云、鸿蒙操作系统等重点项目的架构设计与核心模块开发。熟悉互联网大厂技术面试流程,多次担任校招面试官,累计面试候选人500+,对技术岗校招有独到见解。',
       expertise: JSON.stringify(['前端开发', '技术面试', '系统设计', '职业发展']),
       tags: JSON.stringify(['技术面', '职业规划']),
       rating: 4.8,
@@ -957,20 +960,20 @@ async function seedMentorProfiles(conn, userIdMap) {
     {
       userEmail: 'wang@mentor.com',
       name: '王总监',
-      title: '知名快消品牌市场总监',
-      avatar: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&q=80&w=400',
-      bio: '12年快消行业从业经验,从管培生成长为品牌总监,深谙快消行业的招聘标准和职业发展路径。',
-      expertise: JSON.stringify(['快消行业', '群面技巧', '品牌营销', '管培生面试']),
-      tags: JSON.stringify(['群面技巧', '营销方向']),
+      title: '阿里巴巴集团产品总监',
+      avatar: '/default-avatar.svg',
+      bio: '阿里巴巴集团产品总监,12年互联网产品经验。曾主导淘宝、天猫多个核心业务模块的产品规划与迭代,带领30人产品团队。从P5到P9的完整晋升历程,深谙互联网大厂的产品方法论和职业晋升路径,擅长指导产品经理方向的求职与职业发展。',
+      expertise: JSON.stringify(['产品经理', '互联网求职', '群面技巧', '职业晋升']),
+      tags: JSON.stringify(['产品方向', '群面辅导']),
       rating: 5.0,
       price: 349.00,
     },
     {
       userEmail: 'li@mentor.com',
-      name: '李行长',
-      title: '国有大行资深面试官',
-      avatar: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?auto=format&fit=crop&q=80&w=400',
-      bio: '15年银行从业经验,长期参与校园招聘面试,熟悉银行业务条线和晋升体系,助力学生进入金融行业。',
+      name: '李导师',
+      title: '中国银行江苏省分行人力资源部经理',
+      avatar: '/default-avatar.svg',
+      bio: '中国银行江苏省分行人力资源部经理,15年银行从业经验。长期负责省分行校园招聘的组织与面试工作,熟悉国有银行、股份制银行的招聘流程和用人标准。对银行业各条线（对公、零售、金融市场、风控）的职业发展路径有全面了解,已帮助200+学生成功入职各大银行。',
       expertise: JSON.stringify(['金融行业', '银行面试', '结构化面试', '行业分析']),
       tags: JSON.stringify(['金融求职', '结构化面试']),
       rating: 4.9,
@@ -979,11 +982,11 @@ async function seedMentorProfiles(conn, userIdMap) {
     {
       userEmail: 'zhao@mentor.com',
       name: '赵博士',
-      title: '常青藤海归 / 咨询顾问',
-      avatar: 'https://images.unsplash.com/photo-1598550874175-4d0ef436c909?auto=format&fit=crop&q=80&w=400',
-      bio: '常青藤MBA毕业,曾就职于MBB咨询公司,对Case Interview和海外求职有丰富的指导经验。',
-      expertise: JSON.stringify(['咨询行业', 'Case Interview', '留学申请', '海外求职']),
-      tags: JSON.stringify(['Case Interview', '留学求职']),
+      title: '中国科学院计算技术研究所副研究员',
+      avatar: '/default-avatar.svg',
+      bio: '中国科学院计算技术研究所副研究员,博士毕业于清华大学计算机系。研究方向为自然语言处理与大模型,在ACL、EMNLP等顶会发表论文20余篇。曾在微软亚洲研究院实习,熟悉学术界和工业界的双重视角,擅长指导学生的科研规划、论文写作及AI方向的求职准备。',
+      expertise: JSON.stringify(['AI方向', '科研规划', '论文写作', '读研深造']),
+      tags: JSON.stringify(['科研指导', '读研规划']),
       rating: 4.8,
       price: 499.00,
     },
@@ -1020,7 +1023,7 @@ async function seedCourses(conn) {
       mentor_name: '张产品 (腾讯高级产品经理)',
       mentor_id: null,
       category: '产品',
-      cover: 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=500&q=80',
+      cover: '/placeholder-cover.svg',
       tags: JSON.stringify(['产品经理', '秋招', '面试技巧']),
       views: 125000,
       rating: 4.9,
@@ -1032,7 +1035,7 @@ async function seedCourses(conn) {
       mentor_name: '李前端 (字节跳动前端专家)',
       mentor_id: null,
       category: '技术',
-      cover: 'https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=500&q=80',
+      cover: '/placeholder-cover.svg',
       tags: JSON.stringify(['前端开发', '算法', '源码解析']),
       views: 83000,
       rating: 4.8,
@@ -1044,7 +1047,7 @@ async function seedCourses(conn) {
       mentor_name: '王审计 (普华永道高级审计师)',
       mentor_id: null,
       category: '金融',
-      cover: 'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?w=500&q=80',
+      cover: '/placeholder-cover.svg',
       tags: JSON.stringify(['四大', '审计', '实习']),
       views: 56000,
       rating: 4.7,
@@ -1056,7 +1059,7 @@ async function seedCourses(conn) {
       mentor_name: '赵HR (阿里资深HRBP)',
       mentor_id: null,
       category: '求职技巧',
-      cover: 'https://images.unsplash.com/photo-1586281380349-632531db7ed4?w=500&q=80',
+      cover: '/placeholder-cover.svg',
       tags: JSON.stringify(['简历制作', '求职技巧', 'HR视角']),
       views: 158000,
       rating: 4.9,
@@ -1068,7 +1071,7 @@ async function seedCourses(conn) {
       mentor_name: '刘分析 (中金公司副总裁)',
       mentor_id: null,
       category: '金融',
-      cover: 'https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=500&q=80',
+      cover: '/placeholder-cover.svg',
       tags: JSON.stringify(['金融', '投行', '行业研究']),
       views: 72000,
       rating: 4.8,
@@ -1080,7 +1083,7 @@ async function seedCourses(conn) {
       mentor_name: '陈算法 (美团资深算法工程师)',
       mentor_id: null,
       category: '技术',
-      cover: 'https://images.unsplash.com/photo-1504639725590-34d0984388bd?w=500&q=80',
+      cover: '/placeholder-cover.svg',
       tags: JSON.stringify(['算法工程师', 'LeetCode', '校招']),
       views: 91000,
       rating: 4.8,
@@ -1092,7 +1095,7 @@ async function seedCourses(conn) {
       mentor_name: '林快消 (宝洁资深品牌经理)',
       mentor_id: null,
       category: '求职技巧',
-      cover: 'https://images.unsplash.com/photo-1542744173-8e7e53415bb0?w=500&q=80',
+      cover: '/placeholder-cover.svg',
       tags: JSON.stringify(['快消', '管培生', '群面']),
       views: 64000,
       rating: 4.7,
@@ -1104,7 +1107,7 @@ async function seedCourses(conn) {
       mentor_name: '周公考 (知名公考辅导专家)',
       mentor_id: null,
       category: '体制内',
-      cover: 'https://images.unsplash.com/photo-1434030216411-0b793f4b4173?w=500&q=80',
+      cover: '/placeholder-cover.svg',
       tags: JSON.stringify(['体制内', '公务员', '备考规划']),
       views: 113000,
       rating: 4.9,
@@ -1133,8 +1136,8 @@ async function seedUniversities(conn) {
     {
       name_zh: '麻省理工学院', name_en: 'Massachusetts Institute of Technology (MIT)',
       region: '美国', country: '美国', city: '剑桥',
-      logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/0c/MIT_logo.svg/200px-MIT_logo.svg.png',
-      cover: 'https://images.unsplash.com/photo-1564981797816-1043664bf78d?w=800&q=80',
+      logo: '/default-avatar.svg',
+      cover: '/placeholder-cover.svg',
       qs_ranking: 1, us_news_ranking: 2, the_ranking: 5,
       description: '麻省理工学院（MIT）是世界顶尖的私立研究型大学，位于美国马萨诸塞州剑桥市。MIT以其在工程、计算机科学、物理学、数学等领域的卓越学术成就而闻名全球。学校拥有强大的创业文化，培养了众多科技企业创始人和诺贝尔奖获得者。',
       highlights: JSON.stringify(['常春藤级', 'STEM强校', '创业文化', '科研顶尖']),
@@ -1147,8 +1150,8 @@ async function seedUniversities(conn) {
     {
       name_zh: '斯坦福大学', name_en: 'Stanford University',
       region: '美国', country: '美国', city: '斯坦福',
-      logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/b/b5/Seal_of_Leland_Stanford_Junior_University.svg/200px-Seal_of_Leland_Stanford_Junior_University.svg.png',
-      cover: 'https://images.unsplash.com/photo-1584697964400-2af6a2f6204c?w=800&q=80',
+      logo: '/default-avatar.svg',
+      cover: '/placeholder-cover.svg',
       qs_ranking: 5, us_news_ranking: 3, the_ranking: 4,
       description: '斯坦福大学位于美国加州硅谷，是全球最具创新力的大学之一。斯坦福以其与硅谷科技产业的深度联系著称，Google、Yahoo、Hewlett-Packard等科技巨头均由斯坦福校友创立。学校在工程、商科、计算机科学等领域拥有世界一流的学术水平。',
       highlights: JSON.stringify(['硅谷核心', '创业圣地', 'CS顶尖', '商科一流']),
@@ -1161,8 +1164,8 @@ async function seedUniversities(conn) {
     {
       name_zh: '哥伦比亚大学', name_en: 'Columbia University',
       region: '美国', country: '美国', city: '纽约',
-      logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/ef/Columbia_University_shield.svg/200px-Columbia_University_shield.svg.png',
-      cover: 'https://images.unsplash.com/photo-1541339907198-e08756dedf3f?w=800&q=80',
+      logo: '/default-avatar.svg',
+      cover: '/placeholder-cover.svg',
       qs_ranking: 23, us_news_ranking: 12, the_ranking: 11,
       description: '哥伦比亚大学是一所位于纽约市曼哈顿的常春藤联盟大学，创建于1754年，是美国最古老的高等学府之一。学校以其在新闻学、商学、法学、国际关系等领域的卓越教学与研究享誉全球。纽约的地理优势为学生提供了丰富的实习和就业机会。',
       highlights: JSON.stringify(['常春藤', '纽约地利', '跨学科', '金融强校']),
@@ -1175,8 +1178,8 @@ async function seedUniversities(conn) {
     {
       name_zh: '剑桥大学', name_en: 'University of Cambridge',
       region: '英国', country: '英国', city: '剑桥',
-      logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c3/Coat_of_Arms_of_the_University_of_Cambridge.svg/200px-Coat_of_Arms_of_the_University_of_Cambridge.svg.png',
-      cover: 'https://images.unsplash.com/photo-1580655653885-65763b2597d0?w=800&q=80',
+      logo: '/default-avatar.svg',
+      cover: '/placeholder-cover.svg',
       qs_ranking: 2, us_news_ranking: 8, the_ranking: 3,
       description: '剑桥大学成立于1209年，是英语世界中第二古老的大学，全球最顶尖的学术机构之一。剑桥以其严谨的学术传统、导师制教学和卓越的科研成果闻名于世。学校培养了超过120位诺贝尔奖获得者，在自然科学、数学、工程等领域享有极高声誉。',
       highlights: JSON.stringify(['G5', '历史名校', '导师制', '科研一流']),
@@ -1189,8 +1192,8 @@ async function seedUniversities(conn) {
     {
       name_zh: '帝国理工学院', name_en: 'Imperial College London',
       region: '英国', country: '英国', city: '伦敦',
-      logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/36/Imperial_College_London_crest.svg/200px-Imperial_College_London_crest.svg.png',
-      cover: 'https://images.unsplash.com/photo-1526129318478-62ed807ebdf9?w=800&q=80',
+      logo: '/default-avatar.svg',
+      cover: '/placeholder-cover.svg',
       qs_ranking: 6, us_news_ranking: 13, the_ranking: 8,
       description: '帝国理工学院是一所世界顶尖的公立研究型大学，专注于理工科、医学和商科，位于伦敦市中心南肯辛顿。帝国理工以其高质量的教学和前沿研究著称，是英国G5超级精英大学之一。学校与工业界联系紧密，毕业生就业率极高。',
       highlights: JSON.stringify(['G5', '理工强校', '伦敦', '就业率高']),
@@ -1203,8 +1206,8 @@ async function seedUniversities(conn) {
     {
       name_zh: '香港大学', name_en: 'The University of Hong Kong (HKU)',
       region: '中国香港', country: '中国香港', city: '香港',
-      logo: 'https://upload.wikimedia.org/wikipedia/en/thumb/6/6f/HKU_Coat_of_Arms.svg/200px-HKU_Coat_of_Arms.svg.png',
-      cover: 'https://images.unsplash.com/photo-1536098561742-ca998e48cbcc?w=800&q=80',
+      logo: '/default-avatar.svg',
+      cover: '/placeholder-cover.svg',
       qs_ranking: 17, us_news_ranking: 53, the_ranking: 31,
       description: '香港大学（HKU）创立于1911年，是香港历史最悠久的高等学府，也是亚洲最具声望的大学之一。港大以英语教学为主，拥有国际化的学术环境和多元的学生群体。学校在法学、医学、商学等领域尤为突出，地理位置优越，便于学生拓展职业网络。',
       highlights: JSON.stringify(['港三', '亚洲Top', '英语教学', '性价比高']),
@@ -1217,8 +1220,8 @@ async function seedUniversities(conn) {
     {
       name_zh: '香港中文大学', name_en: 'The Chinese University of Hong Kong (CUHK)',
       region: '中国香港', country: '中国香港', city: '香港',
-      logo: 'https://upload.wikimedia.org/wikipedia/en/thumb/5/5a/CUHK_Logo.svg/200px-CUHK_Logo.svg.png',
-      cover: 'https://images.unsplash.com/photo-1558618666-fcd25c85f82e?w=800&q=80',
+      logo: '/default-avatar.svg',
+      cover: '/placeholder-cover.svg',
       qs_ranking: 36, us_news_ranking: 82, the_ranking: 44,
       description: '香港中文大学是香港第二所成立的大学，以中英双语教学和书院制度闻名。学校在商科、工程、社会科学等领域拥有很高的学术水平。CUHK商学院是亚洲顶尖商学院之一，其MBA和金融硕士项目深受内地学生青睐。',
       highlights: JSON.stringify(['港三', '商科强', '书院制', '中英双语']),
@@ -1231,8 +1234,8 @@ async function seedUniversities(conn) {
     {
       name_zh: '墨尔本大学', name_en: 'The University of Melbourne',
       region: '澳大利亚', country: '澳大利亚', city: '墨尔本',
-      logo: 'https://upload.wikimedia.org/wikipedia/en/thumb/e/ed/University_of_Melbourne_logo.svg/200px-University_of_Melbourne_logo.svg.png',
-      cover: 'https://images.unsplash.com/photo-1523482580672-f109ba8cb9be?w=800&q=80',
+      logo: '/default-avatar.svg',
+      cover: '/placeholder-cover.svg',
       qs_ranking: 14, us_news_ranking: 27, the_ranking: 18,
       description: '墨尔本大学是澳大利亚排名第一的大学，也是澳洲八大名校联盟的领头羊。学校以其严谨的学术标准和优质的教学质量著称，在全球大学排名中稳居前列。澳大利亚友好的移民政策使得墨尔本大学成为有意留澳发展的学生的热门选择。',
       highlights: JSON.stringify(['澳洲八大', '移民友好', '澳洲Top1', '研究型大学']),
@@ -1245,8 +1248,8 @@ async function seedUniversities(conn) {
     {
       name_zh: '多伦多大学', name_en: 'University of Toronto',
       region: '加拿大', country: '加拿大', city: '多伦多',
-      logo: 'https://upload.wikimedia.org/wikipedia/en/thumb/0/04/Utoronto_coa.svg/200px-Utoronto_coa.svg.png',
-      cover: 'https://images.unsplash.com/photo-1569982175971-d92b01cf8694?w=800&q=80',
+      logo: '/default-avatar.svg',
+      cover: '/placeholder-cover.svg',
       qs_ranking: 21, us_news_ranking: 18, the_ranking: 21,
       description: '多伦多大学是加拿大排名第一的研究型大学，创建于1827年，在计算机科学、人工智能、工程和医学等领域处于世界领先水平。学校是深度学习三巨头之一Geoffrey Hinton的学术基地，在AI领域有着深远的学术影响力。',
       highlights: JSON.stringify(['加拿大Top1', 'AI/CS强', '移民友好', '研究型']),
@@ -1259,8 +1262,8 @@ async function seedUniversities(conn) {
     {
       name_zh: '新加坡国立大学', name_en: 'National University of Singapore (NUS)',
       region: '新加坡', country: '新加坡', city: '新加坡',
-      logo: 'https://upload.wikimedia.org/wikipedia/en/thumb/b/b9/NUS_coat_of_arms.svg/200px-NUS_coat_of_arms.svg.png',
-      cover: 'https://images.unsplash.com/photo-1565967511849-76a60a516170?w=800&q=80',
+      logo: '/default-avatar.svg',
+      cover: '/placeholder-cover.svg',
       qs_ranking: 8, us_news_ranking: 26, the_ranking: 19,
       description: '新加坡国立大学是亚洲排名最高的大学之一，也是全球顶尖的综合性研究型大学。NUS以其在工程、计算机科学、商科等领域的卓越教学和研究著称。新加坡的国际化环境和优越的就业前景使NUS成为亚洲留学的热门目的地。',
       highlights: JSON.stringify(['亚洲Top', '就业率高', '国际化', '性价比高']),
@@ -1273,8 +1276,8 @@ async function seedUniversities(conn) {
     {
       name_zh: '东京大学', name_en: 'The University of Tokyo',
       region: '日本', country: '日本', city: '东京',
-      logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c5/University_of_Tokyo_logo.svg/200px-University_of_Tokyo_logo.svg.png',
-      cover: 'https://images.unsplash.com/photo-1480796927426-f609979314bd?w=800&q=80',
+      logo: '/default-avatar.svg',
+      cover: '/placeholder-cover.svg',
       qs_ranking: 28, us_news_ranking: 73, the_ranking: 29,
       description: '东京大学是日本最高学府，亚洲最顶尖的大学之一。学校拥有多个SGU英语授课项目，对留学生友好。东大在理学、工学、医学等领域有着世界级的学术水平，且学费远低于英美院校，是高性价比留学的优质选择。',
       highlights: JSON.stringify(['日本Top1', 'SGU英授', '学费低', '科研强']),
@@ -1287,8 +1290,8 @@ async function seedUniversities(conn) {
     {
       name_zh: '慕尼黑工业大学', name_en: 'Technical University of Munich (TUM)',
       region: '德国', country: '德国', city: '慕尼黑',
-      logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c8/Logo_of_the_Technical_University_of_Munich.svg/200px-Logo_of_the_Technical_University_of_Munich.svg.png',
-      cover: 'https://images.unsplash.com/photo-1467269204594-9661b134dd2b?w=800&q=80',
+      logo: '/default-avatar.svg',
+      cover: '/placeholder-cover.svg',
       qs_ranking: 37, us_news_ranking: 58, the_ranking: 30,
       description: '慕尼黑工业大学是德国最顶尖的工科大学，TU9联盟成员。学校以免学费（仅收少量注册费）和高质量的工程教育著称。TUM与宝马、西门子等德国工业巨头有密切合作，毕业生在欧洲就业市场上极具竞争力。',
       highlights: JSON.stringify(['TU9', '免学费', '工科强', '工业合作']),
@@ -1497,7 +1500,7 @@ async function seedSiteConfigs(conn) {
     }), type: 'json', group: 'entrepreneurship', label: '创业页面配置', desc: '创业比赛列表、内容等配置', sort: 61 },
 
     // ===== 背景提升页面配置 =====
-    { key: 'background_boost_page_config', value: JSON.stringify({
+    { key: 'background_boost_config', value: JSON.stringify({
       services: [
         {
           id: 1, title: '实习内推', icon: 'Briefcase', color: 'text-blue-500', bg: 'bg-blue-50', border: 'border-blue-100',
@@ -1628,6 +1631,40 @@ async function seedSiteConfigs(conn) {
       ]
     }), type: 'json', group: 'background_boost', label: '背景提升页面配置', desc: '背景提升服务列表、流程、保障等配置', sort: 62 },
 
+    // ===== 就业指导服务配置 =====
+    { key: 'guidance_services_config', value: JSON.stringify([
+      {
+        id: 1,
+        title: '1v1 简历精修',
+        desc: 'BAT大厂资深HR/业务主管亲自操刀，深挖个人亮点，打造高转化率简历。',
+        icon: 'FileText',
+        color: 'text-blue-500',
+        bgColor: 'bg-blue-50',
+        features: ['逐字逐句精修', '匹配目标岗位', '突出核心竞争力', '不限次修改直至满意'],
+        link: '/mentors'
+      },
+      {
+        id: 2,
+        title: '全真模拟面试',
+        desc: '还原大厂真实面试场景，涵盖群面、单面、专业面、HR面，全方位提升面试技巧。',
+        icon: 'Users',
+        color: 'text-primary-500',
+        bgColor: 'bg-primary-50',
+        features: ['真实题库抽取', '现场录像复盘', '深入点评弱项', '面试礼仪指导'],
+        link: '/mentors'
+      },
+      {
+        id: 3,
+        title: '职业生涯规划',
+        desc: '通过专业的测评工具结合导师经验，帮你理清职业发展方向，少走弯路。',
+        icon: 'Target',
+        color: 'text-primary-500',
+        bgColor: 'bg-primary-50',
+        features: ['MBTI/霍兰德测评', '行业前景分析', '个人优劣势挖掘', '制定3-5年发展路径'],
+        link: '/courses'
+      }
+    ]), type: 'json', group: 'guidance', label: '就业指导服务配置', desc: '就业指导页面服务卡片列表配置', sort: 65 },
+
     // ===== 成功案例页面配置 =====
     { key: 'success_cases_page_config', value: JSON.stringify({
       _meta: { version: "1.0", description: "成功案例页面配置数据", lastUpdated: "2026-04-17" },
@@ -1735,24 +1772,24 @@ async function seedSiteConfigs(conn) {
         id: 100,
         title: "2026 Fall 留学申请全攻略：从选校到拿Offer，一文搞定",
         category: "申请指南",
-        cover: "https://images.unsplash.com/photo-1523050854058-8df90110c9f1?w=1200&q=80",
+        cover: "/placeholder-cover.svg",
         excerpt: "从确定留学目标到最终拿到Offer，这篇万字长文涵盖了选校策略、材料准备、文书写作、面试技巧、签证办理的完整流程。无论你是大一刚开始规划，还是大三即将申请，都能从中找到适合自己阶段的行动指南。",
         views: 15600, likes: 892, date: "2026-04-01",
         author: "启航留学研究院", readTime: "25 min", tags: ["精华", "必读"]
       },
       articles: [
-        { id: 1, title: "2026 Fall 英国G5申请时间线与完整材料清单", category: "申请指南", cover: "https://images.unsplash.com/photo-1526129318478-62ed807ebdf9?w=400&q=80", excerpt: "详细梳理牛津、剑桥、IC、LSE、UCL五所G5院校的申请开放时间、截止日期、所需材料及注意事项，助你提前规划，从容应对。", views: 8420, likes: 456, date: "2026-03-25", author: "启航留学编辑部", readTime: "8 min", tags: ["英国", "G5"] },
-        { id: 2, title: "雅思7.0到7.5的备考突破：三个月逆袭经验分享", category: "语言考试", cover: "https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?w=400&q=80", excerpt: "从6.5到7.5，分享听说读写四科的备考策略、高效刷题方法、核心资料推荐和考场实战技巧。三个月逆袭不是梦！", views: 6180, likes: 378, date: "2026-03-22", author: "学员 小王 · 雅思7.5", readTime: "6 min", tags: ["雅思", "经验"] },
-        { id: 3, title: "港三新二 商科跨专业申请全流程分享（双非背景）", category: "就读分享", cover: "https://images.unsplash.com/photo-1536599018102-9f803c029e12?w=400&q=80", excerpt: "双非本科英语专业，如何成功跨申香港大学商业分析硕士？从GMAT备考、实习规划到文书策略，分享拿到HKU、NUS、NTU三枚Offer的完整经历。", views: 12560, likes: 723, date: "2026-03-20", author: "学员 小李 · HKU BA", readTime: "12 min", tags: ["双非", "跨专业", "港三"] },
-        { id: 4, title: "留学文书PS/SOP写作万能框架与常见避坑指南", category: "文书写作", cover: "https://images.unsplash.com/photo-1455390582262-044cdead277a?w=400&q=80", excerpt: "个人陈述怎么写？开头如何吸引招生官？如何展示学术热情和职业规划？附G5/港三/新国立通用的万能段落结构模板和真实案例解析。", views: 15230, likes: 891, date: "2026-03-18", author: "文书导师 Sarah · 前Oxford招生官", readTime: "10 min", tags: ["文书", "PS", "模板"] },
-        { id: 5, title: "澳洲八大2026年入学最新申请要求汇总", category: "院校解析", cover: "https://images.unsplash.com/photo-1523482580672-f109ba8cb9be?w=400&q=80", excerpt: "悉尼大学、墨尔本大学、UNSW、ANU等八大名校2026年最新GPA要求、语言要求、专业变化及学费调整一站汇总。", views: 4890, likes: 267, date: "2026-03-15", author: "启航留学编辑部", readTime: "7 min", tags: ["澳洲", "八大"] },
-        { id: 6, title: "英国Tier 4学生签证申请全攻略（2026最新版）", category: "签证办理", cover: "https://images.unsplash.com/photo-1569154941061-e231b4725ef1?w=400&q=80", excerpt: "从拿到CAS到签证递交，TB检测预约、资金证明准备、签证中心选择、面签模拟等全流程详解，附签证材料清单下载。", views: 7340, likes: 412, date: "2026-03-12", author: "签证顾问 Jenny · 10年经验", readTime: "9 min", tags: ["签证", "英国"] },
-        { id: 7, title: "CSC国家留学基金委奖学金申请指南与成功案例", category: "奖学金", cover: "https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=400&q=80", excerpt: "国家公派留学如何申请？哪些学校有CSC合作项目？申请时间线、材料准备、面试技巧和3位成功获奖学员的经验分享。", views: 9100, likes: 534, date: "2026-03-10", author: "启航留学研究院", readTime: "8 min", tags: ["CSC", "奖学金", "公派"] },
-        { id: 8, title: "2026暑期海外名校夏令营项目汇总与申请建议", category: "夏令营/活动", cover: "https://images.unsplash.com/photo-1517486808906-6ca8b3f04846?w=400&q=80", excerpt: "牛津、剑桥、MIT、Stanford、UCLA等名校2026暑期项目开放申请！费用、时长、申请条件全汇总，提升背景的绝佳机会。", views: 5670, likes: 321, date: "2026-03-08", author: "启航留学编辑部", readTime: "6 min", tags: ["夏校", "暑期项目"] },
-        { id: 9, title: "托福100+备考经验：阅读听力满分，口语突破24", category: "语言考试", cover: "https://images.unsplash.com/photo-1434030216411-0b793f4b4173?w=400&q=80", excerpt: "从首考85到二刷108，分享TPO高效刷题法、阅读速读技巧、听力笔记方法、口语模板和写作高分句型。", views: 7890, likes: 445, date: "2026-03-05", author: "学员 小张 · 托福108", readTime: "8 min", tags: ["托福", "高分"] },
-        { id: 10, title: "GRE 325+备考攻略：verbal提分秘诀与数学满分技巧", category: "语言考试", cover: "https://images.unsplash.com/photo-1513475382585-d06e58bcb0e0?w=400&q=80", excerpt: "两个月从310到328！分享GRE verbal核心词汇记忆法、阅读理解策略、填空秒杀技巧和写作模板。", views: 5340, likes: 298, date: "2026-03-02", author: "学员 小赵 · GRE 328", readTime: "7 min", tags: ["GRE", "高分"] },
-        { id: 11, title: "帝国理工 vs UCL vs 爱丁堡：CS硕士三校横评", category: "院校解析", cover: "https://images.unsplash.com/photo-1607237138185-eedd9c632b0b?w=400&q=80", excerpt: "从课程设置、录取难度、就业前景、生活成本四个维度全面对比英国三所顶尖CS硕士项目，帮你做出最优选择。", views: 11200, likes: 678, date: "2026-02-28", author: "启航留学研究院", readTime: "15 min", tags: ["CS", "选校", "对比"] },
-        { id: 12, title: "美国F1签证面签全攻略：高频问题与回答模板", category: "签证办理", cover: "https://images.unsplash.com/photo-1551434678-e076c223a692?w=400&q=80", excerpt: "整理50+个F1签证高频面签问题，附中英文回答模板。涵盖学习计划、资金证明、回国计划等敏感问题的回答策略。", views: 6780, likes: 389, date: "2026-02-25", author: "签证顾问 David · 美签专家", readTime: "10 min", tags: ["F1签证", "美国", "面签"] }
+        { id: 1, title: "2026 Fall 英国G5申请时间线与完整材料清单", category: "申请指南", cover: "/placeholder-cover.svg", excerpt: "详细梳理牛津、剑桥、IC、LSE、UCL五所G5院校的申请开放时间、截止日期、所需材料及注意事项，助你提前规划，从容应对。", views: 8420, likes: 456, date: "2026-03-25", author: "启航留学编辑部", readTime: "8 min", tags: ["英国", "G5"] },
+        { id: 2, title: "雅思7.0到7.5的备考突破：三个月逆袭经验分享", category: "语言考试", cover: "/placeholder-cover.svg", excerpt: "从6.5到7.5，分享听说读写四科的备考策略、高效刷题方法、核心资料推荐和考场实战技巧。三个月逆袭不是梦！", views: 6180, likes: 378, date: "2026-03-22", author: "学员 小王 · 雅思7.5", readTime: "6 min", tags: ["雅思", "经验"] },
+        { id: 3, title: "港三新二 商科跨专业申请全流程分享（双非背景）", category: "就读分享", cover: "/placeholder-cover.svg", excerpt: "双非本科英语专业，如何成功跨申香港大学商业分析硕士？从GMAT备考、实习规划到文书策略，分享拿到HKU、NUS、NTU三枚Offer的完整经历。", views: 12560, likes: 723, date: "2026-03-20", author: "学员 小李 · HKU BA", readTime: "12 min", tags: ["双非", "跨专业", "港三"] },
+        { id: 4, title: "留学文书PS/SOP写作万能框架与常见避坑指南", category: "文书写作", cover: "/placeholder-cover.svg", excerpt: "个人陈述怎么写？开头如何吸引招生官？如何展示学术热情和职业规划？附G5/港三/新国立通用的万能段落结构模板和真实案例解析。", views: 15230, likes: 891, date: "2026-03-18", author: "文书导师 Sarah · 前Oxford招生官", readTime: "10 min", tags: ["文书", "PS", "模板"] },
+        { id: 5, title: "澳洲八大2026年入学最新申请要求汇总", category: "院校解析", cover: "/placeholder-cover.svg", excerpt: "悉尼大学、墨尔本大学、UNSW、ANU等八大名校2026年最新GPA要求、语言要求、专业变化及学费调整一站汇总。", views: 4890, likes: 267, date: "2026-03-15", author: "启航留学编辑部", readTime: "7 min", tags: ["澳洲", "八大"] },
+        { id: 6, title: "英国Tier 4学生签证申请全攻略（2026最新版）", category: "签证办理", cover: "/placeholder-cover.svg", excerpt: "从拿到CAS到签证递交，TB检测预约、资金证明准备、签证中心选择、面签模拟等全流程详解，附签证材料清单下载。", views: 7340, likes: 412, date: "2026-03-12", author: "签证顾问 Jenny · 10年经验", readTime: "9 min", tags: ["签证", "英国"] },
+        { id: 7, title: "CSC国家留学基金委奖学金申请指南与成功案例", category: "奖学金", cover: "/placeholder-cover.svg", excerpt: "国家公派留学如何申请？哪些学校有CSC合作项目？申请时间线、材料准备、面试技巧和3位成功获奖学员的经验分享。", views: 9100, likes: 534, date: "2026-03-10", author: "启航留学研究院", readTime: "8 min", tags: ["CSC", "奖学金", "公派"] },
+        { id: 8, title: "2026暑期海外名校夏令营项目汇总与申请建议", category: "夏令营/活动", cover: "/placeholder-cover.svg", excerpt: "牛津、剑桥、MIT、Stanford、UCLA等名校2026暑期项目开放申请！费用、时长、申请条件全汇总，提升背景的绝佳机会。", views: 5670, likes: 321, date: "2026-03-08", author: "启航留学编辑部", readTime: "6 min", tags: ["夏校", "暑期项目"] },
+        { id: 9, title: "托福100+备考经验：阅读听力满分，口语突破24", category: "语言考试", cover: "/placeholder-cover.svg", excerpt: "从首考85到二刷108，分享TPO高效刷题法、阅读速读技巧、听力笔记方法、口语模板和写作高分句型。", views: 7890, likes: 445, date: "2026-03-05", author: "学员 小张 · 托福108", readTime: "8 min", tags: ["托福", "高分"] },
+        { id: 10, title: "GRE 325+备考攻略：verbal提分秘诀与数学满分技巧", category: "语言考试", cover: "/placeholder-cover.svg", excerpt: "两个月从310到328！分享GRE verbal核心词汇记忆法、阅读理解策略、填空秒杀技巧和写作模板。", views: 5340, likes: 298, date: "2026-03-02", author: "学员 小赵 · GRE 328", readTime: "7 min", tags: ["GRE", "高分"] },
+        { id: 11, title: "帝国理工 vs UCL vs 爱丁堡：CS硕士三校横评", category: "院校解析", cover: "/placeholder-cover.svg", excerpt: "从课程设置、录取难度、就业前景、生活成本四个维度全面对比英国三所顶尖CS硕士项目，帮你做出最优选择。", views: 11200, likes: 678, date: "2026-02-28", author: "启航留学研究院", readTime: "15 min", tags: ["CS", "选校", "对比"] },
+        { id: 12, title: "美国F1签证面签全攻略：高频问题与回答模板", category: "签证办理", cover: "/placeholder-cover.svg", excerpt: "整理50+个F1签证高频面签问题，附中英文回答模板。涵盖学习计划、资金证明、回国计划等敏感问题的回答策略。", views: 6780, likes: 389, date: "2026-02-25", author: "签证顾问 David · 美签专家", readTime: "10 min", tags: ["F1签证", "美国", "面签"] }
       ],
       hotTopics: [
         { label: "2026 Fall时间线", count: 156 },
@@ -1764,7 +1801,40 @@ async function seedSiteConfigs(conn) {
         { label: "双非逆袭", count: 65 },
         { label: "CSC奖学金", count: 54 }
       ]
-    }), type: 'json', group: 'studyabroad_articles', label: '留学资讯页面配置', desc: '留学文章列表、热门话题等配置', sort: 64 }
+    }), type: 'json', group: 'studyabroad_articles', label: '留学资讯页面配置', desc: '留学文章列表、热门话题等配置', sort: 64 },
+
+    // ===== 留学专业配置 =====
+    { key: 'study_abroad_majors_config', value: JSON.stringify([
+      { category: '计算机与数据', icon: 'Laptop', color: 'blue', majors: [
+        { id: 'cs101', name: '计算机科学 CS', nameEn: 'Computer Science', desc: '涵盖算法、系统、AI、软件工程等核心领域', hot: true, avgSalary: '£45,000-95,000/年', topCountries: ['us','uk','sg','ca'], topSchools: ['MIT','Stanford','CMU','ETH Zurich','NUS','UCL'], careerPaths: ['Software Engineer','Data Scientist','ML Engineer','Product Manager','Tech Consultant'] },
+        { id: 'ds102', name: '数据科学 DS', nameEn: 'Data Science', desc: '统计学+编程+机器学习的交叉学科', hot: true, avgSalary: '$70,000-120,000/年', topCountries: ['us','sg','uk','hk'], topSchools: ['Columbia','Imperial College','NUS','HKU','Carnegie Mellon'], careerPaths: ['Data Scientist','ML Engineer','Business Analyst','Research Scientist','Quant Analyst'] },
+        { id: 'ai103', name: '人工智能 AI', nameEn: 'Artificial Intelligence', desc: '深度学习、NLP、CV等前沿技术方向', hot: true, avgSalary: '£55,000-110,000/年', topCountries: ['uk','us','sg','eu'], topSchools: ['Oxford','Cambridge','Imperial','ETHZ','NTU'], careerPaths: ['AI Researcher','ML Engineer','NLP Engineer','Computer Vision Engineer','AI Product Manager'] },
+        { id: 'ba104', name: '商业分析 BA', nameEn: 'Business Analytics', desc: '商业思维+数据分析能力', hot: true, avgSalary: '$65,000-100,000/年', topCountries: ['us','hk','sg','uk'], topSchools: ['MIT Sloan','NUS BA','HKU MFin','UT Austin','Warwick'], careerPaths: ['Business Analyst','Data Analyst','Consultant','Strategy Manager','Operations Manager'] },
+        { id: 'it105', name: '信息技术 IT', nameEn: 'Information Technology', desc: '偏应用的IT管理、网络安全、云计算等方向', hot: false, avgSalary: 'A$75,000-105,000/年', topCountries: ['au','ca','uk'], topSchools: ['Melbourne Uni','UBC','Manchester','Monash','Waterloo'], careerPaths: ['IT Manager','Cybersecurity Analyst','Cloud Architect','Systems Administrator','DevOps Engineer'] }
+      ]},
+      { category: '商科与金融', icon: 'TrendingUp', color: 'emerald', majors: [
+        { id: 'fin201', name: '金融学 Finance', nameEn: 'Finance / Financial Engineering', desc: '金融理论、量化投资、风险管理等', hot: true, avgSalary: 'HK$35K-60K/月', topCountries: ['hk','us','uk','sg'], topSchools: ['HKU MFin','LBS','NYU Stern','Princeton MFin','NUS RMI'], careerPaths: ['Investment Banker','Quantitative Analyst','Portfolio Manager','Risk Manager','Financial Consultant'] }
+      ]},
+      { category: '工程与技术', icon: 'Cpu', color: 'indigo', majors: [
+        { id: 'ee301', name: '电子电气工程 ECE', nameEn: 'Electrical and Computer Engineering', desc: '芯片设计、通信系统、嵌入式开发等', hot: false, avgSalary: 'C$72,000-98,000/年', topCountries: ['ca','us','eu','sg'], topSchools: ['MIT EECS','Stanford EE','ETHZ EE','Waterloo ECE','NTU EEE'], careerPaths: ['Hardware Engineer','Chip Design Engineer','RF Engineer','Embedded Systems Dev','Power Systems Engineer'] }
+      ]},
+      { category: '人文社科', icon: 'BookOpen', color: 'rose', majors: [
+        { id: 'edu401', name: '教育学 Education', nameEn: 'Education / TESOL', desc: '教育政策、课程设计、英语教学等方向', hot: true, avgSalary: '£30,000-45,000/年', topCountries: ['uk','hk','au','ca'], topSchools: ['UCL IOE','Harvard GSE','HKU Education','Toronto OISE','Melbourne MGSE'], careerPaths: ['Teacher/Lecturer','Curriculum Designer','EdTech Product Manager','TESOL Instructor','Education Policy Analyst'] }
+      ]},
+      { category: '医学与健康', icon: 'HeartPulse', color: 'red', majors: [
+        { id: 'med501', name: '公共卫生 MPH', nameEn: 'Master of Public Health', desc: '流行病学、卫生政策、全球健康等', hot: true, avgSalary: '$62,000-95,000/年', topCountries: ['us','uk','au'], topSchools: ['Johns Hopkins SPH','Harvard Chan','LSHTM London','Uni of Sydney Public Health','Emory Rollins'], careerPaths: ['Epidemiologist','Health Policy Analyst','Global Health Consultant','Biostatistician','Healthcare Administrator'] }
+      ]},
+      { category: '艺术与设计', icon: 'Palette', color: 'purple', majors: [
+        { id: 'art601', name: '交互设计 Interaction Design', nameEn: 'Interaction Design / UX Design', desc: 'UI/UX设计、产品设计、服务设计等', hot: true, avgSalary: '£35,000-58,000/年', topCountries: ['uk','us','eu'], topSchools: ['RCA IDE','UAL LCC','MIT Media Lab','TU Delft ID','Politecnico Milano Design'], careerPaths: ['UX/UI Designer','Interaction Designer','Product Designer','Service Designer','Design Researcher'] }
+      ]}
+    ]), type: 'json', group: 'studyabroad', label: '留学专业配置', desc: '留学专业分类、热门专业、薪资等配置', sort: 65 },
+
+    // ===== 留学费用配置 =====
+    { key: 'study_abroad_costs_config', value: JSON.stringify([
+      { id: 'uk', country: '英国', currency: '£', currencyCode: 'GBP', exchangeRate: 9.2, freeTuition: false, specialNotes: null, undergraduate: { min: 15000, max: 45000, unit: '年' }, master: { min: 15000, max: 45000, unit: '年' }, phd: { min: 15000, max: 25000, unit: '年' }, living: { tier1: { city: 'London', min: 15000, max: 18000 }, tier2: { city: 'Manchester', min: 10000, max: 14000 } }, other: { visa: 348, insurance: 470, flight: 6000 } },
+      { id: 'us', country: '美国', currency: '$', currencyCode: 'USD', exchangeRate: 7.2, freeTuition: false, specialNotes: '博士阶段多数理工科项目提供全额奖学金（TA/RA），学费全免并提供生活津贴', undergraduate: { min: 30000, max: 65000, unit: '年' }, master: { min: 30000, max: 65000, unit: '年' }, phd: { min: 0, max: 35000, unit: '年' }, living: { tier1: { city: 'New York', min: 20000, max: 25000 }, tier2: { city: 'Columbus', min: 12000, max: 16000 } }, other: { visa: 160, insurance: 2000, flight: 8000 } },
+      { id: 'hk', country: '中国香港', currency: 'HK$', currencyCode: 'HKD', exchangeRate: 0.92, freeTuition: false, specialNotes: '博士阶段可申请HKPFS（香港博士研究生奖学金），每月津贴HK$27,600，学费全免', undergraduate: { min: 150000, max: 350000, unit: '年' }, master: { min: 150000, max: 350000, unit: '年' }, phd: { min: 42100, max: 42100, unit: '年' }, living: { tier1: { city: '港岛', min: 100000, max: 120000 }, tier2: { city: '新界', min: 70000, max: 90000 } }, other: { visa: 530, insurance: 5000, flight: 2000 } }
+    ]), type: 'json', group: 'studyabroad', label: '留学费用配置', desc: '各国留学费用、汇率、生活成本等配置', sort: 66 }
   ];
 
   for (const c of configs) {
@@ -1789,7 +1859,7 @@ async function seedArticles(conn) {
       summary: '详细梳理2026届校招各阶段时间节点和准备策略，帮你精准把握每一个求职黄金窗口。',
       content: `## 校招时间线总览\n\n### 3-5月：春招实习黄金期\n- 各大厂春招实习启动，重点关注字节、腾讯、阿里等头部企业\n- 准备好简历、刷好算法题，保持投递节奏\n\n### 6-8月：暑期实习 & 提前批\n- 暑期实习期间争取转正机会\n- 7月开始，部分企业开启秋招提前批，务必关注官方公告\n\n### 8-10月：秋招正式批\n- 这是最核心的校招阶段，岗位最多、机会最多\n- 建议每天保持3-5个岗位的投递频率\n- 准备好各类面试：技术面、群面、HR面\n\n### 11-12月：秋招补录\n- 部分企业开启补录，适合前期错过的同学\n- 关注企业官方招聘公众号获取最新信息\n\n### 次年3-5月：春招\n- 最后的校招机会，岗位相对较少但竞争也小\n- 适合考研/考公失利后的同学\n\n## 核心建议\n1. **尽早准备**：大三上学期就应该开始准备\n2. **多线并行**：实习、秋招、考研不冲突，合理规划\n3. **复盘迭代**：每次面试后及时复盘，持续改进`,
       category: '校招指南',
-      cover: 'https://images.unsplash.com/photo-1523050854058-8df90110c476?w=600&q=80',
+      cover: '/placeholder-cover.svg',
       author: '启航就业研究院',
     },
     {
@@ -1797,23 +1867,23 @@ async function seedArticles(conn) {
       summary: '用STAR法则重新构建简历中的项目经验和实习描述，大幅提升面试邀约率。',
       content: `## 什么是STAR法则？\n\nSTAR是Situation（情境）、Task（任务）、Action（行动）、Result（结果）的缩写。\n\n## 实战案例\n\n### 错误示范\n> 负责公司小程序的前端开发工作\n\n### STAR改写\n> **[S]** 在日活10万+的电商小程序项目中，**[T]** 负责购物车模块的性能优化和功能迭代，**[A]** 通过虚拟列表、懒加载和接口合并等手段重构渲染逻辑，**[R]** 将页面加载时间从3.2s降至0.8s，用户留存率提升15%。\n\n## 关键要点\n\n1. **量化结果**：尽量用数字说话（提升XX%、降低XX%、服务XX用户）\n2. **突出行动**：重点写"你做了什么"而不是"团队做了什么"\n3. **匹配岗位**：根据目标岗位JD调整描述重点\n4. **简洁有力**：每条经历控制在2-3行\n\n## 常见误区\n- 罗列工作内容而非成果\n- 使用模糊表述（"参与了"、"协助了"）\n- 简历超过一页（应届生建议控制在一页）`,
       category: '简历技巧',
-      cover: 'https://images.unsplash.com/photo-1586281380349-632531db7ed4?w=600&q=80',
-      author: '陈经理（资深HR）',
+      cover: '/placeholder-cover.svg',
+      author: '陈教授（南京大学）',
     },
     {
       title: '技术面试高频问题解析：从自我介绍到系统设计',
       summary: '系统梳理技术面试各环节的高频问题，提供回答框架和避坑指南。',
       content: `## 一、自我介绍（1-2分钟）\n\n### 推荐模板\n"面试官您好，我是XXX，就读于XX大学XX专业，预计XX年毕业。我有两段比较相关的经历：第一段是在XX公司实习，主要负责XX；第二段是XX项目，我在其中负责XX。这些经历让我在XX和XX方面积累了一定的经验。我对贵司的XX岗位很感兴趣，希望能有机会加入。"\n\n## 二、项目深挖\n\n面试官常问的问题：\n1. 你在项目中遇到的最大挑战是什么？\n2. 如果重新做，你会怎么改进？\n3. 你是如何与团队协作的？\n\n## 三、算法与编程\n\n- **LeetCode高频题型**：数组、链表、二叉树、动态规划、回溯\n- **建议刷题量**：200-300题\n- **重点关注**：Hot100、剑指Offer\n\n## 四、系统设计（高级岗位）\n\n- 设计一个短链系统\n- 设计一个秒杀系统\n- 设计一个即时通讯系统\n\n## 面试礼仪\n- 准时参加，提前5分钟进入\n- 认真听题，不确定时可以确认\n- 面试结束主动感谢`,
       category: '面试经验',
-      cover: 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=600&q=80',
-      author: '张工（前端架构师）',
+      cover: '/placeholder-cover.svg',
+      author: '张工（华为高级软件工程师）',
     },
     {
       title: '2026年就业形势分析与应对策略',
       summary: '解读最新就业政策和市场趋势，帮助应届生做出更明智的职业选择。',
       content: `## 2026年就业市场概况\n\n### 热门行业\n1. **人工智能**：大模型和AIGC持续火热，算法岗需求旺盛\n2. **新能源**：电动汽车、储能、光伏等行业快速扩张\n3. **半导体**：国产替代加速，芯片设计/验证岗位大增\n4. **生物医药**：创新药研发投入增加\n\n### 薪资趋势\n- 互联网大厂校招：22-40k/月\n- 新能源行业：15-25k/月\n- 金融行业：12-20k/月\n- 体制内：8-12k/月（含公积金等隐性福利）\n\n## 政策利好\n\n1. **就业补贴**：应届生就业补贴政策延续\n2. **创业支持**：大学生创业可申请低息贷款和场地补贴\n3. **基层就业**：西部计划、三支一扶等项目持续招募\n4. **灵活就业**：自由职业者社保补贴政策覆盖面扩大\n\n## 应对建议\n\n1. 提升硬技能，考取含金量高的证书\n2. 多元化投递，不要只盯着一个行业\n3. 善用学校资源：就业中心、校友网络\n4. 保持心态平和，求职是长期过程`,
       category: '政策解读',
-      cover: 'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=600&q=80',
+      cover: '/placeholder-cover.svg',
       author: '启航就业研究院',
     },
     {
@@ -1821,23 +1891,23 @@ async function seedArticles(conn) {
       summary: '解析无领导小组讨论的评分维度和角色策略，助你在群面中稳定发挥。',
       content: `## 什么是无领导小组讨论？\n\n无领导小组讨论（LGD）是一种多人面试形式，6-10名候选人围绕一个话题进行自由讨论，面试官观察并评分。\n\n## 核心评分维度\n\n1. **领导力** - 能否推动讨论进程\n2. **逻辑性** - 发言是否条理清晰\n3. **协作性** - 是否倾听他人、整合意见\n4. **影响力** - 能否说服他人接受你的观点\n\n## 角色选择策略\n\n### Leader（领导者）\n- 适合性格外向、善于统筹的同学\n- 风险：如果控场不好容易扣分\n\n### Timer（计时员）\n- 适合稳重型选手\n- 注意不要只顾计时不发表观点\n\n### Summarizer（总结者）\n- 需要很强的归纳能力\n- 建议提前练习快速笔记技巧\n\n## 实用技巧\n\n1. **开局框架**：先提出讨论框架，建立结构化思考\n2. **数据支撑**：用数据和案例支撑观点\n3. **倾听回应**：引用他人观点并补充\n4. **及时纠偏**：讨论偏题时礼貌拉回\n5. **注意仪态**：保持微笑、眼神交流`,
       category: '面试经验',
-      cover: 'https://images.unsplash.com/photo-1542744173-8e7e53415bb0?w=600&q=80',
-      author: '王总监（快消品牌总监）',
+      cover: '/placeholder-cover.svg',
+      author: '王总监（阿里巴巴产品总监）',
     },
     {
       title: '应届生简历模板选择指南：不同行业要不同风格',
       summary: '针对互联网、金融、快消、体制内等不同行业，推荐最合适的简历模板和格式。',
       content: `## 通用原则\n\n- 一页纸原则（应届生简历不超过一页）\n- PDF格式投递（避免排版错乱）\n- 文件命名规范：姓名-学校-应聘岗位.pdf\n\n## 互联网行业\n\n### 风格：简洁+技术\n- 重点突出项目经历和技术栈\n- 可以附上GitHub链接或个人博客\n- 避免花哨的设计，内容为王\n\n## 金融行业\n\n### 风格：专业+严谨\n- 使用传统的黑白排版\n- 突出学校背景、证书和实习经历\n- 注意中英文格式一致\n\n## 快消行业\n\n### 风格：活力+成果\n- 可以适当使用品牌色作为点缀\n- 强调领导力和校园活动经历\n- 用STAR法则描述活动和实习成果\n\n## 体制内\n\n### 风格：规范+朴素\n- 使用标准的简历模板\n- 突出政治面貌、党员身份\n- 强调基层经历和志愿服务\n\n## 简历自检清单\n\n- [ ] 无错别字和语法错误\n- [ ] 手机号和邮箱正确无误\n- [ ] 照片为正装证件照（如需要）\n- [ ] 时间线从近到远排列\n- [ ] 每段经历有量化成果`,
       category: '简历技巧',
-      cover: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=600&q=80',
-      author: '赵HR（资深HRBP）',
+      cover: '/placeholder-cover.svg',
+      author: '李导师（中国银行HR经理）',
     },
     {
       title: '三方协议、劳动合同、五险一金：应届生必知的法律常识',
       summary: '解答应届生签约过程中最常见的法律疑问，帮你避开求职陷阱。',
       content: `## 三方协议\n\n### 什么是三方协议？\n三方协议是学生、用人单位和学校之间签订的就业协议，是确认就业意向的法律文件。\n\n### 注意事项\n1. 签订前确认岗位、薪资、工作地点\n2. 了解违约金条款（通常3000-5000元）\n3. 一人一份，丢失需补办\n\n## 劳动合同\n\n### 签订时机\n- 入职当天或入职后一个月内签订\n- 超过一个月未签，可主张双倍工资\n\n### 重点关注\n1. 合同期限（一般1-3年）\n2. 试用期时长（最长不超过6个月）\n3. 试用期薪资（不低于正式工资的80%）\n4. 工作内容和工作地点\n\n## 五险一金\n\n### 五险\n- 养老保险、医疗保险、失业保险、工伤保险、生育保险\n- 个人缴费比例约10.5%\n\n### 一金\n- 住房公积金，个人缴费5-12%\n- 缴费基数很重要，影响公积金账户余额\n\n## 求职陷阱识别\n\n1. 入职前收取培训费/押金 → 违法\n2. 只签实习协议不签劳动合同 → 不合规\n3. 口头承诺不写进合同 → 无法律效力\n4. 试用期不缴社保 → 违法`,
       category: '政策解读',
-      cover: 'https://images.unsplash.com/photo-1450101499163-c8848c66ca85?w=600&q=80',
+      cover: '/placeholder-cover.svg',
       author: '启航就业研究院',
     },
     {
@@ -1845,7 +1915,7 @@ async function seedArticles(conn) {
       summary: '汇总2026届互联网大厂校招薪资水平，包括base、股票、签字费等完整package对比。',
       content: `## 头部大厂校招薪资\n\n### 字节跳动\n- 技术岗（开发/算法）：25-40k × 15-18个月\n- 产品岗：20-30k × 15个月\n- 运营岗：15-22k × 15个月\n- 特殊offer：SSP/SP有额外股票和签字费\n\n### 腾讯\n- 技术岗：22-35k × 16-18个月\n- 产品岗：18-28k × 16个月\n- 设计岗：18-25k × 16个月\n- 鹅厂特色：股票给的多，长期收益好\n\n### 阿里巴巴\n- 技术岗：25-38k × 15-16个月\n- 产品/运营：18-28k × 15个月\n- P5起步，优秀者P6\n\n### 美团\n- 技术岗：22-35k × 15个月\n- 产品岗：18-25k × 15个月\n- 签字费：部分岗位有3-5万签字费\n\n## 新兴高薪行业\n\n### AI公司\n- 大模型算法：30-60k/月\n- AI应用开发：25-40k/月\n\n### 量化金融\n- 量化研究员：40-80k/月（含奖金）\n- 量化开发：30-50k/月\n\n## 谈薪技巧\n\n1. 拿到多个offer后再谈薪\n2. 了解岗位对应的薪资band\n3. 重点关注总包（TC）而非月薪\n4. 考虑城市生活成本差异`,
       category: '校招指南',
-      cover: 'https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=600&q=80',
+      cover: '/placeholder-cover.svg',
       author: '启航就业研究院',
     },
   ];
@@ -2021,7 +2091,7 @@ async function seedArticlesExtra(conn) {
       summary: '系统梳理保研各阶段关键节点、材料准备和面试技巧，助你顺利上岸。',
       content: `## 保研时间线\n\n### 大三下学期（3-5月）\n- 确定目标院校和导师\n- 准备个人陈述、推荐信、成绩单等材料\n- 关注目标院校夏令营报名通知\n\n### 暑期（6-8月）\n- 参加夏令营，展示科研能力和学术潜力\n- 夏令营面试通常包含：自我介绍、专业问答、英语面试\n\n### 大四上学期（9月）\n- 推免系统开放，填报志愿\n- 参加预推免面试\n- 确认录取，签订协议\n\n## 核心建议\n\n1. **GPA是基础**：保持年级前10%的成绩\n2. **科研加分**：本科阶段参与课题或发表论文\n3. **竞赛经历**：数学建模、ACM等含金量高的竞赛\n4. **提前联系导师**：邮件沟通展示学术兴趣`,
       category: '校招指南',
-      cover: 'https://images.unsplash.com/photo-1523050854058-8df90110c476?w=600&q=80',
+      cover: '/placeholder-cover.svg',
       author: '启航升学研究院',
     },
     {
@@ -2029,7 +2099,7 @@ async function seedArticlesExtra(conn) {
       summary: '汇总各985高校最新保研率数据，深度分析热门专业的推免竞争格局。',
       content: `## 985高校保研率概览\n\n### 保研率Top10\n1. 北京大学 — 约50%\n2. 清华大学 — 约50%\n3. 中国科学技术大学 — 约40%\n4. 南京大学 — 约35%\n5. 复旦大学 — 约33%\n6. 上海交通大学 — 约32%\n7. 浙江大学 — 约30%\n8. 中国人民大学 — 约28%\n9. 北京航空航天大学 — 约27%\n10. 哈尔滨工业大学 — 约26%\n\n## 热门专业竞争分析\n\n### 计算机科学与技术\n- 竞争最为激烈，Top高校录取比通常在5:1以上\n- 科研论文和竞赛成果是核心区分因素\n\n### 金融学/经济学\n- 跨专业保研比例高，数学/统计背景受欢迎\n- 实习经历在面试中权重较大\n\n### 电子信息/人工智能\n- 近年热度持续上升\n- 导师项目匹配度是关键\n\n## 策略建议\n\n1. 合理定位：根据排名选择冲刺/稳妥/保底院校\n2. 多投夏令营：建议投5-8所\n3. 提前了解各校面试风格`,
       category: '校招指南',
-      cover: 'https://images.unsplash.com/photo-1541339907198-e08756dedf3f?w=600&q=80',
+      cover: '/placeholder-cover.svg',
       author: '启航升学研究院',
     },
     // 留学 2 条
@@ -2038,7 +2108,7 @@ async function seedArticlesExtra(conn) {
       summary: '分析英美港新澳等热门留学目的地最新申请趋势，助你做出最优选校决策。',
       content: `## 各国留学趋势\n\n### 英国\n- 申请量持续增长，G5竞争白热化\n- 一年制硕士性价比高\n- 热门专业：商科、CS、传媒\n\n### 美国\n- 签证政策回暖，STEM专业OPT延长至3年\n- 大模型/AI方向申请火爆\n- 注意：部分Top30取消GRE要求\n\n### 中国香港\n- 距离近、文化适应成本低\n- 港三（港大/港中文/港科技）竞争极度激烈\n- 建议早轮申请，滚动录取占先机\n\n### 新加坡\n- NUS/NTU亚洲排名领先\n- CS和商科就业前景优越\n- 申请周期短，决策快\n\n### 澳大利亚\n- 移民政策友好，PSW工签2-4年\n- 墨大/悉大/ANU认可度高\n- 无背景可转专业项目多\n\n## 选校建议\n\n1. 明确目标：就业/科研/移民\n2. 控制申请数量：8-12所为宜\n3. 合理分配梯度：冲刺3 + 匹配5 + 保底3`,
       category: '校招指南',
-      cover: 'https://images.unsplash.com/photo-1523050854058-8df90110c476?w=600&q=80',
+      cover: '/placeholder-cover.svg',
       author: '启航留学研究院',
     },
     {
@@ -2046,8 +2116,8 @@ async function seedArticlesExtra(conn) {
       summary: '深入解析留学申请三大文书类型的区别和写作要点，附高分范文框架。',
       content: `## 三大文书区别\n\n### Personal Statement (PS)\n- 英国/香港常用\n- 侧重：学术背景 + 学科热情 + 未来规划\n- 篇幅：500-800词\n\n### Statement of Purpose (SOP)\n- 美国研究生常用\n- 侧重：研究兴趣 + 科研经历 + 与项目匹配度\n- 篇幅：800-1200词\n\n### Essay\n- MBA/商科常用\n- 侧重：个人经历 + 领导力 + 职业目标\n- 通常有具体题目要求\n\n## 写作核心技巧\n\n### 1. 故事化表达\n- 用具体事件而非空洞形容\n- 错误示范："我对计算机充满热情"\n- 正确示范："大二暑假独立开发的选课助手被3000+同学使用"\n\n### 2. 展示匹配度\n- 研究目标校的课程设置和教授方向\n- 将自己的经历与项目特色建立连接\n\n### 3. 避免常见错误\n- 不要写成简历的散文版\n- 避免过度谦虚或过度自夸\n- 每所学校都要定制化修改\n\n## 文书时间规划\n\n1. 头脑风暴素材：申请前3个月\n2. 初稿写作：申请前2个月\n3. 修改打磨：至少3轮修改\n4. 母语者润色：提交前2周`,
       category: '校招指南',
-      cover: 'https://images.unsplash.com/photo-1434030216411-0b793f4b4173?w=600&q=80',
-      author: '赵博士（常青藤海归）',
+      cover: '/placeholder-cover.svg',
+      author: '赵博士（中科院计算所）',
     },
     // 职业指导 2 条
     {
@@ -2055,16 +2125,16 @@ async function seedArticlesExtra(conn) {
       summary: '从自我认知到行业选择，系统性帮助应届生理清职业方向，避免入行后悔。',
       content: `## 自我认知三步法\n\n### 第一步：兴趣盘点\n- 列出你愿意花时间钻研的领域\n- 区分"真兴趣"和"看起来光鲜"的方向\n\n### 第二步：能力评估\n- 硬技能：编程/设计/写作/数据分析等\n- 软技能：沟通/领导力/抗压/团队协作\n- 思考：哪些能力是你的核心竞争力？\n\n### 第三步：价值观排序\n- 高薪 vs 稳定 vs 成长 vs 工作生活平衡\n- 一线城市 vs 回老家 vs 考公上岸\n\n## 热门行业对比\n\n| 维度 | 互联网 | 金融 | 快消 | 体制内 |\n|------|--------|------|------|--------|\n| 薪资 | ⭐⭐⭐⭐⭐ | ⭐⭐⭐⭐ | ⭐⭐⭐ | ⭐⭐ |\n| 成长 | ⭐⭐⭐⭐⭐ | ⭐⭐⭐⭐ | ⭐⭐⭐⭐ | ⭐⭐ |\n| 稳定 | ⭐⭐ | ⭐⭐⭐ | ⭐⭐⭐⭐ | ⭐⭐⭐⭐⭐ |\n| WLB | ⭐⭐ | ⭐⭐ | ⭐⭐⭐⭐ | ⭐⭐⭐⭐ |\n\n## 避坑指南\n\n1. 不要只看薪资，关注长期发展天花板\n2. 不要盲目跟风，别人的好未必适合你\n3. 第一份工作不是终点，允许试错和调整\n4. 善用实习来验证想法，低成本试错`,
       category: '校招指南',
-      cover: 'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=600&q=80',
-      author: '陈经理（资深HR）',
+      cover: '/placeholder-cover.svg',
+      author: '陈教授（南京大学）',
     },
     {
       title: '职场新人必修课：入职第一年的生存法则',
       summary: '从入职适应到人际关系，帮助职场新人快速融入团队、建立良好口碑。',
       content: `## 入职前30天\n\n### 第一周：观察与学习\n- 了解公司文化和团队风格\n- 熟悉工作流程和常用工具\n- 主动认识团队成员\n\n### 第二至四周：融入与执行\n- 高质量完成分配的每一个小任务\n- 遇到问题先自己查资料，再请教同事\n- 养成记录工作日志的习惯\n\n## 职场沟通技巧\n\n### 向上沟通\n- 定期汇报工作进展（建议每周）\n- 遇到困难及时反馈，不要等到deadline\n- 理解领导的期望和工作风格\n\n### 横向协作\n- 尊重每个人的专业领域\n- 邮件/消息保持专业和清晰\n- 跨部门合作时明确分工和时间节点\n\n## 新人常犯的错误\n\n1. **过于被动**：等安排而不主动找事做\n2. **好高骛远**：嫌弃基础工作，急于表现\n3. **不会提问**：问题太宽泛或完全不问\n4. **忽视人际**：只顾埋头工作，不维护关系\n\n## 第一年KPI\n\n- 熟练掌握岗位核心技能\n- 建立3-5个可信赖的职场关系\n- 独立负责至少一个完整项目\n- 获得直属领导的正面评价`,
       category: '面试经验',
-      cover: 'https://images.unsplash.com/photo-1521737604893-d14cc237f11d?w=600&q=80',
-      author: '王总监（品牌总监）',
+      cover: '/placeholder-cover.svg',
+      author: '王总监（阿里巴巴产品总监）',
     },
   ];
 
@@ -2223,7 +2293,7 @@ async function seedTestimonials(conn) {
   const testimonials = [
     {
       name: '李明',
-      avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop',
+      avatar: '/default-avatar.svg',
       school: '浙江大学',
       major: '计算机科学与技术',
       content: '通过启航平台的1v1简历精修和模拟面试服务，我的简历通过率从30%提升到80%。最终拿到了字节跳动、腾讯、阿里三家大厂的offer，现在已经在字节跳动做前端开发了！',
@@ -2232,7 +2302,7 @@ async function seedTestimonials(conn) {
     },
     {
       name: '王小雨',
-      avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop',
+      avatar: '/default-avatar.svg',
       school: '南京大学',
       major: '金融学',
       content: '考研失利后一度很迷茫，在启航平台预约了职业规划导师的咨询后重新找到方向。导师帮我分析了金融行业各赛道，最终我成功拿到了中金公司的校招offer！',
@@ -2241,7 +2311,7 @@ async function seedTestimonials(conn) {
     },
     {
       name: '陈思远',
-      avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop',
+      avatar: '/default-avatar.svg',
       school: '华中科技大学',
       major: '电子信息工程',
       content: '作为非科班转码的同学，我通过平台的课程系统学习了前端开发，加上导师的技术面辅导，成功从EE转到了互联网行业。感谢启航让我实现了职业转型！',
@@ -2250,7 +2320,7 @@ async function seedTestimonials(conn) {
     },
     {
       name: '张雅琳',
-      avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&h=100&fit=crop',
+      avatar: '/default-avatar.svg',
       school: '上海外国语大学',
       major: '英语翻译',
       content: '平台上的快消行业导师给了我非常专业的群面辅导，从无领导小组讨论的角色选择到案例分析方法，每个细节都指导到位。最后成功拿到联合利华管培生offer！',
@@ -2322,6 +2392,278 @@ async function seedCampusTimeline(conn) {
   }
 }
 
+/**
+ * 插入学生档案种子数据
+ */
+async function seedStudents(conn, userIdMap) {
+  const students = [
+    {
+      userEmail: 'student@example.com',
+      school: '南京大学',
+      major: '计算机科学与技术',
+      grade: '大四',
+      skills: JSON.stringify(['Java', 'Python', 'React', '数据分析']),
+      job_intention: '后端开发工程师',
+      bio: '热爱技术，积极参加各类编程竞赛，获ACM省赛银奖',
+    },
+    {
+      userEmail: 'student2@example.com',
+      school: '浙江大学',
+      major: '软件工程',
+      grade: '大三',
+      skills: JSON.stringify(['JavaScript', 'Vue', 'Node.js', 'MySQL']),
+      job_intention: '全栈开发工程师',
+      bio: '全栈开发爱好者，有两段实习经历，热衷开源社区',
+    },
+    {
+      userEmail: 'student3@example.com',
+      school: '东南大学',
+      major: '人工智能',
+      grade: '大四',
+      skills: JSON.stringify(['Python', 'PyTorch', '机器学习', 'NLP']),
+      job_intention: 'AI算法工程师',
+      bio: '本科期间发表2篇论文，专注NLP方向，获国家奖学金',
+    },
+  ];
+
+  for (const s of students) {
+    const userId = userIdMap[s.userEmail];
+    if (!userId) continue;
+    const [existing] = await conn.query('SELECT id FROM students WHERE user_id = ?', [userId]);
+    if (existing.length === 0) {
+      await conn.query(
+        `INSERT INTO students (user_id, school, major, grade, skills, job_intention, bio)
+         VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        [userId, s.school, s.major, s.grade, s.skills, s.job_intention, s.bio]
+      );
+    }
+  }
+}
+
+/**
+ * 插入简历投递种子数据
+ */
+async function seedResumes(conn, userIdMap) {
+  const [existing] = await conn.query('SELECT COUNT(*) as count FROM resumes');
+  if (existing[0].count > 0) return;
+
+  // 查询实际存在的 job id
+  const [jobRows] = await conn.query('SELECT id FROM jobs ORDER BY id LIMIT 6');
+  if (jobRows.length === 0) return;
+
+  const studentEmail1 = 'student@example.com';
+  const studentEmail2 = 'student2@example.com';
+  const studentEmail3 = 'student3@example.com';
+  const sid1 = userIdMap[studentEmail1];
+  const sid2 = userIdMap[studentEmail2];
+  const sid3 = userIdMap[studentEmail3];
+  if (!sid1 || !sid2 || !sid3) return;
+
+  const resumes = [
+    { student_id: sid1, job_id: jobRows[0]?.id, status: 'pending' },
+    { student_id: sid1, job_id: jobRows[1]?.id, status: 'viewed' },
+    { student_id: sid2, job_id: jobRows[0]?.id, status: 'interview' },
+    { student_id: sid2, job_id: jobRows[2]?.id, status: 'pending' },
+    { student_id: sid3, job_id: jobRows[1]?.id, status: 'offered' },
+  ];
+
+  for (const r of resumes) {
+    if (!r.job_id) continue;
+    await conn.query(
+      `INSERT IGNORE INTO resumes (student_id, job_id, status) VALUES (?, ?, ?)`,
+      [r.student_id, r.job_id, r.status]
+    );
+  }
+}
+
+/**
+ * 插入预约种子数据
+ */
+async function seedAppointments(conn, userIdMap) {
+  const [existing] = await conn.query('SELECT COUNT(*) as count FROM appointments');
+  if (existing[0].count > 0) return;
+
+  const sid1 = userIdMap['student@example.com'];
+  const sid2 = userIdMap['student2@example.com'];
+  const sid3 = userIdMap['student3@example.com'];
+  const mid1 = userIdMap['chen@mentor.com'];
+  const mid2 = userIdMap['zhang@mentor.com'];
+  if (!sid1 || !sid2 || !sid3 || !mid1 || !mid2) return;
+
+  const appointments = [
+    {
+      student_id: sid1, mentor_id: mid1,
+      appointment_time: '2026-04-25 14:00:00', duration: 60,
+      status: 'confirmed', service_title: '简历修改与面试技巧',
+      note: '请准备好最新版简历', mentor_remark: null, fee: 299.00,
+    },
+    {
+      student_id: sid2, mentor_id: mid1,
+      appointment_time: '2026-04-26 10:00:00', duration: 60,
+      status: 'pending', service_title: '前端技术栈规划',
+      note: '想了解React和Vue的学习路线', mentor_remark: null, fee: 299.00,
+    },
+    {
+      student_id: sid3, mentor_id: mid2,
+      appointment_time: '2026-04-28 15:00:00', duration: 60,
+      status: 'confirmed', service_title: 'AI方向求职准备',
+      note: '讨论算法岗面试准备策略', mentor_remark: '提前整理项目经历', fee: 399.00,
+    },
+    {
+      student_id: sid1, mentor_id: mid2,
+      appointment_time: '2026-04-22 09:00:00', duration: 60,
+      status: 'completed', service_title: '职业方向规划',
+      note: '非常有收获的一次交流', mentor_remark: '建议多参加开源项目', fee: 399.00,
+      review_rating: 5.0, review_content: '张工非常专业，给出了很多实用的建议，让我对职业方向有了更清晰的认识！',
+    },
+  ];
+
+  for (const a of appointments) {
+    await conn.query(
+      `INSERT INTO appointments (student_id, mentor_id, appointment_time, duration, status, service_title, note, mentor_remark, fee, review_rating, review_content)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [a.student_id, a.mentor_id, a.appointment_time, a.duration, a.status, a.service_title, a.note, a.mentor_remark || null, a.fee, a.review_rating || null, a.review_content || null]
+    );
+  }
+}
+
+/**
+ * 插入收藏种子数据
+ */
+async function seedFavorites(conn, userIdMap) {
+  const [existing] = await conn.query('SELECT COUNT(*) as count FROM favorites');
+  if (existing[0].count > 0) return;
+
+  const sid1 = userIdMap['student@example.com'];
+  const sid2 = userIdMap['student2@example.com'];
+  const sid3 = userIdMap['student3@example.com'];
+  if (!sid1 || !sid2 || !sid3) return;
+
+  // 查询实际的 mentor_profiles id (用于 target_id)
+  const [mentorRows] = await conn.query('SELECT id, user_id FROM mentor_profiles ORDER BY id LIMIT 2');
+  const [jobRows] = await conn.query('SELECT id FROM jobs ORDER BY id LIMIT 3');
+  const [courseRows] = await conn.query('SELECT id FROM courses ORDER BY id LIMIT 2');
+
+  const favorites = [
+    { user_id: sid1, target_type: 'job', target_id: jobRows[0]?.id },
+    { user_id: sid1, target_type: 'course', target_id: courseRows[0]?.id },
+    { user_id: sid1, target_type: 'mentor', target_id: mentorRows[0]?.id },
+    { user_id: sid2, target_type: 'job', target_id: jobRows[1]?.id },
+    { user_id: sid3, target_type: 'course', target_id: courseRows[1]?.id },
+  ];
+
+  for (const f of favorites) {
+    if (!f.target_id) continue;
+    await conn.query(
+      `INSERT IGNORE INTO favorites (user_id, target_type, target_id) VALUES (?, ?, ?)`,
+      [f.user_id, f.target_type, f.target_id]
+    );
+  }
+}
+
+/**
+ * 插入通知种子数据
+ */
+async function seedNotifications(conn, userIdMap) {
+  const [existing] = await conn.query('SELECT COUNT(*) as count FROM notifications');
+  if (existing[0].count > 0) return;
+
+  const adminId = 1; // admin@qihang.com 固定为第一个用户
+  const sid1 = userIdMap['student@example.com'];
+  const sid2 = userIdMap['student2@example.com'];
+  const sid3 = userIdMap['student3@example.com'];
+  const mid1 = userIdMap['chen@mentor.com'];
+  const mid2 = userIdMap['zhang@mentor.com'];
+  const cid1 = userIdMap['hr@bytedance.com'];
+  if (!sid1 || !sid2 || !sid3 || !mid1 || !mid2 || !cid1) return;
+
+  const notifications = [
+    { user_id: sid1, type: 'system', title: '欢迎加入启航平台', content: '您的账号已成功注册，开始探索更多功能吧！', link: '/', is_read: 1 },
+    { user_id: sid1, type: 'resume', title: '投递状态更新', content: '您投递的「前端开发工程师」已被查看', link: '/student/resumes', is_read: 0 },
+    { user_id: mid1, type: 'appointment', title: '新的预约请求', content: '张同学申请在4月25日进行1v1辅导', link: '/mentor/appointments', is_read: 0 },
+    { user_id: cid1, type: 'approval', title: '企业认证已通过', content: '恭喜！您的企业认证已通过审核', link: '/company/profile', is_read: 1 },
+    { user_id: sid2, type: 'system', title: '欢迎加入启航平台', content: '开始您的求职之旅吧！', link: '/', is_read: 1 },
+    { user_id: sid3, type: 'resume', title: '收到面试邀请', content: '恭喜！您投递的职位已进入面试环节', link: '/student/resumes', is_read: 0 },
+    { user_id: adminId, type: 'system', title: '新企业认证申请', content: '字节跳动提交了企业认证申请，请及时审核', link: '/admin/companies', is_read: 0 },
+    { user_id: mid2, type: 'review', title: '收到新的学生评价', content: '一位学生为您的辅导打了5分', link: '/mentor/appointments', is_read: 0 },
+  ];
+
+  for (const n of notifications) {
+    await conn.query(
+      `INSERT INTO notifications (user_id, type, title, content, link, is_read) VALUES (?, ?, ?, ?, ?, ?)`,
+      [n.user_id, n.type, n.title, n.content, n.link, n.is_read]
+    );
+  }
+}
+
+/**
+ * 插入聊天会话与消息种子数据
+ */
+async function seedChatData(conn, userIdMap) {
+  const [existing] = await conn.query('SELECT COUNT(*) as count FROM chat_conversations');
+  if (existing[0].count > 0) return;
+
+  const sid1 = userIdMap['student@example.com'];
+  const sid2 = userIdMap['student2@example.com'];
+  if (!sid1 || !sid2) return;
+
+  // 插入会话
+  const [conv1Result] = await conn.query(
+    `INSERT INTO chat_conversations (user_id, type, title, status, last_message, last_message_at)
+     VALUES (?, 'user_service', '求职咨询', 'active', '请详细说说STAR法则', NOW())`,
+    [sid1]
+  );
+  const conv1Id = conv1Result.insertId;
+
+  const [conv2Result] = await conn.query(
+    `INSERT INTO chat_conversations (user_id, type, title, status, last_message, last_message_at)
+     VALUES (?, 'user_service', '简历指导', 'active', '我的简历应该怎么写比较好？', NOW())`,
+    [sid2]
+  );
+  const conv2Id = conv2Result.insertId;
+
+  // 插入消息
+  const messages = [
+    { conversation_id: conv1Id, sender_id: sid1, sender_role: 'user', content: '你好，请问如何提高面试通过率？' },
+    { conversation_id: conv1Id, sender_id: 0, sender_role: 'system', content: '您好！提高面试通过率可以从以下几个方面入手：1. 充分了解目标公司和职位；2. 准备STAR法则回答行为面试题；3. 练习算法和编程题；4. 模拟面试练习。需要我详细介绍其中某个方面吗？' },
+    { conversation_id: conv1Id, sender_id: sid1, sender_role: 'user', content: '请详细说说STAR法则' },
+    { conversation_id: conv1Id, sender_id: 0, sender_role: 'system', content: 'STAR法则是一种结构化的面试回答方法：\n\n**S (Situation)** - 描述当时的情境\n**T (Task)** - 说明你的任务或目标\n**A (Action)** - 具体说明你采取了什么行动\n**R (Result)** - 分享最终的结果和收获\n\n例如回答"请举一个团队合作的例子"时，可以按照这个框架组织答案，让面试官清晰了解你的能力。' },
+    { conversation_id: conv2Id, sender_id: sid2, sender_role: 'user', content: '我的简历应该怎么写比较好？' },
+    { conversation_id: conv2Id, sender_id: 0, sender_role: 'system', content: '一份优秀的简历应该包含以下要素：\n\n1. **个人信息** - 简洁明了\n2. **教育背景** - 突出GPA和相关课程\n3. **项目经历** - 用数据量化成果\n4. **实习经验** - 强调技能匹配度\n5. **技能清单** - 按熟练度分级\n\n建议控制在1页以内，突出与目标职位最相关的经历。' },
+  ];
+
+  for (const m of messages) {
+    await conn.query(
+      `INSERT INTO chat_messages (conversation_id, sender_id, sender_role, content) VALUES (?, ?, ?, ?)`,
+      [m.conversation_id, m.sender_id, m.sender_role, m.content]
+    );
+  }
+}
+
+/**
+ * 插入审计日志种子数据
+ */
+async function seedAuditLogs(conn) {
+  const [existing] = await conn.query('SELECT COUNT(*) as count FROM audit_logs');
+  if (existing[0].count > 0) return;
+
+  const logs = [
+    { operator_id: 1, operator_name: '超级管理员', operator_role: 'admin', action: 'approve', target_type: 'company', target_id: 1, before_data: '{"verify_status":"pending"}', after_data: '{"verify_status":"approved"}' },
+    { operator_id: 1, operator_name: '超级管理员', operator_role: 'admin', action: 'approve', target_type: 'mentor', target_id: 1, before_data: '{"verify_status":"pending"}', after_data: '{"verify_status":"approved"}' },
+    { operator_id: 1, operator_name: '超级管理员', operator_role: 'admin', action: 'update', target_type: 'user', target_id: 2, before_data: '{"status":0}', after_data: '{"status":1}' },
+    { operator_id: 1, operator_name: '超级管理员', operator_role: 'admin', action: 'approve', target_type: 'company', target_id: 2, before_data: '{"verify_status":"pending"}', after_data: '{"verify_status":"approved"}' },
+    { operator_id: 1, operator_name: '超级管理员', operator_role: 'admin', action: 'update', target_type: 'job', target_id: 1, before_data: '{"status":"inactive"}', after_data: '{"status":"active"}' },
+  ];
+
+  for (const l of logs) {
+    await conn.query(
+      `INSERT INTO audit_logs (operator_id, operator_name, operator_role, action, target_type, target_id, before_data, after_data)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [l.operator_id, l.operator_name, l.operator_role, l.action, l.target_type, l.target_id, l.before_data, l.after_data]
+    );
+  }
+}
+
 // ========== 主流程 ==========
 
 async function initDatabase() {
@@ -2374,15 +2716,15 @@ async function initDatabase() {
 
   // 4. 插入默认管理员
   try {
-    const [rows] = await conn.query('SELECT id FROM users WHERE email = ?', ['admin@example.com']);
+    const [rows] = await conn.query('SELECT id FROM users WHERE email = ?', ['admin@qihang.com']);
     if (rows.length === 0) {
       const hashedPassword = await bcrypt.hash('admin123', 10);
       await conn.query(
         'INSERT INTO users (email, password, nickname, role) VALUES (?, ?, ?, ?)',
-        ['admin@example.com', hashedPassword, '超级管理员', 'admin']
+        ['admin@qihang.com', hashedPassword, '超级管理员', 'admin']
       );
       console.log(`  [4/${totalSteps}] 默认管理员账号已创建`);
-      console.log('        邮箱: admin@example.com');
+      console.log('        邮箱: admin@qihang.com');
       console.log('        密码: admin123');
     } else {
       console.log(`  [4/${totalSteps}] 默认管理员账号已存在，跳过`);
@@ -2454,6 +2796,27 @@ async function initDatabase() {
 
     await seedCampusTimeline(conn);
     console.log('        ✔ 校招时间轴数据');
+
+    await seedStudents(conn, userIdMap);
+    console.log('        ✔ 学生档案数据');
+
+    await seedResumes(conn, userIdMap);
+    console.log('        ✔ 简历投递数据');
+
+    await seedAppointments(conn, userIdMap);
+    console.log('        ✔ 预约记录数据');
+
+    await seedFavorites(conn, userIdMap);
+    console.log('        ✔ 用户收藏数据');
+
+    await seedNotifications(conn, userIdMap);
+    console.log('        ✔ 通知数据');
+
+    await seedChatData(conn, userIdMap);
+    console.log('        ✔ 聊天会话与消息数据');
+
+    await seedAuditLogs(conn);
+    console.log('        ✔ 审计日志数据');
   } catch (err) {
     console.error('  ❌ 插入种子数据失败:', err.message);
     console.error(err.stack);

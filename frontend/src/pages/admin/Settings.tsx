@@ -11,6 +11,7 @@ import { useToast } from '@/components/ui';
 import { useConfigStore } from '@/store/config';
 import Tag from '@/components/ui/Tag';
 import { Skeleton, ListSkeleton } from '@/components/ui/Skeleton';
+import FileUpload from '@/components/ui/FileUpload';
 
 // ====== 平台设置（站点配置管理 + 审计日志） ======
 // 商业级要求：
@@ -298,6 +299,8 @@ export default function AdminSettings() {
                               <div className="mt-2 space-y-2">
                                 {cfg.config_type === 'boolean' ? (
                                   <select
+                                    id={`config-${cfg.config_key}`}
+                                    name={cfg.config_key}
                                     value={editValue}
                                     onChange={e => setEditValue(e.target.value)}
                                     className="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 outline-none"
@@ -323,6 +326,8 @@ export default function AdminSettings() {
                                 ) : cfg.config_type === 'json' ? (
                                   <div className="space-y-1">
                                     <textarea
+                                      id={`config-${cfg.config_key}`}
+                                      name={cfg.config_key}
                                       value={editValue}
                                       onChange={e => { setEditValue(e.target.value); setJsonError(null); }}
                                       rows={6}
@@ -341,6 +346,12 @@ export default function AdminSettings() {
                                       onChange={e => setEditValue(e.target.value)}
                                       className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 outline-none max-w-lg w-full"
                                       placeholder="输入图片URL"
+                                    />
+                                    <FileUpload
+                                      category="general"
+                                      accept="image/*"
+                                      placeholder="点击或拖拽上传图片"
+                                      onSuccess={(result) => setEditValue(result.url)}
                                     />
                                     {editValue && (
                                       <div className="w-32 h-16 bg-gray-100 rounded-lg overflow-hidden border border-gray-200">
@@ -465,7 +476,7 @@ export default function AdminSettings() {
                         <span className="font-medium">{log.operator_name}</span>
                         <span className="text-gray-500"> {ACTION_MAP[log.action] || log.action}了 </span>
                         <span className="font-medium">{TARGET_MAP[log.target_type] || log.target_type}</span>
-                        {log.target_id && <span className="text-gray-500"> #{log.target_id}</span>}
+                        {log.target_id && <span className="text-gray-500"> ID{log.target_id}</span>}
                       </p>
                       {log.before_data && (
                         <p className="text-xs text-gray-400 mt-1 font-mono truncate max-w-lg">

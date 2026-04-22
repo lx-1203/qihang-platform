@@ -68,11 +68,11 @@ export default function PostgradConfig() {
 
     for (let i = 0; i < timelines.length; i++) {
       if (!timelines[i].month.trim()) {
-        toast.error('验证失败', `时间线 #${i + 1} 的月份不能为空`);
+        toast.error('验证失败', `时间线 第${i + 1}项 的月份不能为空`);
         return;
       }
       if (!timelines[i].title.trim()) {
-        toast.error('验证失败', `时间线 #${i + 1} 的标题不能为空`);
+        toast.error('验证失败', `时间线 第${i + 1}项 的标题不能为空`);
         return;
       }
     }
@@ -190,12 +190,13 @@ export default function PostgradConfig() {
           <h3 className="text-base font-bold text-gray-900 flex items-center gap-2">
             <Clock className="w-5 h-5 text-primary-500" /> 考研时间线 ({timelines.length} 个节点)
           </h3>
+          <p className="text-sm text-gray-500 mb-4">添加考研备考各阶段时间节点，帮助学生规划复习进度。每个时间线项包含月份、标题和任务清单。</p>
 
           {timelines.map((item, idx) => (
             <motion.div key={idx} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.05 }}
               className="bg-white rounded-xl border border-gray-200 p-6">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-sm font-bold text-gray-900">时间线 #{idx + 1}: {item.month}</h3>
+                <h3 className="text-sm font-bold text-gray-900">时间线 第{idx + 1}项: {item.month}</h3>
                 {timelines.length > 1 && (
                   <button onClick={() => setDeleteConfirm(idx)}
                     className="text-red-400 hover:text-red-600 transition-colors"><Trash2 className="w-4 h-4" /></button>
@@ -228,6 +229,7 @@ export default function PostgradConfig() {
           ))}
 
           <button onClick={() => setTimelines([...timelines, { month: '', title: '', desc: '' }])}
+            title="点击添加新的时间线节点"
             className="w-full py-3 border-2 border-dashed border-gray-300 rounded-xl text-sm text-gray-500 hover:border-primary-400 hover:text-primary-600 transition-colors flex items-center justify-center gap-2">
             <Plus className="w-4 h-4" /> 添加时间线节点
           </button>

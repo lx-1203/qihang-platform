@@ -115,10 +115,10 @@ export default function DevNav() {
   // 快速切换角色（模拟登录）
   function switchRole(role: 'admin' | 'company' | 'mentor' | 'student') {
     const mockUsers = {
-      admin: { id: 1, email: 'admin@qihang.com', nickname: '超级管理员', role: 'admin' as const, avatar: '', phone: '', status: 1, created_at: '' },
-      company: { id: 3, email: 'hr@bytedance.com', nickname: '字节跳动HR', role: 'company' as const, avatar: '', phone: '', status: 1, created_at: '' },
-      mentor: { id: 10, email: 'chen@mentor.com', nickname: '陈经理', role: 'mentor' as const, avatar: '', phone: '', status: 1, created_at: '' },
-      student: { id: 2, email: 'student@example.com', nickname: '张同学', role: 'student' as const, avatar: '', phone: '', status: 1, created_at: '' },
+      admin: { id: 1, email: 'admin@example.com', nickname: '超级管理员', role: 'admin' as const, avatar: '', phone: '', status: 1, created_at: '' },
+      company: { id: 170, email: 'hr@bytedance.com', nickname: '字节跳动HR', role: 'company' as const, avatar: '', phone: '', status: 1, created_at: '' },
+      mentor: { id: 177, email: 'chen@mentor.com', nickname: '陈教授', role: 'mentor' as const, avatar: '', phone: '', status: 1, created_at: '' },
+      student: { id: 182, email: 'student1@example.com', nickname: '王小明', role: 'student' as const, avatar: '', phone: '', status: 1, created_at: '' },
     };
     setAuth('dev-token-' + role, mockUsers[role]);
   }

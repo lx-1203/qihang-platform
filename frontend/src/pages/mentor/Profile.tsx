@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import http from '@/api/http';
 import ErrorState from '@/components/ui/ErrorState';
+import { DEFAULT_AVATAR } from '@/constants';
 
 // ====== 导师资料编辑页 ======
 // 个人信息编辑、专长标签、可用时间段管理
@@ -208,7 +209,7 @@ export default function MentorProfile() {
             <div className="flex flex-col items-center gap-4">
               <div className="w-28 h-28 rounded-full bg-primary-100 flex items-center justify-center overflow-hidden border-4 border-primary-200">
                 {profile.avatar ? (
-                  <img src={profile.avatar} alt="头像" className="w-full h-full object-cover" />
+                  <img src={profile.avatar || DEFAULT_AVATAR} alt="头像" className="w-full h-full object-cover" />
                 ) : (
                   <User className="w-12 h-12 text-primary-400" />
                 )}

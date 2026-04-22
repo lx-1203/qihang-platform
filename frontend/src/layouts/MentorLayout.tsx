@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import DevFloatButton from '../components/DevFloatButton';
 import { useAuthStore } from '../store/auth';
+import { DEFAULT_AVATAR } from '../constants';
 
 const SIDEBAR_NAV = [
   { name: '工作台总览', href: '/mentor/dashboard', icon: LayoutDashboard },
@@ -150,7 +151,7 @@ export default function MentorLayout() {
               <Bell className="w-5 md:w-6 h-5 md:h-6" />
             </button>
             <div className="flex items-center gap-3 pl-4 md:pl-6 border-l border-gray-200">
-              <img src={user?.avatar || 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=100'} alt="Avatar" className="w-8 h-8 rounded-full border border-gray-200" />
+              <img src={user?.avatar || DEFAULT_AVATAR} onError={(e) => { (e.target as HTMLImageElement).src = DEFAULT_AVATAR }} alt="Avatar" className="w-8 h-8 rounded-full border border-gray-200" />
               <div className="hidden sm:flex flex-col">
                 <span className="text-sm font-bold text-gray-900 leading-tight">{user?.name || '导师'}</span>
                 <span className="text-xs text-primary-500 font-medium">在线</span>

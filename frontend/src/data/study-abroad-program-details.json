@@ -25,8 +25,8 @@
       "intlRatio": "85%",
       "employRate": "96%",
       "avgSalary": "£55,000",
-      "logo": "https://images.unsplash.com/photo-1607237138185-eedd9c632b0b?w=200&q=80",
-      "cover": "https://images.unsplash.com/photo-1526129318478-62ed807ebdf9?w=1200&q=80",
+      "logo": "/default-avatar.svg",
+      "cover": "/placeholder-cover.svg",
       "tags": ["STEM", "热门", "QS Top 10", "PSW签证"],
       "description": "帝国理工学院计算机科学硕士项目（MSc Computing）是英国最顶尖的CS硕士项目之一。该项目旨在为具有不同背景的学生提供扎实的计算机科学理论基础与实践技能，涵盖人工智能、机器学习、软件工程、数据库系统、计算机视觉等多个前沿方向。\n\n项目注重理论与实践结合，最后一个学期需完成个人或团队毕业项目（Individual/Group Project），通常与工业界合作（如Google DeepMind、Microsoft Research）。毕业生在全球科技企业中极具竞争力，平均起薪位居英国CS硕士项目前三。",
       "highlights": [
@@ -141,8 +141,8 @@
       "intlRatio": "60%",
       "employRate": "98%",
       "avgSalary": "HK$350,000",
-      "logo": "https://images.unsplash.com/photo-1536599018102-9f803c029e12?w=200&q=80",
-      "cover": "https://images.unsplash.com/photo-1536599018102-9f803c029e12?w=1200&q=80",
+      "logo": "/default-avatar.svg",
+      "cover": "/placeholder-cover.svg",
       "tags": ["商科", "热门", "QS Top 20", "STEM"],
       "description": "香港大学商业分析硕士（MSc Business Analytics）隶属于商学院，是港大最热门的商科项目之一。项目融合了统计学、计算机科学与商业管理，培养学生运用数据分析技术解决复杂商业问题的能力。\n\n课程涵盖大数据分析、机器学习、商业智能、运营优化等核心领域，并注重实战项目（Capstone Project），与知名企业合作完成真实商业案例。毕业生在咨询、金融科技、互联网和快消等行业深受欢迎。",
       "highlights": [
@@ -252,8 +252,8 @@
       "intlRatio": "75%",
       "employRate": "97%",
       "avgSalary": "S$80,000",
-      "logo": "https://images.unsplash.com/photo-1525921429624-479f8e56bfa1?w=200&q=80",
-      "cover": "https://images.unsplash.com/photo-1565967511849-76a60a516170?w=1200&q=80",
+      "logo": "/default-avatar.svg",
+      "cover": "/placeholder-cover.svg",
       "tags": ["STEM", "热门", "QS Top 10", "数据科学"],
       "description": "新加坡国立大学数据科学与机器学习硕士（MSc DSML）由数学系和计算机学院联合开设，是亚洲最顶尖的数据科学硕士项目之一。\n\n项目结合了严谨的数学理论与前沿的机器学习实践，课程涵盖深度学习、贝叶斯统计、优化理论、自然语言处理等核心领域。学生可选择学术研究方向（含论文）或行业实践方向（含实习项目）。新加坡的AI产业蓬勃发展，毕业生在全球范围内极具竞争力。",
       "highlights": [

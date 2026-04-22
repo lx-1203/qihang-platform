@@ -6,6 +6,7 @@ import { useToast } from '@/components/ui';
 import { useConfigStore } from '@/store/config';
 import { Skeleton, CardSkeleton } from '@/components/ui/Skeleton';
 import { handleApiFailure } from '@/utils/connectionStatus';
+import FileUpload from '@/components/ui/FileUpload';
 
 // 默认配置
 const DEFAULT_SUCCESS_CASES_CONFIG = {
@@ -83,7 +84,7 @@ export default function SuccessCasesConfig() {
 
     for (let i = 0; i < cases.length; i++) {
       if (!cases[i].name.trim()) {
-        toast.error('验证失败', `案例 #${i + 1} 的姓名不能为空`);
+        toast.error('验证失败', `案例 第${i + 1}项 的姓名不能为空`);
         setActiveTab('cases');
         return;
       }
@@ -213,7 +214,7 @@ export default function SuccessCasesConfig() {
                       {item.avatar || '?'}
                     </div>
                     <div>
-                      <h3 className="text-sm font-bold text-gray-900">{item.name || '未命名案例'} #{idx + 1}</h3>
+                      <h3 className="text-sm font-bold text-gray-900">{item.name || '未命名案例'} 第{idx + 1}项</h3>
                       <p className="text-xs text-gray-500">{item.school || '未设置学校'} · {item.category}</p>
                     </div>
                   </div>
@@ -244,6 +245,17 @@ export default function SuccessCasesConfig() {
                           onChange={e => { const arr = [...cases]; arr[idx] = { ...arr[idx], avatar: e.target.value }; setCases(arr); }}
                           className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                           placeholder="单字，如：张" maxLength={1} />
+                        <label className="block text-xs font-medium text-gray-500 mb-1 mt-3">或上传头像图片</label>
+                        <FileUpload
+                          category="avatar"
+                          accept="image/*"
+                          placeholder="上传头像"
+                          onSuccess={(result) => {
+                            const arr = [...cases];
+                            arr[idx] = { ...arr[idx], avatar: result.url };
+                            setCases(arr);
+                          }}
+                        />
                       </div>
                       <div>
                         <label className="block text-xs font-medium text-gray-500 mb-1">学校/专业</label>
@@ -274,7 +286,11 @@ export default function SuccessCasesConfig() {
 
                     <div>
                       <label className="block text-xs font-medium text-gray-500 mb-1">引用语</label>
-                      <textarea value={item.quote} rows={2}
+                      <textarea
+                        id={`case-quote-${idx}`}
+                        name={`quote-${idx}`}
+                        value={item.quote}
+                        rows={2}
                         onChange={e => { const arr = [...cases]; arr[idx] = { ...arr[idx], quote: e.target.value }; setCases(arr); }}
                         className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                         placeholder="学员的真实评价..." />
@@ -330,7 +346,7 @@ export default function SuccessCasesConfig() {
               <motion.div key={idx} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
                 className="bg-white rounded-xl border border-gray-200 p-6">
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-sm font-bold text-gray-900">分类 #{idx + 1}: {cat.label}</h3>
+                  <h3 className="text-sm font-bold text-gray-900">分类 第{idx + 1}项: {cat.label}</h3>
                   {categories.length > 1 && cat.key !== 'all' && (
                     <button onClick={() => { setCategories(categories.filter((_, i) => i !== idx)); toast.success('已删除'); }}
                       className="text-red-400 hover:text-red-600 transition-colors"><Trash2 className="w-4 h-4" /></button>
@@ -368,7 +384,7 @@ export default function SuccessCasesConfig() {
               <motion.div key={idx} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
                 className="bg-white rounded-xl border border-gray-200 p-6">
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-sm font-bold text-gray-900">统计项 #{idx + 1}</h3>
+                  <h3 className="text-sm font-bold text-gray-900">统计项 第{idx + 1}项</h3>
                   {stats.length > 1 && (
                     <button onClick={() => { setStats(stats.filter((_, i) => i !== idx)); toast.success('已删除'); }}
                       className="text-red-400 hover:text-red-600 transition-colors"><Trash2 className="w-4 h-4" /></button>
@@ -383,7 +399,11 @@ export default function SuccessCasesConfig() {
                   </div>
                   <div>
                     <label className="block text-xs font-medium text-gray-500 mb-1">数值</label>
-                    <input type="number" value={stat.value}
+                    <input
+                      id={`stat-value-${idx}`}
+                      name={`value-${idx}`}
+                      type="number"
+                      value={stat.value}
                       onChange={e => { const arr = [...stats]; arr[idx] = { ...arr[idx], value: Number(e.target.value) }; setStats(arr); }}
                       className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-transparent" />
                   </div>

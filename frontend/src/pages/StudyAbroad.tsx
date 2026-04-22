@@ -10,14 +10,6 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import Tag from '@/components/ui/Tag';
 
-// ====== JSON 数据导入 ======
-import countriesData from '../data/study-abroad-countries.json';
-import universitiesData from '../data/study-abroad-universities.json';
-import offersData from '../data/study-abroad-offers.json';
-import consultantsData from '../data/study-abroad-consultants.json';
-import uiConfig from '../data/study-abroad-ui-config.json';
-import articlesData from '../data/study-abroad-articles.json';
-
 // ====== 可复用组件导入 ======
 import CountryCard from '../components/study-abroad/CountryCard';
 import ProgramCard from '../components/study-abroad/ProgramCard';
@@ -26,6 +18,7 @@ import TimelineView from '../components/study-abroad/TimelineView';
 import MajorExplorer from '../components/study-abroad/MajorExplorer';
 import CostEstimator from '../components/study-abroad/CostEstimator';
 import http from '../api/http';
+import { useConfigStore } from '@/store/config';
 
 // ====== API 映射函数 ======
 
@@ -79,50 +72,34 @@ const ICON_MAP: Record<string, LucideIcon> = {
   BookOpen, DollarSign, Headphones, Users, Briefcase, FlaskConical, Heart, Star,
 };
 
-// ====== 页面级常量（从 JSON 配置读取，管理员可通过配置页修改） ======
+// ====== 页面级常量的默认值（当配置未加载时使用） ======
 
-const HERO_SLIDES = uiConfig.heroSlides;
-
-const STATS = uiConfig.stats.map((s: { icon: string; value: string; label: string }) => ({ ...s, icon: ICON_MAP[s.icon] || Building2 }));
-
-const QUICK_ACTIONS = ((uiConfig as Record<string, unknown>).quickActions as Array<{ icon: string; label: string; link: string; bg: string; color: string }>).map((a) => ({
-  ...a,
-  icon: ICON_MAP[a.icon] || Star,
-}));
-
-const SERVICE_COLOR_MAP: Record<string, string> = (uiConfig as Record<string, unknown>).serviceColorMap as Record<string, string>;
-
-const ARTICLES = articlesData.articles.slice(0, 6).map(a => ({
-  id: a.id, title: a.title, category: a.category, views: a.views, hot: a.views > 10000,
-}));
-
-// ====== 从配置读取的常量 ======
-const CONFIG_CONSTANTS = (uiConfig as Record<string, unknown>).constants as {
-  heroSlideInterval: number;
-  quoteSlideInterval: number;
-  heroMinHeightMobile: number;
-  heroMinHeightDesktop: number;
-  quoteMinHeightMobile: number;
-  quoteMinHeightDesktop: number;
-  serviceCardHeight: number;
+const DEFAULT_CONFIG_CONSTANTS = {
+  heroSlideInterval: 5000,
+  quoteSlideInterval: 6000,
+  heroMinHeightMobile: 480,
+  heroMinHeightDesktop: 540,
+  quoteMinHeightMobile: 320,
+  quoteMinHeightDesktop: 360,
+  serviceCardHeight: 200,
 };
 
-const TEXT_RESOURCES = (uiConfig as Record<string, unknown>).textResources as {
-  hero: { offerBtnText: string };
-  sidebar: { consultantTitle: string; consultantCta: string; evaluatedCount: string };
-  articles: { title: string; viewMore: string };
-  stories: { title: string; subtitle: string; viewMore: string };
-  services: { title: string; subtitle: string; viewAll: string };
+const DEFAULT_TEXT_RESOURCES = {
+  hero: { offerBtnText: '查看 Offer 榜' },
+  sidebar: { consultantTitle: '专属顾问推荐', consultantCta: '立即咨询', evaluatedCount: '0' },
+  articles: { title: '留学资讯', viewMore: '查看更多' },
+  stories: { title: '学员故事', subtitle: '来自真实学员的留学经历', viewMore: '查看更多' },
+  services: { title: '背景提升服务', subtitle: '全方位提升你的竞争力', viewAll: '查看全部' },
   cta: {
-    aiBadge: string;
-    title: string;
-    description: string;
-    servedStudents: string;
-    satisfactionRate: string;
-    btnText: string;
-    floatingCta: string;
-    floatingSubtitle: string;
-  };
+    aiBadge: 'AI 智能匹配',
+    title: '开启你的留学之旅',
+    description: '专业顾问一对一定制方案',
+    servedStudents: '0',
+    satisfactionRate: '0%',
+    btnText: '立即咨询',
+    floatingCta: '免费咨询',
+    floatingSubtitle: '专业顾问在线',
+  },
 };
 
 // ====== 类型定义 ======
@@ -226,7 +203,63 @@ export default function StudyAbroad() {
   const [quoteIndex, setQuoteIndex] = useState(0);
   const [quotePaused, setQuotePaused] = useState(false);
   const [showFloatingCTA, setShowFloatingCTA] = useState(false);
+  const [loading, setLoading] = useState(true);
   const heroRef = useRef<HTMLElement>(null);
+
+  // ====== 从配置 store 读取 UI 配置 ======
+  const uiConfig = useConfigStore().getJson<Record<string, unknown>>('study_abroad_ui_config', {});
+
+  // 从配置派生的页面常量（useMemo 避免每次重渲染重新计算）
+  const HERO_SLIDES = useMemo(() =>
+    (uiConfig.heroSlides as Array<{ image: string; tag: string; title: string; subtitle: string; cta: string; ctaLink: string }>) || [],
+  [uiConfig]);
+
+  const STATS = useMemo(() =>
+    ((uiConfig.stats as Array<{ icon: string; value: string; label: string }>) || []).map((s) => ({
+      ...s,
+      icon: ICON_MAP[s.icon] || Building2,
+    })),
+  [uiConfig]);
+
+  const QUICK_ACTIONS = useMemo(() =>
+    ((uiConfig.quickActions as Array<{ icon: string; label: string; link: string; bg: string; color: string }>) || []).map((a) => ({
+      ...a,
+      icon: ICON_MAP[a.icon] || Star,
+    })),
+  [uiConfig]);
+
+  const SERVICE_COLOR_MAP = useMemo(() =>
+    (uiConfig.serviceColorMap as Record<string, string>) || {},
+  [uiConfig]);
+
+  const CONFIG_CONSTANTS = useMemo(() => ({
+    ...DEFAULT_CONFIG_CONSTANTS,
+    ...((uiConfig.constants as Record<string, number>) || {}),
+  }), [uiConfig]);
+
+  const TEXT_RESOURCES = useMemo(() => {
+    const raw = (uiConfig.textResources as typeof DEFAULT_TEXT_RESOURCES) || {};
+    return {
+      hero: { ...DEFAULT_TEXT_RESOURCES.hero, ...raw.hero },
+      sidebar: { ...DEFAULT_TEXT_RESOURCES.sidebar, ...raw.sidebar },
+      articles: { ...DEFAULT_TEXT_RESOURCES.articles, ...raw.articles },
+      stories: { ...DEFAULT_TEXT_RESOURCES.stories, ...raw.stories },
+      services: { ...DEFAULT_TEXT_RESOURCES.services, ...raw.services },
+      cta: { ...DEFAULT_TEXT_RESOURCES.cta, ...raw.cta },
+    };
+  }, [uiConfig]);
+
+  const newcomerQuotes = useMemo(() =>
+    (newcomerQuotes as Array<{ image: string; quote: string; author: string; background: string }>) || [],
+  [uiConfig]);
+
+  const studentStories = useMemo(() =>
+    (uiConfig.studentStories as Array<{ id: string; studentName: string; background: string; result: string; quote: string; story: string; image: string; tags: string[]; likes: number; views: number }>) || [],
+  [uiConfig]);
+
+  const serviceCards = useMemo(() =>
+    (uiConfig.serviceCards as Array<{ id: string; icon: string; color: string; title: string; subtitle: string; description: string; image: string }>) || [],
+  [uiConfig]);
 
   // 监听滚动，Hero 区域滚出视口后显示浮动 CTA
   useEffect(() => {
@@ -241,20 +274,21 @@ export default function StudyAbroad() {
 
   // 自动轮播
   useEffect(() => {
+    if (HERO_SLIDES.length === 0) return;
     const timer = setInterval(() => {
       setCurrentSlide((prev) => (prev + 1) % HERO_SLIDES.length);
     }, CONFIG_CONSTANTS.heroSlideInterval);
     return () => clearInterval(timer);
-  }, []);
+  }, [HERO_SLIDES.length, CONFIG_CONSTANTS.heroSlideInterval]);
 
   // 新人寄语自动轮播（6s + hover暂停 + 页面隐藏暂停）
   useEffect(() => {
-    if (quotePaused) return;
+    if (quotePaused || newcomerQuotes.length === 0) return;
     const timer = setInterval(() => {
-      setQuoteIndex((prev) => (prev + 1) % uiConfig.newcomerQuotes.length);
+      setQuoteIndex((prev) => (prev + 1) % newcomerQuotes.length);
     }, CONFIG_CONSTANTS.quoteSlideInterval);
     return () => clearInterval(timer);
-  }, [quotePaused]);
+  }, [quotePaused, newcomerQuotes.length, CONFIG_CONSTANTS.quoteSlideInterval]);
 
   useEffect(() => {
     const handleVisibility = () => setQuotePaused(document.hidden);
@@ -262,35 +296,95 @@ export default function StudyAbroad() {
     return () => document.removeEventListener('visibilitychange', handleVisibility);
   }, []);
 
-  // 类型断言 + API 数据状态
-  const countries = countriesData as CountryItem[];
-  const universities = universitiesData as UniversityItem[];
-  const [offers, setOffers] = useState<OfferItem[]>(offersData as OfferItem[]);
-  const [consultants, setConsultants] = useState<ConsultantItem[]>(consultantsData as ConsultantItem[]);
+  // API 数据状态
+  const [countries, setCountries] = useState<CountryItem[]>([]);
+  const [universities, setUniversities] = useState<UniversityItem[]>([]);
+  const [offers, setOffers] = useState<OfferItem[]>([]);
+  const [consultants, setConsultants] = useState<ConsultantItem[]>([]);
+  const [articles, setArticles] = useState<{ id: string; title: string; category: string; views: number; hot: boolean }[]>([]);
 
-  // 尝试从 API 加载 Offer 和顾问数据，失败则保持 JSON 数据
+  // 从 API 加载所有数据
   useEffect(() => {
-    http.get('/study-abroad/offers', { params: { pageSize: 20 } })
+    setLoading(true);
+
+    const loadCountries = http.get('/study-abroad/countries')
+      .then(res => {
+        const apiList = res.data.data;
+        if (Array.isArray(apiList)) {
+          setCountries(apiList as CountryItem[]);
+        }
+      })
+      .catch(() => {
+        if (import.meta.env.DEV) console.warn('[StudyAbroad] Countries API 加载失败');
+      });
+
+    const loadUniversities = http.get('/study-abroad/universities', { params: { pageSize: 50 } })
       .then(res => {
         const apiList = res.data.data?.list;
-        if (Array.isArray(apiList) && apiList.length > 0) {
+        if (Array.isArray(apiList)) {
+          const mapped: UniversityItem[] = apiList.map((row: Record<string, unknown>) => ({
+            id: row.id as number,
+            school: (row.name_zh as string) || '',
+            schoolEn: (row.name_en as string) || '',
+            country: (row.country as string) || '',
+            countryName: (row.region as string) || '',
+            city: (row.city as string) || '',
+            ranking: (row.qs_ranking as number) || 0,
+            logo: (row.logo as string) || '',
+            cover: (row.cover as string) || '',
+            programs: (row.programs as ProgramItem[]) || [],
+            highlights: typeof row.highlights === 'string'
+              ? JSON.parse(row.highlights)
+              : ((row.highlights as string[]) || []),
+          }));
+          setUniversities(mapped);
+        }
+      })
+      .catch(() => {
+        if (import.meta.env.DEV) console.warn('[StudyAbroad] Universities API 加载失败');
+      });
+
+    const loadOffers = http.get('/study-abroad/offers', { params: { pageSize: 20 } })
+      .then(res => {
+        const apiList = res.data.data?.list;
+        if (Array.isArray(apiList)) {
           setOffers(apiList.map(mapApiOffer));
         }
       })
       .catch(() => {
-        if (import.meta.env.DEV) console.warn('[StudyAbroad] Offers API 加载失败，使用 JSON 默认数据');
+        if (import.meta.env.DEV) console.warn('[StudyAbroad] Offers API 加载失败');
       });
 
-    http.get('/study-abroad/consultants')
+    const loadConsultants = http.get('/study-abroad/consultants')
       .then(res => {
         const apiList = res.data.data;
-        if (Array.isArray(apiList) && apiList.length > 0) {
+        if (Array.isArray(apiList)) {
           setConsultants(apiList.map(mapApiConsultant));
         }
       })
       .catch(() => {
-        if (import.meta.env.DEV) console.warn('[StudyAbroad] Consultants API 加载失败，使用 JSON 默认数据');
+        if (import.meta.env.DEV) console.warn('[StudyAbroad] Consultants API 加载失败');
       });
+
+    const loadArticles = http.get('/articles', { params: { category: 'study-abroad' } })
+      .then(res => {
+        const apiList = res.data.data?.list || res.data.data;
+        if (Array.isArray(apiList)) {
+          setArticles(apiList.slice(0, 6).map((a: Record<string, unknown>) => ({
+            id: String(a.id),
+            title: (a.title as string) || '',
+            category: (a.category as string) || '',
+            views: (a.views as number) || 0,
+            hot: ((a.views as number) || 0) > 10000,
+          })));
+        }
+      })
+      .catch(() => {
+        if (import.meta.env.DEV) console.warn('[StudyAbroad] Articles API 加载失败');
+      });
+
+    Promise.all([loadCountries, loadUniversities, loadOffers, loadConsultants, loadArticles])
+      .finally(() => setLoading(false));
   }, []);
 
   // 提取热门项目（按 QS 排名排序，取前 9 个项目）
@@ -327,11 +421,15 @@ export default function StudyAbroad() {
   const featuredCountry = sortedCountries[0];
   const compactCountries = sortedCountries.slice(1);
 
+  // 当前 Hero 幻灯片（安全访问）
+  const currentHeroSlide = currentHeroSlide || null;
+
   return (
     <div className="min-h-screen bg-gray-50 pb-16">
 
       {/* ====== Hero 轮播区 ====== */}
       <section ref={heroRef} className="relative overflow-hidden bg-gradient-to-br from-primary-700 via-primary-800 to-primary-900 min-h-[480px] md:min-h-[540px]">
+        {currentHeroSlide && (
         <AnimatePresence mode="wait">
           <motion.div
             key={currentSlide}
@@ -341,9 +439,10 @@ export default function StudyAbroad() {
             exit={{ opacity: 0 }}
             transition={{ duration: 0.4 }}
           >
-            <img src={HERO_SLIDES[currentSlide].image} alt="" className="w-full h-full object-cover opacity-30 scale-105" />
+            <img src={currentHeroSlide.image} alt="" onError={(e) => { (e.target as HTMLImageElement).src = '/placeholder-cover.svg' }} className="w-full h-full object-cover opacity-30 scale-105" />
           </motion.div>
         </AnimatePresence>
+        )}
         {/* 鲜亮渐变叠加层 */}
         <div className="absolute inset-0 bg-gradient-to-r from-primary-900/90 via-primary-800/80 to-primary-700/70" />
         <div className="absolute bottom-0 left-0 right-0 h-40 bg-gradient-to-t from-primary-900 to-transparent" />
@@ -353,34 +452,38 @@ export default function StudyAbroad() {
 
         <div className="relative z-10 container-main pt-16 pb-20 md:pt-20 md:pb-24">
           <div className="max-w-2xl">
+            {currentHeroSlide && (
+            <>
             <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-white/25 backdrop-blur-md text-white border border-white/30 text-[13px] font-bold mb-6 shadow-lg shadow-primary-500/10">
               <Globe className="w-4 h-4 text-primary-300" />
-              {HERO_SLIDES[currentSlide].tag}
+              {currentHeroSlide.tag}
             </motion.div>
             <AnimatePresence mode="wait">
               <motion.div key={currentSlide} initial={{ opacity: 0, y: 25 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} transition={{ duration: 0.5 }}>
-                <h1 className="text-[30px] md:text-[46px] font-black text-white mb-5 leading-[1.15] tracking-tight">{HERO_SLIDES[currentSlide].title}</h1>
-                <p className="text-[15px] md:text-[18px] text-gray-300 leading-relaxed mb-8 max-w-xl">{HERO_SLIDES[currentSlide].subtitle}</p>
+                <h1 className="text-[30px] md:text-[46px] font-black text-white mb-5 leading-[1.15] tracking-tight">{currentHeroSlide.title}</h1>
+                <p className="text-[15px] md:text-[18px] text-gray-300 leading-relaxed mb-8 max-w-xl">{currentHeroSlide.subtitle}</p>
               </motion.div>
             </AnimatePresence>
             <div className="flex flex-wrap gap-4 mb-8">
-              <Link to={HERO_SLIDES[currentSlide].ctaLink}
+              <Link to={currentHeroSlide.ctaLink}
                 className="bg-gradient-to-r from-primary-500 to-primary-600 text-white px-10 py-4 rounded-xl font-bold text-[15px]
                 hover:from-primary-400 hover:to-primary-500 hover:-translate-y-1 hover:shadow-2xl hover:shadow-primary-500/40
                 active:scale-[0.97] focus-visible:ring-2 focus-visible:ring-white/40 focus-visible:outline-none
                 transition-all duration-300 shadow-xl shadow-primary-500/30 flex items-center gap-2 hover:gap-3"
               >
-                {HERO_SLIDES[currentSlide].cta} <ArrowRight className="w-4 h-4" />
+                {currentHeroSlide.cta} <ArrowRight className="w-4 h-4" />
               </Link>
               <Link to="/study-abroad/offers"
-                className="bg-white/25 backdrop-blur-md text-white border-2 border-white/35 px-8 py-4 rounded-xl font-bold text-[15px]
-                hover:bg-white/35 hover:-translate-y-0.5 hover:border-white/50 hover:shadow-xl
+                className="bg-white text-primary-600 border-2 border-white px-8 py-4 rounded-xl font-bold text-[15px]
+                hover:bg-primary-50 hover:-translate-y-0.5 hover:shadow-xl
                 active:scale-[0.97] focus-visible:ring-2 focus-visible:ring-white/30 focus-visible:outline-none
                 transition-all duration-300 flex items-center gap-2"
               >
                 <TrendingUp className="w-4 h-4" /> {TEXT_RESOURCES.hero.offerBtnText}
               </Link>
             </div>
+            </>
+            )}
 
             {/* 14 国快捷入口 */}
             <div className="flex flex-wrap gap-2 overflow-x-auto pb-1 scrollbar-hide">
@@ -402,6 +505,7 @@ export default function StudyAbroad() {
           </div>
 
           {/* 轮播控制 */}
+          {HERO_SLIDES.length > 1 && (
           <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex items-center gap-3">
             <button onClick={() => setCurrentSlide((currentSlide - 1 + HERO_SLIDES.length) % HERO_SLIDES.length)} className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 transition-colors">
               <ChevronLeft className="w-4 h-4 text-white" />
@@ -413,6 +517,7 @@ export default function StudyAbroad() {
               <ChevronRight className="w-4 h-4 text-white" />
             </button>
           </div>
+          )}
         </div>
       </section>
 
@@ -562,9 +667,9 @@ export default function StudyAbroad() {
                     </Link>
                   ))}
                 </div>
-                <button className="w-full mt-4 bg-primary-500 text-white py-3 rounded-xl font-bold text-[13px] hover:bg-primary-700 transition-all flex items-center justify-center gap-2 shadow-lg shadow-primary-500/25 hover:-translate-y-0.5 hover:shadow-xl hover:shadow-primary-500/30 active:translate-y-0">
+                <Link to="/mentors" className="w-full mt-4 bg-primary-500 text-white py-3 rounded-xl font-bold text-[13px] hover:bg-primary-700 transition-all flex items-center justify-center gap-2 shadow-lg shadow-primary-500/25 hover:-translate-y-0.5 hover:shadow-xl hover:shadow-primary-500/30 active:translate-y-0">
                   <MessageCircle className="w-4 h-4" /> {TEXT_RESOURCES.sidebar.consultantCta}
-                </button>
+                </Link>
                 <p className="text-center text-[10px] text-gray-400 mt-2">已有 <span className="text-primary-500 font-bold">{TEXT_RESOURCES.sidebar.evaluatedCount}</span> 名同学获得了免费评估</p>
               </div>
             </div>
@@ -575,7 +680,7 @@ export default function StudyAbroad() {
                 <BookOpen className="w-5 h-5 text-primary-500" /> {TEXT_RESOURCES.articles.title}
               </h3>
               <ul className="space-y-3">
-                {ARTICLES.map((article, idx) => (
+                {articles.map((article, idx) => (
                   <li key={article.id}>
                     <Link to={`/study-abroad/articles/${article.id}`} className="flex items-start gap-3 group">
                       <span className={`shrink-0 w-5 h-5 rounded flex items-center justify-center text-[11px] font-bold mt-0.5 ${idx < 3 ? 'bg-primary-500 text-white' : 'bg-gray-100 text-gray-400'}`}>{idx + 1}</span>
@@ -597,7 +702,8 @@ export default function StudyAbroad() {
           </div>
         </div>
 
-        {/* ====== 学员故事（数据来自 ui-config） ====== */}
+        {/* ====== 学员故事（数据来自配置 store） ====== */}
+        {studentStories.length > 0 && (
         <section className="mb-14">
           <div className="text-center mb-8">
             <h2 className="text-[22px] font-bold text-gray-900 flex items-center justify-center gap-2 mb-2">
@@ -606,7 +712,7 @@ export default function StudyAbroad() {
             <p className="text-[13px] text-gray-400">{TEXT_RESOURCES.stories.subtitle}</p>
           </div>
           <div className="space-y-6">
-            {uiConfig.studentStories.map((story, idx) => (
+            {studentStories.map((story, idx) => (
               <Link key={story.id} to="/study-abroad/offers" className="block">
                 <motion.div
                   initial={{ opacity: 0, x: idx % 2 === 0 ? -30 : 30 }}
@@ -617,7 +723,7 @@ export default function StudyAbroad() {
                 >
                 {/* 图片区 */}
                 <div className="md:w-1/3 h-48 md:h-auto overflow-hidden shrink-0">
-                  <img src={story.image} alt={story.studentName} className="w-full h-full object-cover" />
+                  <img src={story.image} alt={story.studentName} onError={(e) => { (e.target as HTMLImageElement).src = '/placeholder-cover.svg' }} className="w-full h-full object-cover" />
                 </div>
                 {/* 文字区 */}
                 <div className="md:w-2/3 p-6 flex flex-col justify-center">
@@ -650,6 +756,7 @@ export default function StudyAbroad() {
             </Link>
           </div>
         </section>
+        )}
 
         {/* ====== 重要时间节点（TimelineView） ====== */}
         <section className="mb-14">
@@ -663,6 +770,7 @@ export default function StudyAbroad() {
         <CostEstimator />
 
         {/* ====== 新人寄语轮播 ====== */}
+        {newcomerQuotes.length > 0 && (
         <section className="mb-14">
           <div
             className="relative rounded-2xl overflow-hidden min-h-[320px] md:min-h-[360px]"
@@ -680,8 +788,9 @@ export default function StudyAbroad() {
                 transition={{ duration: 0.35 }}
               >
                 <img
-                  src={uiConfig.newcomerQuotes[quoteIndex].image}
+                  src={newcomerQuotes[quoteIndex].image}
                   alt=""
+                  onError={(e) => { (e.target as HTMLImageElement).src = '/placeholder-cover.svg' }}
                   className="w-full h-full object-cover"
                 />
               </motion.div>
@@ -701,19 +810,19 @@ export default function StudyAbroad() {
                   className="max-w-2xl"
                 >
                   <p className="text-[22px] md:text-[28px] text-white font-bold leading-relaxed mb-6 tracking-wide">
-                    {uiConfig.newcomerQuotes[quoteIndex].quote}
+                    {newcomerQuotes[quoteIndex].quote}
                   </p>
                   <p className="text-[14px] text-white/80 font-medium mb-1">
-                    — {uiConfig.newcomerQuotes[quoteIndex].author}
+                    — {newcomerQuotes[quoteIndex].author}
                   </p>
                   <p className="text-[12px] text-white/50">
-                    {uiConfig.newcomerQuotes[quoteIndex].background}
+                    {newcomerQuotes[quoteIndex].background}
                   </p>
                 </motion.div>
               </AnimatePresence>
               {/* 圆点指示器 */}
               <div className="flex items-center gap-2 mt-8">
-                {uiConfig.newcomerQuotes.map((_: unknown, idx: number) => (
+                {newcomerQuotes.map((_: unknown, idx: number) => (
                   <button
                     key={idx}
                     onClick={() => setQuoteIndex(idx)}
@@ -726,6 +835,7 @@ export default function StudyAbroad() {
             </div>
           </div>
         </section>
+        )}
 
         {/* ====== 八大维度背景提升服务 ====== */}
         <section className="mb-14">
@@ -737,14 +847,14 @@ export default function StudyAbroad() {
           </div>
           <p className="text-[13px] text-gray-400 mb-6">{TEXT_RESOURCES.services.subtitle}</p>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {uiConfig.serviceCards.map((service: { id: string; icon: string; color: string; title: string; subtitle: string; description: string; image: string }, idx: number) => {
+            {serviceCards.map((service, idx: number) => {
               const IconComp = ICON_MAP[service.icon] || Star;
               const gradientClass = SERVICE_COLOR_MAP[service.color] || 'from-gray-600/80 to-gray-900/90';
               return (
                 <motion.div key={service.id} initial={{ opacity: 0, y: 15 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: idx * 0.05 }}>
                   <Link to="/study-abroad/background" className="block rounded-2xl overflow-hidden group relative h-[200px]">
                     {/* 背景图 */}
-                    <img src={service.image} alt={service.title} className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                    <img src={service.image} alt={service.title} onError={(e) => { (e.target as HTMLImageElement).src = '/placeholder-cover.svg' }} className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                     {/* 渐变遮罩 */}
                     <div className={`absolute inset-0 bg-gradient-to-t ${gradientClass} group-hover:opacity-90 transition-opacity`} />
                     {/* 内容 */}

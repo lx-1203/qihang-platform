@@ -6,6 +6,7 @@ import { motion } from 'framer-motion';
 import http from '@/api/http';
 import { DIFFICULTY_MAP } from '@/constants';
 import { useAuthStore } from '@/store/auth';
+import { useToast } from '@/components/ui/ToastContainer';
 
 // 课程详情数据结构（匹配后端 courses 表）
 interface CourseDetailData {
@@ -51,6 +52,7 @@ export default function CourseDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { isAuthenticated } = useAuthStore();
+  const toast = useToast();
 
   const [course, setCourse] = useState<CourseDetailData | null>(null);
   const [relatedCourses, setRelatedCourses] = useState<RelatedCourse[]>([]);
@@ -187,7 +189,7 @@ export default function CourseDetail() {
                     alt={course.title}
                     className="w-full h-full object-cover"
                     onError={(e) => {
-                      (e.target as HTMLImageElement).style.display = 'none';
+                      (e.target as HTMLImageElement).src = '/placeholder-cover.svg';
                     }}
                   />
                 ) : (
@@ -279,7 +281,20 @@ export default function CourseDetail() {
                     <span className="text-orange-500">¥{course.price}</span>
                   )}
                 </div>
-                <button className="bg-primary-600 text-white px-8 py-3 rounded-lg font-medium hover:bg-primary-700 transition-colors shadow-sm">
+                <button
+                  onClick={() => {
+                    if (!isAuthenticated) {
+                      navigate('/login', { state: { from: `/courses/${id}` } });
+                      return;
+                    }
+                    if (course.price === 0) {
+                      toast.info('免费课程', '您可以直接开始学习，课程内容已为您开放');
+                    } else {
+                      toast.warning('功能开发中', '付费课程购买功能即将上线，敬请期待');
+                    }
+                  }}
+                  className="bg-primary-600 text-white px-8 py-3 rounded-lg font-medium hover:bg-primary-700 transition-colors shadow-sm"
+                >
                   {course.price === 0 ? '免费学习' : '立即购买'}
                 </button>
                 <button

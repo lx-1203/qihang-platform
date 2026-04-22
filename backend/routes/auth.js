@@ -5,8 +5,23 @@ import crypto from 'crypto';
 import pool from '../db.js';
 import { generateToken, authMiddleware, JWT_SECRET } from '../middleware/auth.js';
 import { loginRateLimit } from '../middleware/loginRateLimit.js';
+import { createRateLimit } from '../middleware/rateLimit.js';
 
 const router = Router();
+
+// 注册接口限流：5 次/15 分钟/IP
+const registerRateLimit = createRateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 5,
+  message: '注册请求过于频繁，请 15 分钟后再试',
+});
+
+// Token 刷新限流：30 次/15 分钟/IP
+const refreshRateLimit = createRateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 30,
+  message: 'Token 刷新过于频繁，请稍后再试',
+});
 
 // Refresh Token 密钥 — 必须通过环境变量配置（SEC-001）
 const REFRESH_SECRET = process.env.JWT_REFRESH_SECRET;
@@ -48,7 +63,7 @@ function generateRefreshToken(user) {
 }
 
 // ==================== 注册 ====================
-router.post('/register', async (req, res) => {
+router.post('/register', registerRateLimit, async (req, res) => {
   try {
     const { email, password, role = 'student', nickname = '' } = req.body;
 
@@ -220,7 +235,7 @@ router.put('/password', authMiddleware, async (req, res) => {
 });
 
 // ==================== 刷新 Access Token ====================
-router.post('/refresh', async (req, res) => {
+router.post('/refresh', refreshRateLimit, async (req, res) => {
   try {
     const { refreshToken } = req.body;
 

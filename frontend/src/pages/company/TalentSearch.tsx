@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import http from '@/api/http';
 import { showToast } from '@/components/ui/ToastContainer';
+import { DEFAULT_AVATAR } from '@/constants';
 import TagComponent from '@/components/ui/Tag';
 import ErrorState from '@/components/ui/ErrorState';
 
@@ -62,6 +63,7 @@ function calcMatchScore(talent: TalentItem, kw: string, majorKw: string): number
 
 export default function TalentSearch() {
   const [talents, setTalents] = useState<TalentItem[]>([]);
+  const [detailStudent, setDetailStudent] = useState<any>(null);
   const [pagination, setPagination] = useState<Pagination>({
     page: 1, pageSize: 10, total: 0, totalPages: 0
   });
@@ -191,14 +193,16 @@ export default function TalentSearch() {
       <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
         <div className="flex flex-col sm:flex-row gap-3">
           <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
             <input
+              id="talent-search"
+              name="talent-search"
               type="text"
               placeholder="搜索姓名、求职意向..."
               value={keyword}
               onChange={(e) => setKeyword(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-              className="w-full pl-10 pr-4 py-2.5 rounded-lg border border-gray-200 focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none text-sm transition-colors"
+              className="w-full pl-10 pr-4 py-3 rounded-lg border border-gray-200 focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none text-base transition-colors"
             />
           </div>
           <button
@@ -290,13 +294,14 @@ export default function TalentSearch() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.05 }}
-              className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 hover:shadow-md hover:border-primary-200 transition-all"
+              className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 hover:shadow-md hover:border-primary-200 transition-all cursor-pointer"
+              onClick={() => setDetailStudent(talent)}
             >
               <div className="flex flex-col sm:flex-row gap-6">
                 {/* 头像 */}
                 <div className="flex-shrink-0">
                   {talent.avatar ? (
-                    <img src={talent.avatar} alt={talent.nickname} className="w-16 h-16 rounded-full object-cover border-2 border-gray-100" />
+                    <img src={talent.avatar || DEFAULT_AVATAR} alt={talent.nickname} className="w-16 h-16 rounded-full object-cover border-2 border-gray-100" />
                   ) : (
                     <div className="w-16 h-16 rounded-full bg-primary-100 flex items-center justify-center text-primary-700 font-bold text-xl">
                       {talent.nickname?.charAt(0) || <User size={24} />}
@@ -367,7 +372,7 @@ export default function TalentSearch() {
                   )}
 
                   {/* 企业自定义标签 */}
-                  <div className="flex flex-wrap items-center gap-1.5 mb-3">
+                  <div className="flex flex-wrap items-center gap-1.5 mb-3" onClick={e => e.stopPropagation()}>
                     {(talent._tags || []).map(tag => (
                       <span key={tag} className="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-50 text-amber-700 rounded-full text-xs font-medium">
                         <Tag size={10} />
@@ -390,7 +395,7 @@ export default function TalentSearch() {
                   </div>
 
                   {/* 联系方式 + 操作 */}
-                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pt-3 border-t border-gray-100">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pt-3 border-t border-gray-100" onClick={e => e.stopPropagation()}>
                     <div className="flex items-center gap-4 text-xs text-gray-400">
                       {talent.email && (
                         <span className="flex items-center gap-1">
@@ -462,6 +467,75 @@ export default function TalentSearch() {
               </button>
             </div>
           )}
+        </div>
+      )}
+      {/* 人才详情弹窗 */}
+      {detailStudent && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => setDetailStudent(null)}>
+          <motion.div
+            initial={{ scale: 0.95, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            onClick={e => e.stopPropagation()}
+            className="bg-white rounded-2xl w-full max-w-lg max-h-[80vh] overflow-y-auto shadow-2xl"
+          >
+            <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between sticky top-0 bg-white rounded-t-2xl">
+              <h3 className="text-lg font-bold text-gray-900">人才详情</h3>
+              <button onClick={() => setDetailStudent(null)} className="p-1.5 rounded-lg hover:bg-gray-100">
+                <X className="w-5 h-5 text-gray-400" />
+              </button>
+            </div>
+            <div className="px-6 py-4 space-y-4">
+              <div className="flex items-center gap-4">
+                <div className="w-14 h-14 bg-primary-100 rounded-xl flex items-center justify-center text-primary-700 font-bold text-xl">
+                  {(detailStudent.nickname || '?')[0]}
+                </div>
+                <div>
+                  <h4 className="text-lg font-bold text-gray-900">{detailStudent.nickname || '未设置昵称'}</h4>
+                  <p className="text-sm text-gray-500">{detailStudent.school || '未填写学校'}</p>
+                </div>
+              </div>
+              {detailStudent.major && (
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-gray-500">专业</span>
+                  <span className="text-gray-900">{detailStudent.major}</span>
+                </div>
+              )}
+              {detailStudent.grade && (
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-gray-500">年级</span>
+                  <span className="text-gray-900">{detailStudent.grade}</span>
+                </div>
+              )}
+              {detailStudent.job_intention && (
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-gray-500">求职意向</span>
+                  <span className="text-gray-900">{detailStudent.job_intention}</span>
+                </div>
+              )}
+              {detailStudent.bio && (
+                <div>
+                  <p className="text-sm font-medium text-gray-700 mb-1">个人简介</p>
+                  <p className="text-sm text-gray-600 bg-gray-50 rounded-lg p-3">{detailStudent.bio}</p>
+                </div>
+              )}
+              {detailStudent.skills && (
+                <div>
+                  <p className="text-sm font-medium text-gray-700 mb-2">技能标签</p>
+                  <div className="flex flex-wrap gap-2">
+                    {parseSkills(detailStudent.skills).map((skill: string) => (
+                      <span key={skill} className="px-3 py-1 bg-primary-50 text-primary-700 rounded-full text-xs font-medium">{skill}</span>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {detailStudent.email && (
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-gray-500">邮箱</span>
+                  <span className="text-gray-900">{detailStudent.email}</span>
+                </div>
+              )}
+            </div>
+          </motion.div>
         </div>
       )}
     </div>

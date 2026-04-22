@@ -113,7 +113,7 @@ router.get('/:id', async (req, res) => {
     );
 
     if (rows.length === 0) {
-      return res.status(404).json({ error: '专业不存在' });
+      return res.status(404).json({ code: 404, message: '专业不存在' });
     }
 
     // 浏览量 +1

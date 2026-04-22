@@ -8,6 +8,7 @@ import {
 import http from '@/api/http';
 import { useToast } from '../../components/ui';
 import Tag from '@/components/ui/Tag';
+import FileUpload from '@/components/ui/FileUpload';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
 import ErrorState from '@/components/ui/ErrorState';
 
@@ -19,6 +20,7 @@ interface Announcement {
   id: number;
   title: string;
   content: string;
+  image_url?: string;
   status: AnnouncementStatus;
   priority: AnnouncementPriority;
   targetRoles: string[]; // 目标角色
@@ -64,6 +66,7 @@ export default function AdminAnnouncements() {
   const [form, setForm] = useState({
     title: '',
     content: '',
+    image_url: '',
     priority: 'normal' as AnnouncementPriority,
     targetRoles: ['student', 'company', 'mentor'] as string[],
     publishAt: '',
@@ -121,13 +124,14 @@ export default function AdminAnnouncements() {
       setForm({
         title: announcement.title,
         content: announcement.content,
+        image_url: announcement.image_url || '',
         priority: announcement.priority,
         targetRoles: announcement.targetRoles,
         publishAt: announcement.publishAt || '',
       });
     } else {
       setEditingId(null);
-      setForm({ title: '', content: '', priority: 'normal', targetRoles: ['student', 'company', 'mentor'], publishAt: '' });
+      setForm({ title: '', content: '', image_url: '', priority: 'normal', targetRoles: ['student', 'company', 'mentor'], publishAt: '' });
     }
     setShowEditor(true);
   };
@@ -150,7 +154,7 @@ export default function AdminAnnouncements() {
       if (editingId) {
         const updatedList = announcements.map(a =>
           a.id === editingId
-            ? { ...a, title: form.title, content: form.content, priority: form.priority, targetRoles: form.targetRoles, status, publishAt: form.publishAt || undefined }
+            ? { ...a, title: form.title, content: form.content, image_url: form.image_url || undefined, priority: form.priority, targetRoles: form.targetRoles, status, publishAt: form.publishAt || undefined }
             : a
         );
         await saveAnnouncements(updatedList);
@@ -160,6 +164,7 @@ export default function AdminAnnouncements() {
           id: Date.now(),
           title: form.title,
           content: form.content,
+          image_url: form.image_url || undefined,
           status,
           priority: form.priority,
           targetRoles: form.targetRoles,
@@ -432,12 +437,36 @@ export default function AdminAnnouncements() {
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">公告内容 *</label>
                   <textarea
+                    id="announcement-content"
+                    name="content"
                     value={form.content}
                     onChange={(e) => setForm(prev => ({ ...prev, content: e.target.value }))}
                     placeholder="输入公告内容..."
                     rows={5}
                     className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-400 resize-none"
                   />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 mb-1">公告图片（可选）</label>
+                  {form.image_url ? (
+                    <div className="relative inline-block">
+                      <img src={form.image_url} alt="公告图片" className="w-full max-w-xs h-32 object-cover rounded-lg border border-gray-200" />
+                      <button
+                        type="button"
+                        onClick={() => setForm(prev => ({ ...prev, image_url: '' }))}
+                        className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center text-xs hover:bg-red-600"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ) : (
+                    <FileUpload
+                      category="general"
+                      accept="image/*"
+                      onUpload={(url: string) => setForm(prev => ({ ...prev, image_url: url }))}
+                    />
+                  )}
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
@@ -456,6 +485,8 @@ export default function AdminAnnouncements() {
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">定时发布（可选）</label>
                     <input
+                      id="announcement-publish-at"
+                      name="publishAt"
                       type="date"
                       value={form.publishAt}
                       onChange={(e) => setForm(prev => ({ ...prev, publishAt: e.target.value }))}

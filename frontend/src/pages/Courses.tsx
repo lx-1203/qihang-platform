@@ -106,12 +106,14 @@ export default function Courses() {
           {/* Search Bar */}
           <div className="relative w-full md:w-[320px]">
             <input
+              id="course-search"
+              name="course-search"
               type="text"
               placeholder={pageMeta.searchPlaceholder}
               value={searchInput}
               onChange={e => setSearchInput(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && handleSearch()}
-              className="w-full pl-4 pr-10 py-2.5 bg-white border border-gray-200 rounded-xl text-sm text-gray-900
+              className="w-full pl-4 pr-10 py-3 bg-white border border-gray-200 rounded-xl text-base text-gray-900
                 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500
                 transition-all duration-200 shadow-sm"
             />
@@ -170,6 +172,7 @@ export default function Courses() {
                         src={course.cover}
                         alt={course.title}
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                        onError={(e) => { (e.target as HTMLImageElement).src = '/placeholder-cover.svg' }}
                       />
                     ) : (
                       <div className="w-full h-full bg-gradient-to-br from-primary-500 via-primary-600 to-primary-700 flex items-center justify-center">

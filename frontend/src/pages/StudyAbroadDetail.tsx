@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import {
   ChevronRight, MapPin, Clock, Globe, Star, DollarSign,
@@ -6,13 +6,11 @@ import {
   FileText, Heart, Share2, MessageCircle, Building2,
   ArrowRight, TrendingUp, ExternalLink, AlertCircle,
   Award, Briefcase, Lightbulb, Target,
-  ThumbsUp
+  ThumbsUp, Loader2
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import Tag from '@/components/ui/Tag';
-
-// ====== 数据导入（从 JSON 读取，管理员可通过配置页修改） ======
-import programDetailsData from '../data/study-abroad-program-details.json';
+import http from '@/api/http';
 
 import type { LucideIcon } from 'lucide-react';
 
@@ -132,10 +130,62 @@ const HIGHLIGHT_ICON_MAP: Record<string, LucideIcon> = {
 export default function StudyAbroadDetail() {
   const { id: rawId } = useParams();
   const programId = parseInt(rawId || '1', 10);
-  const prog = (programDetailsData.programs as ProgramDetail[]).find((p) => p.id === programId);
 
+  const [prog, setProg] = useState<ProgramDetail | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'overview' | 'requirements' | 'curriculum' | 'offers' | 'career'>('overview');
   const [saved, setSaved] = useState(false);
+
+  // 从后端 API 获取项目详情
+  useEffect(() => {
+    setLoading(true);
+    setError(null);
+    http.get(`/programs/${programId}`)
+      .then((res) => {
+        if (res.data?.code === 200 && res.data.data) {
+          setProg(res.data.data as ProgramDetail);
+        } else {
+          setError('项目数据格式异常');
+        }
+      })
+      .catch(() => {
+        setError('加载失败');
+      })
+      .finally(() => {
+        setLoading(false);
+      });
+  }, [programId]);
+
+  // 加载状态
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="w-10 h-10 text-primary-500 animate-spin" />
+          <span className="text-gray-500 text-sm">正在加载项目详情...</span>
+        </div>
+      </div>
+    );
+  }
+
+  // 错误状态
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+        <div className="max-w-md w-full bg-white rounded-2xl shadow-lg p-8 text-center">
+          <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6">
+            <AlertCircle className="w-8 h-8 text-red-500" />
+          </div>
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">加载失败</h1>
+          <p className="text-gray-500 mb-6">{error}</p>
+          <Link to="/study-abroad/programs" className="inline-flex items-center gap-2 px-6 py-3 bg-primary-500 text-white rounded-xl font-bold hover:bg-primary-700 transition-colors">
+            <ArrowRight className="w-4 h-4" /> 返回选校
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   // 404 处理：项目不存在
   if (!prog) {
@@ -174,7 +224,7 @@ export default function StudyAbroadDetail() {
 
       {/* ====== 顶部封面 ====== */}
       <div className="relative h-[240px] md:h-[320px] overflow-hidden bg-slate-900">
-        <img src={prog.cover} alt="" className="w-full h-full object-cover opacity-40" />
+        <img src={prog.cover} alt="" onError={(e) => { (e.target as HTMLImageElement).src = '/placeholder-cover.svg' }} className="w-full h-full object-cover opacity-40" />
         <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/60 to-transparent" />
         <div className="absolute inset-0 bg-gradient-to-r from-primary-500/10 via-transparent to-primary-500/10" />
       </div>
@@ -194,7 +244,7 @@ export default function StudyAbroadDetail() {
           <div className="flex flex-col md:flex-row md:items-start gap-6">
             {/* Logo */}
             <div className="w-20 h-20 rounded-2xl bg-gray-100 overflow-hidden shrink-0 shadow-md ring-2 ring-gray-50">
-              <img src={prog.logo} alt={prog.school} className="w-full h-full object-cover" />
+              <img src={prog.logo} alt={prog.school} onError={(e) => { (e.target as HTMLImageElement).src = '/default-avatar.svg' }} className="w-full h-full object-cover" />
             </div>
 
             {/* 信息 */}

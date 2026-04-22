@@ -215,6 +215,15 @@ export default function Chat() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
 
+  // ====== 滚动处理 ======
+
+  /** 滚动到消息列表底部 */
+  const scrollToBottom = useCallback(() => {
+    requestAnimationFrame(() => {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    });
+  }, []);
+
   // ====== 生命周期 ======
 
   // 组件挂载：拉取会话列表
@@ -240,15 +249,6 @@ export default function Chat() {
       setMobileView('chat');
     }
   }, [currentConversationId]);
-
-  // ====== 滚动处理 ======
-
-  /** 滚动到消息列表底部 */
-  const scrollToBottom = useCallback(() => {
-    requestAnimationFrame(() => {
-      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-    });
-  }, []);
 
   /** 监听消息容器滚动，决定是否显示 "回到底部" 按钮 */
   const handleScroll = useCallback(() => {

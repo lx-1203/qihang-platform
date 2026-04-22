@@ -62,8 +62,28 @@ export default function Profile() {
       setLoading(true);
       const res = await http.get('/student/profile');
       if (res.data?.code === 200 && res.data.data) {
-        setProfile(res.data.data);
-        setEditData(res.data.data);
+        // 后端返回 {profile: {...} | null, user: {...}}
+        // 当 profile 为 null 时（新用户），用 user 数据构建空档案
+        const raw = res.data.data;
+        const profileData = raw.profile || raw;
+        const userData = raw.user || {};
+        const merged = {
+          nickname: profileData.nickname || userData.nickname || userData.email || '',
+          phone: profileData.phone || userData.phone || '',
+          school: profileData.school || '',
+          major: profileData.major || '',
+          grade: profileData.grade || '大一',
+          skills: typeof profileData.skills === 'string'
+            ? (() => { try { return JSON.parse(profileData.skills); } catch { return []; } })()
+            : Array.isArray(profileData.skills) ? profileData.skills : [],
+          jobIntention: profileData.job_intention || profileData.jobIntention || '',
+          bio: profileData.bio || '',
+          resumeUrl: profileData.resume_url || profileData.resumeUrl || '',
+          avatar: profileData.avatar || userData.avatar || '',
+          email: profileData.email || userData.email || '',
+        };
+        setProfile(merged);
+        setEditData(merged);
       }
     } catch (err) {
       setError('数据加载失败，请刷新重试');
@@ -76,7 +96,15 @@ export default function Profile() {
   async function handleSave() {
     try {
       setSaving(true);
-      await http.put('/student/profile', editData);
+      await http.post('/student/profile', {
+        school: editData.school,
+        major: editData.major,
+        grade: editData.grade,
+        bio: editData.bio,
+        skills: editData.skills,
+        job_intention: editData.jobIntention,
+        resume_url: editData.resumeUrl,
+      });
       setProfile(editData);
       setEditMode(false);
       setSaveSuccess(true);
@@ -199,7 +227,7 @@ export default function Profile() {
           <div className="flex flex-col items-center mb-6">
             <div className="w-24 h-24 bg-gradient-to-br from-primary-400 to-primary-600 rounded-full flex items-center justify-center mb-3">
               <span className="text-3xl font-bold text-white">
-                {profile.nickname.charAt(0)}
+                {(profile.nickname || profile.email || '学')[0]}
               </span>
             </div>
             <h3 className="text-lg font-bold text-gray-900">{profile.nickname}</h3>

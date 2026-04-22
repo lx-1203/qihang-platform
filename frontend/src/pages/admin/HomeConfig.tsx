@@ -12,6 +12,17 @@ type HeroSlide = typeof homeConfig.heroSlides[0];
 type QuickEntry = typeof homeConfig.quickEntries[0];
 type ValueSection = typeof homeConfig.valueSections[0];
 
+const GRADIENT_PRESETS = [
+  { name: '品牌色渐变', value: 'from-primary-400 to-primary-600' },
+  { name: '海洋蓝渐变', value: 'from-blue-400 to-blue-600' },
+  { name: '日落橙渐变', value: 'from-orange-400 to-red-500' },
+  { name: '翡翠绿渐变', value: 'from-emerald-400 to-teal-600' },
+  { name: '紫罗兰渐变', value: 'from-purple-400 to-indigo-600' },
+  { name: '玫瑰粉渐变', value: 'from-pink-400 to-rose-600' },
+  { name: '深邃黑渐变', value: 'from-gray-700 to-gray-900' },
+  { name: '天空蓝渐变', value: 'from-cyan-400 to-blue-500' },
+];
+
 export default function HomeConfig() {
   const toast = useToast();
   const refreshConfig = useConfigStore((s) => s.fetchConfigs);
@@ -24,6 +35,7 @@ export default function HomeConfig() {
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
   const [deleteConfirm, setDeleteConfirm] = useState<{ type: string; index: number } | null>(null);
+  const [expandedIndex, setExpandedIndex] = useState<number | null>(null);
 
   // 从后端加载配置
   useEffect(() => {
@@ -73,14 +85,14 @@ export default function HomeConfig() {
     // 验证必填字段
     for (let i = 0; i < heroSlides.length; i++) {
       if (!heroSlides[i].title.trim()) {
-        toast.error('验证失败', `轮播 #${i + 1} 的标题不能为空`);
+        toast.error('验证失败', `轮播 第${i + 1}项 的标题不能为空`);
         setActiveTab('hero');
         return;
       }
     }
     for (let i = 0; i < quickEntries.length; i++) {
       if (!quickEntries[i].label.trim()) {
-        toast.error('验证失败', `入口 #${i + 1} 的标签不能为空`);
+        toast.error('验证失败', `入口 第${i + 1}项 的标签不能为空`);
         setActiveTab('entries');
         return;
       }
@@ -204,18 +216,41 @@ export default function HomeConfig() {
           <div className="space-y-4">
             {heroSlides.map((slide, idx) => (
               <motion.div key={slide.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.05 }}
-                className="bg-white rounded-xl border border-gray-200 p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-sm font-bold text-gray-900">轮播 #{idx + 1}</h3>
-                  {heroSlides.length > 1 && (
-                    <button onClick={() => setDeleteConfirm({ type: 'hero', index: idx })}
-                      className="text-red-400 hover:text-red-600 transition-colors"><Trash2 className="w-4 h-4" /></button>
-                  )}
+                className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                {/* 折叠头部 */}
+                <div
+                  className="flex items-center justify-between p-4 cursor-pointer hover:bg-gray-50 transition-colors"
+                  onClick={() => setExpandedIndex(expandedIndex === idx ? null : idx)}
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="w-8 h-8 bg-primary-500 text-white rounded-lg flex items-center justify-center font-bold text-sm shrink-0">
+                      {idx + 1}
+                    </span>
+                    <div>
+                      <h3 className="text-sm font-bold text-gray-900">{slide.title.replace(/\n/g, ' ') || '未命名轮播'}</h3>
+                      <p className="text-xs text-gray-500">{slide.subtitle} · {slide.cta} → {slide.ctaLink}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {heroSlides.length > 1 && (
+                      <button onClick={(e) => { e.stopPropagation(); setDeleteConfirm({ type: 'hero', index: idx }); }}
+                        className="text-red-400 hover:text-red-600 p-1"><Trash2 className="w-4 h-4" /></button>
+                    )}
+                  </div>
                 </div>
+
+                {/* 展开的编辑区域 */}
+                {expandedIndex === idx && (
+                  <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }}
+                    className="border-t border-gray-100 p-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-xs font-medium text-gray-500 mb-1">标题（支持 \n 换行）</label>
-                    <textarea value={slide.title} rows={2}
+                    <textarea
+                      id={`hero-title-${idx}`}
+                      name={`title-${idx}`}
+                      value={slide.title}
+                      rows={2}
                       onChange={e => { const arr = [...heroSlides]; arr[idx] = { ...arr[idx], title: e.target.value }; setHeroSlides(arr); }}
                       className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-transparent" />
                   </div>
@@ -225,9 +260,24 @@ export default function HomeConfig() {
                       className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-transparent" />
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-gray-500 mb-1">渐变色 (Tailwind class)</label>
-                    <input value={slide.gradient} onChange={e => { const arr = [...heroSlides]; arr[idx] = { ...arr[idx], gradient: e.target.value }; setHeroSlides(arr); }}
-                      className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm font-mono focus:ring-2 focus:ring-primary-500 focus:border-transparent" />
+                    <label className="block text-xs font-medium text-gray-500 mb-1">渐变色</label>
+                    <div className="flex flex-wrap gap-2">
+                      {GRADIENT_PRESETS.map(preset => (
+                        <button
+                          key={preset.value}
+                          type="button"
+                          onClick={() => { const arr = [...heroSlides]; arr[idx] = { ...arr[idx], gradient: preset.value }; setHeroSlides(arr); }}
+                          className={`px-3 py-1.5 rounded-lg text-xs transition-colors ${
+                            slide.gradient === preset.value
+                              ? 'bg-primary-600 text-white'
+                              : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                          }`}
+                        >
+                          <span className={`inline-block w-3 h-3 rounded-full bg-gradient-to-r ${preset.value} mr-1.5 align-middle`} />
+                          {preset.name}
+                        </button>
+                      ))}
+                    </div>
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
@@ -250,9 +300,11 @@ export default function HomeConfig() {
                     {slide.cta} <ArrowRight className="w-3 h-3" />
                   </span>
                 </div>
+                  </motion.div>
+                )}
               </motion.div>
             ))}
-            <button onClick={() => setHeroSlides([...heroSlides, { id: `slide-${Date.now()}`, title: '新轮播标题', subtitle: '副标题描述', gradient: 'from-gray-600 to-gray-800', cta: '了解更多', ctaLink: '/' }])}
+            <button onClick={() => setHeroSlides([...heroSlides, { id: `slide-${Date.now()}`, title: '新轮播标题', subtitle: '副标题描述', gradient: 'from-gray-700 to-gray-900', cta: '了解更多', ctaLink: '/' }])}
               className="w-full py-3 border-2 border-dashed border-gray-300 rounded-xl text-sm text-gray-500 hover:border-primary-400 hover:text-primary-600 transition-colors flex items-center justify-center gap-2">
               <Plus className="w-4 h-4" /> 添加轮播
             </button>
@@ -264,14 +316,33 @@ export default function HomeConfig() {
           <div className="space-y-4">
             {quickEntries.map((entry, idx) => (
               <motion.div key={idx} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.05 }}
-                className="bg-white rounded-xl border border-gray-200 p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-sm font-bold text-gray-900">入口 #{idx + 1}: {entry.label}</h3>
-                  {quickEntries.length > 1 && (
-                    <button onClick={() => setDeleteConfirm({ type: 'entry', index: idx })}
-                      className="text-red-400 hover:text-red-600 transition-colors"><Trash2 className="w-4 h-4" /></button>
-                  )}
+                className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                {/* 折叠头部 */}
+                <div
+                  className="flex items-center justify-between p-4 cursor-pointer hover:bg-gray-50 transition-colors"
+                  onClick={() => setExpandedIndex(expandedIndex === idx ? null : idx)}
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="w-8 h-8 bg-primary-500 text-white rounded-lg flex items-center justify-center font-bold text-sm shrink-0">
+                      {idx + 1}
+                    </span>
+                    <div>
+                      <h3 className="text-sm font-bold text-gray-900">{entry.label || '未命名入口'}</h3>
+                      <p className="text-xs text-gray-500">{entry.desc} · {entry.icon} → {entry.link}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {quickEntries.length > 1 && (
+                      <button onClick={(e) => { e.stopPropagation(); setDeleteConfirm({ type: 'entry', index: idx }); }}
+                        className="text-red-400 hover:text-red-600 p-1"><Trash2 className="w-4 h-4" /></button>
+                    )}
+                  </div>
                 </div>
+
+                {/* 展开的编辑区域 */}
+                {expandedIndex === idx && (
+                  <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }}
+                    className="border-t border-gray-100 p-6">
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                   <div>
                     <label className="block text-xs font-medium text-gray-500 mb-1">标签</label>
@@ -294,6 +365,8 @@ export default function HomeConfig() {
                       className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm font-mono focus:ring-2 focus:ring-primary-500 focus:border-transparent" />
                   </div>
                 </div>
+                  </motion.div>
+                )}
               </motion.div>
             ))}
             <button onClick={() => setQuickEntries([...quickEntries, { label: '新入口', desc: '描述', icon: 'Star', link: '/', color: 'text-gray-600', bg: 'bg-gradient-to-br from-gray-50 to-gray-100/50' }])}
@@ -309,18 +382,37 @@ export default function HomeConfig() {
             <h3 className="text-sm font-bold text-gray-900 mb-4">课程封面渐变色（循环使用）</h3>
             <div className="space-y-3">
               {courseColors.map((color, idx) => (
-                <div key={idx} className="flex items-center gap-4">
-                  <div className={`w-24 h-12 rounded-lg bg-gradient-to-r ${color}`} />
-                  <input value={color} onChange={e => { const arr = [...courseColors]; arr[idx] = e.target.value; setCourseColors(arr); }}
-                    className="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-sm font-mono focus:ring-2 focus:ring-primary-500 focus:border-transparent" />
-                  {courseColors.length > 1 && (
-                    <button onClick={() => setDeleteConfirm({ type: 'color', index: idx })}
-                      className="text-red-400 hover:text-red-600 transition-colors"><Trash2 className="w-4 h-4" /></button>
-                  )}
+                <div key={idx} className="space-y-2">
+                  <div className="flex items-center gap-4">
+                    <div className={`w-24 h-12 rounded-lg bg-gradient-to-r ${color}`} />
+                    <span className="text-sm text-gray-700 font-medium">{GRADIENT_PRESETS.find(p => p.value === color)?.name || '自定义配色'}</span>
+                    <div className="flex-1" />
+                    {courseColors.length > 1 && (
+                      <button onClick={() => setDeleteConfirm({ type: 'color', index: idx })}
+                        className="text-red-400 hover:text-red-600 transition-colors"><Trash2 className="w-4 h-4" /></button>
+                    )}
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {GRADIENT_PRESETS.map(preset => (
+                      <button
+                        key={preset.value}
+                        type="button"
+                        onClick={() => { const arr = [...courseColors]; arr[idx] = preset.value; setCourseColors(arr); }}
+                        className={`px-3 py-1.5 rounded-lg text-xs transition-colors ${
+                          color === preset.value
+                            ? 'bg-primary-600 text-white'
+                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                        }`}
+                      >
+                        <span className={`inline-block w-3 h-3 rounded-full bg-gradient-to-r ${preset.value} mr-1.5 align-middle`} />
+                        {preset.name}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               ))}
             </div>
-            <button onClick={() => setCourseColors([...courseColors, 'from-gray-400 to-gray-500'])}
+            <button onClick={() => setCourseColors([...courseColors, 'from-gray-700 to-gray-900'])}
               className="mt-4 w-full py-2 border-2 border-dashed border-gray-300 rounded-lg text-sm text-gray-500 hover:border-primary-400 hover:text-primary-600 transition-colors flex items-center justify-center gap-2">
               <Plus className="w-4 h-4" /> 添加配色
             </button>
@@ -332,8 +424,27 @@ export default function HomeConfig() {
           <div className="space-y-4">
             {valueSections.map((section, idx) => (
               <motion.div key={idx} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.05 }}
-                className="bg-white rounded-xl border border-gray-200 p-6">
-                <h3 className="text-sm font-bold text-gray-900 mb-4">{section.role}</h3>
+                className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                {/* 折叠头部 */}
+                <div
+                  className="flex items-center justify-between p-4 cursor-pointer hover:bg-gray-50 transition-colors"
+                  onClick={() => setExpandedIndex(expandedIndex === idx ? null : idx)}
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="w-8 h-8 bg-primary-500 text-white rounded-lg flex items-center justify-center font-bold text-sm shrink-0">
+                      {idx + 1}
+                    </span>
+                    <div>
+                      <h3 className="text-sm font-bold text-gray-900">{section.role || '未命名角色'}</h3>
+                      <p className="text-xs text-gray-500">{section.icon} · {section.points.length} 个价值点</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 展开的编辑区域 */}
+                {expandedIndex === idx && (
+                  <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }}
+                    className="border-t border-gray-100 p-6">
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
                   <div>
                     <label className="block text-xs font-medium text-gray-500 mb-1">角色名</label>
@@ -358,10 +469,16 @@ export default function HomeConfig() {
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-gray-500 mb-2">价值点（每行一条）</label>
-                  <textarea value={section.points.join('\n')} rows={4}
+                  <textarea
+                    id={`value-points-${idx}`}
+                    name={`points-${idx}`}
+                    value={section.points.join('\n')}
+                    rows={4}
                     onChange={e => { const arr = [...valueSections]; arr[idx] = { ...arr[idx], points: e.target.value.split('\n').filter(Boolean) }; setValueSections(arr); }}
                     className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-transparent" />
                 </div>
+                  </motion.div>
+                )}
               </motion.div>
             ))}
           </div>

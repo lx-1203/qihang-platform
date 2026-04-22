@@ -10,7 +10,7 @@
       "id": "hero-1",
       "title": "2026 Fall 申请季已全面开启",
       "subtitle": "英/美/港/新/澳 五大热门地区同步接受申请，早申请早拿 Offer，把握黄金窗口期",
-      "image": "https://images.unsplash.com/photo-1523050854058-8df90110c9f1?w=1200&q=80",
+      "image": "/placeholder-cover.svg",
       "tag": "🔥 申请季",
       "cta": "立即选校",
       "ctaLink": "/study-abroad/programs"
@@ -19,7 +19,7 @@
       "id": "hero-2",
       "title": "英国 G5 · 一年制硕士申请攻略",
       "subtitle": "牛津 / 剑桥 / IC / LSE / UCL 五校最新录取标准、文书要求与面试技巧全解析",
-      "image": "https://images.unsplash.com/photo-1526129318478-62ed807ebdf9?w=1200&q=80",
+      "image": "/placeholder-cover.svg",
       "tag": "📚 热门专题",
       "cta": "查看攻略",
       "ctaLink": "/study-abroad/articles"
@@ -28,7 +28,7 @@
       "id": "hero-3",
       "title": "港三新二 · 低门槛高回报的留学选择",
       "subtitle": "离家近、费用低、QS排名高、就业前景好，适合求稳同学的最优解",
-      "image": "https://images.unsplash.com/photo-1536599018102-9f803c029e12?w=1200&q=80",
+      "image": "/placeholder-cover.svg",
       "tag": "🌏 地区专题",
       "cta": "探索项目",
       "ctaLink": "/study-abroad/programs"
@@ -37,7 +37,7 @@
       "id": "hero-4",
       "title": "双非逆袭 · QS Top 100 名校不是梦",
       "subtitle": "合理规划背景提升 + 精准选校定位，双非学生也能拿到世界名校 Offer",
-      "image": "https://images.unsplash.com/photo-1541339907198-e08756dedf3f?w=1200&q=80",
+      "image": "/placeholder-cover.svg",
       "tag": "✨ 成功案例",
       "cta": "查看案例",
       "ctaLink": "/study-abroad/offers"
@@ -50,7 +50,7 @@
       "title": "专业顾问一对一",
       "subtitle": "前UCL招生官1v1指导",
       "description": "从选校定位到面试辅导，全程陪伴",
-      "image": "https://images.unsplash.com/photo-1517486808906-6ca8b3f04846?w=800&q=80",
+      "image": "/placeholder-cover.svg",
       "icon": "Users",
       "color": "blue"
     },
@@ -59,7 +59,7 @@
       "title": "名企实习背景提升",
       "subtitle": "字节/腾讯/高盛实习直推",
       "description": "500+核心岗位，远程+线下可选",
-      "image": "https://images.unsplash.com/photo-1600880292203-757bb62b4baf?w=800&q=80",
+      "image": "/placeholder-cover.svg",
       "icon": "Briefcase",
       "color": "teal"
     },
@@ -68,7 +68,7 @@
       "title": "科研项目教授直推",
       "subtitle": "哈佛/MIT/清华教授课题",
       "description": "120+前沿课题，发表推荐信双保障",
-      "image": "https://images.unsplash.com/photo-1497366811353-6870744d04b2?w=800&q=80",
+      "image": "/placeholder-cover.svg",
       "icon": "FlaskConical",
       "color": "primary"
     },
@@ -77,7 +77,7 @@
       "title": "文书逐句打磨",
       "subtitle": "1v1 PS/CV/RL润色",
       "description": "外籍文书顾问，逐句精修，不限次数",
-      "image": "https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?w=800&q=80",
+      "image": "/placeholder-cover.svg",
       "icon": "FileText",
       "color": "rose"
     },
@@ -86,7 +86,7 @@
       "title": "语言培训保分",
       "subtitle": "雅思/托福/GRE保分班",
       "description": "名师授课，真题训练，平均提分1.5+",
-      "image": "https://images.unsplash.com/photo-1434030216411-0b793f4b4173?w=800&q=80",
+      "image": "/placeholder-cover.svg",
       "icon": "BookOpen",
       "color": "amber"
     },
@@ -95,7 +95,7 @@
       "title": "国际竞赛辅导",
       "subtitle": "挑战杯/HULT Prize获奖",
       "description": "80%获奖率，背景提升利器",
-      "image": "https://images.unsplash.com/photo-1524178232363-1fb2b075b655?w=800&q=80",
+      "image": "/placeholder-cover.svg",
       "icon": "Trophy",
       "color": "primary"
     },
@@ -104,7 +104,7 @@
       "title": "志愿公益加分",
       "subtitle": "国际支教/环保项目",
       "description": "50+优质项目，背景提升必备",
-      "image": "https://images.unsplash.com/photo-1524758631624-e2822e304c36?w=800&q=80",
+      "image": "/placeholder-cover.svg",
       "icon": "Heart",
       "color": "emerald"
     },
@@ -113,7 +113,7 @@
       "title": "论文发表辅导",
       "subtitle": "SCI/SSCI/EI期刊",
       "description": "95%发表率，学术背景硬核加分",
-      "image": "https://images.unsplash.com/photo-1456324504439-367cee3b3c32?w=800&q=80",
+      "image": "/placeholder-cover.svg",
       "icon": "Award",
       "color": "cyan"
     }
@@ -127,7 +127,7 @@
       "result": "牛津 MPhil CS",
       "quote": "从大二开始规划，通过启航科研项目拿到MIT暑研，最终圆梦牛津",
       "story": "大一的时候我还很迷茫，不知道未来要做什么。大二上学期加入启航，在顾问的帮助下确定了申请方向。通过一年的背景提升，我拿到了MIT暑研机会，最终成功拿到牛津MPhil offer。",
-      "image": "https://images.unsplash.com/photo-1527980965255-d3b416303d12?w=600&q=80",
+      "image": "/placeholder-cover.svg",
       "tags": ["双非逆袭", "G5录取", "科研经历"],
       "likes": 328,
       "views": 1203
@@ -139,7 +139,7 @@
       "result": "LSE Finance",
       "quote": "三次面试失败，顾问帮我复盘文书逻辑，最终拿下女神校",
       "story": "一开始申请很不顺利，连续三所学校面试都挂了。启航的顾问帮我逐句复盘了文书和面试回答，重新梳理了我的故事线。调整策略后，LSE很快就给了我offer。",
-      "image": "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=600&q=80",
+      "image": "/placeholder-cover.svg",
       "tags": ["商科申请", "LSE", "面试辅导"],
       "likes": 256,
       "views": 892
@@ -151,7 +151,7 @@
       "result": "港大新闻",
       "quote": "跨专业申请，用实习经历弥补背景，成功跨到传媒",
       "story": "本科学的是中文，想转新闻传播学。启航的顾问帮我规划了两段相关实习，还指导我把实习经历写成精彩的PS。港大老师对我的实习经历非常感兴趣，面试很顺利。",
-      "image": "https://images.unsplash.com/photo-1508214751196-bcfd4ca60f91?w=600&q=80",
+      "image": "/placeholder-cover.svg",
       "tags": ["跨专业", "港大", "传媒"],
       "likes": 189,
       "views": 654
@@ -163,7 +163,7 @@
       "result": "ETH 机器人",
       "quote": "GPA不高，用竞赛+项目拿到ETH，选校策略很重要",
       "story": "我的GPA不算高，但好在有两个竞赛奖项和一个机器人项目。启航的顾问没有盲目让我冲高，而是帮我精准定位了最匹配的项目。ETH的教授对我的项目经历非常认可。",
-      "image": "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=600&q=80",
+      "image": "/placeholder-cover.svg",
       "tags": ["低GPA", "ETH", "机器人"],
       "likes": 215,
       "views": 721
@@ -176,35 +176,35 @@
       "quote": "如果提前了解要面对的人生，是否还有勇气前来？",
       "author": "2024届学员 小王",
       "background": "起点：普通二本 / 终点：剑桥 MPhil",
-      "image": "https://images.unsplash.com/photo-1464925257126-6450e871c667?w=1200&q=80"
+      "image": "/placeholder-cover.svg"
     },
     {
       "id": "quote-2",
       "quote": "起点不决定终点，努力才会。",
       "author": "2024届学员 小李",
       "background": "起点：三本独立 / 终点：UCL 教育",
-      "image": "https://images.unsplash.com/photo-1512820790803-83ca734da794?w=1200&q=80"
+      "image": "/placeholder-cover.svg"
     },
     {
       "id": "quote-3",
       "quote": "跨专业不可怕，可怕的是不敢尝试。",
       "author": "2024届学员 小张",
       "background": "起点：机械工程 / 终点：NYU 交互设计",
-      "image": "https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=1200&q=80"
+      "image": "/placeholder-cover.svg"
     },
     {
       "id": "quote-4",
       "quote": "GPA只是敲门砖，故事才是录取的关键。",
       "author": "2024届学员 小刘",
       "background": "起点：GPA3.1 / 终点：Columbia DS",
-      "image": "https://images.unsplash.com/photo-1488190211105-8b0e65b80b4e?w=1200&q=80"
+      "image": "/placeholder-cover.svg"
     },
     {
       "id": "quote-5",
       "quote": "感谢曾经那个不放弃的自己。",
       "author": "2024届学员 小陈",
       "background": "起点：考研失利 / 终点：NUS 计算机",
-      "image": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=1200&q=80"
+      "image": "/placeholder-cover.svg"
     }
   ],
 

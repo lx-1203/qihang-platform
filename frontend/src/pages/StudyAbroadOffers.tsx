@@ -17,8 +17,6 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import OfferStoryCard from '../components/study-abroad/OfferStoryCard';
-import offersDataJson from '../data/study-abroad-offers.json';
-import countriesData from '../data/study-abroad-countries.json';
 import http from '../api/http';
 
 // ====== 类型定义 ======
@@ -124,21 +122,37 @@ function mapApiOffer(row: ApiOfferRow): OfferItem {
 // ====== 组件 ======
 
 export default function StudyAbroadOffers() {
-  const [offers, setOffers] = useState<OfferItem[]>(offersDataJson as OfferItem[]);
-  const countries = countriesData as CountryItem[];
+  const [offers, setOffers] = useState<OfferItem[]>([]);
+  const [countries, setCountries] = useState<CountryItem[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  // 尝试从 API 加载数据，失败则保持 JSON 数据
+  // 从 API 加载数据
   useEffect(() => {
-    http.get('/study-abroad/offers', { params: { pageSize: 100 } })
+    setLoading(true);
+
+    const loadOffers = http.get('/study-abroad/offers', { params: { pageSize: 100 } })
       .then(res => {
         const apiList = res.data.data?.list;
-        if (Array.isArray(apiList) && apiList.length > 0) {
+        if (Array.isArray(apiList)) {
           setOffers(apiList.map(mapApiOffer));
         }
       })
       .catch(() => {
-        // API 不可用时静默使用 JSON 数据
+        if (import.meta.env.DEV) console.warn('[StudyAbroadOffers] Offers API 加载失败');
       });
+
+    const loadCountries = http.get('/study-abroad/countries')
+      .then(res => {
+        const apiList = res.data.data;
+        if (Array.isArray(apiList)) {
+          setCountries(apiList as CountryItem[]);
+        }
+      })
+      .catch(() => {
+        if (import.meta.env.DEV) console.warn('[StudyAbroadOffers] Countries API 加载失败');
+      });
+
+    Promise.all([loadOffers, loadCountries]).finally(() => setLoading(false));
   }, []);
 
   // ---------- 筛选状态 ----------
@@ -163,7 +177,7 @@ export default function StudyAbroadOffers() {
     [countries],
   );
 
-  /** 统计卡片数据（从 JSON 动态计算） */
+  /** 统计卡片数据（从数据动态计算） */
   const stats = useMemo(() => {
     const total = offers.length;
     const admitted = offers.filter((o) => getResultStatus(o.result) === 'admitted').length;
@@ -462,14 +476,32 @@ export default function StudyAbroadOffers() {
         </div>
 
         {/* ====== Offer 列表（OfferStoryCard 完整模式） ====== */}
+        {loading ? (
+          <div className="space-y-4">
+            {[1, 2, 3, 4].map(i => (
+              <div key={i} className="animate-pulse bg-white rounded-2xl border border-gray-100 p-6">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-10 h-10 bg-gray-200 rounded-full" />
+                  <div className="flex-1">
+                    <div className="h-4 bg-gray-200 rounded w-1/4 mb-2" />
+                    <div className="h-3 bg-gray-100 rounded w-1/3" />
+                  </div>
+                </div>
+                <div className="h-3 bg-gray-100 rounded w-3/4 mb-2" />
+                <div className="h-3 bg-gray-100 rounded w-1/2" />
+              </div>
+            ))}
+          </div>
+        ) : (
         <div className="space-y-4">
           {filtered.map((offer) => (
             <OfferStoryCard key={offer.id} offer={offer} mode="full" />
           ))}
         </div>
+        )}
 
         {/* 空状态 */}
-        {filtered.length === 0 && (
+        {!loading && filtered.length === 0 && (
           <div className="text-center py-20">
             <TrendingUp className="w-16 h-16 text-gray-200 mx-auto mb-4" />
             <h3 className="text-[18px] font-bold text-gray-500 mb-2">暂无匹配的录取数据</h3>

@@ -8,6 +8,7 @@ import {
   CheckSquare, Square, ChevronsUpDown
 } from 'lucide-react';
 import http from '@/api/http';
+import { DEFAULT_AVATAR } from '@/constants';
 import {
   adminGetConversations,
   adminSendMessage,
@@ -501,6 +502,8 @@ export default function ChatManage() {
         <div className="relative flex-1 max-w-xs">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
           <input
+            id="chat-search"
+            name="search"
             type="text"
             value={keyword}
             onChange={e => setKeyword(e.target.value)}
@@ -607,7 +610,7 @@ export default function ChatManage() {
                       <div className="relative flex-shrink-0">
                         {conv.user_avatar ? (
                           <img
-                            src={conv.user_avatar}
+                            src={conv.user_avatar || DEFAULT_AVATAR}
                             alt={conv.user_nickname || '用户'}
                             className="w-10 h-10 rounded-full object-cover"
                           />
@@ -626,7 +629,7 @@ export default function ChatManage() {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between gap-2">
                           <span className={`text-sm font-medium truncate ${hasUnread ? 'text-gray-900' : 'text-gray-700'}`}>
-                            {conv.user_nickname || conv.user_email || `用户#${conv.user_id}`}
+                            {conv.user_nickname || conv.user_email || `用户${conv.user_id}号`}
                           </span>
                           <span className="text-[10px] text-gray-400 flex-shrink-0">
                             {relativeTime(conv.last_message_at)}
@@ -731,7 +734,7 @@ export default function ChatManage() {
                 <div className="flex items-center gap-3">
                   {selectedConv.user_avatar ? (
                     <img
-                      src={selectedConv.user_avatar}
+                      src={selectedConv.user_avatar || DEFAULT_AVATAR}
                       alt=""
                       className="w-9 h-9 rounded-full object-cover"
                     />
@@ -742,7 +745,7 @@ export default function ChatManage() {
                   )}
                   <div>
                     <h3 className="text-sm font-semibold text-gray-900">
-                      {selectedConv.user_nickname || selectedConv.user_email || `用户#${selectedConv.user_id}`}
+                      {selectedConv.user_nickname || selectedConv.user_email || `用户${selectedConv.user_id}号`}
                     </h3>
                     <div className="flex items-center gap-2 mt-0.5">
                       {selectedConv.user_email && (

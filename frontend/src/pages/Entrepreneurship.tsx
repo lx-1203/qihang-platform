@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Lightbulb, Rocket, Trophy, Users, Zap, ExternalLink, ChevronRight, Loader2 } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
 import Tag from '@/components/ui/Tag';
 import { useConfigStore } from '@/store/config';
 import http from '@/api/http';
@@ -27,6 +28,7 @@ interface Resource {
 }
 
 export default function Entrepreneurship() {
+  const navigate = useNavigate();
   const entrepreneurshipConfig = useConfigStore(s => s.getJson('entrepreneurship_page_config', DEFAULT_ENTREPRENEURSHIP_CONFIG));
   const heroTitle = entrepreneurshipConfig.heroTitle || DEFAULT_ENTREPRENEURSHIP_CONFIG.heroTitle;
   const heroDesc = entrepreneurshipConfig.heroDesc || DEFAULT_ENTREPRENEURSHIP_CONFIG.heroDesc;
@@ -76,7 +78,7 @@ export default function Entrepreneurship() {
 
         {/* Hero Section */}
         <div className="bg-gray-900 rounded-[24px] overflow-hidden relative mb-12">
-          <div className="absolute inset-0 opacity-20 bg-[url('https://images.unsplash.com/photo-1556761175-5973dc0f32d7?w=1000&q=80')] bg-cover bg-center mix-blend-luminosity"></div>
+          <div className="absolute inset-0 opacity-20 bg-gradient-to-br from-slate-700 via-slate-800 to-slate-900 mix-blend-luminosity"></div>
           <div className="absolute inset-0 bg-gradient-to-r from-black/80 to-transparent"></div>
 
           <div className="relative z-10 p-10 md:p-16 flex flex-col items-start max-w-2xl">
@@ -90,10 +92,13 @@ export default function Entrepreneurship() {
               {heroDesc}
             </p>
             <div className="flex gap-4">
-              <button className="bg-primary-500 text-white px-8 py-3.5 rounded-xl font-bold hover:bg-primary-700 transition-colors shadow-lg shadow-primary-500/20">
-                发布创业项目
+              <button
+                onClick={() => navigate('/partners')}
+                className="bg-primary-500 text-white px-8 py-3.5 rounded-xl font-bold hover:bg-primary-700 transition-colors shadow-lg shadow-primary-500/20"
+              >
+                发布招募信息
               </button>
-              <button className="bg-white/20 backdrop-blur-md text-white border border-white/20 px-8 py-3.5 rounded-xl font-bold hover:bg-white/30 transition-colors">
+              <button onClick={() => navigate('/partners')} className="bg-white text-primary-600 border-2 border-white px-8 py-3.5 rounded-xl font-bold hover:bg-primary-50 transition-colors shadow-lg">
                 寻找合伙人
               </button>
             </div>
@@ -107,9 +112,9 @@ export default function Entrepreneurship() {
               <h2 className="text-[24px] font-bold text-gray-900 flex items-center gap-2">
                 <Trophy className="w-6 h-6 text-primary-500" /> 热门赛事推荐
               </h2>
-              <button className="text-gray-500 hover:text-gray-900 text-[14px] font-medium flex items-center transition-colors">
+              <Link to="/guidance/articles" className="text-gray-500 hover:text-gray-900 text-[14px] font-medium flex items-center transition-colors">
                 全部赛事 <ChevronRight className="w-4 h-4 ml-1" />
-              </button>
+              </Link>
             </div>
 
             {competitionsLoading ? (
@@ -148,7 +153,10 @@ export default function Entrepreneurship() {
                         </div>
                       </div>
                     </div>
-                    <button className="shrink-0 md:w-auto w-full py-2.5 px-6 rounded-xl border border-gray-200 text-gray-600 font-medium hover:bg-gray-50 hover:text-gray-900 transition-colors flex justify-center items-center gap-2">
+                    <button
+                      onClick={() => navigate(`/guidance/articles`)}
+                      className="shrink-0 md:w-auto w-full py-2.5 px-6 rounded-xl border border-gray-200 text-gray-600 font-medium hover:bg-gray-50 hover:text-gray-900 transition-colors flex justify-center items-center gap-2"
+                    >
                       查看详情 <ExternalLink className="w-4 h-4" />
                     </button>
                   </div>
@@ -168,7 +176,7 @@ export default function Entrepreneurship() {
               <p className="text-[14px] text-gray-500 mb-6">
                 缺技术？缺运营？在这里发布招募贴，快速集结你的梦幻初创团队。{competitionsTotal > 0 && (<>目前已有 <span className="text-primary-500 font-bold">{competitionsTotal.toLocaleString()}</span> 个赛事可参与。</>)}
               </p>
-              <button className="w-full bg-white border border-primary-500 text-primary-500 py-3 rounded-xl font-bold hover:bg-primary-500 hover:text-white transition-colors">
+              <button onClick={() => navigate('/partners')} className="w-full bg-white border border-primary-500 text-primary-500 py-3 rounded-xl font-bold hover:bg-primary-500 hover:text-white transition-colors">
                 进入大厅
               </button>
             </div>
@@ -189,7 +197,7 @@ export default function Entrepreneurship() {
               ) : (
                 <ul className="space-y-4">
                   {resources.map((resource) => (
-                    <li key={resource.id} className="flex gap-3 group cursor-pointer">
+                    <li key={resource.id} className="flex gap-3 group">
                       <div className="w-10 h-10 rounded bg-gray-50 border border-gray-100 flex items-center justify-center shrink-0 group-hover:bg-primary-500 group-hover:border-primary-500 transition-colors">
                         <Zap className="w-5 h-5 text-gray-400 group-hover:text-white transition-colors" />
                       </div>

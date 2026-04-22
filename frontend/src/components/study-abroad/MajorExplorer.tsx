@@ -13,7 +13,7 @@ import {
   ChevronRight,
   Flame,
 } from 'lucide-react';
-import majorsData from '../../data/study-abroad-majors.json';
+import { useConfigStore } from '@/store/config';
 
 // ---------- 类型定义 ----------
 
@@ -35,6 +35,33 @@ interface MajorCategory {
   color: string;
   majors: Major[];
 }
+
+// ---------- 默认配置兜底 ----------
+
+const DEFAULT_STUDY_ABROAD_MAJORS_CONFIG: MajorCategory[] = [
+  { category: '计算机与数据', icon: 'Laptop', color: 'blue', majors: [
+    { id: 'cs101', name: '计算机科学 CS', nameEn: 'Computer Science', desc: '涵盖算法、系统、AI、软件工程等核心领域', hot: true, avgSalary: '£45,000-95,000/年', topCountries: ['us','uk','sg','ca'], topSchools: ['MIT','Stanford','CMU','ETH Zurich','NUS','UCL'], careerPaths: ['Software Engineer','Data Scientist','ML Engineer','Product Manager','Tech Consultant'] },
+    { id: 'ds102', name: '数据科学 DS', nameEn: 'Data Science', desc: '统计学+编程+机器学习的交叉学科', hot: true, avgSalary: '$70,000-120,000/年', topCountries: ['us','sg','uk','hk'], topSchools: ['Columbia','Imperial College','NUS','HKU','Carnegie Mellon'], careerPaths: ['Data Scientist','ML Engineer','Business Analyst','Research Scientist','Quant Analyst'] },
+    { id: 'ai103', name: '人工智能 AI', nameEn: 'Artificial Intelligence', desc: '深度学习、NLP、CV等前沿技术方向', hot: true, avgSalary: '£55,000-110,000/年', topCountries: ['uk','us','sg','eu'], topSchools: ['Oxford','Cambridge','Imperial','ETHZ','NTU'], careerPaths: ['AI Researcher','ML Engineer','NLP Engineer','Computer Vision Engineer','AI Product Manager'] },
+    { id: 'ba104', name: '商业分析 BA', nameEn: 'Business Analytics', desc: '商业思维+数据分析能力', hot: true, avgSalary: '$65,000-100,000/年', topCountries: ['us','hk','sg','uk'], topSchools: ['MIT Sloan','NUS BA','HKU MFin','UT Austin','Warwick'], careerPaths: ['Business Analyst','Data Analyst','Consultant','Strategy Manager','Operations Manager'] },
+    { id: 'it105', name: '信息技术 IT', nameEn: 'Information Technology', desc: '偏应用的IT管理、网络安全、云计算等方向', hot: false, avgSalary: 'A$75,000-105,000/年', topCountries: ['au','ca','uk'], topSchools: ['Melbourne Uni','UBC','Manchester','Monash','Waterloo'], careerPaths: ['IT Manager','Cybersecurity Analyst','Cloud Architect','Systems Administrator','DevOps Engineer'] },
+  ]},
+  { category: '商科与金融', icon: 'TrendingUp', color: 'emerald', majors: [
+    { id: 'fin201', name: '金融学 Finance', nameEn: 'Finance / Financial Engineering', desc: '金融理论、量化投资、风险管理等', hot: true, avgSalary: 'HK$35K-60K/月', topCountries: ['hk','us','uk','sg'], topSchools: ['HKU MFin','LBS','NYU Stern','Princeton MFin','NUS RMI'], careerPaths: ['Investment Banker','Quantitative Analyst','Portfolio Manager','Risk Manager','Financial Consultant'] },
+  ]},
+  { category: '工程与技术', icon: 'Cpu', color: 'indigo', majors: [
+    { id: 'ee301', name: '电子电气工程 ECE', nameEn: 'Electrical and Computer Engineering', desc: '芯片设计、通信系统、嵌入式开发等', hot: false, avgSalary: 'C$72,000-98,000/年', topCountries: ['ca','us','eu','sg'], topSchools: ['MIT EECS','Stanford EE','ETHZ EE','Waterloo ECE','NTU EEE'], careerPaths: ['Hardware Engineer','Chip Design Engineer','RF Engineer','Embedded Systems Dev','Power Systems Engineer'] },
+  ]},
+  { category: '人文社科', icon: 'BookOpen', color: 'rose', majors: [
+    { id: 'edu401', name: '教育学 Education', nameEn: 'Education / TESOL', desc: '教育政策、课程设计、英语教学等方向', hot: true, avgSalary: '£30,000-45,000/年', topCountries: ['uk','hk','au','ca'], topSchools: ['UCL IOE','Harvard GSE','HKU Education','Toronto OISE','Melbourne MGSE'], careerPaths: ['Teacher/Lecturer','Curriculum Designer','EdTech Product Manager','TESOL Instructor','Education Policy Analyst'] },
+  ]},
+  { category: '医学与健康', icon: 'HeartPulse', color: 'red', majors: [
+    { id: 'med501', name: '公共卫生 MPH', nameEn: 'Master of Public Health', desc: '流行病学、卫生政策、全球健康等', hot: true, avgSalary: '$62,000-95,000/年', topCountries: ['us','uk','au'], topSchools: ['Johns Hopkins SPH','Harvard Chan','LSHTM London','Uni of Sydney Public Health','Emory Rollins'], careerPaths: ['Epidemiologist','Health Policy Analyst','Global Health Consultant','Biostatistician','Healthcare Administrator'] },
+  ]},
+  { category: '艺术与设计', icon: 'Palette', color: 'purple', majors: [
+    { id: 'art601', name: '交互设计 Interaction Design', nameEn: 'Interaction Design / UX Design', desc: 'UI/UX设计、产品设计、服务设计等', hot: true, avgSalary: '£35,000-58,000/年', topCountries: ['uk','us','eu'], topSchools: ['RCA IDE','UAL LCC','MIT Media Lab','TU Delft ID','Politecnico Milano Design'], careerPaths: ['UX/UI Designer','Interaction Designer','Product Designer','Service Designer','Design Researcher'] },
+  ]},
+];
 
 // ---------- 图标 & 颜色映射 ----------
 
@@ -69,7 +96,7 @@ export default function MajorExplorer() {
   const toggle = (category: string) =>
     setExpanded((prev) => ({ ...prev, [category]: !prev[category] }));
 
-  const categories = majorsData as MajorCategory[];
+  const categories = useConfigStore().getJson<MajorCategory[]>('study_abroad_majors_config', DEFAULT_STUDY_ABROAD_MAJORS_CONFIG);
 
   return (
     <section className="py-12">

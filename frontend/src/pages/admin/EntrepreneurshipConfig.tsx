@@ -3,6 +3,7 @@ import { Save, Plus, Trash2, Eye, CheckCircle2, Loader2, AlertTriangle, Rocket }
 import { motion } from 'framer-motion';
 import http from '@/api/http';
 import { useToast } from '@/components/ui';
+import { handleApiFailure } from '@/utils/connectionStatus';
 import { useConfigStore } from '@/store/config';
 import { Skeleton, CardSkeleton } from '@/components/ui/Skeleton';
 
@@ -30,6 +31,7 @@ export default function EntrepreneurshipConfig() {
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
   const [deleteConfirm, setDeleteConfirm] = useState<number | null>(null);
+  const [expandedIndex, setExpandedIndex] = useState<number | null>(null);
 
   // 从后端加载配置
   useEffect(() => {
@@ -67,7 +69,7 @@ export default function EntrepreneurshipConfig() {
 
     for (let i = 0; i < competitions.length; i++) {
       if (!competitions[i].name.trim()) {
-        toast.error('验证失败', `比赛 #${i + 1} 的名称不能为空`);
+        toast.error('验证失败', `比赛 第${i + 1}项 的名称不能为空`);
         return;
       }
     }
@@ -198,14 +200,36 @@ export default function EntrepreneurshipConfig() {
 
           {competitions.map((comp, idx) => (
             <motion.div key={comp.id || idx} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.05 }}
-              className="bg-white rounded-xl border border-gray-200 p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-sm font-bold text-gray-900">赛事 #{idx + 1}</h3>
-                {competitions.length > 1 && (
-                  <button onClick={() => setDeleteConfirm(idx)}
-                    className="text-red-400 hover:text-red-600 transition-colors"><Trash2 className="w-4 h-4" /></button>
-                )}
+              className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+              {/* 折叠头部 */}
+              <div
+                className="flex items-center justify-between p-4 cursor-pointer hover:bg-gray-50 transition-colors"
+                onClick={() => setExpandedIndex(expandedIndex === idx ? null : idx)}
+              >
+                <div className="flex items-center gap-3">
+                  <span className="w-8 h-8 bg-primary-500 text-white rounded-lg flex items-center justify-center font-bold text-sm shrink-0">
+                    {idx + 1}
+                  </span>
+                  <div>
+                    <h3 className="text-sm font-bold text-gray-900">{comp.name || '未命名赛事'}</h3>
+                    <p className="text-xs text-gray-500">{comp.level} · {comp.status} · 截止 {comp.deadline || '未设置'}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  {comp.tags.length > 0 && (
+                    <span className="text-xs text-gray-400">{comp.tags.join(', ')}</span>
+                  )}
+                  {competitions.length > 1 && (
+                    <button onClick={(e) => { e.stopPropagation(); setDeleteConfirm(idx); }}
+                      className="text-red-400 hover:text-red-600 p-1"><Trash2 className="w-4 h-4" /></button>
+                  )}
+                </div>
               </div>
+
+              {/* 展开的编辑区域 */}
+              {expandedIndex === idx && (
+                <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }}
+                  className="border-t border-gray-100 p-6">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 <div className="md:col-span-2">
                   <label className="block text-xs font-medium text-gray-500 mb-1">赛事名称</label>
@@ -216,7 +240,10 @@ export default function EntrepreneurshipConfig() {
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-gray-500 mb-1">级别</label>
-                  <select value={comp.level}
+                  <select
+                    id={`competition-level-${idx}`}
+                    name={`level-${idx}`}
+                    value={comp.level}
                     onChange={e => { const arr = [...competitions]; arr[idx] = { ...arr[idx], level: e.target.value }; setCompetitions(arr); }}
                     className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-transparent">
                     <option value="国家级">国家级</option>
@@ -226,7 +253,10 @@ export default function EntrepreneurshipConfig() {
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-gray-500 mb-1">状态</label>
-                  <select value={comp.status}
+                  <select
+                    id={`competition-status-${idx}`}
+                    name={`status-${idx}`}
+                    value={comp.status}
                     onChange={e => { const arr = [...competitions]; arr[idx] = { ...arr[idx], status: e.target.value }; setCompetitions(arr); }}
                     className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-transparent">
                     <option value="报名中">报名中</option>
@@ -250,6 +280,8 @@ export default function EntrepreneurshipConfig() {
                     placeholder="学术研究, 科技创新" />
                 </div>
               </div>
+                </motion.div>
+              )}
             </motion.div>
           ))}
 

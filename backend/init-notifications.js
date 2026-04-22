@@ -14,7 +14,7 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-const DB_NAME = process.env.DB_NAME || 'career_platform';
+const DB_NAME = process.env.DB_NAME || 'qihang_platform';
 
 async function initNotifications() {
   console.log('\n========================================');

@@ -57,14 +57,20 @@ export default function MentorDashboardPage() {
 
       // 解析统计数据
       if (statsRes.data?.code === 200 && statsRes.data.data) {
-        const d = statsRes.data.data;
+        const d = statsRes.data.data.stats || statsRes.data.data;
+        const appointmentByStatus = Array.isArray(d.appointment_by_status)
+          ? d.appointment_by_status.reduce((acc: Record<string, number>, item: { status?: string; count?: number | string }) => {
+              if (item.status) acc[item.status] = Number(item.count || 0);
+              return acc;
+            }, {})
+          : (d.appointment_by_status || {});
         setStats({
           totalCourses: d.course_count || 0,
           totalAppointments: d.appointment_total || 0,
           totalStudents: d.student_count || 0,
-          rating: d.avg_rating || 0,
+          rating: Number(d.avg_rating || 0),
           monthSessions: d.weekly_completed || 0,
-          pendingAppts: d.appointment_by_status?.pending || 0,
+          pendingAppts: appointmentByStatus.pending || 0,
           monthRevenue: 0,
           ratingTrend: 0,
         });
@@ -72,7 +78,14 @@ export default function MentorDashboardPage() {
 
       // 解析今日日程（待确认预约）
       if (appointmentsRes.data?.code === 200 && appointmentsRes.data.data) {
-        const list = appointmentsRes.data.data.list || appointmentsRes.data.data || [];
+        const rawData = appointmentsRes.data.data;
+        const list = Array.isArray(rawData.list)
+          ? rawData.list
+          : Array.isArray(rawData.appointments)
+            ? rawData.appointments
+            : Array.isArray(rawData)
+              ? rawData
+              : [];
         const mapped = list.map((apt: Record<string, unknown>) => {
           const statusRaw = apt.status as string;
           let statusLabel: '已完成' | '进行中' | '即将开始' | '待确认';
@@ -101,7 +114,14 @@ export default function MentorDashboardPage() {
 
       // 解析我的课程
       if (coursesRes.data?.code === 200 && coursesRes.data.data) {
-        const list = coursesRes.data.data.courses || coursesRes.data.data.list || coursesRes.data.data || [];
+        const rawData = coursesRes.data.data;
+        const list = Array.isArray(rawData.courses)
+          ? rawData.courses
+          : Array.isArray(rawData.list)
+            ? rawData.list
+            : Array.isArray(rawData)
+              ? rawData
+              : [];
         const mapped = list.map((c: Record<string, unknown>) => ({
           title: (c.title as string) || '未命名课程',
           students: (c.rating_count as number) || (c.student_count as number) || 0,

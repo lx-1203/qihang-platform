@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import {
   Search, Briefcase, Video, Eye, EyeOff,
-  MoreVertical, Loader2
+  MoreVertical, Loader2, ChevronLeft, ChevronRight,
+  X, MessageSquare
 } from 'lucide-react';
 import http from '@/api/http';
 import Tag from '@/components/ui/Tag';
@@ -48,14 +49,35 @@ export default function AdminContent() {
   const [coursesLoading, setCoursesLoading] = useState(true);
   const [error, setError] = useState('');
 
+  // 分页状态
+  const [jobsPage, setJobsPage] = useState(1);
+  const [jobsTotal, setJobsTotal] = useState(0);
+  const [jobsTotalPages, setJobsTotalPages] = useState(1);
+  const [coursesPage, setCoursesPage] = useState(1);
+  const [coursesTotal, setCoursesTotal] = useState(0);
+  const [coursesTotalPages, setCoursesTotalPages] = useState(1);
+  const pageSize = 20;
+
+  // 详情弹窗
+  const [detailItem, setDetailItem] = useState<any>(null);
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [feedbackText, setFeedbackText] = useState('');
+  const [feedbackSending, setFeedbackSending] = useState(false);
+
   // 加载职位列表
-  async function fetchJobs(keyword = '') {
+  async function fetchJobs(keyword = '', page = 1) {
     setJobsLoading(true);
     setError('');
     try {
-      const res = await http.get('/admin/jobs', { params: { keyword } });
+      const res = await http.get('/admin/jobs', { params: { keyword, page, pageSize } });
       if (res.data?.code === 200) {
         setJobs(res.data.data?.jobs || []);
+        const pagination = res.data.data?.pagination;
+        if (pagination) {
+          setJobsTotal(pagination.total);
+          setJobsTotalPages(pagination.totalPages);
+          setJobsPage(pagination.page);
+        }
       }
     } catch {
       setError('加载职位数据失败');
@@ -66,13 +88,19 @@ export default function AdminContent() {
   }
 
   // 加载课程列表
-  async function fetchCourses(keyword = '') {
+  async function fetchCourses(keyword = '', page = 1) {
     setCoursesLoading(true);
     setError('');
     try {
-      const res = await http.get('/admin/courses', { params: { keyword } });
+      const res = await http.get('/admin/courses', { params: { keyword, page, pageSize } });
       if (res.data?.code === 200) {
         setCourses(res.data.data?.courses || []);
+        const pagination = res.data.data?.pagination;
+        if (pagination) {
+          setCoursesTotal(pagination.total);
+          setCoursesTotalPages(pagination.totalPages);
+          setCoursesPage(pagination.page);
+        }
       }
     } catch {
       setError('加载课程数据失败');
@@ -88,11 +116,16 @@ export default function AdminContent() {
     fetchCourses();
   }, []);
 
-  // 搜索触发
+  // 搜索触发（重置到第1页）
   useEffect(() => {
     const timer = setTimeout(() => {
-      if (tab === 'jobs') fetchJobs(search);
-      else fetchCourses(search);
+      if (tab === 'jobs') {
+        setJobsPage(1);
+        fetchJobs(search, 1);
+      } else {
+        setCoursesPage(1);
+        fetchCourses(search, 1);
+      }
     }, 300);
     return () => clearTimeout(timer);
   }, [search, tab]);
@@ -131,6 +164,56 @@ export default function AdminContent() {
 
   const isLoading = tab === 'jobs' ? jobsLoading : coursesLoading;
   const currentList = tab === 'jobs' ? jobs : courses;
+  const currentPage = tab === 'jobs' ? jobsPage : coursesPage;
+  const currentTotalPages = tab === 'jobs' ? jobsTotalPages : coursesTotalPages;
+  const currentTotal = tab === 'jobs' ? jobsTotal : coursesTotal;
+
+  const handlePageChange = (newPage: number) => {
+    if (tab === 'jobs') {
+      setJobsPage(newPage);
+      fetchJobs(search, newPage);
+    } else {
+      setCoursesPage(newPage);
+      fetchCourses(search, newPage);
+    }
+  };
+
+  // 查看详情
+  async function viewDetail(type: 'job' | 'course', id: number) {
+    setDetailLoading(true);
+    try {
+      const endpoint = type === 'job' ? `/admin/jobs/${id}` : `/admin/courses/${id}`;
+      const res = await http.get(endpoint);
+      if (res.data?.code === 200) {
+        setDetailItem({ ...res.data.data, _type: type });
+      }
+    } catch {
+      showToast({ type: 'error', title: '获取详情失败' });
+    } finally {
+      setDetailLoading(false);
+    }
+  }
+
+  // 发送反馈
+  async function sendFeedback() {
+    if (!detailItem || !feedbackText.trim()) return;
+    setFeedbackSending(true);
+    try {
+      const userId = detailItem._type === 'job' ? detailItem.company_id : detailItem.mentor_id;
+      const itemName = detailItem.title;
+      await http.post('/admin/feedback', {
+        userId,
+        title: `关于「${itemName}」的审核反馈`,
+        content: feedbackText,
+      });
+      showToast({ type: 'success', title: '反馈已发送' });
+      setFeedbackText('');
+    } catch {
+      showToast({ type: 'error', title: '发送失败，请重试' });
+    } finally {
+      setFeedbackSending(false);
+    }
+  }
 
   return (
     <div className="space-y-6">
@@ -156,7 +239,7 @@ export default function AdminContent() {
           }`}
         >
           <Briefcase className="w-4 h-4" />
-          职位管理 ({jobs.length})
+          职位管理 ({jobsTotal})
         </button>
         <button
           onClick={() => { setTab('courses'); setSearch(''); }}
@@ -165,20 +248,22 @@ export default function AdminContent() {
           }`}
         >
           <Video className="w-4 h-4" />
-          课程管理 ({courses.length})
+          课程管理 ({coursesTotal})
         </button>
       </div>
 
       {/* 搜索 */}
       <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
-        <div className="relative max-w-md">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+        <div className="relative max-w-lg">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
           <input
             type="text"
+            id="content-search"
+            name="content-search"
             placeholder={tab === 'jobs' ? '搜索职位名称、公司...' : '搜索课程名称、讲师...'}
             value={search}
             onChange={e => setSearch(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 outline-none"
+            className="w-full pl-11 pr-4 py-3 border border-gray-200 rounded-lg text-base focus:ring-2 focus:ring-primary-500 outline-none"
           />
         </div>
       </div>
@@ -216,7 +301,7 @@ export default function AdminContent() {
             </thead>
             <tbody className="divide-y divide-gray-100">
               {jobs.map((job, i) => (
-                <motion.tr key={job.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i * 0.03 }} className="hover:bg-gray-50">
+                <motion.tr key={job.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: Math.min(i * 0.03, 0.3) }} className="hover:bg-gray-50">
                   <td className="px-6 py-4">
                     <p className="text-sm font-medium text-gray-900 truncate max-w-[250px]">{job.title}</p>
                     <p className="text-xs text-gray-500">{job.location}</p>
@@ -243,6 +328,10 @@ export default function AdminContent() {
                     </button>
                     {actionMenu === job.id && (
                       <div className="absolute right-6 top-12 w-36 bg-white rounded-lg shadow-lg border py-1 z-10">
+                        <button onClick={() => { viewDetail('job', job.id); setActionMenu(null); }} className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2">
+                          <Eye className="w-4 h-4" />
+                          查看详情
+                        </button>
                         <button onClick={() => toggleJobStatus(job.id)} className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2">
                           {job.status === 'active' ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                           {job.status === 'active' ? '下架' : '上架'}
@@ -274,7 +363,7 @@ export default function AdminContent() {
             </thead>
             <tbody className="divide-y divide-gray-100">
               {courses.map((course, i) => (
-                <motion.tr key={course.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i * 0.03 }} className="hover:bg-gray-50">
+                <motion.tr key={course.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: Math.min(i * 0.03, 0.3) }} className="hover:bg-gray-50">
                   <td className="px-6 py-4">
                     <p className="text-sm font-medium text-gray-900 truncate max-w-[300px]">{course.title}</p>
                   </td>
@@ -298,6 +387,10 @@ export default function AdminContent() {
                     </button>
                     {actionMenu === course.id + 1000 && (
                       <div className="absolute right-6 top-12 w-36 bg-white rounded-lg shadow-lg border py-1 z-10">
+                        <button onClick={() => { viewDetail('course', course.id); setActionMenu(null); }} className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2">
+                          <Eye className="w-4 h-4" />
+                          查看详情
+                        </button>
                         <button onClick={() => toggleCourseStatus(course.id)} className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2">
                           {course.status === 'active' ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                           {course.status === 'active' ? '下架' : '上架'}
@@ -309,6 +402,134 @@ export default function AdminContent() {
               ))}
             </tbody>
           </table>
+        </div>
+      )}
+
+      {/* 分页控件 */}
+      {!isLoading && currentList.length > 0 && (
+        <div className="flex items-center justify-between bg-white rounded-xl px-6 py-4 shadow-sm border border-gray-100">
+          <span className="text-sm text-gray-500">
+            共 {currentTotal} 条记录，第 {currentPage} / {currentTotalPages} 页
+          </span>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => handlePageChange(currentPage - 1)}
+              disabled={currentPage <= 1}
+              className="p-2 rounded-lg border border-gray-200 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+            <span className="px-3 py-1.5 text-sm font-medium text-gray-700">{currentPage}</span>
+            <button
+              onClick={() => handlePageChange(currentPage + 1)}
+              disabled={currentPage >= currentTotalPages}
+              className="p-2 rounded-lg border border-gray-200 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+            >
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* 详情弹窗 */}
+      {(detailItem || detailLoading) && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => { setDetailItem(null); setFeedbackText(''); }}>
+          <motion.div
+            initial={{ scale: 0.95, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            onClick={e => e.stopPropagation()}
+            className="bg-white rounded-2xl w-full max-w-lg max-h-[80vh] overflow-y-auto shadow-2xl"
+          >
+            {detailLoading ? (
+              <div className="flex items-center justify-center py-20">
+                <Loader2 className="w-8 h-8 text-primary-500 animate-spin" />
+              </div>
+            ) : detailItem && (
+              <>
+                <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between sticky top-0 bg-white rounded-t-2xl">
+                  <h3 className="text-lg font-bold text-gray-900">
+                    {detailItem._type === 'job' ? '职位详情' : '课程详情'}
+                  </h3>
+                  <button onClick={() => { setDetailItem(null); setFeedbackText(''); }} className="p-1.5 rounded-lg hover:bg-gray-100">
+                    <X className="w-5 h-5 text-gray-400" />
+                  </button>
+                </div>
+                <div className="px-6 py-4 space-y-4">
+                  <div>
+                    <h4 className="text-xl font-bold text-gray-900">{detailItem.title}</h4>
+                    <p className="text-sm text-gray-500 mt-1">
+                      {detailItem._type === 'job' ? detailItem.company_name : detailItem.mentor_name}
+                      {detailItem.location && ` · ${detailItem.location}`}
+                    </p>
+                  </div>
+                  {detailItem._type === 'job' && (
+                    <div className="flex flex-wrap gap-3 text-sm">
+                      {detailItem.type && <Tag variant="blue" size="sm">{detailItem.type}</Tag>}
+                      {detailItem.salary && <Tag variant="green" size="sm">{detailItem.salary}</Tag>}
+                      <span className={`inline-flex items-center gap-1 text-xs font-medium ${detailItem.status === 'active' ? 'text-green-600' : 'text-gray-400'}`}>
+                        {detailItem.status === 'active' ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
+                        {detailItem.status === 'active' ? '上架中' : '已下架'}
+                      </span>
+                    </div>
+                  )}
+                  {detailItem._type === 'course' && (
+                    <div className="flex flex-wrap gap-3 text-sm">
+                      {detailItem.category && <Tag variant="purple" size="sm">{detailItem.category}</Tag>}
+                      {detailItem.rating > 0 && <span className="text-amber-600 font-medium">评分: {detailItem.rating}</span>}
+                      <span className={`inline-flex items-center gap-1 text-xs font-medium ${detailItem.status === 'active' ? 'text-green-600' : 'text-gray-400'}`}>
+                        {detailItem.status === 'active' ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
+                        {detailItem.status === 'active' ? '上架中' : '已下架'}
+                      </span>
+                    </div>
+                  )}
+                  {detailItem.description && (
+                    <div>
+                      <p className="text-sm font-medium text-gray-700 mb-1">详细描述</p>
+                      <p className="text-sm text-gray-600 whitespace-pre-wrap bg-gray-50 rounded-lg p-3">{detailItem.description}</p>
+                    </div>
+                  )}
+                  {detailItem.requirements && (
+                    <div>
+                      <p className="text-sm font-medium text-gray-700 mb-1">岗位要求</p>
+                      <p className="text-sm text-gray-600 whitespace-pre-wrap bg-gray-50 rounded-lg p-3">{detailItem.requirements}</p>
+                    </div>
+                  )}
+                  {detailItem.tags && detailItem.tags.length > 0 && (
+                    <div className="flex flex-wrap gap-2">
+                      {detailItem.tags.map((tag: string) => (
+                        <Tag key={tag} variant="gray" size="sm">{tag}</Tag>
+                      ))}
+                    </div>
+                  )}
+                  <p className="text-xs text-gray-400">创建时间：{new Date(detailItem.created_at).toLocaleString('zh-CN')}</p>
+                </div>
+                {/* 审核反馈 */}
+                <div className="px-6 py-4 border-t border-gray-100">
+                  <p className="text-sm font-medium text-gray-700 mb-2 flex items-center gap-1">
+                    <MessageSquare className="w-4 h-4" />
+                    发送审核反馈
+                  </p>
+                  <textarea
+                    id="admin-feedback"
+                    name="admin-feedback"
+                    value={feedbackText}
+                    onChange={e => setFeedbackText(e.target.value)}
+                    placeholder="输入反馈内容，将以通知形式发送给发布者..."
+                    rows={3}
+                    className="w-full border border-gray-200 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-primary-500 outline-none resize-none"
+                  />
+                  <button
+                    onClick={sendFeedback}
+                    disabled={!feedbackText.trim() || feedbackSending}
+                    className="mt-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-40 text-sm font-medium flex items-center gap-1"
+                  >
+                    {feedbackSending ? <Loader2 className="w-4 h-4 animate-spin" /> : <MessageSquare className="w-4 h-4" />}
+                    发送反馈
+                  </button>
+                </div>
+              </>
+            )}
+          </motion.div>
         </div>
       )}
     </div>

@@ -61,9 +61,18 @@ export default function MyApplications() {
   const fetchApplications = useCallback(async (showLoading = true) => {
     try {
       if (showLoading) setLoading(true);
-      const res = await http.get('/student/applications');
+      const res = await http.get('/student/resumes');
       if (res.data?.code === 200 && res.data.data) {
-        setApplications(res.data.data.list || res.data.data);
+        // 后端返回 {list: [...]} 或 {resumes: [...]} 或数组
+        const raw = res.data.data;
+        const list = Array.isArray(raw.list)
+          ? raw.list
+          : Array.isArray(raw.resumes)
+            ? raw.resumes
+            : Array.isArray(raw)
+              ? raw
+              : [];
+        setApplications(list);
       }
     } catch (err) {
       setError('数据加载失败，请刷新重试');

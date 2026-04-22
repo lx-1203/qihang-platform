@@ -67,7 +67,7 @@ export default function SuccessCases() {
   const [platformStats, setPlatformStats] = useState<{ students?: number } | null>(null);
 
   // 从配置中心读取成功案例数据
-  const config = useConfigStore(s => s.getJson('success_cases_page_config', FALLBACK_CONFIG));
+  const config = useConfigStore().getJson('success_cases_page_config') || FALLBACK_CONFIG;
   const CATEGORIES = config.categories || FALLBACK_CONFIG.categories;
   const STATS = config.stats || FALLBACK_CONFIG.stats;
   const CASES = config.cases || FALLBACK_CONFIG.cases;

@@ -71,16 +71,16 @@ export default function Postgrad() {
               {heroDesc}
             </p>
             <div className="flex flex-wrap gap-4">
-              <button className="bg-primary-500 text-white px-6 py-3 rounded-xl font-medium hover:bg-primary-700 transition-colors">
+              <Link to="/guidance/articles" className="bg-primary-500 text-white px-6 py-3 rounded-xl font-medium hover:bg-primary-700 transition-colors inline-block text-center">
                 获取备考资料
-              </button>
-              <button className="bg-white text-gray-900 border border-gray-200 px-6 py-3 rounded-xl font-medium hover:bg-gray-50 transition-colors">
+              </Link>
+              <Link to="/mentors" className="bg-white text-gray-900 border border-gray-200 px-6 py-3 rounded-xl font-medium hover:bg-gray-50 transition-colors inline-block text-center">
                 咨询上岸学长
-              </button>
+              </Link>
             </div>
           </div>
           <div className="hidden md:block w-[320px]">
-            <img src="https://images.unsplash.com/photo-1523050854058-8df90110c9f1?w=500&q=80" alt="Graduation" className="w-full h-auto rounded-2xl object-cover shadow-md rotate-2" />
+            <img src="/placeholder-cover.svg" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }} alt="Graduation" className="w-full h-auto rounded-2xl object-cover shadow-md rotate-2" />
           </div>
         </div>
 
@@ -128,9 +128,9 @@ export default function Postgrad() {
                 ))
               )}
             </ul>
-            <button className="text-primary-600 font-medium text-[15px] flex items-center gap-1 hover:gap-2 transition-all">
+            <Link to="/guidance/articles" className="text-primary-600 font-medium text-[15px] flex items-center gap-1 hover:gap-2 transition-all">
               进入保研社区 <ChevronRight className="w-5 h-5" />
-            </button>
+            </Link>
           </div>
 
           {/* Study Abroad */}
@@ -158,9 +158,9 @@ export default function Postgrad() {
                 ))
               )}
             </ul>
-            <button className="text-sky-600 font-medium text-[15px] flex items-center gap-1 hover:gap-2 transition-all">
+            <Link to="/study-abroad" className="text-sky-600 font-medium text-[15px] flex items-center gap-1 hover:gap-2 transition-all">
               进入留学社区 <ChevronRight className="w-5 h-5" />
-            </button>
+            </Link>
           </div>
         </div>
 

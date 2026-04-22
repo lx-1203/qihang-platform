@@ -176,13 +176,20 @@ export default function Footer() {
                 <div key={index}>
                   <h3 className="text-sm font-bold text-gray-900 mb-4">{group.title}</h3>
                   <ul className="space-y-3">
-                    {group.links.map((link, linkIndex) => (
-                      <li key={linkIndex}>
-                        <Link to={link.url} className="text-sm text-gray-500 hover:text-primary-600 transition-colors">
-                          {link.name}
-                        </Link>
-                      </li>
-                    ))}
+                    {group.links.map((link, linkIndex) => {
+                      const unregistered = ['/about','/certifications','/history','/help','/appeal','/report','/privacy','/terms','/copyright'];
+                      return (
+                        <li key={linkIndex}>
+                          {unregistered.includes(link.url) ? (
+                            <span className="text-sm text-gray-400 cursor-default" title="即将上线">{link.name}</span>
+                          ) : (
+                            <Link to={link.url} className="text-sm text-gray-500 hover:text-primary-600 transition-colors">
+                              {link.name}
+                            </Link>
+                          )}
+                        </li>
+                      );
+                    })}
                   </ul>
                 </div>
               ))}

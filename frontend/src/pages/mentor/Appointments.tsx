@@ -64,7 +64,16 @@ export default function MentorAppointments() {
       setLoading(true);
       const res = await http.get('/mentor/appointments');
       if (res.data?.code === 200 && res.data.data) {
-        setAppointments(res.data.data.list || res.data.data);
+        const raw = res.data.data;
+        // 后端可能返回 {appointments: [...]} 或 {list: [...]} 或直接是数组
+        const list = Array.isArray(raw.list)
+          ? raw.list
+          : Array.isArray(raw.appointments)
+            ? raw.appointments
+            : Array.isArray(raw)
+              ? raw
+              : [];
+        setAppointments(list);
       }
     } catch (err) {
       setError('数据加载失败，请刷新重试');
@@ -171,7 +180,7 @@ export default function MentorAppointments() {
           { label: '待确认', value: statusCounts.pending, icon: AlertCircle, bg: 'bg-orange-50', color: 'text-orange-600', accent: 'border-l-orange-500' },
           { label: '已确认', value: statusCounts.confirmed, icon: CalendarCheck, bg: 'bg-blue-50', color: 'text-blue-600', accent: 'border-l-blue-500' },
           { label: '已完成', value: statusCounts.completed, icon: CheckCircle, bg: 'bg-green-50', color: 'text-green-600', accent: 'border-l-green-500' },
-          { label: '总收入(¥)', value: appointments.filter(a => a.status === 'completed').reduce((s, a) => s + a.fee, 0).toLocaleString(), icon: DollarSign, bg: 'bg-primary-50', color: 'text-primary-600', accent: 'border-l-primary-500' },
+          { label: '总收入(¥)', value: appointments.filter(a => a.status === 'completed').reduce((s, a) => s + (Number(a.fee) || 0), 0).toLocaleString(), icon: DollarSign, bg: 'bg-primary-50', color: 'text-primary-600', accent: 'border-l-primary-500' },
         ].map((item, i) => (
           <motion.div
             key={item.label}
