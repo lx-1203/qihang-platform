@@ -48,6 +48,9 @@ logs
 # claude code
 .claude/
 
+# trae AI
+.trae/
+
 # test output & overnight logs
 overnight-logs/
 frontend/test-results/
