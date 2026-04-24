@@ -161,7 +161,7 @@ export default function SuccessCases() {
               {activeCategory === cat.key && (
                 <motion.div
                   layoutId="category-indicator"
-                  className="absolute inset-0 bg-gradient-to-r from-primary-600 to-primary-600 rounded-full shadow-lg shadow-primary-500/30"
+                  className="absolute inset-0 bg-primary-600 rounded-full shadow-lg shadow-primary-500/30"
                   transition={{ type: 'spring', stiffness: 380, damping: 30 }}
                 />
               )}

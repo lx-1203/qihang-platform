@@ -53,8 +53,22 @@ export default function MentorProfile() {
       setLoading(true);
       setError(null);
       const res = await http.get('/mentor/profile');
-      if (res.data?.code === 200 && res.data.data) {
-        setProfile(res.data.data);
+      if (res.data?.code === 200 && res.data.data?.profile) {
+        const p = res.data.data.profile;
+        setProfile({
+          name: p.name || '',
+          title: p.title || '',
+          bio: p.bio || '',
+          avatar: p.avatar || '',
+          expertise: Array.isArray(p.expertise) ? p.expertise : (typeof p.expertise === 'string' ? JSON.parse(p.expertise || '[]') : []),
+          pricePerSession: p.price || 0,
+          availableSlots: Array.isArray(p.available_time) ? p.available_time : (typeof p.available_time === 'string' ? JSON.parse(p.available_time || '[]') : []),
+          verifyStatus: p.verify_status || 'pending',
+          email: p.email || '',
+          phone: p.phone || '',
+          experience: p.experience || '',
+          education: p.education || '',
+        });
       }
     } catch (err) {
       setError('资料加载失败，请稍后重试');
@@ -125,7 +139,7 @@ export default function MentorProfile() {
     rejected: { label: '未通过', icon: ShieldAlert, color: 'text-red-600', bg: 'bg-red-50 border-red-200' },
   };
 
-  const verify = verifyConfig[profile.verifyStatus];
+  const verify = verifyConfig[profile.verifyStatus] || verifyConfig.pending;
 
   if (loading) return (
     <div className="space-y-6">
@@ -351,7 +365,7 @@ export default function MentorProfile() {
               placeholder="介绍您的专业背景、擅长领域和辅导特色..."
               className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 resize-none"
             />
-            <p className="text-xs text-gray-400 mt-1">{profile.bio.length}/500 字</p>
+            <p className="text-xs text-gray-400 mt-1">{(profile.bio || '').length}/500 字</p>
           </motion.div>
 
           {/* 专长标签 */}
@@ -366,7 +380,7 @@ export default function MentorProfile() {
               专长标签
             </h3>
             <div className="flex flex-wrap gap-2 mb-4">
-              {profile.expertise.map(tag => (
+              {(profile.expertise || []).map(tag => (
                 <span
                   key={tag}
                   className="inline-flex items-center gap-1 px-3 py-1.5 bg-primary-50 text-primary-700 rounded-full text-sm font-medium"
@@ -412,7 +426,7 @@ export default function MentorProfile() {
               可用时间段
             </h3>
             <div className="space-y-2 mb-4">
-              {profile.availableSlots.map((slot, i) => (
+              {(profile.availableSlots || []).map((slot, i) => (
                 <div
                   key={i}
                   className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"

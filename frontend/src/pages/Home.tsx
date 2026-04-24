@@ -135,7 +135,8 @@ export default function Home() {
     } catch { setCoursesError(true); }
   };
 
-  const rawHeroSlides = useConfigStore(s => s.configs['home_hero_slides']);
+  const rawHomeConfig = useConfigStore(s => s.getJson('home_ui_config', null)) as Record<string, unknown> | null;
+  const rawHeroSlides = rawHomeConfig?.heroSlides as Array<{ id: string; title: string; subtitle: string; gradient: string; cta: string; ctaLink: string }> | undefined;
   const [heroSlidesFromApi, setHeroSlidesFromApi] = useState<Array<{ id: string; title: string; subtitle: string; gradient: string; cta: string; ctaLink: string }>>([]);
 
   useEffect(() => {
@@ -266,7 +267,9 @@ export default function Home() {
           {/* 搜索栏 */}
           <div className="mt-6 md:mt-8 max-w-xl">
             <div className="relative">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/50" />
+              <button type="button" onClick={() => { if (homeSearch.trim()) { addSearchHistory(homeSearch.trim()); navigate(`/jobs?keyword=${encodeURIComponent(homeSearch.trim())}`); } }} className="absolute left-4 top-1/2 -translate-y-1/2 text-white/50 hover:text-white/80 transition-colors cursor-pointer" aria-label="搜索">
+                <Search className="w-5 h-5" />
+              </button>
               <input type="text" placeholder={t.hero.searchPlaceholder}
                 value={homeSearch}
                 onChange={e => setHomeSearch(e.target.value)}

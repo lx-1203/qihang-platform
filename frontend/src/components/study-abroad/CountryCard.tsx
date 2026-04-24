@@ -93,7 +93,7 @@ export default function CountryCard({ country, variant }: CountryCardProps) {
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div className="flex flex-wrap items-center gap-2">
                 <MapPin className="w-4 h-4 text-gray-400 shrink-0" size={16} />
-                {country.topUniversities.slice(0, 5).map((uni) => (
+                {(country.topUniversities || []).slice(0, 5).map((uni) => (
                   <Tag
                     key={uni}
                     variant="gray"

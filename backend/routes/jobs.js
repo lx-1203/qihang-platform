@@ -47,6 +47,20 @@ router.get('/', async (req, res) => {
 
     const [jobs] = await pool.query(sql, params);
 
+    // 获取总数（用于前端分页显示）
+    let countSql = 'SELECT COUNT(*) as total FROM jobs WHERE status = "active" AND deleted_at IS NULL';
+    const countParams = [];
+    if (type && type !== '全部') { countSql += ' AND type = ?'; countParams.push(type); }
+    if (location && location !== '全国') { countSql += ' AND location LIKE ?'; countParams.push(`%${location}%`); }
+    if (category && category !== '全部') { countSql += ' AND category = ?'; countParams.push(category); }
+    if (keyword) {
+      countSql += ' AND (title LIKE ? OR company_name LIKE ? OR JSON_SEARCH(tags, "one", ?) IS NOT NULL)';
+      const kw = `%${keyword}%`;
+      countParams.push(kw, kw, `%${keyword}%`);
+    }
+    const [countResult] = await pool.query(countSql, countParams);
+    const total = countResult[0]?.total || 0;
+
     // 判断是否有下一页
     let nextCursor = null;
     let items = jobs;
@@ -67,6 +81,7 @@ router.get('/', async (req, res) => {
       code: 200,
       data: {
         jobs: parsedJobs,
+        total,
         filters: { categories: JOB_CATEGORIES, types: JOB_TYPES, locations: LOCATIONS },
         nextCursor,
         hasMore: nextCursor !== null,
@@ -89,7 +104,7 @@ router.get('/suggest', async (req, res) => {
 
     const kw = `%${String(keyword).trim()}%`;
     const [rows] = await pool.query(
-      `SELECT DISTINCT title, company_name FROM jobs
+      `SELECT title, company_name, urgent, view_count FROM jobs
        WHERE status = 'active' AND deleted_at IS NULL AND (title LIKE ? OR company_name LIKE ?)
        ORDER BY urgent DESC, view_count DESC
        LIMIT 8`,

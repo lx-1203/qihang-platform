@@ -47,6 +47,9 @@ export default function MentorDetail() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [bookingLoading, setBookingLoading] = useState(false);
+  const [showBookingModal, setShowBookingModal] = useState(false);
+  const [bookingNote, setBookingNote] = useState('');
+  const [selectedTime, setSelectedTime] = useState('');
 
   // 获取导师详情
   useEffect(() => {
@@ -55,7 +58,7 @@ export default function MentorDetail() {
         setLoading(true);
         setError('');
         const res = await http.get(`/mentors/${id}`);
-        setMentor(res.data);
+        setMentor(res.data.data);
       } catch (err: unknown) {
         const error = err as { code?: number; response?: { status?: number } };
         console.error('获取导师详情失败:', err);
@@ -81,7 +84,7 @@ export default function MentorDetail() {
         // 用导师名称作为关键词搜索其课程
         if (mentor?.name) {
           const res = await http.get('/courses', { params: { keyword: mentor.name, pageSize: 10 } });
-          const data = res.data;
+          const data = res.data?.data || res.data;
           setCourses(data.courses || []);
         }
       } catch (err) {
@@ -95,9 +98,23 @@ export default function MentorDetail() {
   }, [mentor]);
 
   // 预约导师
-  const handleBookAppointment = async () => {
+  const handleBookAppointment = () => {
     if (!isAuthenticated) {
-      navigate('/login', { state: { from: `/mentors/${id}` } });
+      navigate('/login', { state: { returnUrl: `/mentors/${id}` } });
+      return;
+    }
+    setShowBookingModal(true);
+    setBookingNote(`我想预约${mentor?.name}老师的1v1辅导服务`);
+    if (mentor?.available_time && mentor.available_time.length > 0) {
+      setSelectedTime(mentor.available_time[0]);
+    } else {
+      setSelectedTime('');
+    }
+  };
+
+  const submitBooking = async () => {
+    if (!selectedTime) {
+      toast.error('表单不完整', '请选择一个预约时间段');
       return;
     }
 
@@ -106,9 +123,10 @@ export default function MentorDetail() {
       await http.post('/student/appointments', {
         mentor_id: mentor?.id,
         type: '1v1辅导',
-        note: `预约${mentor?.name}老师的1v1辅导服务`,
+        note: `【意向时间段：${selectedTime}】 ${bookingNote}`,
       });
       toast.success('预约成功', '您的预约申请已提交，请等待导师确认');
+      setShowBookingModal(false);
     } catch (err: unknown) {
       const error = err as { message?: string };
       toast.error('预约失败', error?.message || '请稍后重试');
@@ -197,7 +215,7 @@ export default function MentorDetail() {
                <button
                  onClick={() => {
                    if (!isAuthenticated) {
-                     navigate('/login', { state: { from: `/mentors/${id}` } });
+                     navigate('/login', { state: { returnUrl: `/mentors/${id}` } });
                      return;
                    }
                    navigate('/chat');
@@ -404,6 +422,60 @@ export default function MentorDetail() {
           </motion.div>
         </div>
       </div>
+      {/* 预约弹窗 */}
+      {showBookingModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => setShowBookingModal(false)}>
+          <motion.div
+            initial={{ scale: 0.95, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            onClick={e => e.stopPropagation()}
+            className="bg-white rounded-2xl w-full max-w-md shadow-2xl"
+          >
+            <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+              <h3 className="text-lg font-bold text-gray-900">预约 1v1 辅导</h3>
+              <button onClick={() => setShowBookingModal(false)} className="text-gray-400 hover:text-gray-600">
+                ×
+              </button>
+            </div>
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">选择预约时间</label>
+                {mentor.available_time && mentor.available_time.length > 0 ? (
+                  <select
+                    value={selectedTime}
+                    onChange={e => setSelectedTime(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 outline-none"
+                  >
+                    {mentor.available_time.map((time, idx) => (
+                      <option key={idx} value={time}>{time}</option>
+                    ))}
+                  </select>
+                ) : (
+                  <p className="text-sm text-red-500">导师暂未设置可用时间段，请先私信沟通</p>
+                )}
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">留言/备注</label>
+                <textarea
+                  value={bookingNote}
+                  onChange={e => setBookingNote(e.target.value)}
+                  rows={4}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 outline-none resize-none"
+                  placeholder="请简要描述您的辅导需求..."
+                />
+              </div>
+              <button
+                onClick={submitBooking}
+                disabled={bookingLoading || !selectedTime}
+                className="w-full bg-primary-600 text-white py-2.5 rounded-lg font-medium hover:bg-primary-700 disabled:opacity-50 transition-colors flex items-center justify-center gap-2"
+              >
+                {bookingLoading && <Loader2 size={16} className="animate-spin" />}
+                提交预约
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
     </div>
   );
 }

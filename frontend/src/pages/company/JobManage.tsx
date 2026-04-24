@@ -13,6 +13,7 @@ import ConfirmDialog from '@/components/ui/ConfirmDialog';
 import { TableSkeleton } from '../../components/ui/Skeleton';
 import ErrorState from '../../components/ui/ErrorState';
 import Tag from '@/components/ui/Tag';
+import { showToast } from '@/components/ui/ToastContainer';
 
 // ====== 企业端职位管理 ======
 // 商业级要求：CRUD 操作、状态切换、模态表单、搜索筛选
@@ -109,8 +110,9 @@ export default function CompanyJobManage() {
         signal: controller.signal,
       });
       if (res.data?.code === 200 && res.data.data) {
-        setJobs(res.data.data.list || []);
-        setTotal(res.data.data.total || 0);
+        const list = Array.isArray(res.data.data.list) ? res.data.data.list : [];
+        setJobs(list.filter((job: Record<string, unknown>) => !job.deleted_at));
+        setTotal(Number(res.data.data.total || 0));
       } else {
         setError('获取职位数据失败，服务器返回异常');
       }
@@ -134,19 +136,34 @@ export default function CompanyJobManage() {
     try {
       setToggleLoading(true);
       const newStatus = toggleTarget.currentStatus === 'active' ? 'inactive' : 'active';
+      const previousStatus = toggleTarget.currentStatus;
       setJobs(prev => prev.map(j => j.id === toggleTarget.id ? { ...j, status: newStatus } : j));
-      http.put(`/company/jobs/${toggleTarget.id}/status`, { status: newStatus }).catch(() => {});
+      await http.put(`/company/jobs/${toggleTarget.id}/status`, { status: newStatus });
+      showToast({ type: 'success', title: newStatus === 'active' ? '职位已上架' : '职位已下架' });
+    } catch {
+      setJobs(prev => prev.map(j => j.id === toggleTarget.id ? { ...j, status: toggleTarget.currentStatus } : j));
+      showToast({ type: 'error', title: '操作失败', message: '请稍后重试' });
     } finally {
       setToggleLoading(false);
       setToggleTarget(null);
     }
   }
 
-  function deleteJob(id: number) {
+  async function deleteJob(id: number) {
+    const previousJobs = jobs;
+    const previousTotal = total;
     setJobs(prev => prev.filter(j => j.id !== id));
-    setTotal(prev => prev - 1);
+    setTotal(prev => Math.max(0, prev - 1));
     setActionMenu(null);
-    http.delete(`/company/jobs/${id}`).catch(() => {});
+
+    try {
+      await http.delete(`/company/jobs/${id}`);
+      showToast({ type: 'success', title: '职位已删除' });
+    } catch {
+      setJobs(previousJobs);
+      setTotal(previousTotal);
+      showToast({ type: 'error', title: '删除失败', message: '请稍后重试' });
+    }
   }
 
   async function handleConfirmDelete() {
@@ -209,9 +226,9 @@ export default function CompanyJobManage() {
               className="border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-primary-500 outline-none"
             >
               <option value="all">全部类型</option>
-              <option value="全职">全职</option>
+              <option value="校招">校招</option>
               <option value="实习">实习</option>
-              <option value="兼职">兼职</option>
+              <option value="社招">社招</option>
             </select>
           </div>
           <select

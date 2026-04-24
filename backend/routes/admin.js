@@ -23,7 +23,7 @@ router.get('/stats', async (req, res) => {
     const [
       [totalRows], [roleRows], [statusRows], [monthlyRows],
       [todayRows], [trendRows],
-      [jobsCountRows], [coursesCountRows], [mentorsCountRows],
+      [jobsCountRows], [coursesCountRows], [approvedMentorsRows], [activeJobsRows],
     ] = await Promise.all([
       pool.query('SELECT COUNT(*) AS total FROM users'),
       pool.query('SELECT role, COUNT(*) AS count FROM users GROUP BY role'),
@@ -33,43 +33,76 @@ router.get('/stats', async (req, res) => {
       pool.query('SELECT COUNT(*) AS count FROM users WHERE DATE(created_at) = CURDATE()'),
       pool.query(`SELECT DATE(created_at) AS date, COUNT(*) AS count
        FROM users
-       WHERE created_at >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)
+       WHERE created_at >= DATE_SUB(CURDATE(), INTERVAL 6 DAY)
        GROUP BY DATE(created_at)
        ORDER BY date ASC`),
       pool.query('SELECT COUNT(*) AS total FROM jobs'),
       pool.query('SELECT COUNT(*) AS total FROM courses'),
-      pool.query('SELECT COUNT(*) AS total FROM mentor_profiles'),
+      pool.query("SELECT COUNT(*) AS total FROM mentor_profiles WHERE status = 'approved'"),
+      pool.query("SELECT COUNT(*) AS total FROM jobs WHERE status = 'active'"),
     ]);
 
     // 角色分布转为 map
-    const roleDistribution = {};
-    for (const r of roleRows) {
-      roleDistribution[r.role] = r.count;
-    }
+    
+    const colors = { student: 'bg-primary-500', company: 'bg-blue-500', mentor: 'bg-emerald-500', admin: 'bg-amber-500' };
+    const labels = { student: '学生', company: '企业', mentor: '导师', admin: '管理员' };
+    const roleDistribution = roleRows.map(r => ({
+      role: labels[r.role] || r.role,
+      count: r.count,
+      pct: Math.round((r.count / totalRows[0].total) * 100),
+      color: colors[r.role] || 'bg-gray-500'
+    }));
+
 
     // 状态分布
+    
     const activeCount = statusRows.find(s => s.status === 1)?.count || 0;
     const disabledCount = statusRows.find(s => s.status === 0)?.count || 0;
 
     const jobsCount = jobsCountRows[0].total;
     const coursesCount = coursesCountRows[0].total;
-    const mentorsCount = mentorsCountRows[0].total;
+    const mentorsCount = approvedMentorsRows[0].total;
+    const activeJobsCount = activeJobsRows[0].total;
+
+    const trendMap = new Map(
+      trendRows.map(row => {
+        const date = new Date(row.date).toISOString().slice(0, 10);
+        return [date, Number(row.count || 0)];
+      })
+    );
+    const regTrend = Array.from({ length: 7 }, (_, index) => {
+      const date = new Date();
+      date.setDate(date.getDate() - (6 - index));
+      const key = date.toISOString().slice(0, 10);
+      return trendMap.get(key) || 0;
+    });
+
+    // 获取额外的数据
+    const [[companiesCountRows], [pendingCompaniesRows], [pendingMentorsRows], [todayResumeRows], [totalAppointmentsRows]] = await Promise.all([
+      pool.query("SELECT COUNT(*) AS total FROM users WHERE role = 'company'"),
+      pool.query("SELECT COUNT(*) AS total FROM companies WHERE verify_status = 'pending'"),
+      pool.query("SELECT COUNT(*) AS total FROM mentor_profiles WHERE status = 'pending'"),
+      pool.query("SELECT COUNT(*) AS total FROM resumes WHERE DATE(created_at) = CURDATE()"),
+      pool.query("SELECT COUNT(*) AS total FROM appointments")
+    ]);
 
     res.json({
       code: 200,
       data: {
-        users: {
-          total: totalRows[0].total,
-          monthly: monthlyRows[0].count,
-          today: todayRows[0].count,
-          active: activeCount,
-          disabled: disabledCount,
-          roles: roleDistribution,
-          trend: trendRows,
-        },
-        jobs: { total: jobsCount },
-        courses: { total: coursesCount },
-        mentors: { total: mentorsCount },
+        totalUsers: totalRows[0].total,
+        onlineJobs: activeJobsCount,
+        totalCourses: coursesCount,
+        totalCompanies: companiesCountRows[0].total,
+        certifiedMentors: mentorsCount,
+        totalAppointments: totalAppointmentsRows[0].total,
+        todayRegister: todayRows[0].count,
+        todayResume: todayResumeRows[0].total,
+        weekActive: activeCount,
+        pendingCompanies: pendingCompaniesRows[0].total,
+        pendingMentors: pendingMentorsRows[0].total,
+        pendingReports: 0,
+        roleDistribution: roleDistribution,
+        regTrend,
       },
     });
   } catch (err) {

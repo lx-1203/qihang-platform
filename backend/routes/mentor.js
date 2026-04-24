@@ -83,7 +83,7 @@ router.get('/profile', async (req, res) => {
 router.post('/courses', idempotency(), async (req, res) => {
   try {
     const userId = req.user.id;
-    const { title, description, category, cover, video_url, duration, difficulty, tags } = req.body;
+    const { title, description, category, cover, video_url, duration, difficulty, tags, price } = req.body;
 
     if (!title || !description) {
       return res.status(400).json({ code: 400, message: '课程标题和描述不能为空' });
@@ -94,6 +94,11 @@ router.post('/courses', idempotency(), async (req, res) => {
       return res.status(400).json({ code: 400, message: '难度等级不正确' });
     }
 
+    const normalizedPrice = Number(price ?? 0);
+    if (Number.isNaN(normalizedPrice) || normalizedPrice < 0) {
+      return res.status(400).json({ code: 400, message: '课程价格必须为大于等于 0 的数字' });
+    }
+
     // 获取导师信息
     const [mentorRows] = await pool.query('SELECT id, name FROM mentor_profiles WHERE user_id = ?', [userId]);
     const mentorProfileId = mentorRows.length > 0 ? mentorRows[0].id : null;
@@ -102,9 +107,9 @@ router.post('/courses', idempotency(), async (req, res) => {
     const tagsJson = tags ? (typeof tags === 'string' ? tags : JSON.stringify(tags)) : '[]';
 
     const [result] = await pool.query(
-      `INSERT INTO courses (mentor_id, mentor_name, title, description, category, cover, video_url, duration, difficulty, tags)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [mentorProfileId, mentorName, title, description, category || '', cover || '', video_url || '', duration || '', difficulty || 'beginner', tagsJson]
+      `INSERT INTO courses (mentor_id, mentor_name, title, description, category, cover, video_url, duration, difficulty, price, tags)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [mentorProfileId, mentorName, title, description, category || '', cover || '', video_url || '', duration || '', difficulty || 'beginner', normalizedPrice, tagsJson]
     );
 
     const [rows] = await pool.query('SELECT * FROM courses WHERE id = ?', [result.insertId]);
@@ -170,10 +175,19 @@ router.put('/courses/:id', async (req, res) => {
       return res.status(404).json({ code: 404, message: '课程不存在或无权修改' });
     }
 
-    const { title, description, category, cover, video_url, duration, difficulty, status, tags } = req.body;
+    const { title, description, category, cover, video_url, duration, difficulty, status, tags, price } = req.body;
 
     const fields = [];
     const params = [];
+
+    if (price !== undefined) {
+      const normalizedPrice = Number(price);
+      if (Number.isNaN(normalizedPrice) || normalizedPrice < 0) {
+        return res.status(400).json({ code: 400, message: '课程价格必须为大于等于 0 的数字' });
+      }
+      fields.push('price = ?');
+      params.push(normalizedPrice);
+    }
 
     if (title !== undefined) { fields.push('title = ?'); params.push(title); }
     if (description !== undefined) { fields.push('description = ?'); params.push(description); }
@@ -347,6 +361,19 @@ router.put('/appointments/:id/status', async (req, res) => {
     res.json({ code: 200, message: '预约状态更新成功', data: { appointment: rows[0] } });
   } catch (err) {
     console.error('更新预约状态失败:', err);
+    res.status(500).json({ code: 500, message: '服务器内部错误' });
+  }
+});
+
+// PUT /api/mentor/appointments/:id/meeting-link - 设置会议链接
+router.put('/appointments/:id/meeting-link', async (req, res) => {
+  try {
+    const appointmentId = Number(req.params.id);
+    const { meeting_link } = req.body;
+    await pool.query('UPDATE appointments SET meeting_link = ? WHERE id = ? AND mentor_id = ?', [meeting_link || '', appointmentId, req.user.id]);
+    res.json({ code: 200, message: '会议链接已更新' });
+  } catch (err) {
+    console.error('更新会议链接失败:', err);
     res.status(500).json({ code: 500, message: '服务器内部错误' });
   }
 });

@@ -243,7 +243,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
     <ToastContext.Provider value={{ addToast, removeToast, success, error, warning, info, loading }}>
       {children}
 
-      <div className="fixed top-20 right-4 z-[9999] flex flex-col gap-2 pointer-events-none">
+      <div className="fixed top-20 left-1/2 -translate-x-1/2 z-[9999] flex flex-col gap-2 pointer-events-none items-center">
         <AnimatePresence mode="popLayout">
           {toasts.map((toast) => (
             <div key={toast.id} className="pointer-events-auto">

@@ -39,7 +39,7 @@ export default function ProtectedRoute({ allowedRoles, children }: ProtectedRout
 
   // 未登录 → 跳转登录页，保存当前路径用于登录后回跳
   if (!isAuthenticated || !user) {
-    return <Navigate to="/login" state={{ returnUrl: location.pathname }} replace />;
+    return <Navigate to="/login" state={{ returnUrl: location.pathname + location.search }} replace />;
   }
 
   // 已登录但角色不匹配 → 跳转到对应角色的首页

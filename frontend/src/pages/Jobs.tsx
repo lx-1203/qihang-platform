@@ -222,7 +222,9 @@ export default function Jobs() {
 
           <div ref={searchContainerRef} className="max-w-4xl mx-auto bg-white rounded-2xl p-2 sm:p-3 shadow-2xl flex flex-col sm:flex-row gap-2 relative">
             <div className="flex-1 flex items-center bg-gray-50 rounded-xl px-4 py-3 sm:py-0 border border-transparent focus-within:border-primary-500 focus-within:bg-white transition-colors relative">
-              <Search className="text-gray-400 w-5 h-5 shrink-0" />
+              <button type="button" onClick={handleSearch} className="shrink-0 p-0.5 -ml-1 text-gray-400 hover:text-primary-500 transition-colors cursor-pointer" aria-label="搜索">
+                <Search className="w-5 h-5" />
+              </button>
               <input
                 id="jobs-search"
                 name="jobs-search"

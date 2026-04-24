@@ -215,9 +215,16 @@ export default function StudyAbroadDetail() {
     { key: 'career' as const, label: '就业去向', icon: Briefcase },
   ];
 
-  const admittedCount = prog.offers.filter(o => o.result === 'admitted').length;
-  const rejectedCount = prog.offers.filter(o => o.result === 'rejected').length;
-  const waitlistedCount = prog.offers.filter(o => o.result === 'waitlisted').length;
+  const tags = Array.isArray(prog.tags) ? prog.tags : [];
+  const highlights = Array.isArray(prog.highlights) ? prog.highlights : [];
+  const timeline = Array.isArray(prog.timeline) ? prog.timeline : [];
+  const relatedPrograms = Array.isArray(prog.relatedPrograms) ? prog.relatedPrograms : [];
+  const materials = Array.isArray(prog.materials) ? prog.materials : [];
+  const offers = Array.isArray(prog.offers) ? prog.offers : [];
+
+  const admittedCount = offers.filter(o => o.result === 'admitted').length;
+  const rejectedCount = offers.filter(o => o.result === 'rejected').length;
+  const waitlistedCount = offers.filter(o => o.result === 'waitlisted').length;
 
   return (
     <div className="min-h-screen bg-gray-50 pb-16">
@@ -254,7 +261,7 @@ export default function StudyAbroadDetail() {
                 <Tag variant="primary" size="md" className="font-bold">
                   QS #{prog.ranking}
                 </Tag>
-                {prog.tags.map(tag => (
+                {tags.map(tag => (
                   <Tag key={tag} variant="gray" size="xs">{tag}</Tag>
                 ))}
               </div>
@@ -353,7 +360,7 @@ export default function StudyAbroadDetail() {
 
                 <h3 className="text-[20px] font-bold text-gray-900 mb-4">项目亮点</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-8">
-                  {prog.highlights.map((h, idx: number) => {
+                  {highlights.map((h, idx: number) => {
                   const HIcon = HIGHLIGHT_ICON_MAP[h.icon] || Star;
                   return (
                     <div key={idx} className="flex items-start gap-3 bg-gray-50 rounded-xl p-4 border border-gray-100">
@@ -371,7 +378,7 @@ export default function StudyAbroadDetail() {
 
                 <h3 className="text-[20px] font-bold text-gray-900 mb-4">申请时间线</h3>
                 <div className="relative pl-6 border-l-2 border-gray-200 space-y-6">
-                  {prog.timeline.map((item, idx) => {
+                  {timeline.map((item, idx) => {
                     const isPast = new Date(item.date) < new Date();
                     return (
                       <div key={idx} className="relative">
@@ -394,7 +401,7 @@ export default function StudyAbroadDetail() {
                 <div className="mt-10 pt-6 border-t border-gray-100">
                   <h3 className="text-[18px] font-bold text-gray-900 mb-4">相关项目推荐</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    {prog.relatedPrograms.map((rp) => (
+                    {relatedPrograms.map((rp) => (
                       <Link key={rp.id} to={`/study-abroad/programs/${rp.id}`} className="bg-gray-50 rounded-xl p-4 border border-gray-100 hover:border-primary-500/30 hover:shadow-sm transition-all group flex items-center gap-3">
                         <GraduationCap className="w-8 h-8 text-primary-500 shrink-0" />
                         <div>
@@ -443,7 +450,7 @@ export default function StudyAbroadDetail() {
 
                 <h3 className="text-[20px] font-bold text-gray-900 mb-4">申请材料清单</h3>
                 <div className="bg-gray-50 rounded-xl border border-gray-100 divide-y divide-gray-100">
-                  {prog.materials.map((mat, idx) => (
+                  {materials.map((mat, idx) => (
                     <div key={idx} className="flex items-center justify-between px-5 py-4">
                       <div className="flex items-center gap-3">
                         <CheckCircle2 className={`w-5 h-5 ${mat.required ? 'text-primary-500' : 'text-gray-300'}`} />

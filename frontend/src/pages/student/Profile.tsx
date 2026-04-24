@@ -6,6 +6,7 @@ import {
   Pencil, X, Check, Link, Briefcase
 } from 'lucide-react';
 import http from '@/api/http';
+import { useAuthStore } from '@/store/auth';
 import { DetailSkeleton } from '../../components/ui/Skeleton';
 import ErrorState from '../../components/ui/ErrorState';
 import FileUpload from '@/components/ui/FileUpload';
@@ -43,6 +44,8 @@ const commonSkills = [
 ];
 
 export default function Profile() {
+  const setUser = useAuthStore(state => state.setUser);
+  const authUser = useAuthStore(state => state.user);
   const [profile, setProfile] = useState<StudentProfile | null>(null);
   const [editMode, setEditMode] = useState(false);
   const [editData, setEditData] = useState<StudentProfile>(emptyProfile);
@@ -97,6 +100,8 @@ export default function Profile() {
     try {
       setSaving(true);
       await http.post('/student/profile', {
+        nickname: editData.nickname,
+        phone: editData.phone,
         school: editData.school,
         major: editData.major,
         grade: editData.grade,
@@ -106,6 +111,13 @@ export default function Profile() {
         resume_url: editData.resumeUrl,
       });
       setProfile(editData);
+      if (authUser) {
+        setUser({
+          ...authUser,
+          name: editData.nickname || authUser.name,
+          phone: editData.phone,
+        });
+      }
       setEditMode(false);
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 3000);
@@ -158,7 +170,7 @@ export default function Profile() {
   if (!profile) return <div className="container-narrow py-8"><DetailSkeleton /></div>;
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
+    <div className="max-w-4xl mx-auto space-y-6 py-8 min-h-[60vh]">
       {/* 页面标题 */}
       <div className="flex items-center justify-between">
         <div>
@@ -420,7 +432,7 @@ export default function Profile() {
               </div>
             ) : (
               <div className="flex flex-wrap gap-2">
-                {profile.skills.length > 0 ? (
+                {(profile.skills || []).length > 0 ? (
                   profile.skills.map(skill => (
                     <span
                       key={skill}

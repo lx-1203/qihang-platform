@@ -73,9 +73,12 @@ export default function AdminMentors() {
     }
   }
 
-  async function handleReview(mentorId: number, status: 'approved' | 'rejected') {
+  async function handleReview(mentorUserId: number, status: 'approved' | 'rejected') {
     try {
-      await http.put(`/admin/mentors/${mentorId}/verify`, { status, remark: reviewRemark });
+      await http.put(`/admin/mentors/${mentorUserId}/verify`, {
+        status: status === 'approved' ? 1 : 0,
+        remark: reviewRemark,
+      });
       showToast({
         type: status === 'approved' ? 'success' : 'warning',
         title: status === 'approved' ? '导师认证已通过' : '导师认证已驳回',
@@ -242,7 +245,7 @@ export default function AdminMentors() {
                   {mentor.verify_status === 'pending' && (
                     <>
                       <button
-                        onClick={() => handleReview(mentor.id, 'approved')}
+                        onClick={() => handleReview(mentor.user_id, 'approved')}
                         className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm font-medium flex items-center gap-1"
                       >
                         <CheckCircle className="w-4 h-4" /> 通过
@@ -392,7 +395,7 @@ export default function AdminMentors() {
             <div className="flex justify-end gap-3 mt-4">
               <button onClick={() => setReviewModal(null)} className="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg">取消</button>
               <button
-                onClick={() => handleReview(reviewModal.id, 'rejected')}
+                onClick={() => handleReview(reviewModal.user_id, 'rejected')}
                 disabled={!reviewRemark.trim()}
                 className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-40 text-sm font-medium"
               >

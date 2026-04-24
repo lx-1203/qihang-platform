@@ -119,26 +119,32 @@ export default function TalentSearch() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pagination.page]);
 
-  const fetchTalents = async () => {
+  const fetchTalents = async (overrides?: Partial<{ page: number; pageSize: number; keyword: string; school: string; major: string }>) => {
     try {
       setLoading(true);
       setError(null);
       const params: Record<string, string | number> = {
-        page: pagination.page,
-        pageSize: pagination.pageSize,
+        page: overrides?.page ?? pagination.page,
+        pageSize: overrides?.pageSize ?? pagination.pageSize,
       };
-      if (keyword) params.keyword = keyword;
-      if (school) params.school = school;
-      if (major) params.major = major;
+      const effectiveKeyword = overrides?.keyword ?? keyword;
+      const effectiveSchool = overrides?.school ?? school;
+      const effectiveMajor = overrides?.major ?? major;
+
+      if (effectiveKeyword) params.keyword = effectiveKeyword;
+      if (effectiveSchool) params.school = effectiveSchool;
+      if (effectiveMajor) params.major = effectiveMajor;
 
       const res = await http.get('/company/talent', { params });
       if (res.data?.code === 200 && res.data.data) {
         const data = res.data.data;
-        setTalents(data.students || []);
+        setTalents(Array.isArray(data.students) ? data.students : []);
         setPagination((prev) => ({
           ...prev,
-          total: data.pagination.total,
-          totalPages: data.pagination.totalPages,
+          page: Number(data.pagination?.page || params.page),
+          pageSize: Number(data.pagination?.pageSize || params.pageSize),
+          total: Number(data.pagination?.total || 0),
+          totalPages: Number(data.pagination?.totalPages || 0),
         }));
       } else {
         setError('获取人才数据失败，服务器返回异常');
@@ -152,7 +158,7 @@ export default function TalentSearch() {
 
   const handleSearch = () => {
     setPagination((prev) => ({ ...prev, page: 1 }));
-    fetchTalents();
+    fetchTalents({ page: 1, keyword, school, major });
   };
 
   const handleClearFilters = () => {
@@ -160,6 +166,7 @@ export default function TalentSearch() {
     setSchool('');
     setMajor('');
     setPagination((prev) => ({ ...prev, page: 1 }));
+    fetchTalents({ page: 1, keyword: '', school: '', major: '' });
   };
 
   // 解析 skills 字段
@@ -432,7 +439,13 @@ export default function TalentSearch() {
                         收藏
                       </button>
                       <button
-                        onClick={() => showToast({ type: 'info', title: '功能开发中', message: '该功能正在开发中，敬请期待' })}
+                        onClick={() => {
+                          if (talent.email) {
+                            window.location.href = `mailto:${talent.email}?subject=启航平台 - 邀请投递&body=你好，${talent.nickname}，我们在启航平台上看到了你的简历，觉得你非常适合我们的岗位，期待你的投递！`;
+                          } else {
+                            showToast({ type: 'error', title: '无法联系', message: '该候选人未提供邮箱地址' });
+                          }
+                        }}
                         className="flex items-center gap-1 px-3 py-1.5 bg-primary-50 text-primary-700 rounded-lg text-xs font-medium hover:bg-primary-100 transition-colors"
                       >
                         <Mail size={12} />

@@ -25,7 +25,18 @@ router.use(requireRole('student'));
 router.post('/profile', async (req, res) => {
   try {
     const userId = req.user.id;
-    const { school, major, grade, bio, skills, job_intention, resume_url } = req.body;
+    const { nickname, phone, school, major, grade, bio, skills, job_intention, resume_url } = req.body;
+
+    if (nickname !== undefined || phone !== undefined) {
+      await pool.query(
+        'UPDATE users SET nickname = ?, phone = ? WHERE id = ?',
+        [nickname || '', phone || '', userId]
+      );
+    }
+
+    const normalizedSkills = Array.isArray(skills)
+      ? JSON.stringify(skills)
+      : (typeof skills === 'string' ? skills : '[]');
 
     // 检查是否已存在档案
     const [existing] = await pool.query('SELECT id FROM students WHERE user_id = ?', [userId]);
@@ -35,20 +46,25 @@ router.post('/profile', async (req, res) => {
       await pool.query(
         `UPDATE students SET school = ?, major = ?, grade = ?, bio = ?, skills = ?,
          job_intention = ?, resume_url = ? WHERE user_id = ?`,
-        [school || '', major || '', grade || '', bio || '', skills || '', job_intention || '', resume_url || '', userId]
+        [school || '', major || '', grade || '', bio || '', normalizedSkills, job_intention || '', resume_url || '', userId]
       );
-      const [updated] = await pool.query('SELECT * FROM students WHERE user_id = ?', [userId]);
-      res.json({ code: 200, message: '档案更新成功', data: { profile: updated[0] } });
     } else {
       // 创建
       await pool.query(
         `INSERT INTO students (user_id, school, major, grade, bio, skills, job_intention, resume_url)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-        [userId, school || '', major || '', grade || '', bio || '', skills || '', job_intention || '', resume_url || '']
+        [userId, school || '', major || '', grade || '', bio || '', normalizedSkills, job_intention || '', resume_url || '']
       );
-      const [created] = await pool.query('SELECT * FROM students WHERE user_id = ?', [userId]);
-      res.status(201).json({ code: 201, message: '档案创建成功', data: { profile: created[0] } });
     }
+
+    const [rows] = await pool.query(
+      `SELECT s.*, u.email, u.nickname, u.avatar, u.phone
+       FROM students s JOIN users u ON s.user_id = u.id
+       WHERE s.user_id = ?`,
+      [userId]
+    );
+
+    res.json({ code: 200, message: '档案更新成功', data: { profile: rows[0] } });
   } catch (err) {
     console.error('创建/更新学生档案失败:', err);
     res.status(500).json({ code: 500, message: '服务器内部错误' });

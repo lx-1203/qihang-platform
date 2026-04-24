@@ -132,7 +132,7 @@ export default function Courses() {
                 onClick={() => handleCategoryChange(cat)}
                 className={`px-5 py-2 rounded-full text-[14px] font-bold transition-all duration-200 ${
                 activeCategory === cat
-                  ? 'bg-gradient-to-r from-primary-500 to-primary-600 text-white shadow-lg shadow-primary-500/30'
+                  ? 'bg-primary-500 text-white shadow-lg shadow-primary-500/30'
                   : 'bg-gray-100 text-gray-600 hover:bg-primary-50 hover:text-primary-700 border-2 border-transparent hover:border-primary-200 active:scale-[0.97] focus-visible:ring-2 focus-visible:ring-primary-400/30 focus-visible:outline-none'
               }`}
               >

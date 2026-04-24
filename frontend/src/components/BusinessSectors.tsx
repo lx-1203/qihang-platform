@@ -9,12 +9,12 @@ import { sectorStaggerContainer, sectorCardVariants, getGPUOptimizedStyle } from
 // 默认配置兜底（当 config store 返回 null 时使用）
 const DEFAULT_BUSINESS_SECTORS_CONFIG = {
   sectors: [
-    { id: 'education', name: '教育服务', icon: 'GraduationCap', description: '涵盖K12、考研、留学、语言培训等全年龄段教育产品，助力每一位学习者成长', jobCount: 1520, link: '/jobs?category=教师类', color: 'primary' },
-    { id: 'lifestyle', name: '生活服务', icon: 'Heart', description: '素质教育、文旅服务、生活周边，打造高品质生活方式体验', jobCount: 380, link: '/jobs?category=运营类', color: 'rose' },
-    { id: 'culture-tourism', name: '文旅服务', icon: 'MapPin', description: '研学旅行、文化旅游、国际交流，用脚步丈量世界宽度', jobCount: 210, link: '/jobs?category=市场类', color: 'amber' },
-    { id: 'international-edu', name: '国际教育', icon: 'Globe', description: '雅思托福、GRE/GMAT、国际课程、海外升学一站式服务', jobCount: 650, link: '/jobs?category=留学咨询类', color: 'fuchsia' },
-    { id: 'quality-edu', name: '素质教育', icon: 'Sparkles', description: '科创、艺术、体育、编程等素质培养，激发无限潜能', jobCount: 420, link: '/jobs?category=学习顾问类', color: 'teal' },
-    { id: 'university', name: '大学事业部', icon: 'BookOpen', description: '大学考试、四六级、考研保研、学术研究支持', jobCount: 647, link: '/jobs?category=学习管理师类', color: 'blue' },
+    { id: 'education', name: '教育服务', icon: 'GraduationCap', description: '涵盖K12、考研、留学、语言培训等全年龄段教育产品，助力每一位学习者成长', link: '/jobs?category=教师类', color: 'primary' },
+    { id: 'lifestyle', name: '生活服务', icon: 'Heart', description: '素质教育、文旅服务、生活周边，打造高品质生活方式体验', link: '/jobs?category=运营类', color: 'rose' },
+    { id: 'culture-tourism', name: '文旅服务', icon: 'MapPin', description: '研学旅行、文化旅游、国际交流，用脚步丈量世界宽度', link: '/jobs?category=市场类', color: 'amber' },
+    { id: 'international-edu', name: '国际教育', icon: 'Globe', description: '雅思托福、GRE/GMAT、国际课程、海外升学一站式服务', link: '/jobs?category=留学咨询类', color: 'fuchsia' },
+    { id: 'quality-edu', name: '素质教育', icon: 'Sparkles', description: '科创、艺术、体育、编程等素质培养，激发无限潜能', link: '/jobs?category=学习顾问类', color: 'teal' },
+    { id: 'university', name: '大学事业部', icon: 'BookOpen', description: '大学考试、四六级、考研保研、学术研究支持', link: '/jobs?category=学习管理师类', color: 'blue' },
   ],
 };
 
@@ -123,7 +123,11 @@ export default function BusinessSectors() {
 
                 <div className="flex items-center justify-between mt-5 pt-4 border-t border-black/5">
                   <span className="text-sm text-gray-500 whitespace-nowrap">
-                    <span className={`font-bold ${textClass}`}>{sector.jobCount}</span> 个在招岗位
+                    {sector.jobCount ? (
+                      <><span className={`font-bold ${textClass}`}>{sector.jobCount}</span> 个在招岗位</>
+                    ) : (
+                      <span className="text-gray-400">查看在招岗位</span>
+                    )}
                   </span>
                   <span className={`inline-flex items-center gap-1 text-sm font-medium ${textClass}
                     group-hover:gap-2 transition-all duration-200 whitespace-nowrap`}>

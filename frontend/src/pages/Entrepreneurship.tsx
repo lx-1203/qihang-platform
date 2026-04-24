@@ -19,6 +19,7 @@ interface Competition {
   status: string;
   deadline: string;
   tags?: string[];
+  registration_url?: string;
 }
 
 interface Resource {
@@ -154,10 +155,16 @@ export default function Entrepreneurship() {
                       </div>
                     </div>
                     <button
-                      onClick={() => navigate(`/guidance/articles`)}
+                      onClick={() => {
+                        if (comp.registration_url) {
+                          window.open(comp.registration_url, '_blank', 'noopener,noreferrer');
+                        } else {
+                          navigate('/guidance/articles');
+                        }
+                      }}
                       className="shrink-0 md:w-auto w-full py-2.5 px-6 rounded-xl border border-gray-200 text-gray-600 font-medium hover:bg-gray-50 hover:text-gray-900 transition-colors flex justify-center items-center gap-2"
                     >
-                      查看详情 <ExternalLink className="w-4 h-4" />
+                      {comp.registration_url ? '前往报名' : '查看详情'} <ExternalLink className="w-4 h-4" />
                     </button>
                   </div>
                 ))}

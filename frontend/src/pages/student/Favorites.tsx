@@ -63,6 +63,64 @@ const tabItems: { key: FavoriteTab; label: string; icon: React.ElementType }[] =
   { key: 'mentors', label: '导师', icon: User },
 ];
 
+function normalizeStringArray(value: unknown) {
+  if (Array.isArray(value)) return value.map(item => String(item)).filter(Boolean);
+  if (typeof value === 'string' && value.trim()) {
+    try {
+      const parsed = JSON.parse(value);
+      if (Array.isArray(parsed)) return parsed.map(item => String(item)).filter(Boolean);
+    } catch {
+      return value.split(/[、,，]/).map(item => item.trim()).filter(Boolean);
+    }
+  }
+  return [] as string[];
+}
+
+function normalizeFavoriteJob(item: Record<string, unknown>): FavoriteJob {
+  return {
+    id: Number(item.target_id || item.job_id || item.id || 0),
+    favoriteId: Number(item.favorite_id || item.id || 0),
+    title: String(item.title || item.job_title || ''),
+    companyName: String(item.company_name || item.companyName || item.subtitle || ''),
+    location: String(item.location || item.job_location || ''),
+    salary: String(item.salary || item.job_salary || item.extra || ''),
+    jobType: String(item.job_type || item.jobType || ''),
+    tags: normalizeStringArray(item.tags),
+    createdAt: String(item.created_at || ''),
+    favoritedAt: String(item.favorited_at || item.created_at || ''),
+  };
+}
+
+function normalizeFavoriteCourse(item: Record<string, unknown>): FavoriteCourse {
+  return {
+    id: Number(item.target_id || item.course_id || item.id || 0),
+    favoriteId: Number(item.favorite_id || item.id || 0),
+    title: String(item.title || item.course_title || ''),
+    mentorName: String(item.mentor_name || item.mentorName || item.subtitle || ''),
+    category: String(item.category || ''),
+    price: Number(item.price || item.extra || 0),
+    rating: Number(item.rating || 0),
+    studentCount: Number(item.student_count || 0),
+    coverImage: String(item.cover || item.cover_image || item.image || ''),
+    favoritedAt: String(item.favorited_at || item.created_at || ''),
+  };
+}
+
+function normalizeFavoriteMentor(item: Record<string, unknown>): FavoriteMentor {
+  return {
+    id: Number(item.target_id || item.mentor_id || item.id || 0),
+    favoriteId: Number(item.favorite_id || item.id || 0),
+    name: String(item.name || item.mentor_name || item.title || ''),
+    title: String(item.mentor_title || item.subtitle || item.title_text || item.title || ''),
+    specialty: normalizeStringArray(item.specialty || item.expertise),
+    rating: Number(item.rating || item.extra || 0),
+    reviewCount: Number(item.review_count || item.rating_count || 0),
+    price: Number(item.price || 0),
+    avatar: String(item.avatar || item.image || ''),
+    favoritedAt: String(item.favorited_at || item.created_at || ''),
+  };
+}
+
 export default function Favorites() {
   const [activeTab, setActiveTab] = useState<FavoriteTab>('jobs');
   const [jobs, setJobs] = useState<FavoriteJob[]>([]);
@@ -82,13 +140,45 @@ export default function Favorites() {
   async function fetchFavorites() {
     try {
       setLoading(true);
+      setError(null);
       const res = await http.get('/student/favorites');
-      if (res.data?.code === 200 && res.data.data) {
-        const data = res.data.data;
-        if (data.jobs) setJobs(data.jobs);
-        if (data.courses) setCourses(data.courses);
-        if (data.mentors) setMentors(data.mentors);
+      const data = res.data?.data;
+
+      if (!data) {
+        setJobs([]);
+        setCourses([]);
+        setMentors([]);
+        if (res.data?.code === 200) return;
+        setError('数据加载失败，请刷新重试');
+        return;
       }
+
+      if (Array.isArray(data.jobs) || Array.isArray(data.courses) || Array.isArray(data.mentors)) {
+        setJobs(Array.isArray(data.jobs) ? data.jobs.map((item: Record<string, unknown>) => normalizeFavoriteJob(item)) : []);
+        setCourses(Array.isArray(data.courses) ? data.courses.map((item: Record<string, unknown>) => normalizeFavoriteCourse(item)) : []);
+        setMentors(Array.isArray(data.mentors) ? data.mentors.map((item: Record<string, unknown>) => normalizeFavoriteMentor(item)) : []);
+        return;
+      }
+
+      const list = Array.isArray(data.list)
+        ? data.list
+        : Array.isArray(data.favorites)
+          ? data.favorites
+          : Array.isArray(data)
+            ? data
+            : [];
+
+      setJobs(list
+        .filter((item: Record<string, unknown>) => item.target_type === 'job')
+        .map((item: Record<string, unknown>) => normalizeFavoriteJob(item)));
+
+      setCourses(list
+        .filter((item: Record<string, unknown>) => item.target_type === 'course')
+        .map((item: Record<string, unknown>) => normalizeFavoriteCourse(item)));
+
+      setMentors(list
+        .filter((item: Record<string, unknown>) => item.target_type === 'mentor')
+        .map((item: Record<string, unknown>) => normalizeFavoriteMentor(item)));
     } catch (err) {
       setError('数据加载失败，请刷新重试');
       if (import.meta.env.DEV) console.error('[DEV] API error:', err);
@@ -128,7 +218,7 @@ export default function Favorites() {
   };
 
   // 空状态组件
-  function EmptyState({ type }: { type: FavoriteTab }) {
+  function EmptyState({ type, isSearchResult = false }: { type: FavoriteTab; isSearchResult?: boolean }) {
     const messages: Record<FavoriteTab, { text: string; link: string; linkText: string }> = {
       jobs: { text: '暂无收藏的职位', link: '/jobs', linkText: '去浏览职位' },
       courses: { text: '暂无收藏的课程', link: '/courses', linkText: '去浏览课程' },
@@ -142,14 +232,27 @@ export default function Favorites() {
         className="bg-white rounded-xl p-16 shadow-sm border border-gray-100 text-center"
       >
         <Heart className="w-16 h-16 text-gray-200 mx-auto mb-4" />
-        <p className="text-gray-500 text-sm">{msg.text}</p>
-        <p className="text-xs text-gray-400 mt-1">浏览内容时点击爱心即可收藏</p>
-        <Link to={msg.link} className="inline-block mt-4 text-sm text-primary-600 hover:text-primary-700 font-medium">
-          {msg.linkText} →
-        </Link>
+        <p className="text-gray-500 text-sm">{isSearchResult ? '没有找到匹配的收藏内容' : msg.text}</p>
+        <p className="text-xs text-gray-400 mt-1">
+          {isSearchResult ? '试试更换关键词，或切换到其他分类查看' : '浏览内容时点击爱心即可收藏'}
+        </p>
+        {isSearchResult ? (
+          <button
+            onClick={() => setSearchKeyword('')}
+            className="inline-block mt-4 text-sm text-primary-600 hover:text-primary-700 font-medium"
+          >
+            清空搜索
+          </button>
+        ) : (
+          <Link to={msg.link} className="inline-block mt-4 text-sm text-primary-600 hover:text-primary-700 font-medium">
+            {msg.linkText} →
+          </Link>
+        )}
       </motion.div>
     );
   }
+
+  const hasFavorites = jobs.length + courses.length + mentors.length > 0;
 
   // 搜索过滤
   const keyword = searchKeyword.toLowerCase();
@@ -167,7 +270,7 @@ export default function Favorites() {
         <div>
           <h1 className="text-2xl font-bold text-gray-900">我的收藏</h1>
           <p className="text-gray-500 mt-1">
-            已收藏 {jobs.length + courses.length + mentors.length} 个内容
+            {hasFavorites ? `已收藏 ${jobs.length + courses.length + mentors.length} 个内容` : '还没有收藏任何内容'}
           </p>
         </div>
         {/* 视图切换 */}
@@ -243,7 +346,7 @@ export default function Favorites() {
             exit={{ opacity: 0, y: -10 }}
           >
             {filteredJobs.length === 0 ? (
-              <EmptyState type="jobs" />
+              <EmptyState type="jobs" isSearchResult={jobs.length > 0 && !!keyword} />
             ) : (
               <div className={viewMode === 'grid' ? 'grid grid-cols-1 md:grid-cols-2 gap-4' : 'space-y-4'}>
                 {filteredJobs.map((job, i) => (
@@ -309,7 +412,7 @@ export default function Favorites() {
             exit={{ opacity: 0, y: -10 }}
           >
             {filteredCourses.length === 0 ? (
-              <EmptyState type="courses" />
+              <EmptyState type="courses" isSearchResult={courses.length > 0 && !!keyword} />
             ) : (
               <div className={viewMode === 'grid' ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4' : 'space-y-4'}>
                 {filteredCourses.map((course, i) => (
@@ -370,7 +473,7 @@ export default function Favorites() {
             exit={{ opacity: 0, y: -10 }}
           >
             {filteredMentors.length === 0 ? (
-              <EmptyState type="mentors" />
+              <EmptyState type="mentors" isSearchResult={mentors.length > 0 && !!keyword} />
             ) : (
               <div className={viewMode === 'grid' ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4' : 'space-y-4'}>
                 {filteredMentors.map((mentor, i) => (

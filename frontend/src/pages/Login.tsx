@@ -128,7 +128,8 @@ export default function Login() {
 
   // 🔴 提取 returnUrl（支持 URL 参数和 location.state 两种方式）
   const searchParams = new URLSearchParams(location.search);
-  const returnUrl = searchParams.get('returnUrl') || (location.state as { from?: { pathname: string } })?.from?.pathname;
+  const state = location.state as { returnUrl?: string; from?: { pathname?: string } | string } | null;
+  const returnUrl = searchParams.get('returnUrl') || state?.returnUrl || (typeof state?.from === 'string' ? state.from : state?.from?.pathname);
 
   const handleToggleMode = () => {
     setIsLogin(!isLogin);
@@ -470,7 +471,7 @@ export default function Login() {
                     <div className="text-sm leading-6">
                       <button
                         type="button"
-                        onClick={() => showToast({ type: 'info', title: '请联系管理员', message: '请联系平台管理员重置密码：admin@qihang.com' })}
+                        onClick={() => showToast({ type: 'info', title: '请联系管理员', message: '请联系平台管理员重置密码' })}
                         className="font-medium text-primary-600 hover:text-primary-500"
                       >
                         忘记密码？

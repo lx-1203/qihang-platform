@@ -138,7 +138,7 @@ router.get('/jobs', async (req, res) => {
     const { status, type, keyword, page = 1, pageSize = 10 } = req.query;
     const offset = (Number(page) - 1) * Number(pageSize);
 
-    let sql = 'SELECT * FROM jobs WHERE company_id = ?';
+    let sql = 'SELECT * FROM jobs WHERE company_id = ? AND deleted_at IS NULL';
     const params = [companyId];
 
     if (status && status !== 'all') {

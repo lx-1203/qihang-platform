@@ -103,12 +103,12 @@ export default function AdminDashboard() {
   ];
 
   const platformCards = [
-    { label: '总注册用户', value: (stats?.totalUsers ?? 0).toLocaleString(), change: '+12.5%', up: true, icon: Users, color: 'text-primary-600', bg: 'bg-primary-50', border: 'border-primary-100' },
-    { label: '在线职位', value: String(stats?.onlineJobs ?? 0), change: '+8.3%', up: true, icon: Briefcase, color: 'text-blue-600', bg: 'bg-blue-50', border: 'border-blue-100' },
-    { label: '课程总数', value: String(stats?.totalCourses ?? 0), change: '+5.1%', up: true, icon: BookOpen, color: 'text-primary-600', bg: 'bg-primary-50', border: 'border-primary-100' },
-    { label: '合作企业', value: String(stats?.totalCompanies ?? 0), change: '+15.2%', up: true, icon: Building2, color: 'text-primary-600', bg: 'bg-primary-50', border: 'border-primary-100' },
-    { label: '认证导师', value: String(stats?.certifiedMentors ?? 0), change: '+6.8%', up: true, icon: Award, color: 'text-emerald-600', bg: 'bg-emerald-50', border: 'border-emerald-100' },
-    { label: '预约辅导', value: (stats?.totalAppointments ?? 0).toLocaleString(), change: '+22.1%', up: true, icon: Calendar, color: 'text-amber-600', bg: 'bg-amber-50', border: 'border-amber-100' },
+    { label: '总注册用户', value: (stats?.totalUsers ?? 0).toLocaleString(), icon: Users, color: 'text-primary-600', bg: 'bg-primary-50', border: 'border-primary-100' },
+    { label: '在线职位', value: String(stats?.onlineJobs ?? 0), icon: Briefcase, color: 'text-blue-600', bg: 'bg-blue-50', border: 'border-blue-100' },
+    { label: '课程总数', value: String(stats?.totalCourses ?? 0), icon: BookOpen, color: 'text-primary-600', bg: 'bg-primary-50', border: 'border-primary-100' },
+    { label: '合作企业', value: String(stats?.totalCompanies ?? 0), icon: Building2, color: 'text-primary-600', bg: 'bg-primary-50', border: 'border-primary-100' },
+    { label: '认证导师', value: String(stats?.certifiedMentors ?? 0), icon: Award, color: 'text-emerald-600', bg: 'bg-emerald-50', border: 'border-emerald-100' },
+    { label: '预约辅导', value: (stats?.totalAppointments ?? 0).toLocaleString(), icon: Calendar, color: 'text-amber-600', bg: 'bg-amber-50', border: 'border-amber-100' },
   ];
 
   const pendingActions = [
@@ -162,7 +162,7 @@ export default function AdminDashboard() {
                 <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
                 <span className="text-green-300">系统运行正常</span>
               </div>
-              <span className="text-slate-400">在线 <span className="text-white font-bold">{stats?.weekActive ? stats.weekActive.toLocaleString() : '—'}</span></span>
+              <span className="text-slate-400">启用账号 <span className="text-white font-bold">{stats?.weekActive ? stats.weekActive.toLocaleString() : '—'}</span></span>
             </div>
           </div>
           <div className="flex flex-wrap gap-3 mt-5">
@@ -189,9 +189,6 @@ export default function AdminDashboard() {
           >
             <div className="flex items-center justify-between mb-2">
               <card.icon className={`w-5 h-5 ${card.color}`} />
-              <span className={`text-[11px] font-medium flex items-center gap-0.5 ${card.up ? 'text-green-600' : 'text-red-500'}`}>
-                {card.up ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}{card.change}
-              </span>
             </div>
             <div className="text-2xl font-bold text-gray-900">{card.value}</div>
             <div className="text-xs text-gray-500 mt-0.5">{card.label}</div>

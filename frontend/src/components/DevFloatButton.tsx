@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Bug, X, Home, Briefcase, BookOpen, Users, Globe,
@@ -72,6 +72,7 @@ export default function DevFloatButton() {
   const [open, setOpen] = useState(false);
   const [switching, setSwitching] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
   const { user, setAuth, logout, isAuthenticated } = useAuthStore();
 
   // 上线前关闭
@@ -91,11 +92,9 @@ export default function DevFloatButton() {
     if (switching) return;
     setSwitching(true);
     try {
-      // 先登出当前用户
       if (isAuthenticated) {
         await logout();
       }
-      // 调用真实登录 API
       const account = DEV_ACCOUNTS[role];
       const res = await http.post('/auth/login', {
         email: account.email,
@@ -103,6 +102,14 @@ export default function DevFloatButton() {
       });
       const { token, refreshToken, user: loginUser } = res.data.data;
       setAuth(token, loginUser, refreshToken);
+      setOpen(false);
+      const roleHome = {
+        admin: '/admin/dashboard',
+        company: '/company/dashboard',
+        mentor: '/mentor/dashboard',
+        student: '/student/profile',
+      } as const;
+      navigate(roleHome[role]);
     } catch (err: any) {
       console.error('[DEV] 角色切换失败:', err?.response?.data?.message || err.message);
       alert(`切换失败: ${err?.response?.data?.message || '请确认后端已启动且种子数据已初始化'}`);
@@ -129,13 +136,7 @@ export default function DevFloatButton() {
         {open && (
           <>
             {/* 遮罩 */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-black/20 z-[9998]"
-              onClick={() => setOpen(false)}
-            />
+            <div className="fixed inset-0 z-[9998] pointer-events-none" />
 
             {/* 面板 */}
             <motion.div

@@ -12,10 +12,10 @@
     { "key": "startup", "label": "创业成功", "icon": "Rocket" }
   ],
   "stats": [
-    { "label": "求职成功", "value": 12800, "suffix": "+", "icon": "Briefcase" },
-    { "label": "考研上岸", "value": 5600, "suffix": "+", "icon": "GraduationCap" },
-    { "label": "留学录取", "value": 3200, "suffix": "+", "icon": "Globe" },
-    { "label": "创业成功", "value": 860, "suffix": "+", "icon": "Rocket" }
+    { "label": "求职成功", "value": 0, "suffix": "", "icon": "Briefcase" },
+    { "label": "考研上岸", "value": 0, "suffix": "", "icon": "GraduationCap" },
+    { "label": "留学录取", "value": 0, "suffix": "", "icon": "Globe" },
+    { "label": "创业成功", "value": 0, "suffix": "", "icon": "Rocket" }
   ],
   "cases": [
     {

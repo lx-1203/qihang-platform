@@ -38,6 +38,25 @@ export default function CompanyDashboardPage() {
     fetchDashboard();
   }, []);
 
+  function buildFunnel(data: {
+    pendingResumes: number;
+    viewedResumes: number;
+    interviewResumes: number;
+    offeredResumes: number;
+  }) {
+    const stages = [
+      { stage: '投递', count: data.pendingResumes + data.viewedResumes + data.interviewResumes + data.offeredResumes, color: 'from-blue-500 to-blue-600' },
+      { stage: '查看', count: data.viewedResumes + data.interviewResumes + data.offeredResumes, color: 'from-cyan-500 to-cyan-600' },
+      { stage: '面试', count: data.interviewResumes + data.offeredResumes, color: 'from-primary-500 to-primary-600' },
+      { stage: '录用', count: data.offeredResumes, color: 'from-green-500 to-green-600' },
+    ];
+    const max = stages[0].count || 1;
+    return stages.map(item => ({
+      ...item,
+      width: `${Math.max(12, Math.round((item.count / max) * 100))}%`,
+    }));
+  }
+
   async function fetchDashboard() {
     try {
       setLoading(true);
@@ -47,9 +66,34 @@ export default function CompanyDashboardPage() {
         http.get('/company/resumes?pageSize=5'),
       ]);
       if (statsRes.data?.code === 200 && statsRes.data.data) {
-        setStats(statsRes.data.data);
-        if (statsRes.data.data.jobRanking) setJobRanking(statsRes.data.data.jobRanking);
-        if (statsRes.data.data.dailyResumes) setDailyResumes(statsRes.data.data.dailyResumes);
+        const jobs = statsRes.data.data.jobs || {};
+        const resumes = statsRes.data.data.resumes || {};
+        const dailyResumeRows = Array.isArray(statsRes.data.data.dailyResumes) ? statsRes.data.data.dailyResumes : [];
+        const rankingRows = Array.isArray(statsRes.data.data.jobRanking) ? statsRes.data.data.jobRanking : [];
+        const todayResumes = dailyResumeRows.length > 0 ? Number(dailyResumeRows[dailyResumeRows.length - 1]?.count || 0) : 0;
+        const totalResumes = Number(resumes.total_resumes || 0);
+        const offeredResumes = Number(resumes.offered_resumes || 0);
+        const interviewResumes = Number(resumes.interview_resumes || 0);
+        const pendingResumes = Number(resumes.pending_resumes || 0);
+        const viewedResumes = Number(resumes.viewed_resumes || 0);
+        const passRate = totalResumes > 0 ? `${Math.round((offeredResumes / totalResumes) * 100)}%` : '0%';
+        const avgCycle = interviewResumes > 0 || offeredResumes > 0 ? '进行中' : '-';
+
+        setStats({
+          activeJobs: Number(jobs.active_jobs || 0),
+          totalResumes,
+          pendingResumes,
+          interviews: interviewResumes,
+          todayResumes,
+          passRate,
+          avgCycle,
+          funnel: buildFunnel({ pendingResumes, viewedResumes, interviewResumes, offeredResumes }),
+        });
+        setJobRanking(rankingRows.map((item: Record<string, unknown>) => ({
+          title: String(item.title || ''),
+          count: Number(item.resume_count || item.count || 0),
+        })));
+        setDailyResumes(dailyResumeRows.map((item: Record<string, unknown>) => Number(item.count || 0)));
       }
       if (resumesRes.data?.code === 200 && resumesRes.data.data?.resumes) {
         setRecentResumes(resumesRes.data.data.resumes);

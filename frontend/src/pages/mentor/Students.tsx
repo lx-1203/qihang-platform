@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   Users, Search, Mail, Phone, Calendar,
@@ -21,6 +22,7 @@ interface StudentItem {
 }
 
 export default function MentorStudents() {
+  const navigate = useNavigate();
   const [students, setStudents] = useState<StudentItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -171,11 +173,17 @@ export default function MentorStudents() {
 
               {/* 操作按钮 */}
               <div className="flex gap-2 pt-3 border-t border-gray-100">
-                <button className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-primary-50 text-primary-700 rounded-lg text-sm font-medium hover:bg-primary-100 transition-colors">
+                <a
+                  href={`mailto:${student.email}?subject=启航平台 - 导师消息&body=你好，${student.nickname || '同学'}，`}
+                  className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-primary-50 text-primary-700 rounded-lg text-sm font-medium hover:bg-primary-100 transition-colors"
+                >
                   <MessageCircle size={14} />
                   发消息
-                </button>
-                <button className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-gray-50 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-100 transition-colors">
+                </a>
+                <button
+                  onClick={() => navigate('/mentor/appointments')}
+                  className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-gray-50 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-100 transition-colors"
+                >
                   <Calendar size={14} />
                   预约记录
                 </button>

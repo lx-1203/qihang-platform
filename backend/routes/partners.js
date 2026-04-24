@@ -52,7 +52,7 @@ router.get('/', async (req, res) => {
     const offset = (Math.max(1, Number(page)) - 1) * Number(pageSize);
 
     const [list] = await pool.query(
-      `SELECT p.*, u.username, u.avatar_url,
+      `SELECT p.*, u.nickname, u.avatar,
               (SELECT COUNT(*) FROM partner_applications WHERE post_id = p.id) as application_count
        FROM partner_posts p
        JOIN users u ON p.user_id = u.id
@@ -73,7 +73,7 @@ router.get('/', async (req, res) => {
 router.get('/:id', async (req, res) => {
   try {
     const [rows] = await pool.query(
-      `SELECT p.*, u.username, u.avatar_url, u.email
+      `SELECT p.*, u.nickname, u.avatar, u.email
        FROM partner_posts p
        JOIN users u ON p.user_id = u.id
        WHERE p.id = ? AND p.status = 'active'`,
@@ -291,7 +291,7 @@ router.get('/my/posts', authMiddleware, async (req, res) => {
 router.get('/my/applications', authMiddleware, async (req, res) => {
   try {
     const [list] = await pool.query(
-      `SELECT a.*, p.title, p.project_name, p.stage, p.industry, u.username as poster_name
+      `SELECT a.*, p.title, p.project_name, p.stage, p.industry, u.nickname as poster_name
        FROM partner_applications a
        JOIN partner_posts p ON a.post_id = p.id
        JOIN users u ON p.user_id = u.id

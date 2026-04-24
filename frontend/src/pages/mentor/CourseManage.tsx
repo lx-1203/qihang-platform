@@ -22,6 +22,7 @@ interface Course {
   category: string;
   cover: string;
   difficulty: 'beginner' | 'intermediate' | 'advanced';
+  price: number;
   views: number;
   rating: number;
   rating_count: number;
@@ -222,6 +223,7 @@ export default function CourseManage() {
               <tr className="bg-gray-50 border-b border-gray-100">
                 <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">课程信息</th>
                 <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">分类</th>
+                <th className="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">价格</th>
                 <th className="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">浏览量</th>
                 <th className="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">评分</th>
                 <th className="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">难度</th>
@@ -256,6 +258,11 @@ export default function CourseManage() {
                   </td>
                   <td className="px-4 py-4">
                     <span className="text-sm text-gray-600">{course.category}</span>
+                  </td>
+                  <td className="px-4 py-4 text-center">
+                    <span className={`text-sm font-medium ${course.price === 0 ? 'text-green-600' : 'text-orange-600'}`}>
+                      {course.price === 0 ? '免费' : `¥${course.price}`}
+                    </span>
                   </td>
                   <td className="px-4 py-4 text-center">
                     <div className="flex items-center justify-center gap-1">

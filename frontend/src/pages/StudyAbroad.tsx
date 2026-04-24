@@ -250,7 +250,7 @@ export default function StudyAbroad() {
   }, [uiConfig]);
 
   const newcomerQuotes = useMemo(() =>
-    (newcomerQuotes as Array<{ image: string; quote: string; author: string; background: string }>) || [],
+    (uiConfig.newcomerQuotes as Array<{ image: string; quote: string; author: string; background: string }>) || [],
   [uiConfig]);
 
   const studentStories = useMemo(() =>
@@ -422,7 +422,7 @@ export default function StudyAbroad() {
   const compactCountries = sortedCountries.slice(1);
 
   // 当前 Hero 幻灯片（安全访问）
-  const currentHeroSlide = currentHeroSlide || null;
+  const currentHeroSlide = HERO_SLIDES[currentSlide] || null;
 
   return (
     <div className="min-h-screen bg-gray-50 pb-16">

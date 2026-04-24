@@ -1,9 +1,16 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { render } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
 import StudyAbroadArticles from '../../pages/StudyAbroadArticles';
 import Jobs from '../../pages/Jobs';
 import Mentors from '../../pages/Mentors';
+import http from '@/api/http';
+
+vi.mock('@/api/http', () => ({
+  default: {
+    get: vi.fn(),
+  },
+}));
 
 /**
  * 表单字段可访问性测试
@@ -15,6 +22,45 @@ import Mentors from '../../pages/Mentors';
 const renderWithRouter = (component: React.ReactElement) => {
   return render(<BrowserRouter>{component}</BrowserRouter>);
 };
+
+beforeEach(() => {
+  vi.clearAllMocks();
+  vi.mocked(http.get).mockImplementation((url: string) => {
+    if (url === '/jobs') {
+      return Promise.resolve({
+        data: {
+          code: 200,
+          data: {
+            jobs: [],
+            total: 0,
+            filters: {
+              categories: ['全部'],
+              types: ['全部'],
+              locations: ['全国'],
+            },
+          },
+        },
+      });
+    }
+
+    if (url === '/mentors') {
+      return Promise.resolve({
+        data: {
+          code: 200,
+          data: {
+            list: [],
+          },
+        },
+      });
+    }
+
+    if (url === '/jobs/suggest') {
+      return Promise.resolve({ data: { code: 200, data: [] } });
+    }
+
+    return Promise.resolve({ data: { code: 200, data: [] } });
+  });
+});
 
 describe('Form Field Accessibility - id/name attributes', () => {
   describe('StudyAbroadArticles.tsx', () => {

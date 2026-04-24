@@ -65,14 +65,23 @@ export default function MyApplications() {
       if (res.data?.code === 200 && res.data.data) {
         // 后端返回 {list: [...]} 或 {resumes: [...]} 或数组
         const raw = res.data.data;
-        const list = Array.isArray(raw.list)
+                const list = Array.isArray(raw.list)
           ? raw.list
           : Array.isArray(raw.resumes)
             ? raw.resumes
             : Array.isArray(raw)
               ? raw
               : [];
-        setApplications(list);
+        const normalized = list.map((r: Record<string, unknown>) => ({
+          ...r,
+          jobTitle: r.job_title || r.jobTitle || '',
+          companyName: r.company_name || r.companyName || '',
+          companyLogo: r.company_logo || r.companyLogo || '',
+          jobType: r.job_type || r.jobType || '',
+          appliedAt: r.created_at || r.appliedAt || '',
+          statusUpdatedAt: r.updated_at || r.statusUpdatedAt || ''
+        }));
+        setApplications(normalized);
       }
     } catch (err) {
       setError('数据加载失败，请刷新重试');

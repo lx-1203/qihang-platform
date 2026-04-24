@@ -123,6 +123,7 @@ const CREATE_COURSES_TABLE = `
     video_url       VARCHAR(500) DEFAULT '' COMMENT '视频URL',
     duration        VARCHAR(50)  DEFAULT '' COMMENT '课程时长',
     difficulty      ENUM('beginner', 'intermediate', 'advanced') DEFAULT 'beginner' COMMENT '难度',
+    price           DECIMAL(10,2) NOT NULL DEFAULT 0 COMMENT '课程价格(元)',
     tags            JSON COMMENT '标签数组',
     views           INT NOT NULL DEFAULT 0 COMMENT '浏览量',
     rating          DECIMAL(2,1) NOT NULL DEFAULT 5.0 COMMENT '评分',

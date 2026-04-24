@@ -69,7 +69,7 @@ export default function ProgramCard({ program, university, mode }: ProgramCardPr
         transition={{ duration: 0.4, ease: 'easeOut' }}
       >
         <Link
-          to={`/study-abroad/programs/${university.id}`}
+          to={`/study-abroad/programs/${program.id}`}
           className="block bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all p-5 group"
         >
           {/* School header: logo + name + QS badge */}
@@ -159,7 +159,7 @@ export default function ProgramCard({ program, university, mode }: ProgramCardPr
       transition={{ duration: 0.45, ease: 'easeOut' }}
     >
       <Link
-        to={`/study-abroad/programs/${university.id}`}
+        to={`/study-abroad/programs/${program.id}`}
         className="block bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all overflow-hidden group"
       >
         <div className="flex flex-col md:flex-row">

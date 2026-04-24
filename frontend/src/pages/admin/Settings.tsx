@@ -71,6 +71,7 @@ export default function AdminSettings() {
   const [saveError, setSaveError] = useState<string | null>(null);
   const [jsonError, setJsonError] = useState<string | null>(null);
   const [fetchError, setFetchError] = useState<string | null>(null);
+  const [fetchErrorCode, setFetchErrorCode] = useState<number | null>(null);
 
   useEffect(() => {
     if (tab === 'configs') fetchConfigs();
@@ -81,14 +82,21 @@ export default function AdminSettings() {
     try {
       setLoading(true);
       setFetchError(null);
+      setFetchErrorCode(null);
       const res = await http.get('/config/all');
-      if (res.data?.code === 200 && res.data.data) {
+      if (res.data?.code === 200 && Array.isArray(res.data.data)) {
         setConfigs(res.data.data);
       } else {
+        setConfigs([]);
         setFetchError('获取配置失败：响应格式异常');
       }
-    } catch {
-      setFetchError('获取配置失败，请检查后端服务是否运行');
+    } catch (err: unknown) {
+      setConfigs([]);
+      const status = err && typeof err === 'object' && 'response' in err
+        ? (err as { response?: { status?: number } }).response?.status || null
+        : null;
+      setFetchErrorCode(status);
+      setFetchError(status === 403 ? '你当前没有查看平台配置的权限' : '获取配置失败，请检查后端服务是否运行');
     } finally {
       setLoading(false);
     }
@@ -98,14 +106,21 @@ export default function AdminSettings() {
     try {
       setLoading(true);
       setFetchError(null);
+      setFetchErrorCode(null);
       const res = await http.get('/admin/audit-logs', { params: { page: 1, pageSize: 50 } });
       if (res.data?.code === 200 && res.data.data) {
         setAuditLogs(res.data.data.list || res.data.data);
       } else {
+        setAuditLogs([]);
         setFetchError('获取审计日志失败：响应格式异常');
       }
-    } catch {
-      setFetchError('获取审计日志失败，请检查后端服务是否运行');
+    } catch (err: unknown) {
+      setAuditLogs([]);
+      const status = err && typeof err === 'object' && 'response' in err
+        ? (err as { response?: { status?: number } }).response?.status || null
+        : null;
+      setFetchErrorCode(status);
+      setFetchError(status === 403 ? '你当前没有查看审计日志的权限' : '获取审计日志失败，请检查后端服务是否运行');
     } finally {
       setLoading(false);
     }
@@ -142,9 +157,15 @@ export default function AdminSettings() {
         toast.error('保存失败', res.data?.message || '请稍后重试');
       }
     } catch (err: unknown) {
-      const msg = (err && typeof err === 'object' && 'message' in err) ? (err as { message: string }).message : '保存失败，请检查后端服务';
-      setSaveError(msg);
-      toast.error('网络错误', msg);
+      const response = err && typeof err === 'object' && 'response' in err
+        ? (err as { response?: { status?: number; data?: { message?: string } } }).response
+        : undefined;
+      const message = response?.data?.message
+        || (response?.status === 403 ? '该配置项不可修改' : undefined)
+        || (response?.status === 404 ? '配置项不存在' : undefined)
+        || '保存失败，请检查后端服务';
+      setSaveError(message);
+      toast.error('保存失败', message);
     } finally {
       setSaving(false);
     }
@@ -252,8 +273,21 @@ export default function AdminSettings() {
           {fetchError && (
             <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-center gap-3">
               <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0" />
-              <p className="text-sm text-red-800 flex-1">{fetchError}</p>
+              <div className="flex-1">
+                <p className="text-sm text-red-800">{fetchError}</p>
+                <p className="text-xs text-red-600 mt-0.5">
+                  {fetchErrorCode === 403 ? '请使用管理员账号访问，或检查后端权限配置。' : '可检查 /api/config/all 接口和后端服务状态。'}
+                </p>
+              </div>
               <button onClick={fetchConfigs} className="text-xs bg-red-600 text-white px-3 py-1.5 rounded-lg hover:bg-red-700">重试</button>
+            </div>
+          )}
+
+          {!fetchError && configs.length === 0 && (
+            <div className="bg-white border border-gray-100 rounded-xl p-10 text-center text-gray-500">
+              <Palette className="w-10 h-10 mx-auto mb-3 text-gray-300" />
+              <p className="text-sm font-medium text-gray-700">暂无可展示的站点配置</p>
+              <p className="text-xs text-gray-500 mt-1">接口已返回空数据，配置项创建后会显示在这里。</p>
             </div>
           )}
 
@@ -410,9 +444,13 @@ export default function AdminSettings() {
                                   <Check className="w-3.5 h-3.5" /> 已保存
                                 </span>
                               )}
+                              {cfg.is_editable !== 1 && (
+                                <span className="text-xs text-amber-600">只读</span>
+                              )}
                               <button
                                 onClick={() => { setEditingKey(cfg.config_key); setEditValue(cfg.config_value); }}
-                                className="p-2 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-primary-600 transition-colors"
+                                disabled={cfg.is_editable !== 1}
+                                className="p-2 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-primary-600 transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-gray-400"
                               >
                                 <Edit3 className="w-4 h-4" />
                               </button>

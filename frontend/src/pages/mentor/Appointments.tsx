@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import {
   Calendar, Clock, CheckCircle, XCircle,
   CalendarCheck, CalendarX, Search,
-  DollarSign, Timer, AlertCircle
+  DollarSign, Timer, AlertCircle, Video
 } from 'lucide-react';
 import http from '@/api/http';
 import { ListSkeleton } from '../../components/ui/Skeleton';
@@ -28,6 +28,7 @@ interface Appointment {
   status: 'pending' | 'confirmed' | 'completed' | 'cancelled';
   fee: number;
   note: string;
+  meeting_link?: string;
 }
 
 const statusConfig = {
@@ -54,6 +55,7 @@ export default function MentorAppointments() {
   const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
   const [rejectingId, setRejectingId] = useState<number | null>(null);
   const [rejectLoading, setRejectLoading] = useState(false);
+  const [meetingLinks, setMeetingLinks] = useState<Record<number, string>>({});
 
   useEffect(() => {
     fetchAppointments();
@@ -133,6 +135,19 @@ export default function MentorAppointments() {
     );
     try {
       await http.put(`/mentor/appointments/${id}/complete`);
+    } catch {
+      // 忽略错误
+    }
+  }
+
+  // 保存会议链接
+  async function saveMeetingLink(id: number) {
+    const link = meetingLinks[id] || '';
+    setAppointments(prev =>
+      prev.map(apt => apt.id === id ? { ...apt, meeting_link: link } : apt)
+    );
+    try {
+      await http.put(`/mentor/appointments/${id}/meeting-link`, { meeting_link: link });
     } catch {
       // 忽略错误
     }
@@ -307,6 +322,33 @@ export default function MentorAppointments() {
                           <p className="text-xs text-gray-400 mt-2 bg-gray-50 px-3 py-1.5 rounded-md">
                             备注：{apt.note}
                           </p>
+                        )}
+                        {apt.status === 'confirmed' && (
+                          <div className="mt-3 flex items-center gap-2">
+                            <Video className="w-4 h-4 text-primary-500" />
+                            <input
+                              type="text"
+                              value={meetingLinks[apt.id] !== undefined ? meetingLinks[apt.id] : (apt.meeting_link || '')}
+                              onChange={e => setMeetingLinks({ ...meetingLinks, [apt.id]: e.target.value })}
+                              placeholder="输入线上会议链接 (如腾讯会议/Zoom/钉钉)"
+                              className="flex-1 px-3 py-1.5 text-xs border border-gray-200 rounded focus:outline-none focus:border-primary-500"
+                            />
+                            <button
+                              onClick={() => saveMeetingLink(apt.id)}
+                              className="px-3 py-1.5 bg-primary-50 text-primary-600 rounded text-xs font-medium hover:bg-primary-100"
+                            >
+                              保存链接
+                            </button>
+                          </div>
+                        )}
+                        {(apt.status === 'completed' || apt.status === 'pending') && apt.meeting_link && (
+                          <div className="mt-2 text-xs text-gray-500 flex items-center gap-1">
+                            <Video className="w-3.5 h-3.5 text-gray-400" />
+                            会议链接：
+                            <a href={apt.meeting_link} target="_blank" rel="noreferrer" className="text-primary-500 hover:underline">
+                              {apt.meeting_link}
+                            </a>
+                          </div>
                         )}
                       </div>
                     </div>

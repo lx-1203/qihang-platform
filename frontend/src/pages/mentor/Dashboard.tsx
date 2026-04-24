@@ -38,6 +38,7 @@ export default function MentorDashboardPage() {
   const [courses, setCourses] = useState<Array<{
     title: string; students: number; rating: number; status: 'active' | 'draft';
   }>>([]);
+  const [mentorProfileId, setMentorProfileId] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -49,11 +50,16 @@ export default function MentorDashboardPage() {
     try {
       setLoading(true);
       setError(null);
-      const [statsRes, appointmentsRes, coursesRes] = await Promise.all([
+      const [statsRes, appointmentsRes, coursesRes, profileRes] = await Promise.all([
         http.get('/mentor/stats'),
         http.get('/mentor/appointments', { params: { status: 'pending', pageSize: 5 } }),
         http.get('/mentor/courses', { params: { pageSize: 5 } }),
+        http.get('/mentor/profile'),
       ]);
+
+      if (profileRes.data?.code === 200 && profileRes.data.data?.profile?.id) {
+        setMentorProfileId(Number(profileRes.data.data.profile.id));
+      }
 
       // 解析统计数据
       if (statsRes.data?.code === 200 && statsRes.data.data) {
@@ -191,7 +197,7 @@ export default function MentorDashboardPage() {
               </div>
             </div>
             <div className="flex flex-col items-end gap-1">
-              <Link to={`/mentors/${user?.id}`} className="text-xs bg-white/20 hover:bg-white/30 px-3 py-1.5 rounded-lg transition-colors">
+              <Link to={mentorProfileId ? `/mentors/${mentorProfileId}` : '/mentor/profile'} className="text-xs bg-white/20 hover:bg-white/30 px-3 py-1.5 rounded-lg transition-colors">
                 查看我的主页 →
               </Link>
               <p className="text-xs text-emerald-200 mt-1">
@@ -232,7 +238,7 @@ export default function MentorDashboardPage() {
         <div className="lg:col-span-2 bg-white rounded-xl p-5 border border-gray-100">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-sm font-bold text-gray-900 flex items-center gap-2">
-              <Clock className="w-4 h-4 text-emerald-600" /> 今日辅导日程
+              <Clock className="w-4 h-4 text-emerald-600" /> 待确认预约
             </h3>
             <Link to="/mentor/appointments" className="text-xs text-emerald-600 hover:underline flex items-center gap-1">
               全部预约 <ArrowRight className="w-3 h-3" />

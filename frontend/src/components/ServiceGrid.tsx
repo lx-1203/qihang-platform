@@ -27,7 +27,7 @@ const DEFAULT_SERVICES = [
   },
   {
     title: '名企直招',
-    desc: '500+合作企业免中介',
+    desc: '合作企业免中介',
     detail: '直接对接企业HR，省去中间环节，高效投递',
     icon: 'Building2',
     gradient: 'from-primary-400 to-teal-600',
@@ -81,7 +81,7 @@ const DEFAULT_SERVICES = [
   },
   {
     title: '成功案例',
-    desc: '5000+学员拿到Offer',
+    desc: '学员拿到Offer',
     detail: '真实学员成功故事，从迷茫到拿到心仪Offer的完整路径',
     icon: 'Trophy',
     gradient: 'from-lime-400 to-yellow-500',

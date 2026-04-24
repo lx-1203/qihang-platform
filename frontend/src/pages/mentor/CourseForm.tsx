@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import {
   ArrowLeft, BookOpen, FileText, Tag, Image,
   Video, Clock, BarChart3, AlertCircle, Loader2,
-  Save, X,
+  Save, X, DollarSign,
 } from 'lucide-react';
 import http from '@/api/http';
 import { COURSE_CATEGORIES } from '@/constants';
@@ -20,6 +20,7 @@ interface CourseFormData {
   cover: string;
   video_url: string;
   duration: string;
+  price: string;
   tags: string[];
 }
 
@@ -31,6 +32,7 @@ const EMPTY_FORM: CourseFormData = {
   cover: '',
   video_url: '',
   duration: '',
+  price: '0',
   tags: [],
 };
 
@@ -74,6 +76,7 @@ export default function CourseForm() {
         cover: (stateCourse.cover as string) || '',
         video_url: (stateCourse.video_url as string) || '',
         duration: (stateCourse.duration as string) || '',
+        price: String(stateCourse.price ?? 0),
         tags: Array.isArray(stateCourse.tags) ? stateCourse.tags as string[] : parseTags(stateCourse.tags),
       };
       setForm(loaded);
@@ -96,6 +99,7 @@ export default function CourseForm() {
             cover: c.cover || '',
             video_url: c.video_url || '',
             duration: c.duration || '',
+            price: String(c.price ?? 0),
             tags: Array.isArray(c.tags) ? c.tags : parseTags(c.tags),
           };
           setForm(loaded);
@@ -168,6 +172,8 @@ export default function CourseForm() {
     if (!form.title.trim()) newErrors.title = '请输入课程标题';
     if (!form.description.trim()) newErrors.description = '请输入课程描述';
     if (!form.category) newErrors.category = '请选择课程分类';
+    if (!form.price.trim()) newErrors.price = '请输入课程价格';
+    else if (Number.isNaN(Number(form.price)) || Number(form.price) < 0) newErrors.price = '课程价格必须为大于等于 0 的数字';
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   }
@@ -186,6 +192,7 @@ export default function CourseForm() {
         cover: form.cover.trim(),
         video_url: form.video_url.trim(),
         duration: form.duration.trim(),
+        price: Number(form.price),
         tags: form.tags,
       };
 
@@ -389,19 +396,28 @@ export default function CourseForm() {
             />
           </div>
 
-          {/* 课程时长 */}
+          {/* 课程价格 */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1.5">
-              <Clock className="w-4 h-4 inline mr-1" />
-              课程时长
+              <DollarSign className="w-4 h-4 inline mr-1" />
+              课程价格（元） <span className="text-red-500">*</span>
             </label>
             <input
-              type="text"
-              value={form.duration}
-              onChange={e => updateField('duration', e.target.value)}
-              className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 outline-none"
-              placeholder="如：2小时、8课时、30分钟"
+              type="number"
+              min="0"
+              step="1"
+              value={form.price}
+              onChange={e => updateField('price', e.target.value)}
+              className={`w-full px-4 py-2.5 border rounded-lg text-sm focus:ring-2 focus:ring-primary-500 outline-none ${
+                errors.price ? 'border-red-300 bg-red-50' : 'border-gray-200'
+              }`}
+              placeholder="0 表示免费"
             />
+            {errors.price && (
+              <p className="mt-1 text-xs text-red-500 flex items-center gap-1">
+                <AlertCircle className="w-3 h-3" /> {errors.price}
+              </p>
+            )}
           </div>
         </div>
 

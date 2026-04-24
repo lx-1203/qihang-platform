@@ -26,10 +26,10 @@ interface Appointment {
   serviceType: string;
   date: string;
   time: string;
-  duration: number;     // 分钟
+  duration: number;
   fee: number;
   status: AppointmentStatus;
-  location: string;     // 线上/线下地点
+  location: string;
   hasReviewed: boolean;
   rating?: number;
   reviewContent?: string;
@@ -47,15 +47,17 @@ const tabItems: { key: AppointmentStatus; label: string; icon: React.ElementType
   { key: 'cancelled', label: '已取消', icon: XCircle },
 ];
 
-const statusConfig: Record<AppointmentStatus, { label: string; color: string; bg: string }> = {
+const statusConfig: Record<string, { label: string; color: string; bg: string }> = {
   upcoming: { label: '即将开始', color: 'text-primary-600', bg: 'bg-primary-100' },
   completed: { label: '已完成', color: 'text-green-600', bg: 'bg-green-100' },
   cancelled: { label: '已取消', color: 'text-gray-500', bg: 'bg-gray-100' },
+  pending: { label: '待确认', color: 'text-amber-600', bg: 'bg-amber-100' },
+  rejected: { label: '已拒绝', color: 'text-red-600', bg: 'bg-red-100' },
 };
 
 export default function MyAppointments() {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
-  const [activeTab, setActiveTab] = useState<AppointmentStatus>('upcoming');
+  const [activeTab, setActiveTab] = useState<string>('upcoming');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showReviewModal, setShowReviewModal] = useState(false);
@@ -75,10 +77,10 @@ export default function MyAppointments() {
       setLoading(true);
       const res = await http.get('/student/appointments');
       if (res.data?.code === 200 && res.data.data) {
-        // 将后端状态映射为前端展示状态
         const raw = res.data.data.appointments || res.data.data.list || res.data.data;
-        const normalized = raw.map((a: Record<string, unknown>) => ({
-          ...a,
+        const list = Array.isArray(raw) ? raw : [];
+        const normalized = list.map((a: Record<string, unknown>) => ({
+          id: Number(a.id || 0),
           mentorName: (a.mentor_name || a.mentorName || '') as string,
           mentorAvatar: (a.mentor_avatar || a.mentorAvatar || '') as string,
           mentorTitle: (a.mentor_title || a.mentorTitle || '') as string,
@@ -86,15 +88,17 @@ export default function MyAppointments() {
           serviceType: (a.service_title || a.serviceType || '导师辅导') as string,
           date: a.appointment_time ? String(a.appointment_time).slice(0, 10) : ((a.date || '') as string),
           time: a.appointment_time ? String(a.appointment_time).slice(11, 16) : ((a.time || '') as string),
-          fee: (a.fee || 0) as number,
+          duration: Number(a.duration || 60),
+          fee: Number(a.fee || 0),
           location: (a.location || '线上') as string,
           hasReviewed: !!a.review_rating,
           rating: a.review_rating as number | undefined,
           reviewContent: a.review_content as string | undefined,
-          // 将 pending/confirmed → upcoming，其余保留
-          status: (['pending', 'confirmed'].includes(a.status as string) ? 'upcoming' : a.status) as AppointmentStatus,
+          status: (['pending', 'confirmed'].includes(String(a.status)) ? 'upcoming' : a.status || 'upcoming') as AppointmentStatus,
         }));
         setAppointments(normalized);
+      } else {
+        setAppointments([]);
       }
     } catch (err) {
       setError('数据加载失败，请刷新重试');
@@ -121,7 +125,6 @@ export default function MyAppointments() {
     } catch {
       // API 未就绪，直接更新本地状态
     } finally {
-      // 更新本地状态
       setAppointments(prev => prev.map(app =>
         app.id === reviewForm.appointmentId
           ? { ...app, hasReviewed: true, rating: reviewForm.rating, reviewContent: reviewForm.content }
@@ -143,7 +146,6 @@ export default function MyAppointments() {
       setCancelling(true);
       await http.put(`/student/appointments/${cancellingId}/cancel`);
       showToast({ type: 'success', title: '取消成功', message: '预约已取消' });
-      // 刷新列表
       await fetchAppointments();
     } catch (err) {
       showToast({ type: 'error', title: '取消失败', message: '请稍后重试' });
@@ -155,11 +157,14 @@ export default function MyAppointments() {
     }
   }
 
-  const filtered = appointments.filter(app => app.status === activeTab);
+  const filtered = appointments.filter(app => {
+    if (activeTab === 'cancelled') return app.status === 'cancelled';
+    return app.status === activeTab;
+  });
 
-  // 各状态数量
   const statusCounts = appointments.reduce((acc, app) => {
-    acc[app.status] = (acc[app.status] || 0) + 1;
+    const key = app.status === 'rejected' ? 'cancelled' : app.status;
+    acc[key] = (acc[key] || 0) + 1;
     return acc;
   }, {} as Record<string, number>);
 
@@ -168,13 +173,11 @@ export default function MyAppointments() {
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
-      {/* 页面标题 */}
       <div>
         <h1 className="text-2xl font-bold text-gray-900">我的预约</h1>
         <p className="text-gray-500 mt-1">管理你的导师预约和辅导记录</p>
       </div>
 
-      {/* 状态标签切换 */}
       <div className="bg-white rounded-xl p-2 shadow-sm border border-gray-100 flex gap-2">
         {tabItems.map(tab => {
           const count = statusCounts[tab.key] || 0;
@@ -184,15 +187,13 @@ export default function MyAppointments() {
               key={tab.key}
               onClick={() => setActiveTab(tab.key)}
               className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-lg text-sm font-medium transition-all ${
-                isActive
-                  ? 'bg-primary-500 text-white shadow-sm'
-                  : 'text-gray-500 hover:bg-gray-50'
+                isActive ? 'bg-primary-500 text-white shadow-sm' : 'text-gray-500 hover:bg-gray-50'
               }`}
             >
               <tab.icon className="w-4 h-4" />
               {tab.label}
               <span className={`px-1.5 py-0.5 rounded-full text-xs ${
-                isActive ? 'bg-white/20' : 'bg-gray-100'
+                isActive ? 'bg-white/20' : 'bg-gray-100 text-gray-500'
               }`}>
                 {count}
               </span>
@@ -201,245 +202,190 @@ export default function MyAppointments() {
         })}
       </div>
 
-      {/* 预约列表 */}
       <div className="space-y-4">
         {filtered.length === 0 ? (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="bg-white rounded-xl p-12 shadow-sm border border-gray-100 text-center"
-          >
+          <div className="bg-white rounded-xl p-12 shadow-sm border border-gray-100 text-center">
             <AlertCircle className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-            <p className="text-gray-500 text-sm">
-              {activeTab === 'upcoming' ? '暂无即将开始的预约' :
-               activeTab === 'completed' ? '暂无已完成的预约' : '暂无已取消的预约'}
-            </p>
-            {activeTab === 'upcoming' && (
-              <a href="/mentors" className="inline-block mt-3 text-sm text-primary-600 hover:text-primary-700 font-medium">
-                去浏览导师 →
-              </a>
-            )}
-          </motion.div>
-        ) : (
-          filtered.map((app, i) => {
-            const config = statusConfig[app.status];
-            return (
-              <motion.div
-                key={app.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.05 }}
-                className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow"
-              >
-                <div className="flex items-start gap-4">
-                  {/* 导师头像 */}
-                  <div className="w-14 h-14 bg-gradient-to-br from-primary-400 to-primary-600 rounded-xl flex items-center justify-center flex-shrink-0">
-                    <span className="text-xl font-bold text-white">{app.mentorName.charAt(0)}</span>
-                  </div>
+            <p className="text-gray-500 text-sm">当前分类下暂无预约记录</p>
+          </div>
+        ) : filtered.map((app, index) => {
+          const status = statusConfig[app.status] || statusConfig.pending;
+          return (
+            <motion.div
+              key={app.id}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: index * 0.05 }}
+              className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden"
+            >
+              <div className="p-6">
+                <div className="flex flex-col md:flex-row md:items-start gap-5">
+                  <img
+                    src={app.mentorAvatar || '/default-avatar.svg'}
+                    alt={app.mentorName}
+                    className="w-16 h-16 rounded-full object-cover bg-gray-100"
+                  />
 
-                  {/* 主要信息 */}
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-start justify-between gap-3">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                       <div>
-                        <h3 className="text-base font-bold text-gray-900">{app.serviceTitle}</h3>
-                        <div className="flex items-center gap-2 mt-1">
-                          <span className="text-sm text-gray-700 font-medium">{app.mentorName}</span>
-                          <span className="text-xs text-gray-400">·</span>
-                          <span className="text-xs text-gray-500">{app.mentorTitle}</span>
-                        </div>
+                        <h3 className="text-lg font-bold text-gray-900">{app.mentorName || '导师'}</h3>
+                        <p className="text-sm text-gray-500 mt-0.5">{app.mentorTitle || '导师辅导'}</p>
                       </div>
-                      {/* 状态标签 */}
-                      <Tag
-                        variant={app.status === 'upcoming' ? 'primary' : app.status === 'completed' ? 'green' : 'gray'}
-                        size="md"
-                      >
-                        {config.label}
+                      <Tag className={`${status.bg} ${status.color} border-0`}>
+                        {status.label}
                       </Tag>
                     </div>
 
-                    {/* 详细信息 */}
-                    <div className="flex flex-wrap items-center gap-4 mt-3 text-xs text-gray-500">
-                      <span className="flex items-center gap-1">
-                        <Calendar className="w-3 h-3" /> {app.date}
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <Clock className="w-3 h-3" /> {app.time}（{app.duration}分钟）
-                      </span>
-                      <span className="flex items-center gap-1">
-                        {app.location.startsWith('线上') ? <Video className="w-3 h-3" /> : <MapPin className="w-3 h-3" />}
-                        {app.location}
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <DollarSign className="w-3 h-3" />
-                        <span className="text-primary-600 font-medium">¥{app.fee}</span>
-                      </span>
-                      <Tag variant="gray" size="sm">{app.serviceType}</Tag>
+                    <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm text-gray-600">
+                      <div className="flex items-center gap-2">
+                        <MessageSquare className="w-4 h-4 text-primary-500" />
+                        <span>{app.serviceTitle || app.serviceType}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Calendar className="w-4 h-4 text-primary-500" />
+                        <span>{app.date}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Clock className="w-4 h-4 text-primary-500" />
+                        <span>{app.time} · {app.duration} 分钟</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <DollarSign className="w-4 h-4 text-primary-500" />
+                        <span>¥{app.fee}</span>
+                      </div>
+                      <div className="flex items-center gap-2 sm:col-span-2">
+                        <MapPin className="w-4 h-4 text-primary-500" />
+                        <span>{app.location}</span>
+                      </div>
                     </div>
 
-                    {/* 已完成的 → 评价区域 */}
-                    {app.status === 'completed' && (
-                      <div className="mt-4 pt-4 border-t border-gray-50">
-                        {app.hasReviewed ? (
-                          <div className="bg-gray-50 rounded-lg p-3">
-                            <div className="flex items-center gap-2 mb-2">
-                              <span className="text-xs text-gray-500">我的评价</span>
-                              <div className="flex items-center gap-0.5">
-                                {[1, 2, 3, 4, 5].map(star => (
-                                  <Star
-                                    key={star}
-                                    className={`w-3.5 h-3.5 ${star <= (app.rating || 0) ? 'text-amber-400 fill-amber-400' : 'text-gray-300'}`}
-                                  />
-                                ))}
-                              </div>
-                            </div>
-                            <p className="text-sm text-gray-700 leading-relaxed">{app.reviewContent}</p>
-                          </div>
-                        ) : (
-                          <button
-                            onClick={() => openReviewModal(app.id)}
-                            className="flex items-center gap-2 px-4 py-2 bg-primary-50 text-primary-600 rounded-lg hover:bg-primary-100 transition-colors text-sm font-medium"
-                          >
-                            <MessageSquare className="w-4 h-4" />
-                            撰写评价
-                          </button>
-                        )}
-                      </div>
-                    )}
-
-                    {/* 即将开始 → 操作按钮 */}
-                    {app.status === 'upcoming' && (
-                      <div className="mt-4 pt-4 border-t border-gray-50 flex items-center gap-3">
-                        <button onClick={() => showToast({ type: 'info', title: '功能开发中', message: '在线会议功能正在开发中' })} className="flex items-center gap-2 px-4 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors text-sm font-medium">
-                          <Video className="w-4 h-4" />
-                          进入会议
-                        </button>
-                        <button onClick={() => openCancelDialog(app.id)} className="px-4 py-2 border border-gray-300 text-gray-600 rounded-lg hover:bg-gray-50 transition-colors text-sm">
-                          取消预约
-                        </button>
+                    {app.hasReviewed && (
+                      <div className="mt-4 rounded-lg bg-gray-50 p-4">
+                        <div className="flex items-center gap-1 text-amber-500 mb-2">
+                          {Array.from({ length: 5 }).map((_, i) => (
+                            <Star key={i} className={`w-4 h-4 ${i < (app.rating || 0) ? 'fill-current' : ''}`} />
+                          ))}
+                        </div>
+                        <p className="text-sm text-gray-600">{app.reviewContent}</p>
                       </div>
                     )}
                   </div>
                 </div>
-              </motion.div>
-            );
-          })
-        )}
+
+                <div className="mt-5 flex flex-wrap gap-3">
+                  {app.status === 'upcoming' && (
+                    <>
+                      <button
+                        onClick={() => openCancelDialog(app.id)}
+                        className="px-4 py-2 border border-red-200 text-red-600 rounded-lg hover:bg-red-50 transition-colors text-sm font-medium"
+                      >
+                        取消预约
+                      </button>
+                      <button
+                        className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors text-sm font-medium flex items-center gap-2"
+                      >
+                        <Video className="w-4 h-4" />
+                        查看会议信息
+                      </button>
+                    </>
+                  )}
+
+                  {app.status === 'completed' && !app.hasReviewed && (
+                    <button
+                      onClick={() => openReviewModal(app.id)}
+                      className="px-4 py-2 bg-amber-500 text-white rounded-lg hover:bg-amber-600 transition-colors text-sm font-medium"
+                    >
+                      评价导师
+                    </button>
+                  )}
+                </div>
+              </div>
+            </motion.div>
+          );
+        })}
       </div>
 
-      {/* 底部提示 */}
-      {filtered.length > 0 && (
-        <div className="text-center text-xs text-gray-400 py-4">
-          共 {filtered.length} 条预约记录
-        </div>
-      )}
-
-      {/* ===== 取消预约确认弹窗 ===== */}
-      <ConfirmDialog
-        open={showCancelDialog}
-        title="确认取消预约？"
-        description="取消后将无法恢复，如需重新预约请联系导师"
-        variant="warning"
-        confirmText="确认取消"
-        loading={cancelling}
-        onConfirm={handleCancelAppointment}
-        onCancel={() => {
-          setShowCancelDialog(false);
-          setCancellingId(null);
-        }}
-      />
-
-      {/* ===== 评价弹窗 ===== */}
       <AnimatePresence>
         {showReviewModal && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4"
-            onClick={() => setShowReviewModal(false)}
-          >
+          <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 p-4">
             <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="bg-white rounded-2xl w-full max-w-md p-6 shadow-2xl"
-              onClick={e => e.stopPropagation()}
+              initial={{ opacity: 0, y: 20, scale: 0.96 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 20, scale: 0.96 }}
+              className="w-full max-w-lg bg-white rounded-2xl shadow-xl overflow-hidden"
             >
-              {/* 弹窗头部 */}
-              <div className="flex items-center justify-between mb-6">
-                <h3 className="text-lg font-bold text-gray-900">评价导师服务</h3>
-                <button
-                  onClick={() => setShowReviewModal(false)}
-                  className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 transition-colors"
-                >
-                  <X className="w-4 h-4 text-gray-500" />
+              <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+                <h3 className="text-lg font-bold text-gray-900">评价导师</h3>
+                <button onClick={() => setShowReviewModal(false)} className="text-gray-400 hover:text-gray-600">
+                  <X className="w-5 h-5" />
                 </button>
               </div>
-
-              {/* 星级评分 */}
-              <div className="mb-6">
-                <p className="text-sm font-medium text-gray-700 mb-3">服务评分</p>
-                <div className="flex items-center gap-2 justify-center">
-                  {[1, 2, 3, 4, 5].map(star => (
-                    <button
-                      key={star}
-                      onMouseEnter={() => setHoverRating(star)}
-                      onMouseLeave={() => setHoverRating(0)}
-                      onClick={() => setReviewForm({ ...reviewForm, rating: star })}
-                      className="p-1 transition-transform hover:scale-110"
-                    >
-                      <Star
-                        className={`w-8 h-8 transition-colors ${
-                          star <= (hoverRating || reviewForm.rating)
-                            ? 'text-amber-400 fill-amber-400'
-                            : 'text-gray-300'
-                        }`}
-                      />
-                    </button>
-                  ))}
+              <div className="p-6 space-y-5">
+                <div>
+                  <p className="text-sm text-gray-600 mb-3">请为本次辅导打分</p>
+                  <div className="flex items-center gap-2">
+                    {Array.from({ length: 5 }).map((_, i) => {
+                      const value = i + 1;
+                      const active = value <= (hoverRating || reviewForm.rating);
+                      return (
+                        <button
+                          key={value}
+                          onMouseEnter={() => setHoverRating(value)}
+                          onMouseLeave={() => setHoverRating(0)}
+                          onClick={() => setReviewForm(prev => ({ ...prev, rating: value }))}
+                          className="text-amber-400"
+                        >
+                          <Star className={`w-8 h-8 ${active ? 'fill-current' : ''}`} />
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
-                <p className="text-center text-sm text-gray-500 mt-2">
-                  {reviewForm.rating === 5 ? '非常满意' :
-                   reviewForm.rating === 4 ? '比较满意' :
-                   reviewForm.rating === 3 ? '一般' :
-                   reviewForm.rating === 2 ? '不太满意' : '很不满意'}
-                </p>
-              </div>
 
-              {/* 评价内容 */}
-              <div className="mb-6">
-                <p className="text-sm font-medium text-gray-700 mb-2">评价内容</p>
-                <textarea
-                  value={reviewForm.content}
-                  onChange={e => setReviewForm({ ...reviewForm, content: e.target.value })}
-                  rows={4}
-                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none text-sm resize-none"
-                  placeholder="分享你的辅导体验，帮助其他同学做出选择..."
-                />
-                <p className="text-xs text-gray-400 mt-1.5 text-right">{reviewForm.content.length}/500</p>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">评价内容</label>
+                  <textarea
+                    value={reviewForm.content}
+                    onChange={e => setReviewForm(prev => ({ ...prev, content: e.target.value }))}
+                    rows={5}
+                    placeholder="写下你的辅导体验和建议..."
+                    className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-100"
+                  />
+                </div>
               </div>
-
-              {/* 操作按钮 */}
-              <div className="flex gap-3">
+              <div className="px-6 py-4 border-t border-gray-100 bg-gray-50 flex justify-end gap-3">
                 <button
                   onClick={() => setShowReviewModal(false)}
-                  className="flex-1 py-2.5 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors text-sm font-medium"
+                  className="px-4 py-2 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-100 transition-colors text-sm"
                 >
                   取消
                 </button>
                 <button
                   onClick={submitReview}
                   disabled={submittingReview || !reviewForm.content.trim()}
-                  className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-primary-500 text-white rounded-xl hover:bg-primary-600 transition-colors text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-4 py-2 rounded-lg bg-primary-600 text-white hover:bg-primary-700 transition-colors text-sm font-medium disabled:opacity-50 flex items-center gap-2"
                 >
                   <Send className="w-4 h-4" />
                   {submittingReview ? '提交中...' : '提交评价'}
                 </button>
               </div>
             </motion.div>
-          </motion.div>
+          </div>
         )}
       </AnimatePresence>
+
+      <ConfirmDialog
+        open={showCancelDialog}
+        title="确认取消预约？"
+        description="取消后需要重新预约，已提交的信息不会保留。"
+        confirmText={cancelling ? '取消中...' : '确认取消'}
+        onConfirm={handleCancelAppointment}
+        onCancel={() => {
+          setShowCancelDialog(false);
+          setCancellingId(null);
+        }}
+      />
     </div>
   );
 }
