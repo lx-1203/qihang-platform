@@ -1,10 +1,10 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
-import { Upload, X, FileText, Image, Loader2, CheckCircle2, AlertCircle, Clipboard } from 'lucide-react';
+import { Upload, X, FileText, Image, Loader2, CheckCircle2, AlertCircle, Clipboard, Film } from 'lucide-react';
 import http from '@/api/http';
 import { compressImage } from '@/utils/imageCompress';
 
 // 上传文件类别
-type UploadCategory = 'avatar' | 'resume' | 'cover' | 'general';
+type UploadCategory = 'avatar' | 'resume' | 'cover' | 'video' | 'general';
 
 // 上传结果
 interface UploadResult {
@@ -54,6 +54,7 @@ interface FileUploadProps {
 // 文件类型图标映射
 const getFileIcon = (mimetype: string) => {
   if (mimetype.startsWith('image/')) return <Image size={24} className="text-blue-500" />;
+  if (mimetype.startsWith('video/')) return <Film size={24} className="text-purple-500" />;
   return <FileText size={24} className="text-orange-500" />;
 };
 
@@ -69,7 +70,7 @@ const generateId = () => Math.random().toString(36).substring(2, 10);
 
 export default function FileUpload({
   category = 'general',
-  accept = 'image/jpeg,image/png,image/gif,image/webp,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  accept = 'image/jpeg,image/png,image/gif,image/webp,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,video/mp4,video/webm,video/quicktime,video/x-msvideo',
   multiple = false,
   maxFiles = 5,
   maxSize = 10 * 1024 * 1024,
@@ -94,6 +95,8 @@ export default function FileUpload({
     ? '点击或拖拽上传简历（PDF/DOC，最大10MB）'
     : category === 'cover'
     ? '点击或拖拽上传封面图（JPG/PNG，最大5MB）'
+    : category === 'video'
+    ? '点击或拖拽上传视频（MP4/WebM，最大200MB）'
     : '点击或拖拽上传文件';
 
   // 上传单个文件（含压缩）
@@ -125,11 +128,11 @@ export default function FileUpload({
 
     try {
       const formData = new FormData();
-      formData.append('file', fileToUpload);
+      // category 必须在 file 之前 append，否则 multer destination 回调读不到 category，文件会存到 general/ 目录
       formData.append('category', category);
+      formData.append('file', fileToUpload);
 
       const res = await http.post('/upload', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
         onUploadProgress: (progressEvent) => {
           const progress = progressEvent.total
             ? Math.round((progressEvent.loaded / progressEvent.total) * 100)
@@ -317,7 +320,7 @@ export default function FileUpload({
           {placeholder || defaultPlaceholder}
         </p>
         <p className="text-xs text-gray-400 mt-2">
-          支持 JPG、PNG、GIF、WEBP、PDF、DOC、DOCX
+          支持 JPG、PNG、GIF、WEBP、PDF、DOC、DOCX、MP4、WebM
         </p>
         <p className="text-xs text-gray-400 mt-1 flex items-center justify-center gap-1">
           <Clipboard size={12} />

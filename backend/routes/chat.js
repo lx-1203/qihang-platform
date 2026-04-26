@@ -20,14 +20,28 @@ router.post('/conversations', authMiddleware, async (req, res) => {
 
     // 检查是否有未关闭的会话（限制同时活跃会话数）
     const [active] = await pool.query(
-      'SELECT id FROM chat_conversations WHERE user_id = ? AND status != "closed" LIMIT 5',
+      'SELECT id FROM chat_conversations WHERE user_id = ? AND status != "closed" ORDER BY last_message_at DESC LIMIT 5',
       [userId]
     );
     if (active.length >= 5) {
-      return res.status(400).json({
-        code: 400,
-        message: '您有过多未关闭的会话，请先关闭部分会话',
-      });
+      // 自动关闭最早不活跃的会话（超过30分钟未发消息的）
+      const inactiveThreshold = new Date(Date.now() - 30 * 60 * 1000);
+      const [inactiveConvs] = await pool.query(
+        'SELECT id FROM chat_conversations WHERE user_id = ? AND status != "closed" AND (last_message_at < ? OR last_message_at IS NULL) ORDER BY last_message_at ASC LIMIT 1',
+        [userId, inactiveThreshold]
+      );
+      if (inactiveConvs.length > 0) {
+        await pool.query('UPDATE chat_conversations SET status = "closed" WHERE id = ?', [inactiveConvs[0].id]);
+        await pool.query(
+          'INSERT INTO chat_messages (conversation_id, sender_id, sender_role, content, msg_type) VALUES (?, 0, "system", "会话已自动关闭（超过30分钟未活动）", "system_notice")',
+          [inactiveConvs[0].id]
+        );
+      } else {
+        return res.status(400).json({
+          code: 400,
+          message: '您有过多活跃会话，请先关闭部分会话后再创建',
+        });
+      }
     }
 
     // 解析目标用户ID：支持 target_user_id（直接指定）或 company_id（从 companies 表查找 user_id）
@@ -79,12 +93,18 @@ router.post('/conversations', authMiddleware, async (req, res) => {
       [userId, type, convTitle]
     );
 
-    // 如果指定了目标用户，更新 target_user_id 字段
+    // 如果指定了目标用户，更新 target_user_id 字段（列可能不存在于旧数据库）
     if (resolvedTargetUserId) {
-      await pool.query(
-        'UPDATE chat_conversations SET target_user_id = ? WHERE id = ?',
-        [resolvedTargetUserId, result.insertId]
-      );
+      try {
+        await pool.query(
+          'UPDATE chat_conversations SET target_user_id = ? WHERE id = ?',
+          [resolvedTargetUserId, result.insertId]
+        );
+      } catch (colErr) {
+        if (colErr.code === 'ER_BAD_FIELD_ERROR') {
+          console.warn('[聊天] chat_conversations 表缺少 target_user_id 列，跳过');
+        } else { throw colErr; }
+      }
     }
 
     // 插入系统欢迎消息（根据是否有目标用户定制内容）
@@ -135,8 +155,17 @@ router.get('/conversations', authMiddleware, async (req, res) => {
     let sql = `SELECT c.*, u.nickname as user_nickname, u.avatar as user_avatar
                FROM chat_conversations c
                LEFT JOIN users u ON c.user_id = u.id
-               WHERE c.user_id = ? OR c.target_user_id = ?`;
-    const params = [userId, userId];
+               WHERE c.user_id = ?`;
+    const params = [userId];
+
+    // target_user_id 列可能不存在于旧数据库
+    try {
+      await pool.query('SELECT target_user_id FROM chat_conversations LIMIT 1');
+      sql += ' OR c.target_user_id = ?';
+      params.push(userId);
+    } catch (colErr) {
+      if (colErr.code !== 'ER_BAD_FIELD_ERROR') throw colErr;
+    }
 
     if (status) {
       sql += ' AND c.status = ?';
@@ -489,11 +518,10 @@ router.get('/admin/conversations', authMiddleware, requireRole('admin'), async (
     const offset = (parseInt(page) - 1) * parseInt(pageSize);
 
     let sql = `SELECT c.*, u.nickname as user_nickname, u.avatar as user_avatar, u.email as user_email,
-               a.nickname as admin_nickname, ag.nickname as agent_nickname
+               a.nickname as admin_nickname
                FROM chat_conversations c
                LEFT JOIN users u ON c.user_id = u.id
                LEFT JOIN users a ON c.assigned_admin = a.id
-               LEFT JOIN users ag ON c.assigned_agent = ag.id
                WHERE 1=1`;
     let countSql = 'SELECT COUNT(*) as total FROM chat_conversations c LEFT JOIN users u ON c.user_id = u.id WHERE 1=1';
     const params = [];
@@ -545,73 +573,12 @@ router.get('/admin/conversations', authMiddleware, requireRole('admin'), async (
 });
 
 /**
- * POST /api/chat/admin/conversations/:id/messages — 管理员回复
+ * POST /api/chat/admin/conversations/:id/messages — 管理员回复（只读，不允许发送）
  */
 router.post('/admin/conversations/:id/messages', authMiddleware, requireRole('admin'), async (req, res) => {
-  try {
-    const conversationId = parseInt(req.params.id);
-    const adminId = req.user.id;
-    const { content, msg_type = 'text', file_url = '' } = req.body;
-
-    if (isNaN(conversationId)) {
-      return res.status(400).json({ code: 400, message: '无效的会话ID' });
-    }
-
-    if (!content || !content.trim()) {
-      return res.status(400).json({ code: 400, message: '消息内容不能为空' });
-    }
-
-    // 验证会话存在
-    const [conv] = await pool.query(
-      'SELECT id, status FROM chat_conversations WHERE id = ?',
-      [conversationId]
-    );
-    if (!conv.length) {
-      return res.status(404).json({ code: 404, message: '会话不存在' });
-    }
-
-    const conn = await pool.getConnection();
-    try {
-      await conn.beginTransaction();
-
-      // 插入管理员消息
-      const [msgResult] = await conn.query(
-        'INSERT INTO chat_messages (conversation_id, sender_id, sender_role, content, msg_type, file_url) VALUES (?, ?, "admin", ?, ?, ?)',
-        [conversationId, adminId, content.trim(), msg_type, file_url]
-      );
-
-      // 更新会话元数据
-      const summary = content.trim().substring(0, 100);
-      await conn.query(
-        'UPDATE chat_conversations SET last_message = ?, last_message_at = NOW(), unread_user = unread_user + 1, assigned_admin = IFNULL(assigned_admin, ?), status = "active" WHERE id = ?',
-        [summary, adminId, conversationId]
-      );
-
-      await conn.commit();
-
-      res.json({
-        code: 200,
-        message: '回复成功',
-        data: {
-          id: msgResult.insertId,
-          conversation_id: conversationId,
-          sender_id: adminId,
-          sender_role: 'admin',
-          content: content.trim(),
-          msg_type,
-          created_at: new Date().toISOString(),
-        },
-      });
-    } catch (txErr) {
-      await conn.rollback();
-      throw txErr;
-    } finally {
-      conn.release();
-    }
-  } catch (err) {
-    console.error('[聊天-管理员] 回复失败:', err);
-    res.status(500).json({ code: 500, message: '回复失败' });
-  }
+  // 管理员端为只读模式，不支持直接发送消息
+  // 如需回复用户，应转接给客服（agent）处理
+  res.status(403).json({ code: 403, message: '管理员为只读模式，请通过转接功能将会话分配给客服处理' });
 });
 
 /**

@@ -37,7 +37,7 @@ export default function Postgrad() {
   const [abroadLoading, setAbroadLoading] = useState(true);
 
   useEffect(() => {
-    http.get('/articles', { params: { category: 'postgrad', pageSize: 5 } })
+    http.get('/articles', { params: { category: '保研资讯', pageSize: 5 } })
       .then(res => {
         if (res.data?.code === 200) {
           setPostgradArticles(res.data.data.articles || []);
@@ -46,7 +46,7 @@ export default function Postgrad() {
       .catch(() => {})
       .finally(() => setPostgradLoading(false));
 
-    http.get('/articles', { params: { category: 'abroad', pageSize: 5 } })
+    http.get('/articles', { params: { category: '留学指南', pageSize: 5 } })
       .then(res => {
         if (res.data?.code === 200) {
           setAbroadArticles(res.data.data.articles || []);
@@ -80,7 +80,12 @@ export default function Postgrad() {
             </div>
           </div>
           <div className="hidden md:block w-[320px]">
-            <img src="/placeholder-cover.svg" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }} alt="Graduation" className="w-full h-auto rounded-2xl object-cover shadow-md rotate-2" />
+            <img
+              src="https://images.unsplash.com/photo-1523050854058-8df90110c8f1?w=640&q=80&auto=format"
+              onError={(e) => { (e.target as HTMLImageElement).src = '/placeholder-cover.svg'; }}
+              alt="升学深造"
+              className="w-full h-auto rounded-2xl object-cover shadow-md rotate-2"
+            />
           </div>
         </div>
 

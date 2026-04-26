@@ -1198,19 +1198,36 @@ router.get('/programs/:id', async (req, res) => {
 router.post('/programs', async (req, res) => {
   try {
     const { university_id, name_zh, name_en, degree, department, category, duration, language,
-            gpa_min, toefl_min, ielts_min, tuition_total, scholarship, deadline, apply_link,
-            requirements, employment_rate, avg_salary, career_paths, description, tags } = req.body;
+            gpa_min, toefl_min, ielts_min, gre_required, gre_avg, gmat_avg,
+            tuition_total, tuition_cny, scholarship, deadline, apply_link,
+            requirements, highlights, materials, timeline, curriculum, offers,
+            related_programs, employment_data, class_size, intl_ratio, intake,
+            employment_rate, avg_salary, career_paths, description, tags } = req.body;
     if (!university_id || !name_zh || !name_en || !category) {
       return res.status(400).json({ code: 400, message: '关联院校、中英文名、学科大类为必填' });
     }
     const [result] = await pool.query(
       `INSERT INTO programs (university_id, name_zh, name_en, degree, department, category, duration, language,
-        gpa_min, toefl_min, ielts_min, tuition_total, scholarship, deadline, apply_link,
-        requirements, employment_rate, avg_salary, career_paths, description, tags)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        gpa_min, toefl_min, ielts_min, gre_required, gre_avg, gmat_avg,
+        tuition_total, tuition_cny, scholarship, deadline, apply_link,
+        requirements, highlights, materials, timeline, curriculum, offers,
+        related_programs, employment_data, class_size, intl_ratio, intake,
+        employment_rate, avg_salary, career_paths, description, tags)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [university_id, name_zh, name_en, degree || '硕士', department || '', category, duration || '', language || '英语',
-       gpa_min || null, toefl_min || null, ielts_min || null, tuition_total || '', scholarship || '', deadline || '',
-       apply_link || '', requirements || '', employment_rate || null, avg_salary || '',
+       gpa_min || null, toefl_min || null, ielts_min || null,
+       gre_required || 0, gre_avg || null, gmat_avg || null,
+       tuition_total || '', tuition_cny || '', scholarship || '', deadline || '',
+       apply_link || '', requirements || '',
+       highlights ? JSON.stringify(highlights) : null,
+       materials ? JSON.stringify(materials) : null,
+       timeline ? JSON.stringify(timeline) : null,
+       curriculum ? JSON.stringify(curriculum) : null,
+       offers ? JSON.stringify(offers) : null,
+       related_programs ? JSON.stringify(related_programs) : null,
+       employment_data ? JSON.stringify(employment_data) : null,
+       class_size || 0, intl_ratio || '', intake || '',
+       employment_rate || null, avg_salary || '',
        career_paths ? JSON.stringify(career_paths) : null, description || '', tags ? JSON.stringify(tags) : null]
     );
     res.json({ code: 200, message: '项目创建成功', data: { id: result.insertId } });
@@ -1228,19 +1245,42 @@ router.put('/programs/:id', async (req, res) => {
     if (rows.length === 0) return res.status(404).json({ code: 404, message: '项目不存在' });
 
     const { university_id, name_zh, name_en, degree, department, category, duration, language,
-            gpa_min, toefl_min, ielts_min, tuition_total, scholarship, deadline, apply_link,
-            requirements, employment_rate, avg_salary, career_paths, description, tags, status } = req.body;
+            gpa_min, toefl_min, ielts_min, gre_required, gre_avg, gmat_avg,
+            tuition_total, tuition_cny, scholarship, deadline, apply_link,
+            requirements, highlights, materials, timeline, curriculum, offers,
+            related_programs, employment_data, class_size, intl_ratio, intake,
+            employment_rate, avg_salary, career_paths, description, tags, status } = req.body;
     await pool.query(
-      `UPDATE programs SET university_id=COALESCE(?,university_id), name_zh=COALESCE(?,name_zh), name_en=COALESCE(?,name_en),
+      `UPDATE programs SET
+        university_id=COALESCE(?,university_id), name_zh=COALESCE(?,name_zh), name_en=COALESCE(?,name_en),
         degree=COALESCE(?,degree), department=COALESCE(?,department), category=COALESCE(?,category),
-        duration=COALESCE(?,duration), language=COALESCE(?,language), gpa_min=?, toefl_min=?, ielts_min=?,
-        tuition_total=COALESCE(?,tuition_total), scholarship=COALESCE(?,scholarship), deadline=COALESCE(?,deadline),
-        apply_link=COALESCE(?,apply_link), requirements=COALESCE(?,requirements), employment_rate=?,
-        avg_salary=COALESCE(?,avg_salary), career_paths=?, description=COALESCE(?,description),
-        tags=?, status=COALESCE(?,status) WHERE id=?`,
+        duration=COALESCE(?,duration), language=COALESCE(?,language),
+        gpa_min=?, toefl_min=?, ielts_min=?,
+        gre_required=?, gre_avg=?, gmat_avg=?,
+        tuition_total=COALESCE(?,tuition_total), tuition_cny=COALESCE(?,tuition_cny),
+        scholarship=COALESCE(?,scholarship), deadline=COALESCE(?,deadline),
+        apply_link=COALESCE(?,apply_link), requirements=COALESCE(?,requirements),
+        highlights=?, materials=?, timeline=?, curriculum=?, offers=?,
+        related_programs=?, employment_data=?,
+        class_size=?, intl_ratio=COALESCE(?,intl_ratio), intake=COALESCE(?,intake),
+        employment_rate=?, avg_salary=COALESCE(?,avg_salary),
+        career_paths=?, description=COALESCE(?,description),
+        tags=?, status=COALESCE(?,status)
+       WHERE id=?`,
       [university_id, name_zh, name_en, degree, department, category, duration, language,
-       gpa_min ?? null, toefl_min ?? null, ielts_min ?? null, tuition_total, scholarship, deadline,
-       apply_link, requirements, employment_rate ?? null, avg_salary,
+       gpa_min ?? null, toefl_min ?? null, ielts_min ?? null,
+       gre_required ?? 0, gre_avg ?? null, gmat_avg ?? null,
+       tuition_total, tuition_cny, scholarship, deadline,
+       apply_link, requirements,
+       highlights ? JSON.stringify(highlights) : null,
+       materials ? JSON.stringify(materials) : null,
+       timeline ? JSON.stringify(timeline) : null,
+       curriculum ? JSON.stringify(curriculum) : null,
+       offers ? JSON.stringify(offers) : null,
+       related_programs ? JSON.stringify(related_programs) : null,
+       employment_data ? JSON.stringify(employment_data) : null,
+       class_size ?? 0, intl_ratio, intake,
+       employment_rate ?? null, avg_salary,
        career_paths ? JSON.stringify(career_paths) : null, description,
        tags ? JSON.stringify(tags) : null, status, id]
     );

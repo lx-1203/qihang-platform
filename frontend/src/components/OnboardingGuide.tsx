@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -398,7 +399,7 @@ export default function OnboardingGuide({ role, inline = false, bubbleMode = fal
   // 气泡模式：定位到页面元素的分步引导
   if (bubbleMode && visible) {
     const step = steps[currentStep];
-    return (
+    return createPortal(
       <>
         {/* 遮罩层 */}
         <motion.div
@@ -619,6 +620,7 @@ export default function OnboardingGuide({ role, inline = false, bubbleMode = fal
         </motion.button>
       )}
 
+      {createPortal(
       <AnimatePresence>
         {visible && (
           <>
@@ -635,8 +637,9 @@ export default function OnboardingGuide({ role, inline = false, bubbleMode = fal
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 40, scale: 0.95 }}
               transition={modalTransition}
-              className="fixed inset-0 flex items-center justify-center z-[9991] md:inset-auto md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:w-[580px] bg-white rounded-2xl shadow-2xl overflow-hidden max-h-[80vh] flex flex-col mx-4 md:mx-0"
+              className="fixed inset-0 z-[9991] flex items-center justify-center mx-4 md:mx-0 md:w-[580px] md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2"
             >
+              <div className="w-full bg-white rounded-2xl shadow-2xl overflow-hidden max-h-[80vh] flex flex-col">
               {/* 头部 */}
               <div className="bg-gradient-to-r from-slate-900 to-slate-800 text-white px-6 py-5 relative">
                 <button onClick={handleClose} className="absolute top-4 right-4 text-slate-400 hover:text-white transition-colors">
@@ -750,10 +753,13 @@ export default function OnboardingGuide({ role, inline = false, bubbleMode = fal
                   </button>
                 )}
               </div>
+              </div>
             </motion.div>
           </>
         )}
-      </AnimatePresence>
+      </AnimatePresence>,
+      document.body
+      )}
     </>
   );
 }

@@ -176,7 +176,9 @@ export default function GuidanceArticles() {
                           article.category === '校招指南' ? 'blue' :
                           article.category === '简历技巧' ? 'green' :
                           article.category === '面试经验' ? 'primary' :
-                          article.category === '政策解读' ? 'yellow' : 'gray'
+                          article.category === '政策解读' ? 'yellow' :
+                          article.category === '保研资讯' ? 'orange' :
+                          article.category === '留学指南' ? 'purple' : 'gray'
                         }
                         size="sm"
                         className="mb-3"

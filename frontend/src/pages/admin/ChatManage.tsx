@@ -451,30 +451,10 @@ export default function ChatManage() {
           <p className="text-sm text-gray-500 mt-0.5">管理平台所有用户会话，及时回复用户咨询</p>
         </div>
         <div className="flex items-center gap-2">
-          {/* 查看/管理模式切换 */}
-          <div className="flex items-center bg-white border border-gray-200 rounded-lg overflow-hidden">
-            <button
-              onClick={() => setViewMode('view')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium transition-colors ${
-                viewMode === 'view'
-                  ? 'bg-primary-500 text-white'
-                  : 'text-gray-600 hover:bg-gray-50'
-              }`}
-            >
-              <MessageCircle className="w-3.5 h-3.5" />
-              查看模式
-            </button>
-            <button
-              onClick={() => setViewMode('manage')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium transition-colors ${
-                viewMode === 'manage'
-                  ? 'bg-primary-500 text-white'
-                  : 'text-gray-600 hover:bg-gray-50'
-              }`}
-            >
-              <Zap className="w-3.5 h-3.5" />
-              管理模式
-            </button>
+          {/* 管理员只读模式标识 */}
+          <div className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium bg-gray-100 text-gray-500 rounded-lg">
+            <MessageCircle className="w-3.5 h-3.5" />
+            管理员只读
           </div>
           <button
             onClick={() => { fetchStats(); fetchConversations(); }}
@@ -865,52 +845,13 @@ export default function ChatManage() {
                 )}
               </div>
 
-              {/* 回复输入框 — 查看模式或已关闭状态不显示 */}
-              {viewMode === 'view' ? (
-                // 查看模式：仅显示提示
-                <div className="px-5 py-3 border-t border-gray-100 bg-primary-50/50 text-center">
-                  <span className="text-xs text-primary-600 flex items-center justify-center gap-1.5">
-                    <MessageCircle className="w-3.5 h-3.5" />
-                    查看模式 — 仅浏览对话，如需回复请切换到管理模式
-                  </span>
-                </div>
-              ) : selectedConv.status !== 'closed' ? (
-                <div className="border-t border-gray-100 bg-white">
-                  {/* 管理员回复输入框 */}
-                  <div className="px-4 py-3">
-                    <div className="flex items-end gap-2">
-                      <textarea
-                        value={replyText}
-                        onChange={(e) => setReplyText(e.target.value)}
-                        onKeyDown={handleKeyDown}
-                        placeholder="输入回复内容…"
-                        rows={1}
-                        className="flex-1 resize-none border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-400 transition-all max-h-24"
-                        style={{ minHeight: '40px' }}
-                      />
-                      <button
-                        onClick={handleSend}
-                        disabled={!replyText.trim() || sending}
-                        className="flex items-center justify-center w-10 h-10 rounded-xl bg-primary-500 text-white hover:bg-primary-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors flex-shrink-0"
-                      >
-                        {sending ? (
-                          <RefreshCw className="w-4 h-4 animate-spin" />
-                        ) : (
-                          <Send className="w-4 h-4" />
-                        )}
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                // 会话已关闭提示
-                <div className="px-5 py-3 border-t border-gray-100 bg-gray-50 text-center">
-                  <span className="text-xs text-gray-400 flex items-center justify-center gap-1.5">
-                    <CheckCircle2 className="w-3.5 h-3.5" />
-                    该会话已关闭，无法继续回复
-                  </span>
-                </div>
-              )}
+              {/* 管理员只读模式 — 不显示回复输入框 */}
+              <div className="px-5 py-3 border-t border-gray-100 bg-gray-50 text-center">
+                <span className="text-xs text-gray-500 flex items-center justify-center gap-1.5">
+                  <MessageCircle className="w-3.5 h-3.5" />
+                  管理员只读 — 如需回复用户，请将会话转接给客服处理
+                </span>
+              </div>
             </>
           ) : (
             // 未选中会话 — 空白引导

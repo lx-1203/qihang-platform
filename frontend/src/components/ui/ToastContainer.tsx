@@ -91,11 +91,16 @@ function markShown(key: string): void {
 const ONCE_PER_SESSION_TITLES = ['使用本地默认配置', '使用默认主题'];
 
 function isOncePerSessionTitle(title: string): boolean {
+  if (!title || typeof title !== 'string') return false;
   return ONCE_PER_SESSION_TITLES.some(t => title.includes(t));
 }
 
 // eslint-disable-next-line react-refresh/only-export-components
-export function showToast(opts: ShowToastOptions): void {
+export function showToast(opts: ShowToastOptions | string, type?: ToastType): void {
+  // 兼容旧调用 showToast('title', 'warning') 和新调用 showToast({ type, title })
+  const normalizedOpts: ShowToastOptions = typeof opts === 'string'
+    ? { type: type || 'info', title: opts }
+    : opts;
   const now = Date.now();
 
   if (animationLock) return;
@@ -103,12 +108,12 @@ export function showToast(opts: ShowToastOptions): void {
   if (now - lastGlobalToastTime < GLOBAL_THROTTLE_MS) return;
   lastGlobalToastTime = now;
 
-  const dedupKey = `${opts.type}:${opts.title}`;
+  const dedupKey = `${normalizedOpts.type}:${normalizedOpts.title}`;
   const lastTime = recentToasts.get(dedupKey);
   if (lastTime && now - lastTime < 2000) return;
   recentToasts.set(dedupKey, now);
 
-  const shouldOnce = opts.oncePerSession || isOncePerSessionTitle(opts.title);
+  const shouldOnce = normalizedOpts.oncePerSession || isOncePerSessionTitle(normalizedOpts.title);
   if (shouldOnce && !shouldShowOnce(dedupKey)) return;
 
   if (shouldOnce) markShown(dedupKey);
@@ -122,7 +127,7 @@ export function showToast(opts: ShowToastOptions): void {
     }
   }
 
-  window.dispatchEvent(new CustomEvent(TOAST_EVENT, { detail: opts }));
+  window.dispatchEvent(new CustomEvent(TOAST_EVENT, { detail: normalizedOpts }));
 }
 
 // ====== Toast Context ======

@@ -301,9 +301,11 @@ export default function EntrepreneurshipConfig() {
                       placeholder="上传赛事封面图"
                       className="!py-3"
                       onSuccess={(result) => {
-                        const arr = [...competitions];
-                        arr[idx] = { ...arr[idx], image: result.url };
-                        setCompetitions(arr);
+                        setCompetitions(prev => {
+                          const next = [...prev];
+                          next[idx] = { ...next[idx], image: result.url };
+                          return next;
+                        });
                       }}
                     />
                   )}

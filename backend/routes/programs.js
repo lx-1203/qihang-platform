@@ -120,8 +120,16 @@ router.get('/:id', async (req, res) => {
     await pool.query('UPDATE programs SET view_count = view_count + 1 WHERE id = ?', [id]);
 
     const program = rows[0];
+    // 解析所有 JSON 字段
     program.tags = typeof program.tags === 'string' ? JSON.parse(program.tags) : (program.tags || []);
     program.career_paths = typeof program.career_paths === 'string' ? JSON.parse(program.career_paths) : (program.career_paths || []);
+    program.highlights = typeof program.highlights === 'string' ? JSON.parse(program.highlights) : (program.highlights || []);
+    program.materials = typeof program.materials === 'string' ? JSON.parse(program.materials) : (program.materials || []);
+    program.timeline = typeof program.timeline === 'string' ? JSON.parse(program.timeline) : (program.timeline || []);
+    program.curriculum = typeof program.curriculum === 'string' ? JSON.parse(program.curriculum) : (program.curriculum || []);
+    program.offers = typeof program.offers === 'string' ? JSON.parse(program.offers) : (program.offers || []);
+    program.relatedPrograms = typeof program.related_programs === 'string' ? JSON.parse(program.related_programs) : (program.related_programs || []);
+    program.employmentData = typeof program.employment_data === 'string' ? JSON.parse(program.employment_data) : (program.employment_data || { industries: [], topEmployers: [] });
 
     res.json({ code: 200, data: program });
   } catch (err) {

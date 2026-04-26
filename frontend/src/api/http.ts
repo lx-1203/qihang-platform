@@ -44,6 +44,18 @@ http.interceptors.request.use(
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+    // FormData 上传时，必须删除 Content-Type
+    // 让 axios 自动设置 multipart/form-data + boundary
+    // 否则 express.json() 会先解析 body，导致 multer 收到空的 req.file
+    if (config.data instanceof FormData) {
+      // AxiosHeaders 和普通对象都兼容的写法
+      if (typeof config.headers.delete === 'function') {
+        config.headers.delete('Content-Type');
+      } else {
+        delete config.headers['Content-Type'];
+        delete config.headers['content-type'];
+      }
+    }
     return config;
   },
   (error) => Promise.reject(error)

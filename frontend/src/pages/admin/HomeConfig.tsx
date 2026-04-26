@@ -305,9 +305,11 @@ export default function HomeConfig() {
                         placeholder="上传轮播背景图（建议 1920x600）"
                         className="!py-4"
                         onSuccess={(result) => {
-                          const arr = [...heroSlides];
-                          arr[idx] = { ...arr[idx], image: result.url };
-                          setHeroSlides(arr);
+                          setHeroSlides(prev => {
+                            const next = [...prev];
+                            next[idx] = { ...next[idx], image: result.url };
+                            return next;
+                          });
                         }}
                       />
                     )}

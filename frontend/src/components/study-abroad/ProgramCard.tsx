@@ -168,7 +168,7 @@ export default function ProgramCard({ program, university, mode }: ProgramCardPr
             {/* Logo + school info */}
             <div className="flex items-start gap-4 mb-4">
               <img
-                src={university.logo}
+                src={university.logo || "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect fill='%2314b8a6' width='64' height='64' rx='12'/%3E%3Ctext x='50%25' y='54%25' dominant-baseline='middle' text-anchor='middle' fill='white' font-size='24'%3EU%3C/text%3E%3C/svg%3E"}
                 alt={university.school}
                 className="w-16 h-16 rounded-xl object-cover shrink-0 border border-gray-100"
                 onError={(e) => {

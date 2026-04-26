@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import {
   TrendingUp,
   ChevronRight,
@@ -18,6 +18,8 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import OfferStoryCard from '../components/study-abroad/OfferStoryCard';
 import http from '../api/http';
+import { useAuthStore } from '@/store/auth';
+import { showToast } from '@/components/ui/ToastContainer';
 
 // ====== 类型定义 ======
 
@@ -122,6 +124,8 @@ function mapApiOffer(row: ApiOfferRow): OfferItem {
 // ====== 组件 ======
 
 export default function StudyAbroadOffers() {
+  const navigate = useNavigate();
+  const { user } = useAuthStore();
   const [offers, setOffers] = useState<OfferItem[]>([]);
   const [countries, setCountries] = useState<CountryItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -525,7 +529,15 @@ export default function StudyAbroadOffers() {
               提交你的录取数据，我们将保护你的隐私并帮助更多申请者了解录取趋势
             </p>
           </div>
-          <button className="bg-primary-500 text-white px-8 py-3.5 rounded-xl font-bold hover:bg-primary-700 transition-colors shadow-lg shadow-primary-500/20 flex items-center gap-2 shrink-0">
+          <button
+            onClick={() => {
+              if (!user) { showToast('请先登录', 'warning'); navigate('/login'); return; }
+              http.post('/chat/conversations', { type: 'user_service', title: '提交录取Offer数据' })
+                .then(() => { showToast('已创建会话，请在聊天中提交您的Offer信息', 'success'); navigate('/chat'); })
+                .catch(() => showToast('创建会话失败，请重试', 'error'));
+            }}
+            className="bg-primary-500 text-white px-8 py-3.5 rounded-xl font-bold hover:bg-primary-700 transition-colors shadow-lg shadow-primary-500/20 flex items-center gap-2 shrink-0"
+          >
             <ThumbsUp className="w-4 h-4" /> 提交我的 Offer
           </button>
         </div>

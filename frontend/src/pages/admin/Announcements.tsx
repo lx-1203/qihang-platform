@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Megaphone, Plus, Edit3, Trash2, Eye, EyeOff, Clock,
@@ -397,6 +398,7 @@ export default function AdminAnnouncements() {
       )}
 
       {/* 编辑弹窗 */}
+      {createPortal(
       <AnimatePresence>
         {showEditor && (
           <>
@@ -404,14 +406,14 @@ export default function AdminAnnouncements() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-black/40 z-[60] flex items-center justify-center"
+              className="fixed inset-0 bg-black/40 z-[65] flex items-center justify-center"
               onClick={() => setShowEditor(false)}
             />
             <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="z-[61] fixed inset-0 flex items-center justify-center pointer-events-none"
+              className="z-[66] fixed inset-0 flex items-center justify-center pointer-events-none"
             >
             <div className="w-full max-w-2xl bg-white rounded-2xl shadow-2xl p-6 max-h-[85vh] overflow-y-auto pointer-events-auto"
             >
@@ -541,7 +543,9 @@ export default function AdminAnnouncements() {
             </motion.div>
           </>
         )}
-      </AnimatePresence>
+      </AnimatePresence>,
+      document.body
+      )}
 
       {/* 删除确认对话框 */}
       <ConfirmDialog

@@ -3,9 +3,10 @@ import { motion } from 'framer-motion';
 import {
   Building2, Globe, MapPin, Phone, Mail,
   Save, Loader2, CheckCircle, Shield,
-  Users, FileText, ExternalLink
+  Users, FileText, ExternalLink, MessageSquareText
 } from 'lucide-react';
 import http from '@/api/http';
+import { useAuthStore } from '@/store/auth';
 import CityPicker from '@/components/ui/CityPicker';
 import FileUpload from '@/components/ui/FileUpload';
 import { DetailSkeleton } from '../../components/ui/Skeleton';
@@ -24,8 +25,8 @@ interface CompanyProfile {
   logoUrl: string;
   website: string;
   address: string;
-  contactPerson: string;
-  contactPhone: string;
+  phone: string;
+  wechat: string;
   contactEmail: string;
   verifyStatus: 'pending' | 'verified' | 'rejected';
   createdAt: string;
@@ -42,8 +43,8 @@ function normalizeCompanyProfile(data: Record<string, unknown> | null | undefine
     logoUrl: String(data.logoUrl || data.logo || ''),
     website: String(data.website || ''),
     address: String(data.address || ''),
-    contactPerson: String(data.contactPerson || data.contact_person || ''),
-    contactPhone: String(data.contactPhone || data.contact_phone || ''),
+    phone: String(data.phone || ''),
+    wechat: String(data.wechat || ''),
     contactEmail: String(data.contactEmail || data.contact_email || ''),
     verifyStatus: (data.verifyStatus === 'verified' ? 'verified' : data.verify_status === 'approved' ? 'verified' : data.verifyStatus === 'rejected' || data.verify_status === 'rejected' ? 'rejected' : 'pending') as CompanyProfile['verifyStatus'],
     createdAt: String(data.createdAt || data.created_at || ''),
@@ -73,6 +74,7 @@ export default function CompanyProfile() {
   const [saved, setSaved] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { user: authUser, setUser } = useAuthStore();
 
   useEffect(() => {
     fetchProfile();
@@ -108,9 +110,19 @@ export default function CompanyProfile() {
         logo: profile.logoUrl,
         website: profile.website,
         address: profile.address,
+        phone: profile.phone || '',
+        wechat: profile.wechat || '',
+        contact_email: profile.contactEmail || '',
       };
       const res = await http.post('/company/profile', payload);
       setProfile(normalizeCompanyProfile((res.data?.data?.company || payload) as Record<string, unknown>));
+      // 同步更新 auth store 中的头像（企业 Logo 作为头像显示）
+      if (authUser) {
+        setUser({
+          ...authUser,
+          avatar: profile.logoUrl || authUser.avatar,
+        } as typeof authUser);
+      }
       setSaved(true);
       showToast({ type: 'success', title: '保存成功' });
       setTimeout(() => setSaved(false), 2000);
@@ -351,19 +363,7 @@ export default function CompanyProfile() {
           <FileText className="w-5 h-5 text-primary-500" />
           联系信息
         </h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* 联系人 */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">联系人</label>
-            <input
-              type="text"
-              value={profile.contactPerson}
-              readOnly
-              className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm bg-gray-50 text-gray-500 cursor-not-allowed"
-              placeholder="当前后端暂未提供联系人字段"
-            />
-          </div>
-
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* 联系电话 */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1.5">联系电话</label>
@@ -371,10 +371,25 @@ export default function CompanyProfile() {
               <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
               <input
                 type="tel"
-                value={profile.contactPhone}
-                readOnly
-                className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg text-sm bg-gray-50 text-gray-500 cursor-not-allowed"
-                placeholder="当前后端暂未提供联系电话字段"
+                value={profile.phone}
+                onChange={e => updateField('phone', e.target.value)}
+                className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none"
+                placeholder="请输入联系电话"
+              />
+            </div>
+          </div>
+
+          {/* 微信号 */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">微信号</label>
+            <div className="relative">
+              <MessageSquareText className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <input
+                type="text"
+                value={profile.wechat}
+                onChange={e => updateField('wechat', e.target.value)}
+                className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none"
+                placeholder="请输入微信号"
               />
             </div>
           </div>
@@ -387,16 +402,14 @@ export default function CompanyProfile() {
               <input
                 type="email"
                 value={profile.contactEmail}
-                readOnly
-                className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg text-sm bg-gray-50 text-gray-500 cursor-not-allowed"
-                placeholder="当前后端暂未提供联系邮箱字段"
+                onChange={e => updateField('contactEmail', e.target.value)}
+                className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none"
+                placeholder="请输入联系邮箱"
               />
             </div>
           </div>
         </div>
-        <p className="mt-4 text-xs text-amber-600 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2">
-          当前仅支持保存企业名称、行业、规模、简介、Logo、官网和地址；联系人信息暂为只读展示，避免出现“可编辑但无法保存”的误导。
-        </p>
+        <p className="mt-4 text-xs text-gray-400">联系方式将在职位详情页展示，方便求职者与您取得联系</p>
       </motion.div>
 
       {/* 底部保存提示 */}

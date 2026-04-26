@@ -3,9 +3,10 @@ import { motion } from 'framer-motion';
 import {
   User, Save, Shield, ShieldCheck, ShieldAlert,
   Plus, X, Clock, Briefcase, Tag, DollarSign,
-  Image, FileText, CheckCircle, Loader2
+  Image, FileText, CheckCircle, Loader2, MessageSquareText, Mail
 } from 'lucide-react';
 import http from '@/api/http';
+import { useAuthStore } from '@/store/auth';
 import ErrorState from '@/components/ui/ErrorState';
 import { DEFAULT_AVATAR } from '@/constants';
 import FileUpload from '@/components/ui/FileUpload';
@@ -24,6 +25,8 @@ interface MentorProfile {
   verifyStatus: 'approved' | 'pending' | 'rejected';
   email: string;
   phone: string;
+  wechat: string;
+  contact_email: string;
   experience: string;
   education: string;
 }
@@ -33,6 +36,7 @@ const emptyProfile: MentorProfile = {
   name: '', title: '', bio: '', avatar: '',
   expertise: [], pricePerSession: 0, availableSlots: [],
   verifyStatus: 'pending', email: '', phone: '',
+  wechat: '', contact_email: '',
   experience: '', education: '',
 };
 
@@ -44,6 +48,7 @@ export default function MentorProfile() {
   const [saved, setSaved] = useState(false);
   const [expertiseInput, setExpertiseInput] = useState('');
   const [slotInput, setSlotInput] = useState('');
+  const { user: authUser, setUser } = useAuthStore();
 
   useEffect(() => {
     fetchProfile();
@@ -67,6 +72,8 @@ export default function MentorProfile() {
           verifyStatus: p.verify_status || 'pending',
           email: p.email || '',
           phone: p.phone || '',
+          wechat: p.wechat || '',
+          contact_email: p.contact_email || '',
           experience: p.experience || '',
           education: p.education || '',
         });
@@ -87,8 +94,17 @@ export default function MentorProfile() {
         ...profile,
         available_time: profile.availableSlots,
         price: profile.pricePerSession,
+        wechat: profile.wechat || '',
+        contact_email: profile.contact_email || '',
       };
       await http.post('/mentor/profile', payload);
+      // 同步更新 auth store 中的头像
+      if (authUser) {
+        setUser({
+          ...authUser,
+          avatar: profile.avatar || authUser.avatar,
+        } as typeof authUser);
+      }
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
     } catch (err) {
@@ -273,7 +289,10 @@ export default function MentorProfile() {
             <h3 className="text-lg font-bold text-gray-900 mb-4">联系信息</h3>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">邮箱</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <Mail className="w-4 h-4 inline mr-1" />
+                  登录邮箱
+                </label>
                 <input
                   type="email"
                   value={profile.email}
@@ -290,7 +309,34 @@ export default function MentorProfile() {
                   className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                 />
               </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <MessageSquareText className="w-4 h-4 inline mr-1" />
+                  微信号
+                </label>
+                <input
+                  type="text"
+                  value={profile.wechat}
+                  onChange={e => updateField('wechat', e.target.value)}
+                  placeholder="选填，方便学生添加微信联系"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <Mail className="w-4 h-4 inline mr-1" />
+                  对外联系邮箱
+                </label>
+                <input
+                  type="email"
+                  value={profile.contact_email}
+                  onChange={e => updateField('contact_email', e.target.value)}
+                  placeholder="选填，供学生咨询联系"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                />
+              </div>
             </div>
+            <p className="text-xs text-gray-400 mt-3">联系方式将在导师详情页展示，方便学生与您取得联系</p>
           </motion.div>
         </div>
 

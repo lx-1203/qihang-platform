@@ -15,7 +15,7 @@ router.use(authMiddleware, requireRole('mentor'));
 router.post('/profile', async (req, res) => {
   try {
     const userId = req.user.id;
-    const { name, title, bio, expertise, price, available_time, avatar, phone } = req.body;
+    const { name, title, bio, expertise, price, available_time, avatar, phone, wechat, contact_email } = req.body;
 
     if (!title || !bio) {
       return res.status(400).json({ code: 400, message: '头衔和简介不能为空' });
@@ -25,10 +25,12 @@ router.post('/profile', async (req, res) => {
     const [existing] = await pool.query('SELECT id FROM mentor_profiles WHERE user_id = ?', [userId]);
 
     if (existing.length > 0) {
-      // 更新导师资料
+      // 更新导师资料（同时更新 mentor_profiles.avatar 和 users.avatar）
       await pool.query(
-        `UPDATE mentor_profiles SET name = ?, title = ?, bio = ?, expertise = ?, price = ?, available_time = ? WHERE user_id = ?`,
-        [name || '', title, bio, JSON.stringify(expertise || []), price || 0, JSON.stringify(available_time || []), userId]
+        `UPDATE mentor_profiles SET name = ?, title = ?, bio = ?, expertise = ?, price = ?, available_time = ?, avatar = ?,
+         phone = ?, wechat = ?, contact_email = ? WHERE user_id = ?`,
+        [name || '', title, bio, JSON.stringify(expertise || []), price || 0, JSON.stringify(available_time || []), avatar || '',
+         phone || '', wechat || '', contact_email || '', userId]
       );
       // 同步更新 users 表的头像和手机号
       if (avatar !== undefined || phone !== undefined) {
@@ -49,8 +51,10 @@ router.post('/profile', async (req, res) => {
     } else {
       // 创建
       await pool.query(
-        `INSERT INTO mentor_profiles (user_id, name, title, bio, expertise, price, available_time) VALUES (?, ?, ?, ?, ?, ?, ?)`,
-        [userId, name || '', title, bio, JSON.stringify(expertise || []), price || 0, JSON.stringify(available_time || [])]
+        `INSERT INTO mentor_profiles (user_id, name, title, bio, expertise, price, available_time, phone, wechat, contact_email)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [userId, name || '', title, bio, JSON.stringify(expertise || []), price || 0, JSON.stringify(available_time || []),
+         phone || '', wechat || '', contact_email || '']
       );
 
       // 通知管理员有新导师入驻申请

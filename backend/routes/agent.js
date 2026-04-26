@@ -48,7 +48,8 @@ router.get('/stats', authMiddleware, requireRole('agent'), async (req, res) => {
         },
       });
     } catch (tableErr) {
-      if (tableErr.code === 'ER_NO_SUCH_TABLE' || tableErr.errno === 1146) {
+      if (tableErr.code === 'ER_NO_SUCH_TABLE' || tableErr.errno === 1146 || tableErr.code === 'ER_BAD_FIELD_ERROR') {
+        console.warn('[客服] 数据库字段缺失，返回默认统计:', tableErr.message);
         res.json({ code: 200, data: defaultStats });
       } else { throw tableErr; }
     }
@@ -85,7 +86,19 @@ router.get('/conversations', authMiddleware, requireRole('agent'), async (req, r
     sql += ' ORDER BY c.last_message_at DESC LIMIT ? OFFSET ?';
     params.push(parseInt(pageSize), offset);
 
-    const [rows] = await pool.query(sql, params);
+    let rows;
+    try {
+      [rows] = await pool.query(sql, params);
+    } catch (sqlErr) {
+      if (sqlErr.code === 'ER_BAD_FIELD_ERROR') {
+        // is_read 列不存在时去掉子查询重试
+        const fallbackSql = sql.replace(
+          /\(SELECT COUNT\(\*\) FROM chat_messages WHERE conversation_id = c\.id AND sender_role = 'user' AND is_read = 0\) AS unread_user/,
+          '0 AS unread_user'
+        );
+        [rows] = await pool.query(fallbackSql, params);
+      } else { throw sqlErr; }
+    }
 
     // 总数
     const [countResult] = await pool.query(
@@ -231,10 +244,17 @@ router.put('/conversations/:id/read', authMiddleware, requireRole('agent'), asyn
       return res.status(403).json({ code: 403, message: '无权操作此会话' });
     }
 
-    await pool.query(
-      'UPDATE chat_messages SET is_read = 1 WHERE conversation_id = ? AND sender_role = "user" AND is_read = 0',
-      [conversationId]
-    );
+    // is_read 列可能不存在于旧数据库，容错处理
+    try {
+      await pool.query(
+        'UPDATE chat_messages SET is_read = 1 WHERE conversation_id = ? AND sender_role = "user" AND is_read = 0',
+        [conversationId]
+      );
+    } catch (colErr) {
+      if (colErr.code === 'ER_BAD_FIELD_ERROR') {
+        console.warn('[客服] chat_messages 表缺少 is_read 列，跳过消息标记');
+      } else { throw colErr; }
+    }
 
     res.json({ code: 200, message: '标记已读成功' });
   } catch (err) {

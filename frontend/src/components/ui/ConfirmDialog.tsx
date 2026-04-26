@@ -1,4 +1,5 @@
 import { useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AlertTriangle, Trash2, Info, Loader2, X } from 'lucide-react';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
@@ -83,7 +84,7 @@ export default function ConfirmDialog({
     [onCancel, loading]
   );
 
-  return (
+  return createPortal(
     <AnimatePresence>
       {open && (
         <div
@@ -162,6 +163,7 @@ export default function ConfirmDialog({
           </motion.div>
         </div>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body
   );
 }

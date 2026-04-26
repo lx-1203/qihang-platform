@@ -15,35 +15,38 @@ router.get('/', async (req, res) => {
     const pageLimit = Math.min(Number(limit) || Number(pageSizeParam) || 20, 50); // 最大50条
     const page = Number(pageParam) || 1;
 
-    let sql = 'SELECT * FROM jobs WHERE status = "active" AND deleted_at IS NULL';
+    // JOIN companies 获取最新的公司 Logo
+    let sql = `SELECT j.*, comp.logo AS company_logo FROM jobs j
+               LEFT JOIN companies comp ON j.company_id = comp.id
+               WHERE j.status = 'active' AND j.deleted_at IS NULL`;
     const params = [];
 
     if (type && type !== '全部') {
-      sql += ' AND type = ?';
+      sql += ' AND j.type = ?';
       params.push(type);
     }
     if (location && location !== '全国') {
-      sql += ' AND location LIKE ?';
+      sql += ' AND j.location LIKE ?';
       params.push(`%${location}%`);
     }
     if (category && category !== '全部') {
-      sql += ' AND category = ?';
+      sql += ' AND j.category = ?';
       params.push(category);
     }
     if (keyword) {
-      sql += ' AND (title LIKE ? OR company_name LIKE ? OR JSON_SEARCH(tags, "one", ?) IS NOT NULL)';
+      sql += ' AND (j.title LIKE ? OR j.company_name LIKE ? OR JSON_SEARCH(j.tags, "one", ?) IS NOT NULL)';
       const kw = `%${keyword}%`;
       params.push(kw, kw, `%${keyword}%`);
     }
 
     // 获取总数
-    let countSql = 'SELECT COUNT(*) as total FROM jobs WHERE status = "active" AND deleted_at IS NULL';
+    let countSql = `SELECT COUNT(*) as total FROM jobs j WHERE j.status = 'active' AND j.deleted_at IS NULL`;
     const countParams = [];
-    if (type && type !== '全部') { countSql += ' AND type = ?'; countParams.push(type); }
-    if (location && location !== '全国') { countSql += ' AND location LIKE ?'; countParams.push(`%${location}%`); }
-    if (category && category !== '全部') { countSql += ' AND category = ?'; countParams.push(category); }
+    if (type && type !== '全部') { countSql += ' AND j.type = ?'; countParams.push(type); }
+    if (location && location !== '全国') { countSql += ' AND j.location LIKE ?'; countParams.push(`%${location}%`); }
+    if (category && category !== '全部') { countSql += ' AND j.category = ?'; countParams.push(category); }
     if (keyword) {
-      countSql += ' AND (title LIKE ? OR company_name LIKE ? OR JSON_SEARCH(tags, "one", ?) IS NOT NULL)';
+      countSql += ' AND (j.title LIKE ? OR j.company_name LIKE ? OR JSON_SEARCH(j.tags, "one", ?) IS NOT NULL)';
       const kw = `%${keyword}%`;
       countParams.push(kw, kw, `%${keyword}%`);
     }
@@ -52,14 +55,14 @@ router.get('/', async (req, res) => {
 
     // 支持 page+pageSize 分页（前端默认）和 cursor 游标分页
     if (cursor && !isNaN(Number(cursor))) {
-      sql += ' AND id < ?';
+      sql += ' AND j.id < ?';
       params.push(Number(cursor));
-      sql += ' ORDER BY id DESC LIMIT ?';
+      sql += ' ORDER BY j.id DESC LIMIT ?';
       params.push(pageLimit + 1);
     } else {
       // 传统分页
       const offset = (page - 1) * pageLimit;
-      sql += ' ORDER BY id DESC LIMIT ? OFFSET ?';
+      sql += ' ORDER BY j.id DESC LIMIT ? OFFSET ?';
       params.push(pageLimit, offset);
     }
 
@@ -79,6 +82,8 @@ router.get('/', async (req, res) => {
       ...job,
       tags: typeof job.tags === 'string' ? JSON.parse(job.tags) : (job.tags || []),
       time: getRelativeTime(job.created_at),
+      // 优先使用 companies 表的最新 Logo
+      logo: job.company_logo || job.logo || '',
     }));
 
     res.json({
@@ -151,6 +156,25 @@ router.get('/:id', async (req, res) => {
     const job = rows[0];
     job.tags = typeof job.tags === 'string' ? JSON.parse(job.tags) : (job.tags || []);
     job.time = getRelativeTime(job.created_at);
+
+    // 关联查询企业信息（Logo + 联系方式）
+    if (job.company_id) {
+      try {
+        const [companyRows] = await pool.query(
+          'SELECT logo, phone, wechat, contact_email, website, address FROM companies WHERE id = ?',
+          [job.company_id]
+        );
+        if (companyRows.length > 0) {
+          job.company_contact = companyRows[0];
+          // 优先使用 companies 表的最新 Logo
+          if (companyRows[0].logo) {
+            job.logo = companyRows[0].logo;
+          }
+        }
+      } catch (e) {
+        // 容错：如果字段不存在则忽略
+      }
+    }
 
     // 增加浏览量
     await pool.query('UPDATE jobs SET view_count = view_count + 1 WHERE id = ?', [req.params.id]);

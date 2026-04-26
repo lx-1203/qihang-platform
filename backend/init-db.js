@@ -47,6 +47,9 @@ const CREATE_COMPANIES_TABLE = `
     logo            VARCHAR(500) DEFAULT '' COMMENT '公司Logo URL',
     website         VARCHAR(500) DEFAULT '' COMMENT '公司官网',
     address         VARCHAR(300) DEFAULT '' COMMENT '公司地址',
+    phone           VARCHAR(20)  DEFAULT '' COMMENT '联系电话',
+    wechat          VARCHAR(100) DEFAULT '' COMMENT '微信号',
+    contact_email   VARCHAR(255) DEFAULT '' COMMENT '联系邮箱',
     verify_status   ENUM('pending', 'approved', 'rejected') NOT NULL DEFAULT 'pending' COMMENT '认证状态',
     verify_remark   VARCHAR(500) DEFAULT '' COMMENT '审核备注',
     created_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -99,6 +102,9 @@ const CREATE_MENTOR_PROFILES_TABLE = `
     rating_count    INT NOT NULL DEFAULT 0 COMMENT '评价人数',
     price           DECIMAL(10,2) DEFAULT 0.00 COMMENT '每次辅导价格',
     available_time  JSON COMMENT '可用时间段',
+    phone           VARCHAR(20)  DEFAULT '' COMMENT '联系电话',
+    wechat          VARCHAR(100) DEFAULT '' COMMENT '微信号',
+    contact_email   VARCHAR(255) DEFAULT '' COMMENT '联系邮箱',
     verify_status   ENUM('pending', 'approved', 'rejected') NOT NULL DEFAULT 'pending' COMMENT '审核状态',
     verify_remark   VARCHAR(500) DEFAULT '' COMMENT '审核备注',
     status          TINYINT NOT NULL DEFAULT 1 COMMENT '1=在线, 0=离线',
@@ -206,8 +212,9 @@ const CREATE_FAVORITES_TABLE = `
   CREATE TABLE IF NOT EXISTS favorites (
     id              INT AUTO_INCREMENT PRIMARY KEY,
     user_id         INT NOT NULL COMMENT '用户ID',
-    target_type     ENUM('job', 'course', 'mentor', 'course_like') NOT NULL COMMENT '收藏类型',
+    target_type     ENUM('job', 'course', 'mentor', 'course_like', 'program') NOT NULL COMMENT '收藏类型',
     target_id       INT NOT NULL COMMENT '收藏目标ID',
+    remark          VARCHAR(500) DEFAULT NULL COMMENT '收藏备注',
     created_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '收藏时间',
     UNIQUE KEY uk_user_target (user_id, target_type, target_id),
     INDEX idx_user_id (user_id),
@@ -310,10 +317,21 @@ const CREATE_PROGRAMS_TABLE = `
     gre_avg         INT DEFAULT NULL COMMENT 'GRE录取均分',
     gmat_avg        INT DEFAULT NULL COMMENT 'GMAT录取均分',
     tuition_total   VARCHAR(100) DEFAULT '' COMMENT '总学费',
+    tuition_cny     VARCHAR(100) DEFAULT '' COMMENT '总学费(人民币)',
     scholarship     TEXT COMMENT '奖学金信息',
     deadline        VARCHAR(200) DEFAULT '' COMMENT '申请截止日期描述',
     apply_link      VARCHAR(500) DEFAULT '' COMMENT '专业申请链接',
     requirements    TEXT COMMENT '其他申请要求',
+    highlights      JSON COMMENT '项目亮点',
+    materials       JSON COMMENT '申请材料清单',
+    timeline        JSON COMMENT '申请时间线',
+    curriculum      JSON COMMENT '课程设置',
+    offers          JSON COMMENT '录取案例',
+    related_programs JSON COMMENT '相关项目',
+    employment_data JSON COMMENT '就业数据',
+    class_size      INT DEFAULT 0 COMMENT '班级规模',
+    intl_ratio      VARCHAR(50) DEFAULT '' COMMENT '国际生比例',
+    intake          VARCHAR(100) DEFAULT '' COMMENT '入学时间',
     employment_rate DECIMAL(4,1) DEFAULT NULL COMMENT '就业率 %',
     avg_salary      VARCHAR(100) DEFAULT '' COMMENT '平均起薪',
     career_paths    JSON COMMENT '典型就业方向',
@@ -506,6 +524,7 @@ const CREATE_CHAT_CONVERSATIONS_TABLE = `
     unread_user     INT NOT NULL DEFAULT 0 COMMENT '用户未读数',
     unread_admin    INT NOT NULL DEFAULT 0 COMMENT '管理员未读数',
     assigned_admin  INT DEFAULT NULL COMMENT '分配的管理员ID',
+    assigned_agent  INT DEFAULT NULL COMMENT '分配的客服/导师ID',
     target_user_id  INT DEFAULT NULL COMMENT '目标用户ID（私信对接的真人）',
     created_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     INDEX idx_user_id (user_id),
@@ -520,9 +539,9 @@ const CREATE_CHAT_MESSAGES_TABLE = `
     id              BIGINT AUTO_INCREMENT PRIMARY KEY,
     conversation_id INT NOT NULL COMMENT '会话ID',
     sender_id       INT NOT NULL DEFAULT 0 COMMENT '发送者ID (0=系统)',
-    sender_role     ENUM('system','user','admin','ai') NOT NULL DEFAULT 'user' COMMENT '发送者角色',
+    sender_role     ENUM('system','user','admin','agent','ai') NOT NULL DEFAULT 'user' COMMENT '发送者角色',
     content         TEXT NOT NULL COMMENT '消息内容',
-    msg_type        VARCHAR(20) NOT NULL DEFAULT 'text' COMMENT '消息类型: text/image/file',
+    msg_type        VARCHAR(20) NOT NULL DEFAULT 'text' COMMENT '消息类型: text/image/file/system_notice',
     file_url        VARCHAR(500) DEFAULT '' COMMENT '附件URL',
     is_read         TINYINT(1) NOT NULL DEFAULT 0 COMMENT '是否已读: 0=未读, 1=已读',
     created_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -796,6 +815,9 @@ async function seedCompanies(conn, userIdMap) {
       logo: '/default-avatar.svg',
       website: 'https://www.bytedance.com',
       address: '南京市建邺区江东中路108号万达广场',
+      phone: '025-8888-1001',
+      wechat: 'bytedance_hr_nj',
+      contact_email: 'hr@bytedance.com',
       verify_status: 'approved',
     },
     {
@@ -807,6 +829,9 @@ async function seedCompanies(conn, userIdMap) {
       logo: '/default-avatar.svg',
       website: 'https://www.tencent.com',
       address: '深圳市南山区科技中一路腾讯大厦',
+      phone: '0755-8888-1002',
+      wechat: 'tencent_hr',
+      contact_email: 'hr@tencent.com',
       verify_status: 'approved',
     },
     {
@@ -818,6 +843,9 @@ async function seedCompanies(conn, userIdMap) {
       logo: '/default-avatar.svg',
       website: 'https://www.baidu.com',
       address: '北京市海淀区上地十街10号百度大厦',
+      phone: '010-8888-1003',
+      wechat: 'baidu_hr',
+      contact_email: 'hr@baidu.com',
       verify_status: 'approved',
     },
     {
@@ -829,6 +857,9 @@ async function seedCompanies(conn, userIdMap) {
       logo: '/default-avatar.svg',
       website: 'https://www.mihoyo.com',
       address: '上海市徐汇区虹漕路68号锦和中心',
+      phone: '021-8888-1004',
+      wechat: 'mihoyo_hr',
+      contact_email: 'hr@mihoyo.com',
       verify_status: 'approved',
     },
     {
@@ -840,6 +871,9 @@ async function seedCompanies(conn, userIdMap) {
       logo: '/default-avatar.svg',
       website: 'https://www.xiaohongshu.com',
       address: '上海市黄浦区马当路388号SOHO复兴广场',
+      phone: '021-8888-1005',
+      wechat: 'xiaohongshu_hr',
+      contact_email: 'hr@xiaohongshu.com',
       verify_status: 'approved',
     },
     {
@@ -851,6 +885,9 @@ async function seedCompanies(conn, userIdMap) {
       logo: '/default-avatar.svg',
       website: 'https://www.unilever.com.cn',
       address: '上海市长宁区福泉北路33号联合利华大楼',
+      phone: '021-8888-1006',
+      wechat: 'unilever_hr_cn',
+      contact_email: 'hr@unilever.com',
       verify_status: 'approved',
     },
   ];
@@ -860,9 +897,9 @@ async function seedCompanies(conn, userIdMap) {
     const [existing] = await conn.query('SELECT id FROM companies WHERE user_id = ?', [userId]);
     if (existing.length === 0) {
       await conn.query(
-        `INSERT INTO companies (user_id, company_name, industry, scale, description, logo, website, address, verify_status)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [userId, c.company_name, c.industry, c.scale, c.description, c.logo, c.website, c.address, c.verify_status]
+        `INSERT INTO companies (user_id, company_name, industry, scale, description, logo, website, address, phone, wechat, contact_email, verify_status)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [userId, c.company_name, c.industry, c.scale, c.description, c.logo, c.website, c.address, c.phone, c.wechat, c.contact_email, c.verify_status]
       );
     }
   }
@@ -1427,6 +1464,9 @@ async function seedMentorProfiles(conn, userIdMap) {
       tags: JSON.stringify(['学术规划', '考研指导']),
       rating: 4.9,
       price: 299.00,
+      phone: '138-0000-1001',
+      wechat: 'chen_prof_nju',
+      contact_email: 'chen@mentor.com',
     },
     {
       userEmail: 'zhang@mentor.com',
@@ -1438,6 +1478,9 @@ async function seedMentorProfiles(conn, userIdMap) {
       tags: JSON.stringify(['技术面', '职业规划']),
       rating: 4.8,
       price: 399.00,
+      phone: '138-0000-1002',
+      wechat: 'zhang_engineer_hw',
+      contact_email: 'zhang@mentor.com',
     },
     {
       userEmail: 'wang@mentor.com',
@@ -1449,6 +1492,9 @@ async function seedMentorProfiles(conn, userIdMap) {
       tags: JSON.stringify(['产品方向', '群面辅导']),
       rating: 5.0,
       price: 349.00,
+      phone: '138-0000-1003',
+      wechat: 'wang_pm_ali',
+      contact_email: 'wang@mentor.com',
     },
     {
       userEmail: 'li@mentor.com',
@@ -1460,6 +1506,9 @@ async function seedMentorProfiles(conn, userIdMap) {
       tags: JSON.stringify(['金融求职', '结构化面试']),
       rating: 4.9,
       price: 359.00,
+      phone: '138-0000-1004',
+      wechat: 'li_hr_bank',
+      contact_email: 'li@mentor.com',
     },
     {
       userEmail: 'zhao@mentor.com',
@@ -1471,6 +1520,9 @@ async function seedMentorProfiles(conn, userIdMap) {
       tags: JSON.stringify(['科研指导', '读研规划']),
       rating: 4.8,
       price: 499.00,
+      phone: '138-0000-1005',
+      wechat: 'zhao_ai_cas',
+      contact_email: 'zhao@mentor.com',
     },
   ];
 
@@ -1479,9 +1531,9 @@ async function seedMentorProfiles(conn, userIdMap) {
     const [existing] = await conn.query('SELECT id FROM mentor_profiles WHERE user_id = ?', [userId]);
     if (existing.length === 0) {
       await conn.query(
-        `INSERT INTO mentor_profiles (user_id, name, title, avatar, bio, expertise, tags, rating, price, verify_status)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'approved')`,
-        [userId, m.name, m.title, m.avatar, m.bio, m.expertise, m.tags, m.rating, m.price]
+        `INSERT INTO mentor_profiles (user_id, name, title, avatar, bio, expertise, tags, rating, price, phone, wechat, contact_email, verify_status)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'approved')`,
+        [userId, m.name, m.title, m.avatar, m.bio, m.expertise, m.tags, m.rating, m.price, m.phone, m.wechat, m.contact_email]
       );
     }
   }
@@ -1816,7 +1868,182 @@ async function seedPrograms(conn) {
 
   const programs = [
     // ===== MIT =====
-    { uni: '麻省理工学院', name_zh: '计算机科学与工程', name_en: 'Computer Science and Engineering', degree: '硕士', department: 'EECS', category: '计算机', duration: '2年', gpa_min: 3.70, toefl_min: 100, ielts_min: 7.0, gre_required: 1, gre_avg: 328, tuition_total: '$58,240/年', deadline: '12月15日', employment_rate: 98.0, avg_salary: '$135,000/年', career_paths: JSON.stringify(['软件工程师','ML工程师','系统架构师']), description: 'MIT EECS是全球最顶尖的计算机科学项目之一，研究方向涵盖人工智能、系统、理论计算机科学等。项目注重科研能力培养，毕业生广泛就职于Google、Meta、Apple等科技巨头。', tags: JSON.stringify(['STEM','顶尖','高薪']), requirements: '3封推荐信、SOP、CV、GRE成绩' },
+    {
+      uni: '麻省理工学院',
+      name_zh: '计算机科学与工程',
+      name_en: 'Computer Science and Engineering',
+      degree: '硕士',
+      department: 'EECS',
+      category: '计算机',
+      duration: '2年',
+      gpa_min: 3.70,
+      toefl_min: 100,
+      ielts_min: 7.0,
+      gre_required: 1,
+      gre_avg: 328,
+      tuition_total: '$58,240/年',
+      tuition_cny: '约42万元/年',
+      deadline: '12月15日',
+      employment_rate: 98.0,
+      avg_salary: '$135,000/年',
+      class_size: 120,
+      intl_ratio: '40%',
+      intake: '秋季入学',
+      career_paths: JSON.stringify(['软件工程师', 'ML工程师', '系统架构师']),
+      description: 'MIT EECS是全球最顶尖的计算机科学项目之一，研究方向涵盖人工智能、系统、理论计算机科学等。项目注重科研能力培养，毕业生广泛就职于Google、Meta、Apple等科技巨头。\n\n该项目提供世界一流的师资力量和科研设施，学生可以参与到前沿的AI、量子计算、网络安全等领域的研究中。MIT与硅谷科技公司有紧密的合作关系，为学生提供丰富的实习和就业机会。',
+      tags: JSON.stringify(['STEM', '顶尖', '高薪']),
+      requirements: '3封推荐信、SOP、CV、GRE成绩',
+      scholarship: 'MIT提供多种奖学金和助学金：\n- Merit-based奖学金：最高可达学费的50%\n- Teaching Assistantship：每月$2,800津贴\n- Research Assistantship：覆盖学费+生活费\n- 外部奖学金：如Google Fellowship、Microsoft Fellowship等',
+      highlights: JSON.stringify([
+        { text: 'QS计算机学科排名全球第1', icon: 'Award' },
+        { text: '98%毕业生6个月内就业', icon: 'Briefcase' },
+        { text: '平均起薪$135,000/年', icon: 'DollarSign' },
+        { text: '毗邻硅谷，实习机会丰富', icon: 'MapPin' },
+        { text: 'AI/ML研究世界领先', icon: 'Target' },
+        { text: '强大的校友网络', icon: 'Users' }
+      ]),
+      materials: JSON.stringify([
+        { name: '在线申请表', required: true, tip: '通过MIT官网提交' },
+        { name: '成绩单', required: true, tip: '中英文官方成绩单，学校盖章' },
+        { name: '3封推荐信', required: true, tip: '至少2封来自学术推荐人' },
+        { name: '个人陈述 (SOP)', required: true, tip: '800-1000字，阐述研究兴趣和职业目标' },
+        { name: '简历 (CV)', required: true, tip: '1-2页，突出科研和项目经历' },
+        { name: 'GRE成绩', required: true, tip: '建议Verbal 160+, Quant 168+, AW 4.0+' },
+        { name: '托福/雅思成绩', required: true, tip: '托福100+ 或 雅思7.0+' },
+        { name: '写作样本 (Writing Sample)', required: false, tip: '如有已发表论文可提交' },
+        { name: '作品集', required: false, tip: '适用于有开源项目或技术作品的申请者' }
+      ]),
+      timeline: JSON.stringify([
+        { date: '2025-09-01', event: '网申开放', detail: 'MIT EECS网申系统开放，开始接受申请' },
+        { date: '2025-10-15', event: '提前批截止', detail: '提前批申请截止，建议尽早提交' },
+        { date: '2025-12-01', event: '第一轮截止', detail: '第一轮申请截止，录取概率最高' },
+        { date: '2025-12-15', event: '常规批截止', detail: '常规申请截止' },
+        { date: '2026-02-15', event: '材料补充截止', detail: '如需补充材料，请在此日期前提交' },
+        { date: '2026-03-01', event: '录取结果公布', detail: '录取结果通过邮件和官网公布' },
+        { date: '2026-04-15', event: '确认入学截止', detail: '需在此日期前确认是否接受offer' },
+        { date: '2026-09-01', event: '秋季开学', detail: '正式开学' }
+      ]),
+      curriculum: JSON.stringify([
+        {
+          semester: '第一学期（秋季）',
+          courses: [
+            { name: '算法设计与分析', credits: 12, type: '必修' },
+            { name: '高级计算机系统', credits: 12, type: '必修' },
+            { name: '机器学习导论', credits: 12, type: '核心选修' },
+            { name: '研究方法与学术写作', credits: 6, type: '必修' }
+          ]
+        },
+        {
+          semester: '第二学期（春季）',
+          courses: [
+            { name: '深度学习与神经网络', credits: 12, type: '核心选修' },
+            { name: '分布式系统', credits: 12, type: '核心选修' },
+            { name: '计算机视觉', credits: 12, type: '选修' },
+            { name: '研究项目 I', credits: 12, type: '必修' }
+          ]
+        },
+        {
+          semester: '第三学期（秋季）',
+          courses: [
+            { name: '自然语言处理', credits: 12, type: '选修' },
+            { name: '强化学习', credits: 12, type: '选修' },
+            { name: '研究项目 II', credits: 18, type: '必修' },
+            { name: '论文写作', credits: 6, type: '必修' }
+          ]
+        },
+        {
+          semester: '第四学期（春季）',
+          courses: [
+            { name: '硕士论文', credits: 24, type: '必修' },
+            { name: '专业实践', credits: 12, type: '选修' }
+          ]
+        }
+      ]),
+      offers: JSON.stringify([
+        {
+          id: 1,
+          result: 'admitted',
+          date: '2025-03-15',
+          scholarship: 'Merit Scholarship $30,000',
+          university: 'MIT',
+          background: '985 · 计算机科学',
+          gpa: '3.85',
+          ielts: '7.5',
+          gre: '332',
+          internship: 'Google实习',
+          research: '一篇CCF-A论文一作'
+        },
+        {
+          id: 2,
+          result: 'admitted',
+          date: '2025-03-10',
+          scholarship: '',
+          university: 'MIT',
+          background: '211 · 软件工程',
+          gpa: '3.78',
+          ielts: '7.0',
+          gre: '328',
+          internship: '字节跳动实习',
+          research: '两篇SCI论文'
+        },
+        {
+          id: 3,
+          result: 'waitlisted',
+          date: '2025-03-20',
+          scholarship: '',
+          university: 'MIT',
+          background: '985 · 人工智能',
+          gpa: '3.72',
+          ielts: '7.0',
+          gre: '325',
+          internship: '腾讯实习',
+          research: '一篇CCF-B论文'
+        },
+        {
+          id: 4,
+          result: 'rejected',
+          date: '2025-03-25',
+          scholarship: '',
+          university: 'MIT',
+          background: '211 · 信息安全',
+          gpa: '3.65',
+          ielts: '6.5',
+          gre: '320',
+          internship: '华为实习',
+          research: '无'
+        },
+        {
+          id: 5,
+          result: 'admitted',
+          date: '2025-03-12',
+          scholarship: 'Full Ride',
+          university: 'MIT',
+          background: '985 · 计算机科学',
+          gpa: '3.92',
+          ielts: '7.5',
+          gre: '335',
+          internship: 'MSRA实习',
+          research: '两篇顶会一作'
+        }
+      ]),
+      related_programs: JSON.stringify([
+        { id: 6, school: '斯坦福大学', program: '计算机科学', ranking: 2 },
+        { id: 10, school: '卡内基梅隆大学', program: '计算机科学', ranking: 3 },
+        { id: 8, school: '加州大学伯克利分校', program: '计算机科学', ranking: 4 },
+        { id: 7, school: '帝国理工学院', program: '计算机科学', ranking: 8 }
+      ]),
+      employment_data: JSON.stringify({
+        industries: [
+          { name: '科技公司', percent: 45 },
+          { name: '金融/量化', percent: 20 },
+          { name: '人工智能', percent: 15 },
+          { name: '咨询', percent: 10 },
+          { name: '创业', percent: 5 },
+          { name: '其他', percent: 5 }
+        ],
+        topEmployers: ['Google', 'Meta', 'Apple', 'Microsoft', 'Amazon', 'OpenAI', 'DeepMind', 'Jane Street', 'Two Sigma', 'Goldman Sachs']
+      })
+    },
     { uni: '麻省理工学院', name_zh: '金融硕士', name_en: 'Master of Finance', degree: '硕士', department: 'Sloan商学院', category: '商科', duration: '1.5年', gpa_min: 3.60, toefl_min: 100, ielts_min: 7.0, gre_required: 1, gmat_avg: 730, tuition_total: '$82,000/总', deadline: '1月5日', employment_rate: 96.0, avg_salary: '$120,000/年', career_paths: JSON.stringify(['量化分析师','投行分析师','资产管理']), description: 'MIT Sloan的金融硕士项目结合了前沿的金融理论和量化方法，毕业生在华尔街和科技金融领域极具竞争力。', tags: JSON.stringify(['量化','华尔街','精英']), requirements: 'GMAT/GRE、2封推荐信、Essay、面试' },
     { uni: '麻省理工学院', name_zh: '电子工程', name_en: 'Electrical Engineering', degree: '硕士', department: 'EECS', category: '工程', duration: '2年', gpa_min: 3.60, toefl_min: 100, ielts_min: 7.0, gre_required: 1, gre_avg: 325, tuition_total: '$58,240/年', deadline: '12月15日', employment_rate: 97.0, avg_salary: '$115,000/年', career_paths: JSON.stringify(['芯片工程师','通信工程师','硬件架构师']), description: '涵盖半导体、通信系统、信号处理等方向，与Intel、Qualcomm等企业有深度合作。', tags: JSON.stringify(['STEM','芯片','硬件']), requirements: '3封推荐信、SOP、GRE成绩' },
     { uni: '麻省理工学院', name_zh: '数据科学与统计', name_en: 'Data Science and Statistics', degree: '硕士', department: '数学系', category: '理科', duration: '1年', gpa_min: 3.70, toefl_min: 100, ielts_min: 7.0, gre_required: 1, gre_avg: 330, tuition_total: '$58,240', deadline: '12月15日', employment_rate: 97.0, avg_salary: '$125,000/年', career_paths: JSON.stringify(['数据科学家','量化研究员','AI研究员']), description: '结合统计学理论与现代数据科学方法，培养能够处理复杂数据问题的高端人才。', tags: JSON.stringify(['STEM','热门','数据']), requirements: '数学背景要求强、GRE成绩、3封推荐信' },
@@ -1868,6 +2095,260 @@ async function seedPrograms(conn) {
     // ===== 慕尼黑工业 =====
     { uni: '慕尼黑工业大学', name_zh: '计算机科学', name_en: 'Informatics (MSc)', degree: '硕士', department: '信息学院', category: '计算机', duration: '2年', gpa_min: 2.50, toefl_min: 88, ielts_min: 6.5, tuition_total: '€0 (仅注册费€144/学期)', deadline: '5月31日', employment_rate: 93.0, avg_salary: '€55,000/年', career_paths: JSON.stringify(['软件工程师','AI工程师','汽车软件工程师']), description: 'TUM信息学是德国最顶尖的CS项目，完全免学费。与宝马、西门子、SAP等企业合作紧密。', tags: JSON.stringify(['免学费','TU9','德国第一']), requirements: '学术成绩单、语言成绩、APS审核' },
     { uni: '慕尼黑工业大学', name_zh: '汽车工程', name_en: 'Automotive Engineering (MSc)', degree: '硕士', department: '机械工程学院', category: '工程', duration: '2年', gpa_min: 2.50, toefl_min: 88, ielts_min: 6.5, tuition_total: '€0 (仅注册费€144/学期)', deadline: '5月31日', employment_rate: 95.0, avg_salary: '€58,000/年', career_paths: JSON.stringify(['汽车工程师','自动驾驶工程师','电动汽车工程师']), description: 'TUM汽车工程与宝马总部仅一街之隔，在汽车电动化、自动驾驶等领域处于全球前沿。', tags: JSON.stringify(['免学费','汽车','宝马合作']), requirements: '学术成绩单、语言成绩、APS审核、实习经验' },
+
+    // ===== MIT 经济学（完整示例） =====
+    {
+      uni: '麻省理工学院',
+      name_zh: '经济学',
+      name_en: 'Economics (PhD)',
+      degree: '博士',
+      department: '经济系',
+      category: '商科',
+      duration: '4-5年',
+      gpa_min: 3.80,
+      toefl_min: 100,
+      ielts_min: 7.0,
+      gre_required: 1,
+      gre_avg: 330,
+      tuition_total: '$61,440/年',
+      tuition_cny: '约44万元/年',
+      deadline: '12月15日',
+      employment_rate: 100.0,
+      avg_salary: '$180,000/年起',
+      class_size: 25,
+      intl_ratio: '45%',
+      intake: '秋季入学',
+      career_paths: JSON.stringify(['大学教授','央行研究员','华尔街量化分析师','科技公司经济学家','国际组织顾问']),
+      description: 'MIT经济学系是全球最顶尖的经济学研究机构之一，培养了多位诺贝尔经济学奖得主。项目采用纯研究导向培养模式，前两年完成核心课程训练，之后专注于原创性学术研究。研究领域涵盖微观经济学、宏观经济学、计量经济学、博弈论、发展经济学、行为经济学等几乎所有经济学分支。\n\nMIT经济系拥有无与伦比的学术资源：与NBER（美国国家经济研究局）的深度合作、定期邀请全球顶级学者讲学、以及与哈佛大学的跨校选课机制。毕业生在学术界和业界均有极强的竞争力，多数进入Top 30高校任教或进入美联储、世界银行等国际机构。',
+      tags: JSON.stringify(['诺贝尔奖摇篮', '学术顶尖', '全奖', 'STEM', '博士全奖']),
+      requirements: '3封来自知名经济学家的强推荐信、研究计划（Research Proposal）、写作样本（Writing Sample，即学术论文）、GRE成绩（建议325+）、本科经济学或数学等强量化背景、有独立研究经历是核心竞争力',
+      scholarship: 'MIT经济学博士项目提供全额资助（Full Funding）：\n- 学费全免（约$61,440/年）\n- 生活津贴：约$42,000/年（含TA/RA）\n- 健康保险全覆盖\n- 学术会议差旅资助\n- 第5年起可获Post-Preceptorial Fellowship\n- 外部奖学金：如 NSF Graduate Research Fellowship、Ford Foundation Fellowship',
+      highlights: JSON.stringify([
+        { text: 'QS经济学学科排名全球第1', icon: 'Award' },
+        { text: '培养了8位诺贝尔经济学奖得主', icon: 'Star' },
+        { text: '100%毕业生就业/教职率', icon: 'Briefcase' },
+        { text: '全额资助（学费+生活费约$103,000/年）', icon: 'DollarSign' },
+        { text: '与哈佛大学跨校选课机制', icon: 'GraduationCap' },
+        { text: 'NBER合作研究机会，与顶级学者共事', icon: 'Users' },
+        { text: '地处Cambridge，波士顿学术圈核心', icon: 'MapPin' },
+        { text: '研究领域覆盖几乎所有经济学分支', icon: 'Target' }
+      ]),
+      materials: JSON.stringify([
+        { name: '在线申请表', required: true, tip: '通过MIT Graduate Admissions提交' },
+        { name: '成绩单（中英文官方）', required: true, tip: '需学校盖章，GPA 3.8+ 有竞争力' },
+        { name: '3封推荐信', required: true, tip: '必须来自知名经济学家，强调研究潜力' },
+        { name: '个人陈述 / 研究计划', required: true, tip: '阐述研究兴趣、方法论偏好和职业目标' },
+        { name: '写作样本（学术论文）', required: true, tip: '1-2篇已发表或工作论文，展示研究能力' },
+        { name: 'GRE成绩', required: true, tip: '建议Quant 170, Verbal 160+, AW 5.0+' },
+        { name: '托福/雅思成绩', required: true, tip: '托福100+ 或 雅思7.0+' },
+        { name: 'CV / 简历', required: true, tip: '突出研究经历、发表论文和量化课程' },
+        { name: '本科先修课程说明', required: false, tip: '需修过中级微观、中级宏观、计量经济学、多元微积分、线性代数、概率统计' }
+      ]),
+      timeline: JSON.stringify([
+        { date: '2025-09-01', event: '网申系统开放', detail: 'MIT Graduate Admissions在线申请系统开放' },
+        { date: '2025-10-01', event: '提前联系导师（建议）', detail: '虽然MIT经济系不强制提前联系导师，但了解教授研究方向有助于撰写Research Proposal' },
+        { date: '2025-12-01', event: '第一轮截止（建议）', detail: '强烈建议在此前提交，材料评审从此时开始' },
+        { date: '2025-12-15', event: '最终截止日期', detail: '所有申请材料须在此日期前提交，逾期不予受理' },
+        { date: '2026-01-15', event: '材料补充截止', detail: '如有补充材料（如新的论文发表），在此日期前提交' },
+        { date: '2026-02-15', event: '面试通知', detail: '部分申请者收到Zoom面试邀请（由2-3位教授组成的面试小组）' },
+        { date: '2026-03-01', event: '录取结果公布', detail: '录取结果通过邮件和官网公布，同时发送全额资助方案' },
+        { date: '2026-04-15', event: '确认入学截止', detail: '需在此日期前确认是否接受offer，同时可安排校园访问（Visit Day）' },
+        { date: '2026-09-01', event: '秋季开学', detail: '博士新生入学，开始核心课程训练' }
+      ]),
+      curriculum: JSON.stringify([
+        {
+          semester: '第一年（秋季）',
+          courses: [
+            { name: '微观经济学理论 I (Microeconomic Theory I)', credits: 12, type: '必修' },
+            { name: '宏观经济学理论 I (Macroeconomic Theory I)', credits: 12, type: '必修' },
+            { name: '计量经济学 I (Econometrics I)', credits: 12, type: '必修' },
+            { name: '数学经济学 (Mathematics for Economists)', credits: 6, type: '必修' }
+          ]
+        },
+        {
+          semester: '第一年（春季）',
+          courses: [
+            { name: '微观经济学理论 II (Microeconomic Theory II)', credits: 12, type: '必修' },
+            { name: '宏观经济学理论 II (Macroeconomic Theory II)', credits: 12, type: '必修' },
+            { name: '计量经济学 II (Econometrics II)', credits: 12, type: '必修' },
+            { name: '研究研讨会 (Research Seminar)', credits: 6, type: '必修' }
+          ]
+        },
+        {
+          semester: '第二年（秋季）',
+          courses: [
+            { name: '高级微观经济学 (Advanced Microeconomics)', credits: 12, type: '核心选修' },
+            { name: '高级宏观经济学 (Advanced Macroeconomics)', credits: 12, type: '核心选修' },
+            { name: '字段课程 I (Field Course I)', credits: 12, type: '选修' },
+            { name: '助教培训 (TA Training)', credits: 3, type: '必修' }
+          ]
+        },
+        {
+          semester: '第二年（春季）',
+          courses: [
+            { name: '字段课程 II (Field Course II)', credits: 12, type: '选修' },
+            { name: '字段课程 III (Field Course III)', credits: 12, type: '选修' },
+            { name: '论文工作坊 (Dissertation Workshop)', credits: 6, type: '必修' },
+            { name: '资格考试准备 (Qualifying Exam Prep)', credits: 6, type: '必修' }
+          ]
+        },
+        {
+          semester: '第三年及以后',
+          courses: [
+            { name: '博士论文研究 (PhD Dissertation Research)', credits: 24, type: '必修' },
+            { name: '学术发表研讨会 (Job Market Seminar)', credits: 6, type: '必修' },
+            { name: '选修领域课程', credits: 12, type: '选修' }
+          ]
+        }
+      ]),
+      offers: JSON.stringify([
+        { id: 1, background: '985', university: '北京大学 经济学', gpa: '3.9/4.0', ielts: '8.0', gre: '332', internship: '', research: '3段科研+1篇SSCI', result: 'admitted', date: '2026-03-01', scholarship: '全奖 $103,000/年' },
+        { id: 2, background: '985', university: '清华大学 金融学', gpa: '3.85/4.0', ielts: '7.5', gre: '330', internship: '', research: '2段科研+NBER暑期研究', result: 'admitted', date: '2026-03-01', scholarship: '全奖 $103,000/年' },
+        { id: 3, background: '海本', university: 'LSE 经济学', gpa: 'First Class Honours', ielts: '', gre: '328', internship: '世界银行实习', research: '2段科研+1篇工作论文', result: 'admitted', date: '2026-03-01', scholarship: '全奖 $103,000/年' },
+        { id: 4, background: '985', university: '复旦大学 数学与应用数学', gpa: '3.88/4.0', ielts: '7.5', gre: '331', internship: '', research: '4段科研+2篇论文（1篇AER二作）', result: 'admitted', date: '2026-03-01', scholarship: '全奖 $103,000/年 + NSF Fellowship提名' },
+        { id: 5, background: '985', university: '中国人民大学 经济学', gpa: '3.82/4.0', ielts: '7.0', gre: '329', internship: '', research: '2段科研+1篇工作论文', result: 'waitlisted', date: '2026-03-01', scholarship: '' },
+        { id: 6, background: '211', university: '上海财经大学 经济学', gpa: '3.90/4.0', ielts: '7.5', gre: '327', internship: '', research: '3段科研+2篇论文', result: 'rejected', date: '2026-03-01', scholarship: '' },
+        { id: 7, background: '海本', university: 'UC Berkeley 经济学', gpa: '3.92/4.0', ielts: '', gre: '333', internship: '美联储旧金山联储实习', research: '3段科研+1篇NBER工作论文', result: 'admitted', date: '2026-03-01', scholarship: '全奖 $103,000/年' },
+        { id: 8, background: '985', university: '北京大学 数学科学学院', gpa: '3.95/4.0', ielts: '8.0', gre: '334', internship: '', research: '5段科研+3篇论文（含1篇QJE二作）', result: 'admitted', date: '2026-03-01', scholarship: '全奖 $103,000/年 + Ford Foundation Fellowship' }
+      ]),
+      related_programs: JSON.stringify([
+        { id: 99, school: '哈佛大学', program: '经济学 PhD', ranking: 3 },
+        { id: 100, school: '斯坦福大学', program: '经济学 PhD', ranking: 5 },
+        { id: 101, school: '芝加哥大学', program: '经济学 PhD', ranking: 10 },
+        { id: 102, school: '耶鲁大学', program: '经济学 PhD', ranking: 16 }
+      ]),
+      employment_data: JSON.stringify({
+        industries: [
+          { name: '学术界（高校教职）', percent: 55 },
+          { name: '中央银行/政府机构', percent: 20 },
+          { name: '金融科技/量化交易', percent: 12 },
+          { name: '咨询公司', percent: 8 },
+          { name: '国际组织', percent: 5 }
+        ],
+        topEmployers: [
+          'MIT / Harvard / Stanford 等Top高校',
+          '美联储（Fed）',
+          '世界银行（World Bank）',
+          'IMF（国际货币基金组织）',
+          'Jane Street / Two Sigma',
+          '麦肯锡 / 波士顿咨询',
+          'Google / Amazon 经济学研究团队'
+        ]
+      }),
+      description: 'MIT经济学系是全球最顶尖的经济学研究机构之一，培养了8位诺贝尔经济学奖得主。项目采用纯研究导向培养模式，前两年完成核心课程训练（微观、宏观、计量三大核心），之后专注于原创性学术研究。研究领域涵盖微观经济学、宏观经济学、计量经济学、博弈论、发展经济学、行为经济学等几乎所有经济学分支。\n\nMIT经济系拥有无与伦比的学术资源：与NBER（美国国家经济研究局）的深度合作、定期邀请全球顶级学者讲学、以及与哈佛大学的跨校选课机制。系内教授如Daron Acemoglu（2024诺贝尔奖得主）、Joshua Angrist（诺贝尔奖得主）、Esther Duflo（诺贝尔奖得主）等均为各自领域的开创性学者。\n\n该项目提供全额资助，学生无需为学费和生活费发愁，可以全身心投入学术研究。毕业生在学术界和业界均有极强的竞争力，多数进入Top 30高校任教或进入美联储、世界银行等国际机构担任核心职位。',
+      tags: JSON.stringify(['诺贝尔奖摇篮', '学术顶尖', '全奖资助', 'STEM', '博士项目']),
+      highlights: JSON.stringify([
+        { text: 'QS经济学学科排名全球第1', icon: 'Award' },
+        { text: '培养了8位诺贝尔经济学奖得主（含2024年Acemoglu）', icon: 'Star' },
+        { text: '100%毕业生就业/教职率', icon: 'Briefcase' },
+        { text: '全额资助：学费全免 + 生活津贴$42,000/年', icon: 'DollarSign' },
+        { text: '与哈佛大学跨校选课机制', icon: 'GraduationCap' },
+        { text: 'NBER深度合作，与顶级学者共事', icon: 'Users' },
+        { text: '地处Cambridge，波士顿学术圈核心', icon: 'MapPin' },
+        { text: '研究领域覆盖几乎所有经济学分支', icon: 'Target' }
+      ]),
+      materials: JSON.stringify([
+        { name: '在线申请表', required: true, tip: '通过MIT Graduate Admissions提交' },
+        { name: '成绩单（中英文官方）', required: true, tip: '需学校盖章，GPA 3.8+ 有竞争力' },
+        { name: '3封推荐信', required: true, tip: '必须来自知名经济学家，强调研究潜力' },
+        { name: '个人陈述 / 研究计划', required: true, tip: '阐述研究兴趣、方法论偏好和职业目标' },
+        { name: '写作样本（学术论文）', required: true, tip: '1-2篇已发表或工作论文，展示研究能力' },
+        { name: 'GRE成绩', required: true, tip: '建议Quant 170, Verbal 160+, AW 5.0+' },
+        { name: '托福/雅思成绩', required: true, tip: '托福100+ 或 雅思7.0+' },
+        { name: 'CV / 简历', required: true, tip: '突出研究经历、发表论文和量化课程' },
+        { name: '本科先修课程说明', required: false, tip: '需修过中级微观、中级宏观、计量经济学、多元微积分、线性代数、概率统计' }
+      ]),
+      timeline: JSON.stringify([
+        { date: '2025-09-01', event: '网申系统开放', detail: 'MIT Graduate Admissions在线申请系统开放' },
+        { date: '2025-10-01', event: '提前联系导师（建议）', detail: '了解教授研究方向，有助于撰写Research Proposal' },
+        { date: '2025-12-01', event: '第一轮截止（建议）', detail: '强烈建议在此前提交，录取概率最高' },
+        { date: '2025-12-15', event: '最终截止日期', detail: '所有申请材料须在此日期前提交' },
+        { date: '2026-02-15', event: '面试通知', detail: '部分申请者收到Zoom面试邀请' },
+        { date: '2026-03-01', event: '录取结果公布', detail: '录取结果通过邮件和官网公布，同时发送全额资助方案' },
+        { date: '2026-04-15', event: '确认入学截止', detail: '需在此日期前确认是否接受offer' },
+        { date: '2026-09-01', event: '秋季开学', detail: '博士新生入学，开始核心课程训练' }
+      ]),
+      curriculum: JSON.stringify([
+        {
+          semester: '第一年（秋季）',
+          courses: [
+            { name: '微观经济学理论 I (Microeconomic Theory I)', credits: 12, type: '必修' },
+            { name: '宏观经济学理论 I (Macroeconomic Theory I)', credits: 12, type: '必修' },
+            { name: '计量经济学 I (Econometrics I)', credits: 12, type: '必修' },
+            { name: '数学经济学 (Mathematics for Economists)', credits: 6, type: '必修' }
+          ]
+        },
+        {
+          semester: '第一年（春季）',
+          courses: [
+            { name: '微观经济学理论 II (Microeconomic Theory II)', credits: 12, type: '必修' },
+            { name: '宏观经济学理论 II (Macroeconomic Theory II)', credits: 12, type: '必修' },
+            { name: '计量经济学 II (Econometrics II)', credits: 12, type: '必修' },
+            { name: '研究研讨会 (Research Seminar)', credits: 6, type: '必修' }
+          ]
+        },
+        {
+          semester: '第二年（秋季）',
+          courses: [
+            { name: '高级微观经济学 (Advanced Microeconomics)', credits: 12, type: '核心选修' },
+            { name: '高级宏观经济学 (Advanced Macroeconomics)', credits: 12, type: '核心选修' },
+            { name: '字段课程 I (Field Course I)', credits: 12, type: '选修' },
+            { name: '助教培训 (TA Training)', credits: 3, type: '必修' }
+          ]
+        },
+        {
+          semester: '第二年（春季）',
+          courses: [
+            { name: '字段课程 II (Field Course II)', credits: 12, type: '选修' },
+            { name: '字段课程 III (Field Course III)', credits: 12, type: '选修' },
+            { name: '论文工作坊 (Dissertation Workshop)', credits: 6, type: '必修' },
+            { name: '资格考试准备 (Qualifying Exam Prep)', credits: 6, type: '必修' }
+          ]
+        },
+        {
+          semester: '第三年及以后',
+          courses: [
+            { name: '博士论文研究 (PhD Dissertation Research)', credits: 24, type: '必修' },
+            { name: '学术发表研讨会 (Job Market Seminar)', credits: 6, type: '必修' },
+            { name: '选修领域课程', credits: 12, type: '选修' }
+          ]
+        }
+      ]),
+      offers: JSON.stringify([
+        { id: 1, background: '985', university: '北京大学 经济学', gpa: '3.9/4.0', ielts: '8.0', gre: '332', internship: '', research: '3段科研+1篇SSCI', result: 'admitted', date: '2026-03-01', scholarship: '全奖 $103,000/年' },
+        { id: 2, background: '985', university: '清华大学 金融学', gpa: '3.85/4.0', ielts: '7.5', gre: '330', internship: '', research: '2段科研+NBER暑期研究', result: 'admitted', date: '2026-03-01', scholarship: '全奖 $103,000/年' },
+        { id: 3, background: '海本', university: 'LSE 经济学', gpa: 'First Class Honours', ielts: '', gre: '328', internship: '世界银行实习', research: '2段科研+1篇工作论文', result: 'admitted', date: '2026-03-01', scholarship: '全奖 $103,000/年' },
+        { id: 4, background: '985', university: '复旦大学 数学与应用数学', gpa: '3.88/4.0', ielts: '7.5', gre: '331', internship: '', research: '4段科研+2篇论文（1篇AER二作）', result: 'admitted', date: '2026-03-01', scholarship: '全奖 $103,000/年 + NSF Fellowship提名' },
+        { id: 5, background: '985', university: '中国人民大学 经济学', gpa: '3.82/4.0', ielts: '7.0', gre: '329', internship: '', research: '2段科研+1篇工作论文', result: 'waitlisted', date: '2026-03-01', scholarship: '' },
+        { id: 6, background: '211', university: '上海财经大学 经济学', gpa: '3.90/4.0', ielts: '7.5', gre: '327', internship: '', research: '3段科研+2篇论文', result: 'rejected', date: '2026-03-01', scholarship: '' },
+        { id: 7, background: '海本', university: 'UC Berkeley 经济学', gpa: '3.92/4.0', ielts: '', gre: '333', internship: '美联储旧金山联储实习', research: '3段科研+1篇NBER工作论文', result: 'admitted', date: '2026-03-01', scholarship: '全奖 $103,000/年' },
+        { id: 8, background: '985', university: '北京大学 数学科学学院', gpa: '3.95/4.0', ielts: '8.0', gre: '334', internship: '', research: '5段科研+3篇论文（含1篇QJE二作）', result: 'admitted', date: '2026-03-01', scholarship: '全奖 $103,000/年 + Ford Foundation Fellowship' }
+      ]),
+      related_programs: JSON.stringify([
+        { id: 99, school: '哈佛大学', program: '经济学 PhD', ranking: 3 },
+        { id: 100, school: '斯坦福大学', program: '经济学 PhD', ranking: 5 },
+        { id: 101, school: '芝加哥大学', program: '经济学 PhD', ranking: 10 },
+        { id: 102, school: '耶鲁大学', program: '经济学 PhD', ranking: 16 }
+      ]),
+      employment_data: JSON.stringify({
+        industries: [
+          { name: '学术界（高校教职）', percent: 55 },
+          { name: '中央银行/政府机构', percent: 20 },
+          { name: '金融科技/量化交易', percent: 12 },
+          { name: '咨询公司', percent: 8 },
+          { name: '国际组织', percent: 5 }
+        ],
+        topEmployers: [
+          'MIT / Harvard / Stanford 等Top高校',
+          '美联储（Fed）',
+          '世界银行（World Bank）',
+          'IMF（国际货币基金组织）',
+          'Jane Street / Two Sigma',
+          '麦肯锡 / 波士顿咨询',
+          'Google / Amazon 经济学研究团队'
+        ]
+      }),
+    },
   ];
 
   for (const p of programs) {
@@ -1876,12 +2357,17 @@ async function seedPrograms(conn) {
     await conn.query(
       `INSERT INTO programs (university_id, name_zh, name_en, degree, department, category, duration, language,
         gpa_min, toefl_min, ielts_min, gre_required, gre_avg, gmat_avg,
-        tuition_total, deadline, apply_link, requirements,
+        tuition_total, tuition_cny, deadline, apply_link, requirements,
+        highlights, materials, timeline, curriculum, offers, related_programs, employment_data,
+        class_size, intl_ratio, intake,
         employment_rate, avg_salary, career_paths, description, tags)
-       VALUES (?, ?, ?, ?, ?, ?, ?, '英语', ?, ?, ?, ?, ?, ?, ?, ?, '', ?, ?, ?, ?, ?, ?)`,
+       VALUES (?, ?, ?, ?, ?, ?, ?, '英语', ?, ?, ?, ?, ?, ?, ?, ?, ?, '', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [universityId, p.name_zh, p.name_en, p.degree, p.department, p.category, p.duration,
        p.gpa_min || null, p.toefl_min || null, p.ielts_min || null, p.gre_required || null, p.gre_avg || null, p.gmat_avg || null,
-       p.tuition_total, p.deadline, p.requirements, p.employment_rate || null, p.avg_salary, p.career_paths, p.description, p.tags]
+       p.tuition_total, p.tuition_cny || '', p.deadline, p.requirements,
+       p.highlights || null, p.materials || null, p.timeline || null, p.curriculum || null, p.offers || null, p.related_programs || null, p.employment_data || null,
+       p.class_size || 0, p.intl_ratio || '', p.intake || '',
+       p.employment_rate || null, p.avg_salary, p.career_paths, p.description, p.tags]
     );
   }
 }
@@ -2589,16 +3075,16 @@ async function seedMentorResources(conn, userIdMap) {
  */
 async function seedArticlesExtra(conn) {
   // 检查是否已有这批补充文章（通过标题判断）
-  const [existing] = await conn.query("SELECT COUNT(*) as count FROM articles WHERE category IN ('校招指南','面试经验','政策解读') AND title LIKE '%保研%' OR title LIKE '%留学%'");
+  const [existing] = await conn.query("SELECT COUNT(*) as count FROM articles WHERE category IN ('保研资讯','留学指南','校招指南','面试经验','政策解读')");
   if (existing[0].count > 0) return;
 
   const extraArticles = [
-    // 保研 2 条
+    // 保研资讯 2 条
     {
       title: '保研全流程攻略：从夏令营到推免面试',
       summary: '系统梳理保研各阶段关键节点、材料准备和面试技巧，助你顺利上岸。',
       content: `## 保研时间线\n\n### 大三下学期（3-5月）\n- 确定目标院校和导师\n- 准备个人陈述、推荐信、成绩单等材料\n- 关注目标院校夏令营报名通知\n\n### 暑期（6-8月）\n- 参加夏令营，展示科研能力和学术潜力\n- 夏令营面试通常包含：自我介绍、专业问答、英语面试\n\n### 大四上学期（9月）\n- 推免系统开放，填报志愿\n- 参加预推免面试\n- 确认录取，签订协议\n\n## 核心建议\n\n1. **GPA是基础**：保持年级前10%的成绩\n2. **科研加分**：本科阶段参与课题或发表论文\n3. **竞赛经历**：数学建模、ACM等含金量高的竞赛\n4. **提前联系导师**：邮件沟通展示学术兴趣`,
-      category: '校招指南',
+      category: '保研资讯',
       cover: '/placeholder-cover.svg',
       author: '启航升学研究院',
     },
@@ -2606,26 +3092,249 @@ async function seedArticlesExtra(conn) {
       title: '985高校保研率排名与热门专业竞争分析',
       summary: '汇总各985高校最新保研率数据，深度分析热门专业的推免竞争格局。',
       content: `## 985高校保研率概览\n\n### 保研率Top10\n1. 北京大学 — 约50%\n2. 清华大学 — 约50%\n3. 中国科学技术大学 — 约40%\n4. 南京大学 — 约35%\n5. 复旦大学 — 约33%\n6. 上海交通大学 — 约32%\n7. 浙江大学 — 约30%\n8. 中国人民大学 — 约28%\n9. 北京航空航天大学 — 约27%\n10. 哈尔滨工业大学 — 约26%\n\n## 热门专业竞争分析\n\n### 计算机科学与技术\n- 竞争最为激烈，Top高校录取比通常在5:1以上\n- 科研论文和竞赛成果是核心区分因素\n\n### 金融学/经济学\n- 跨专业保研比例高，数学/统计背景受欢迎\n- 实习经历在面试中权重较大\n\n### 电子信息/人工智能\n- 近年热度持续上升\n- 导师项目匹配度是关键\n\n## 策略建议\n\n1. 合理定位：根据排名选择冲刺/稳妥/保底院校\n2. 多投夏令营：建议投5-8所\n3. 提前了解各校面试风格`,
-      category: '校招指南',
+      category: '保研资讯',
       cover: '/placeholder-cover.svg',
       author: '启航升学研究院',
     },
-    // 留学 2 条
+    // 留学指南 2 条
     {
-      title: '2026年留学申请趋势：热门国家与专业深度解读',
-      summary: '分析英美港新澳等热门留学目的地最新申请趋势，助你做出最优选校决策。',
-      content: `## 各国留学趋势\n\n### 英国\n- 申请量持续增长，G5竞争白热化\n- 一年制硕士性价比高\n- 热门专业：商科、CS、传媒\n\n### 美国\n- 签证政策回暖，STEM专业OPT延长至3年\n- 大模型/AI方向申请火爆\n- 注意：部分Top30取消GRE要求\n\n### 中国香港\n- 距离近、文化适应成本低\n- 港三（港大/港中文/港科技）竞争极度激烈\n- 建议早轮申请，滚动录取占先机\n\n### 新加坡\n- NUS/NTU亚洲排名领先\n- CS和商科就业前景优越\n- 申请周期短，决策快\n\n### 澳大利亚\n- 移民政策友好，PSW工签2-4年\n- 墨大/悉大/ANU认可度高\n- 无背景可转专业项目多\n\n## 选校建议\n\n1. 明确目标：就业/科研/移民\n2. 控制申请数量：8-12所为宜\n3. 合理分配梯度：冲刺3 + 匹配5 + 保底3`,
-      category: '校招指南',
-      cover: '/placeholder-cover.svg',
+      title: '2026年留学申请全攻略：从选校到拿Offer的完整指南',
+      summary: '全面解析英美港新澳五大热门留学目的地的申请流程、时间规划、材料准备和录取标准，助你高效完成留学申请。',
+      content: `# 2026年留学申请全攻略：从选校到拿Offer的完整指南
+
+## 一、留学申请时间线规划
+
+### 大一至大二：基础准备阶段
+- **GPA管理**：保持3.5+的成绩，尤其是专业核心课
+- **语言考试**：开始备考雅思/托福，大二暑假前首考
+- **背景提升**：参与科研项目、实习、竞赛，积累软实力
+
+### 大三：核心冲刺阶段
+- **大三上学期（9-12月）**
+  - 确定留学目标国家和专业方向
+  - 参加雅思/托福首考，评估差距
+  - 开始准备GRE/GMAT（如需要）
+
+- **大三寒假（1-2月）**
+  - 参加寒假科研/实习项目
+  - 初步筛选目标院校清单
+
+- **大三下学期（3-6月）**
+  - 语言刷分，争取达到目标分数
+  - 联系推荐人，建立推荐信关系
+  - 开始构思文书素材
+
+- **大三暑假（7-8月）**
+  - 暑期实习或科研，丰富经历
+  - 完成初版文书（PS/SOP/CV）
+  - 参加夏校项目（如适用）
+
+### 大四：申请执行阶段
+- **9-10月**：网申开放，提交第一批申请
+- **11-12月**：提交第二批申请，准备面试
+- **次年1-3月**：等待录取结果，补交材料
+- **次年4-6月**：确认入学，办理签证
+
+---
+
+## 二、五大热门留学目的地深度解析
+
+### 🇬🇧 英国
+**优势**
+- 一年制硕士，时间成本低
+- 教育质量世界顶尖，G5院校声誉卓著
+- 签证政策相对友好
+
+**申请要求**
+| 院校层次 | GPA要求 | 雅思要求 | GRE/GMAT |
+|---------|---------|----------|----------|
+| G5（牛剑ICLSEUCL） | 85-90+ | 7.0-7.5 | 部分专业需要 |
+| 王爱曼华 | 80-85+ | 6.5-7.0 | 商科建议提交 |
+| QS前100 | 75-80+ | 6.0-6.5 | 大多不需要 |
+
+**申请时间线**
+- 9月：UCAS/院校网申开放
+- 10-12月：第一轮申请（建议尽早）
+- 1-3月：第二轮申请
+- 4-6月：Clearing补录
+
+**费用预估**
+- 学费：£20,000-£40,000/年
+- 生活费：£12,000-£15,000/年
+- 总计：约30-45万人民币/年
+
+---
+
+### 🇺🇸 美国
+**优势**
+- 教育资源最丰富，顶尖院校云集
+- STEM专业OPT延长至3年，就业机会多
+- 科研实力全球领先
+
+**申请要求**
+| 院校层次 | GPA要求 | 托福要求 | GRE/GMAT |
+|---------|---------|----------|----------|
+| Top 20 | 3.7+ | 105+ | 建议提交 |
+| Top 30-50 | 3.5+ | 100+ | 部分需要 |
+| Top 50-100 | 3.3+ | 90+ | 大多不需要 |
+
+**申请时间线**
+- 9月：Common App开放
+- 11月1日：ED/EA截止
+- 1月1-15日：RD截止
+- 3-4月：放榜
+- 5月1日：确认入学
+
+**费用预估**
+- 学费：$30,000-$60,000/年
+- 生活费：$15,000-$25,000/年
+- 总计：约35-60万人民币/年
+
+---
+
+### 🇭🇰 中国香港
+**优势**
+- 地理位置近，文化适应成本低
+- 学费相对英美较低
+- 毕业后可申请IANG签证留港工作
+
+**申请要求**
+| 院校 | GPA要求 | 雅思要求 | GMAT |
+|-----|---------|----------|------|
+| 港大/港科/港中文 | 85+ | 6.5-7.0 | 商科建议提交 |
+| 港城/港理工 | 80+ | 6.0-6.5 | 部分需要 |
+| 港浸/港岭南 | 75+ | 6.0 | 大多不需要 |
+
+**申请时间线**
+- 9-10月：网申开放
+- 11-12月：第一轮申请
+- 1-3月：第二轮申请
+- 4-6月：发放录取
+
+**费用预估**
+- 学费：HK$150,000-350,000/年
+- 生活费：HK$100,000-150,000/年
+- 总计：约20-40万人民币/年
+
+---
+
+### 🇸🇬 新加坡
+**优势**
+- NUS/NTU亚洲排名领先
+- 社会安全，华人文化背景
+- 毕业后就业前景优越
+
+**申请要求**
+| 院校 | GPA要求 | 雅思要求 | GRE/GMAT |
+|-----|---------|----------|----------|
+| NUS | 85+ | 6.5-7.0 | 部分需要 |
+| NTU | 82+ | 6.5+ | 部分需要 |
+
+**费用预估**
+- 学费：S$30,000-50,000/年
+- 生活费：S$12,000-18,000/年
+- 总计：约25-45万人民币/年
+
+---
+
+### 🇦🇺 澳大利亚
+**优势**
+- 移民政策友好，PSW工签2-4年
+- 八大名校认可度高
+- 可跨专业申请，无背景限制项目多
+
+**申请要求**
+| 院校 | GPA要求 | 雅思要求 |
+|-----|---------|----------|
+| 墨大/悉大/ANU | 80-85+ | 6.5-7.0 |
+| 新南威尔士/昆士兰 | 75-80+ | 6.5 |
+| 其他八大 | 70-75+ | 6.0-6.5 |
+
+**费用预估**
+- 学费：A$35,000-50,000/年
+- 生活费：A$20,000-25,000/年
+- 总计：约30-45万人民币/年
+
+---
+
+## 三、申请材料清单
+
+### 必备材料
+1. **成绩单**：中英文官方成绩单（学校盖章）
+2. **在读证明**：中英文在读证明（学校盖章）
+3. **语言成绩**：雅思/托福官方成绩单
+4. **个人陈述（PS/SOP）**：500-1000字
+5. **简历（CV）**：1-2页，突出学术和实践经历
+6. **推荐信**：2-3封（学术推荐人为主）
+
+### 可选材料
+- GRE/GMAT成绩单
+- 作品集（设计/建筑/艺术类）
+- 研究计划（研究型项目）
+- 实习/工作证明
+- 获奖证书
+
+---
+
+## 四、选校策略
+
+### 选校梯队建议（共8-12所）
+| 梯队 | 数量 | 说明 |
+|-----|-----|------|
+| 冲刺校 | 3所 | 录取概率30%以下 |
+| 匹配校 | 5-6所 | 录取概率50-70% |
+| 保底校 | 2-3所 | 录取概率80%以上 |
+
+### 选校考虑因素
+1. **专业排名**：就业导向选专排，学术导向选综排
+2. **地理位置**：影响实习、就业、生活成本
+3. **课程设置**：是否匹配职业规划
+4. **就业资源**：校招企业、校友网络
+5. **费用预算**：学费+生活费是否可承受
+
+---
+
+## 五、常见问题解答
+
+### Q1：语言成绩不达标怎么办？
+- 多刷几次，语言成绩可拼分
+- 考虑语言班/预科项目
+- 选择对语言要求较低的院校
+
+### Q2：GPA不高如何弥补？
+- 突出专业课GPA（如专业课成绩好）
+- 用高语言成绩/GRE成绩弥补
+- 丰富实习/科研/竞赛经历
+- 文书中解释GPA低的原因
+
+### Q3：跨专业申请可行吗？
+- 部分专业接受跨申（如商科、教育、传媒）
+- 需要补充先修课程或相关经历
+- 文书中说明转专业动机
+
+### Q4：什么时候开始准备最合适？
+- 建议大二开始规划
+- 最晚大三上学期启动
+- 给自己至少1年准备时间
+
+---
+
+## 六、启航留学服务
+
+我们提供以下留学支持服务：
+1. **免费评估**：背景评估+选校建议
+2. **文书指导**：PS/CV精修+模拟面试
+3. **导师匹配**：对接海外在读学长学姐
+4. **申请跟踪**：全程进度提醒
+
+**咨询方式**：点击页面右下角「咨询该项目」按钮，获取一对一留学规划。
+
+---
+
+*本文由启航留学研究院整理，数据更新至2026年4月。如有疑问，欢迎咨询我们的留学顾问团队。*`,
+      category: '留学指南',
+      cover: 'https://images.unsplash.com/photo-1523050854058-8df90110c8f1?w=800&q=80',
       author: '启航留学研究院',
-    },
-    {
-      title: '留学文书写作指南：PS/SOP/Essay的核心区别与写作技巧',
-      summary: '深入解析留学申请三大文书类型的区别和写作要点，附高分范文框架。',
-      content: `## 三大文书区别\n\n### Personal Statement (PS)\n- 英国/香港常用\n- 侧重：学术背景 + 学科热情 + 未来规划\n- 篇幅：500-800词\n\n### Statement of Purpose (SOP)\n- 美国研究生常用\n- 侧重：研究兴趣 + 科研经历 + 与项目匹配度\n- 篇幅：800-1200词\n\n### Essay\n- MBA/商科常用\n- 侧重：个人经历 + 领导力 + 职业目标\n- 通常有具体题目要求\n\n## 写作核心技巧\n\n### 1. 故事化表达\n- 用具体事件而非空洞形容\n- 错误示范："我对计算机充满热情"\n- 正确示范："大二暑假独立开发的选课助手被3000+同学使用"\n\n### 2. 展示匹配度\n- 研究目标校的课程设置和教授方向\n- 将自己的经历与项目特色建立连接\n\n### 3. 避免常见错误\n- 不要写成简历的散文版\n- 避免过度谦虚或过度自夸\n- 每所学校都要定制化修改\n\n## 文书时间规划\n\n1. 头脑风暴素材：申请前3个月\n2. 初稿写作：申请前2个月\n3. 修改打磨：至少3轮修改\n4. 母语者润色：提交前2周`,
-      category: '校招指南',
-      cover: '/placeholder-cover.svg',
-      author: '赵博士（中科院计算所）',
     },
     // 职业指导 2 条
     {
@@ -3229,10 +3938,20 @@ async function initDatabase() {
       `ALTER TABLE chat_messages ADD COLUMN is_read TINYINT(1) NOT NULL DEFAULT 0 COMMENT '是否已读: 0=未读, 1=已读' AFTER file_url`,
       // chat_conversations 表: target_user_id 字段
       `ALTER TABLE chat_conversations ADD COLUMN target_user_id INT DEFAULT NULL COMMENT '目标用户ID（私信对接的真人）' AFTER assigned_admin`,
+      // chat_conversations 表: assigned_agent 字段
+      `ALTER TABLE chat_conversations ADD COLUMN assigned_agent INT DEFAULT NULL COMMENT '分配的客服ID' AFTER assigned_admin`,
       // favorites 表: 扩展 target_type 枚举支持 course_like（点赞）
-      `ALTER TABLE favorites MODIFY COLUMN target_type ENUM('job', 'course', 'mentor', 'course_like') NOT NULL COMMENT '收藏类型'`,
+      `ALTER TABLE favorites MODIFY COLUMN target_type ENUM('job', 'course', 'mentor', 'course_like', 'program') NOT NULL COMMENT '收藏类型'`,
       // notifications 表: 确保 type 枚举包含所有需要的类型
       `ALTER TABLE notifications MODIFY COLUMN type ENUM('system','job','appointment','course','announcement','resume','review','approval','general','other') NOT NULL DEFAULT 'system' COMMENT '通知类型'`,
+      // mentor_profiles 表: 联系方式字段
+      `ALTER TABLE mentor_profiles ADD COLUMN phone VARCHAR(20) DEFAULT '' COMMENT '联系电话' AFTER available_time`,
+      `ALTER TABLE mentor_profiles ADD COLUMN wechat VARCHAR(100) DEFAULT '' COMMENT '微信号' AFTER phone`,
+      `ALTER TABLE mentor_profiles ADD COLUMN contact_email VARCHAR(255) DEFAULT '' COMMENT '联系邮箱' AFTER wechat`,
+      // companies 表: 联系方式字段
+      `ALTER TABLE companies ADD COLUMN phone VARCHAR(20) DEFAULT '' COMMENT '联系电话' AFTER address`,
+      `ALTER TABLE companies ADD COLUMN wechat VARCHAR(100) DEFAULT '' COMMENT '微信号' AFTER phone`,
+      `ALTER TABLE companies ADD COLUMN contact_email VARCHAR(255) DEFAULT '' COMMENT '联系邮箱' AFTER wechat`,
     ];
     for (const stmt of alterStatements) {
       try {

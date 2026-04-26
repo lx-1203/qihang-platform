@@ -379,7 +379,7 @@ export default function StudyAbroad() {
         if (import.meta.env.DEV) console.warn('[StudyAbroad] Consultants API 加载失败');
       });
 
-    const loadArticles = http.get('/articles', { params: { category: 'study-abroad' } })
+    const loadArticles = http.get('/articles', { params: { category: '留学指南' } })
       .then(res => {
         // 后端返回 { data: { articles: [...], total, page, pageSize } }
         const data = res.data?.data;

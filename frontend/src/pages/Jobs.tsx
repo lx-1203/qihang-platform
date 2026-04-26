@@ -185,6 +185,13 @@ export default function Jobs() {
     fetchJobs();
   }, [fetchJobs]);
 
+  // 页面重新可见时刷新（Profile 页改头像/Logo 后返回同步）
+  useEffect(() => {
+    const handleFocus = () => fetchJobs();
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
+  }, [fetchJobs]);
+
   // 搜索按钮
   const handleSearch = () => {
     setPage(1);

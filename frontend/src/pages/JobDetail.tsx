@@ -14,6 +14,10 @@ import {
   Tag as TagIcon,
   Heart,
   MessageCircle,
+  Phone,
+  Mail,
+  MessageSquareText,
+  Globe,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuthStore } from '@/store/auth';
@@ -25,6 +29,7 @@ import { useChatStore } from '@/store/chat';
 interface JobData {
   id: number;
   title: string;
+  company_id?: number;
   company_name: string;
   logo?: string;
   location: string;
@@ -41,6 +46,13 @@ interface JobData {
   company_id?: number;
   created_at?: string;
   updated_at?: string;
+  company_contact?: {
+    phone?: string;
+    wechat?: string;
+    contact_email?: string;
+    website?: string;
+    address?: string;
+  };
 }
 
 export default function JobDetail() {
@@ -85,6 +97,13 @@ export default function JobDetail() {
       }
     };
     fetchJob();
+  }, [id]);
+
+  // 页面重新可见时刷新（Logo 变更后同步）
+  useEffect(() => {
+    const handleFocus = () => { if (id) { http.get(`/jobs/${id}`).then(res => { if (res.data?.code === 200) setJob(res.data.data); }).catch(() => {}); } };
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
   }, [id]);
 
   // 检查是否已投递 + 是否已收藏（仅学生角色）
@@ -611,6 +630,59 @@ export default function JobDetail() {
                   平台保障 · 信息真实 · 隐私保护
                 </p>
               </div>
+
+              {/* 企业联系方式 */}
+              {job.company_contact && (job.company_contact.phone || job.company_contact.wechat || job.company_contact.contact_email || job.company_contact.website) && (
+                <div className="mt-6 pt-6 border-t border-gray-100">
+                  <h3 className="text-sm font-bold text-gray-900 mb-3">联系方式</h3>
+                  <div className="space-y-2.5">
+                    {job.company_contact.phone && (
+                      <div className="flex items-center gap-2.5 text-sm">
+                        <div className="w-7 h-7 rounded-lg bg-blue-50 flex items-center justify-center flex-shrink-0">
+                          <Phone size={14} className="text-blue-600" />
+                        </div>
+                        <div>
+                          <p className="text-[10px] text-gray-400">电话</p>
+                          <p className="text-gray-700 font-medium">{job.company_contact.phone}</p>
+                        </div>
+                      </div>
+                    )}
+                    {job.company_contact.wechat && (
+                      <div className="flex items-center gap-2.5 text-sm">
+                        <div className="w-7 h-7 rounded-lg bg-green-50 flex items-center justify-center flex-shrink-0">
+                          <MessageSquareText size={14} className="text-green-600" />
+                        </div>
+                        <div>
+                          <p className="text-[10px] text-gray-400">微信</p>
+                          <p className="text-gray-700 font-medium">{job.company_contact.wechat}</p>
+                        </div>
+                      </div>
+                    )}
+                    {job.company_contact.contact_email && (
+                      <div className="flex items-center gap-2.5 text-sm">
+                        <div className="w-7 h-7 rounded-lg bg-amber-50 flex items-center justify-center flex-shrink-0">
+                          <Mail size={14} className="text-amber-600" />
+                        </div>
+                        <div>
+                          <p className="text-[10px] text-gray-400">邮箱</p>
+                          <p className="text-gray-700 font-medium">{job.company_contact.contact_email}</p>
+                        </div>
+                      </div>
+                    )}
+                    {job.company_contact.website && (
+                      <div className="flex items-center gap-2.5 text-sm">
+                        <div className="w-7 h-7 rounded-lg bg-purple-50 flex items-center justify-center flex-shrink-0">
+                          <Globe size={14} className="text-purple-600" />
+                        </div>
+                        <div>
+                          <p className="text-[10px] text-gray-400">官网</p>
+                          <p className="text-gray-700 font-medium truncate">{job.company_contact.website}</p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
           </motion.div>
         </div>

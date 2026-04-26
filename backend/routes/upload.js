@@ -56,9 +56,10 @@ const UPLOAD_DIR = path.join(__dirname, '..', 'uploads');
 const AVATAR_DIR = path.join(UPLOAD_DIR, 'avatars');
 const RESUME_DIR = path.join(UPLOAD_DIR, 'resumes');
 const COVER_DIR = path.join(UPLOAD_DIR, 'covers');
+const VIDEO_DIR = path.join(UPLOAD_DIR, 'videos');
 const GENERAL_DIR = path.join(UPLOAD_DIR, 'general');
 
-[UPLOAD_DIR, AVATAR_DIR, RESUME_DIR, COVER_DIR, GENERAL_DIR].forEach(dir => {
+[UPLOAD_DIR, AVATAR_DIR, RESUME_DIR, COVER_DIR, VIDEO_DIR, GENERAL_DIR].forEach(dir => {
   if (!fs.existsSync(dir)) {
     fs.mkdirSync(dir, { recursive: true });
   }
@@ -67,10 +68,12 @@ const GENERAL_DIR = path.join(UPLOAD_DIR, 'general');
 // 文件类型配置
 const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
 const ALLOWED_DOC_TYPES = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
-const ALL_ALLOWED_TYPES = [...ALLOWED_IMAGE_TYPES, ...ALLOWED_DOC_TYPES];
+const ALLOWED_VIDEO_TYPES = ['video/mp4', 'video/webm', 'video/quicktime', 'video/x-msvideo'];
+const ALL_ALLOWED_TYPES = [...ALLOWED_IMAGE_TYPES, ...ALLOWED_DOC_TYPES, ...ALLOWED_VIDEO_TYPES];
 
-const MAX_IMAGE_SIZE = 5 * 1024 * 1024;  // 5MB
-const MAX_DOC_SIZE = 10 * 1024 * 1024;   // 10MB
+const MAX_IMAGE_SIZE = 5 * 1024 * 1024;    // 5MB
+const MAX_DOC_SIZE = 10 * 1024 * 1024;     // 10MB
+const MAX_VIDEO_SIZE = 200 * 1024 * 1024;  // 200MB
 
 /**
  * 根据上传类别获取对应存储目录
@@ -80,6 +83,7 @@ function getDestination(category) {
     case 'avatar': return AVATAR_DIR;
     case 'resume': return RESUME_DIR;
     case 'cover': return COVER_DIR;
+    case 'video': return VIDEO_DIR;
     default: return GENERAL_DIR;
   }
 }
@@ -112,7 +116,7 @@ const fileFilter = (_req, file, cb) => {
   if (ALL_ALLOWED_TYPES.includes(file.mimetype)) {
     cb(null, true);
   } else {
-    cb(new Error(`不支持的文件类型: ${file.mimetype}。支持的类型: jpg, png, gif, webp, pdf, doc, docx`), false);
+    cb(new Error(`不支持的文件类型: ${file.mimetype}。支持的类型: jpg, png, gif, webp, pdf, doc, docx, mp4, webm, mov`), false);
   }
 };
 
@@ -121,7 +125,7 @@ const upload = multer({
   storage,
   fileFilter,
   limits: {
-    fileSize: MAX_DOC_SIZE, // 使用最大限制，后续按类型校验
+    fileSize: MAX_VIDEO_SIZE, // 使用最大限制，后续按类型校验
   },
 });
 
@@ -131,6 +135,7 @@ router.post('/', authMiddleware, (req, res) => {
 
   singleUpload(req, res, (err) => {
     if (err) {
+      console.error('[上传] multer 错误:', err.message, 'code:', err.code);
       if (err instanceof multer.MulterError) {
         if (err.code === 'LIMIT_FILE_SIZE') {
           return res.status(400).json({ code: 400, message: '文件大小超过限制（图片最大5MB，文档最大10MB）' });
@@ -141,34 +146,53 @@ router.post('/', authMiddleware, (req, res) => {
     }
 
     if (!req.file) {
+      console.error('[上传] req.file 为空，body:', req.body, 'content-type:', req.headers['content-type']);
       return res.status(400).json({ code: 400, message: '请选择要上传的文件' });
     }
 
     const file = req.file;
+    console.log('[上传] 收到文件:', file.originalname, 'mimetype:', file.mimetype, 'size:', file.size, 'category:', req.body.category);
 
     // 文件签名验证 — 防止伪造 mimetype（SEC-007）
-    if (!validateFileSignature(file.path, file.mimetype)) {
+    const sigValid = validateFileSignature(file.path, file.mimetype);
+    if (!sigValid) {
+      console.warn('[上传] 签名验证失败:', file.originalname, 'mimetype:', file.mimetype);
+      // 读取实际字节用于调试
+      try {
+        const fd = fs.openSync(file.path, 'r');
+        const buf = Buffer.alloc(8);
+        fs.readSync(fd, buf, 0, 8, 0);
+        fs.closeSync(fd);
+        console.warn('[上传] 文件头部字节:', Array.from(buf).map(b => '0x' + b.toString(16).padStart(2, '0')).join(' '));
+      } catch {}
       fs.unlinkSync(file.path);
       return res.status(400).json({ code: 400, message: '文件内容与声明的类型不匹配，请上传真实文件' });
     }
 
     // 按类型校验文件大小
     if (ALLOWED_IMAGE_TYPES.includes(file.mimetype) && file.size > MAX_IMAGE_SIZE) {
-      // 删除已保存的文件
       fs.unlinkSync(file.path);
       return res.status(400).json({ code: 400, message: '图片文件大小不能超过 5MB' });
+    }
+    if (ALLOWED_DOC_TYPES.includes(file.mimetype) && file.size > MAX_DOC_SIZE) {
+      fs.unlinkSync(file.path);
+      return res.status(400).json({ code: 400, message: '文档文件大小不能超过 10MB' });
+    }
+    if (ALLOWED_VIDEO_TYPES.includes(file.mimetype) && file.size > MAX_VIDEO_SIZE) {
+      fs.unlinkSync(file.path);
+      return res.status(400).json({ code: 400, message: '视频文件大小不能超过 200MB' });
     }
 
     // 构建访问 URL
     const category = req.body.category || req.query.category || 'general';
-    const relativePath = `/uploads/${category === 'general' ? 'general' : category + 's'}/${file.filename}`;
-    // 修正路径 (avatar -> avatars, resume -> resumes, cover -> covers)
     const urlPath = `/uploads/${
       category === 'avatar' ? 'avatars' :
       category === 'resume' ? 'resumes' :
-      category === 'cover' ? 'covers' : 'general'
+      category === 'cover' ? 'covers' :
+      category === 'video' ? 'videos' : 'general'
     }/${file.filename}`;
 
+    console.log('[上传] 成功:', file.originalname, '→', urlPath);
     res.json({
       code: 200,
       message: '上传成功',
@@ -208,7 +232,8 @@ router.post('/multiple', authMiddleware, (req, res) => {
     const category = req.body.category || req.query.category || 'general';
     const subDir = category === 'avatar' ? 'avatars' :
                    category === 'resume' ? 'resumes' :
-                   category === 'cover' ? 'covers' : 'general';
+                   category === 'cover' ? 'covers' :
+                   category === 'video' ? 'videos' : 'general';
 
     const files = [];
     for (const file of req.files) {

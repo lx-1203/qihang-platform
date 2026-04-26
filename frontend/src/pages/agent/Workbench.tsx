@@ -6,6 +6,7 @@ import {
   ArrowRight, Phone
 } from 'lucide-react';
 import http from '@/api/http';
+import { useAuthStore } from '@/store/auth';
 import { CardSkeleton } from '@/components/ui/Skeleton';
 
 interface Conversation {
@@ -41,6 +42,8 @@ interface Stats {
 }
 
 export default function AgentWorkbench() {
+  const { user } = useAuthStore();
+  const isAgent = user?.role === 'agent' || user?.role === 'admin';
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [selectedConv, setSelectedConv] = useState<Conversation | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -58,7 +61,9 @@ export default function AgentWorkbench() {
     try {
       const res = await http.get('/agent/stats');
       if (res.data?.code === 200) setStats(res.data?.data || {});
-    } catch {}
+    } catch {
+      // 非 agent 角色时静默处理 403
+    }
   }, []);
 
   // 获取会话列表
@@ -70,7 +75,9 @@ export default function AgentWorkbench() {
       if (res.data?.code === 200) {
         setConversations(res.data?.data?.list || []);
       }
-    } catch {}
+    } catch {
+      // 非 agent 角色时静默处理 403
+    }
   }, [filter]);
 
   // 获取消息
@@ -86,11 +93,15 @@ export default function AgentWorkbench() {
     }
   }, []);
 
-  // 初始加载
+  // 初始加载（仅 agent/admin 角色才请求）
   useEffect(() => {
+    if (!isAgent) {
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     Promise.all([fetchStats(), fetchConversations()]).finally(() => setLoading(false));
-  }, [fetchStats, fetchConversations]);
+  }, [fetchStats, fetchConversations, isAgent]);
 
   // 选中会话时加载消息
   useEffect(() => {

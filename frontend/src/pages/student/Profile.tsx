@@ -6,7 +6,7 @@ import {
   Tag, Target, FileText, Save,
   Pencil, X, Check, Link, Briefcase,
   Send, Heart, MessageCircle, Clock, ExternalLink,
-  ChevronRight, BriefcaseBusiness, Trash2, Download, CircleDot
+  ChevronRight, BriefcaseBusiness, Trash2, Download, CircleDot, Camera
 } from 'lucide-react';
 import http from '@/api/http';
 import { showToast } from '@/components/ui/ToastContainer';
@@ -140,6 +140,7 @@ export default function Profile() {
       await http.post('/student/profile', {
         nickname: editData.nickname,
         phone: editData.phone,
+        avatar: editData.avatar,
         school: editData.school,
         major: editData.major,
         grade: editData.grade,
@@ -154,7 +155,8 @@ export default function Profile() {
           ...authUser,
           name: editData.nickname || authUser.name,
           phone: editData.phone,
-        });
+          avatar: editData.avatar || authUser.avatar,
+        } as typeof authUser);
       }
       setEditMode(false);
       setSaveSuccess(true);
@@ -440,16 +442,41 @@ export default function Profile() {
               >
                 {/* 头像区域 */}
                 <div className="flex flex-col items-center mb-6">
-                  <div className="w-24 h-24 bg-gradient-to-br from-primary-400 to-primary-600 rounded-full flex items-center justify-center mb-3">
-                    <span className="text-3xl font-bold text-white">
-                      {(profile.nickname || profile.email || '学')[0]}
-                    </span>
+                  <div className="relative group">
+                    {profile.avatar ? (
+                      <img
+                        src={profile.avatar}
+                        alt="头像"
+                        className="w-24 h-24 rounded-full object-cover border-2 border-primary-200"
+                        onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                      />
+                    ) : null}
+                    <div className={`w-24 h-24 bg-gradient-to-br from-primary-400 to-primary-600 rounded-full flex items-center justify-center ${profile.avatar ? 'absolute inset-0 -z-10' : ''}`}>
+                      <span className="text-3xl font-bold text-white">
+                        {(profile.nickname || profile.email || '学')[0]}
+                      </span>
+                    </div>
+                    {editMode && (
+                      <div className="absolute inset-0 rounded-full bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
+                        <Camera className="w-6 h-6 text-white" />
+                      </div>
+                    )}
                   </div>
-                  <h3 className="text-lg font-bold text-gray-900">{profile.nickname}</h3>
+                  <h3 className="text-lg font-bold text-gray-900 mt-3">{profile.nickname}</h3>
                   <p className="text-sm text-gray-500">{profile.email}</p>
                   <span className="mt-2 px-3 py-1 bg-primary-50 text-primary-700 text-xs font-medium rounded-full">
                     {profile.grade} · {profile.major}
                   </span>
+                  {editMode && (
+                    <div className="mt-3 w-full">
+                      <FileUpload
+                        category="avatar"
+                        accept="image/*"
+                        placeholder="上传头像（JPG/PNG，最大5MB）"
+                        onSuccess={(result) => setEditData({ ...editData, avatar: result.url })}
+                      />
+                    </div>
+                  )}
                 </div>
 
                 {/* 快速信息 */}
@@ -719,8 +746,8 @@ export default function Profile() {
                         accept=".pdf,.doc,.docx"
                         maxSize={10 * 1024 * 1024}
                         onSuccess={(result) => {
-                          setEditData({ ...editData, resumeUrl: result.url });
-                          showToast('简历上传成功', 'success');
+                          setEditData(prev => ({ ...prev, resumeUrl: result.url }));
+                          showToast('简历上传成功，请点击保存按钮', 'success');
                         }}
                       />
                     </div>

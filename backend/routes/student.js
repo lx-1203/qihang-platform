@@ -25,12 +25,12 @@ router.use(requireRole('student'));
 router.post('/profile', async (req, res) => {
   try {
     const userId = req.user.id;
-    const { nickname, phone, school, major, grade, bio, skills, job_intention, resume_url } = req.body;
+    const { nickname, phone, school, major, grade, bio, skills, job_intention, resume_url, avatar } = req.body;
 
-    if (nickname !== undefined || phone !== undefined) {
+    if (nickname !== undefined || phone !== undefined || avatar !== undefined) {
       await pool.query(
-        'UPDATE users SET nickname = ?, phone = ? WHERE id = ?',
-        [nickname || '', phone || '', userId]
+        'UPDATE users SET nickname = ?, phone = ?, avatar = ? WHERE id = ?',
+        [nickname || '', phone || '', avatar || '', userId]
       );
     }
 
@@ -305,12 +305,12 @@ router.post('/appointments', idempotency(), async (req, res) => {
       return res.status(400).json({ code: 400, message: '导师ID不能为空' });
     }
 
-    // 检查导师是否存在（通过 mentor_profiles 表，mentor_id 是 users.id）
+    // 检查导师是否存在（兼容 mentor_profiles.id 和 users.id）
     const [mentors] = await pool.query(
-      `SELECT mp.id FROM mentor_profiles mp
+      `SELECT mp.id, mp.user_id FROM mentor_profiles mp
        JOIN users u ON mp.user_id = u.id
-       WHERE mp.user_id = ? AND u.status = 1`,
-      [mentor_id]
+       WHERE (mp.id = ? OR mp.user_id = ?) AND u.status = 1 AND mp.verify_status = 'approved'`,
+      [mentor_id, mentor_id]
     );
     if (mentors.length === 0) {
       return res.status(404).json({ code: 404, message: '导师不存在或暂不可预约' });
@@ -319,11 +319,14 @@ router.post('/appointments', idempotency(), async (req, res) => {
     // 如果未提供预约时间，使用占位时间（导师后续可确认实际时间）
     const resolvedTime = appointment_time || '2099-12-31 00:00:00';
 
+    // 使用 mentor_profiles.user_id 作为 appointments.mentor_id（因为 appointments.mentor_id 引用 users.id）
+    const resolvedMentorUserId = mentors[0].user_id || mentor_id;
+
     // 创建预约
     const [result] = await pool.query(
       `INSERT INTO appointments (student_id, mentor_id, appointment_time, duration, note, fee, service_title, status)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-      [userId, mentor_id, resolvedTime, duration || 60, note || '', fee || 0, service_title || '', 'pending']
+      [userId, resolvedMentorUserId, resolvedTime, duration || 60, note || '', fee || 0, service_title || '', 'pending']
     );
 
     // 通知导师有新的预约请求
@@ -331,7 +334,7 @@ router.post('/appointments', idempotency(), async (req, res) => {
       const [studentRows] = await pool.query('SELECT nickname FROM users WHERE id = ?', [userId]);
       const studentName = studentRows[0]?.nickname || '未知学生';
       const timeStr = appointment_time ? new Date(appointment_time).toLocaleString('zh-CN') : '待协商';
-      await NotificationTemplates.newAppointmentRequest(mentor_id, studentName, timeStr);
+      await NotificationTemplates.newAppointmentRequest(resolvedMentorUserId, studentName, timeStr);
     } catch (notifyErr) {
       console.error('发送预约通知失败(不影响主流程):', notifyErr);
     }
@@ -633,13 +636,13 @@ router.get('/favorites', async (req, res) => {
 router.post('/favorites', idempotency(), async (req, res) => {
   try {
     const userId = req.user.id;
-    const { target_type, target_id } = req.body;
+    const { target_type, target_id, remark } = req.body;
 
     if (!target_type || !target_id) {
       return res.status(400).json({ code: 400, message: '收藏类型和目标ID不能为空' });
     }
 
-    if (!['job', 'course', 'mentor', 'course_like'].includes(target_type)) {
+    if (!['job', 'course', 'mentor', 'course_like', 'program'].includes(target_type)) {
       return res.status(400).json({ code: 400, message: '无效的收藏类型' });
     }
 
@@ -654,8 +657,8 @@ router.post('/favorites', idempotency(), async (req, res) => {
     }
 
     const [result] = await pool.query(
-      'INSERT INTO favorites (user_id, target_type, target_id) VALUES (?, ?, ?)',
-      [userId, target_type, target_id]
+      'INSERT INTO favorites (user_id, target_type, target_id, remark) VALUES (?, ?, ?, ?)',
+      [userId, target_type, target_id, remark || null]
     );
 
     res.status(201).json({
@@ -665,6 +668,55 @@ router.post('/favorites', idempotency(), async (req, res) => {
     });
   } catch (err) {
     console.error('添加收藏失败:', err);
+    res.status(500).json({ code: 500, message: '服务器内部错误' });
+  }
+});
+
+/**
+ * PUT /api/student/favorites/:id - 更新收藏备注
+ */
+router.put('/favorites/:id', async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const favId = req.params.id;
+    const { remark } = req.body;
+
+    const [result] = await pool.query(
+      'UPDATE favorites SET remark = ? WHERE id = ? AND user_id = ?',
+      [remark || null, favId, userId]
+    );
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ code: 404, message: '收藏记录不存在' });
+    }
+
+    res.json({ code: 200, message: '备注已更新' });
+  } catch (err) {
+    console.error('更新收藏备注失败:', err);
+    res.status(500).json({ code: 500, message: '服务器内部错误' });
+  }
+});
+
+/**
+ * POST /api/student/favorites/batch - 批量取消收藏
+ */
+router.post('/favorites/batch', async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { ids } = req.body; // 数组
+
+    if (!Array.isArray(ids) || ids.length === 0) {
+      return res.status(400).json({ code: 400, message: '请选择要取消收藏的内容' });
+    }
+
+    const [result] = await pool.query(
+      'DELETE FROM favorites WHERE id IN (?) AND user_id = ?',
+      [ids, userId]
+    );
+
+    res.json({ code: 200, message: `已取消 ${result.affectedRows} 个收藏` });
+  } catch (err) {
+    console.error('批量取消收藏失败:', err);
     res.status(500).json({ code: 500, message: '服务器内部错误' });
   }
 });

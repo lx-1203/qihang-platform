@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import {
   Search,
   ChevronRight,
@@ -16,6 +16,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import ProgramCard from '../components/study-abroad/ProgramCard';
 import http from '../api/http';
 import { useConfigStore } from '@/store/config';
+import { useAuthStore } from '@/store/auth';
+import { showToast } from '@/components/ui/ToastContainer';
 
 // ====== 类型定义 ======
 
@@ -221,6 +223,8 @@ function mapApiProgram(row: ApiProgramRow): FlatProgram {
 
 export default function StudyAbroadPrograms() {
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const { user } = useAuthStore();
 
   // 从配置 store 获取专业分类数据
   const majorsData = useConfigStore().getJson<MajorCategory[]>('study_abroad_majors_config', []);
@@ -742,7 +746,15 @@ export default function StudyAbroadPrograms() {
               资深留学顾问根据你的背景，一对一定制选校方案
             </p>
           </div>
-          <button className="bg-primary-500 text-white px-8 py-3.5 rounded-xl font-bold hover:bg-primary-700 transition-colors shadow-lg shadow-primary-500/20 flex items-center gap-2 shrink-0">
+          <button
+            onClick={() => {
+              if (!user) { showToast('请先登录', 'warning'); navigate('/login'); return; }
+              http.post('/chat/conversations', { type: 'user_service', title: '咨询留学选校评估' })
+                .then(res => { showToast('已创建咨询会话', 'success'); navigate('/chat'); })
+                .catch(() => showToast('创建会话失败，请重试', 'error'));
+            }}
+            className="bg-primary-500 text-white px-8 py-3.5 rounded-xl font-bold hover:bg-primary-700 transition-colors shadow-lg shadow-primary-500/20 flex items-center gap-2 shrink-0"
+          >
             <Sparkles className="w-4 h-4" /> 免费选校评估
           </button>
         </div>

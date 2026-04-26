@@ -4,7 +4,7 @@ import { Star, Clock, BookOpen, Users, Play, ArrowLeft, Heart, Share2, ThumbsUp,
 import TagComponent from '@/components/ui/Tag';
 import { motion } from 'framer-motion';
 import http from '@/api/http';
-import { DIFFICULTY_MAP } from '@/constants';
+import { DIFFICULTY_MAP, DEFAULT_AVATAR } from '@/constants';
 import { useAuthStore } from '@/store/auth';
 import { showToast } from '@/components/ui/ToastContainer';
 
@@ -15,6 +15,7 @@ interface CourseDetailData {
   mentor_id: number;
   mentor_name: string;
   mentor: string; // 后端兼容字段
+  mentor_avatar?: string; // 后端 JOIN mentor_profiles 返回的最新头像
   description: string;
   category: string;
   cover: string;
@@ -116,6 +117,13 @@ export default function CourseDetail() {
     if (id) {
       fetchCourse();
     }
+  }, [id]);
+
+  // 页面重新可见时刷新（头像/Logo 变更后同步）
+  useEffect(() => {
+    const handleFocus = () => { if (id) { http.get(`/courses/${id}`).then(res => { const d = res.data?.data || res.data; if (d) setCourse(d); }).catch(() => {}); } };
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
   }, [id]);
 
   // 获取相关课程（同分类）
@@ -515,9 +523,12 @@ export default function CourseDetail() {
                   to={course.mentor_id ? `/mentors/${course.mentor_id}` : '#'}
                   className="flex items-center gap-2 mb-4 text-gray-600 hover:text-primary-600 transition-colors w-fit"
                 >
-                  <div className="w-8 h-8 rounded-full bg-primary-100 flex items-center justify-center text-primary-700 text-sm font-bold">
-                    {(course.mentor_name || course.mentor)?.charAt(0)}
-                  </div>
+                  <img
+                    src={course.mentor_avatar || DEFAULT_AVATAR}
+                    alt=""
+                    className="w-8 h-8 rounded-full object-cover"
+                    onError={(e) => { (e.target as HTMLImageElement).src = DEFAULT_AVATAR; }}
+                  />
                   <span className="font-medium">{course.mentor_name || course.mentor}</span>
                 </Link>
               )}
@@ -783,9 +794,12 @@ export default function CourseDetail() {
                 to={course.mentor_id ? `/mentors/${course.mentor_id}` : '#'}
                 className="flex items-center gap-4 group"
               >
-                <div className="w-14 h-14 rounded-full bg-primary-100 flex items-center justify-center text-primary-700 text-xl font-bold group-hover:bg-primary-200 transition-colors">
-                  {(course.mentor_name || course.mentor)?.charAt(0)}
-                </div>
+                <img
+                  src={course.mentor_avatar || DEFAULT_AVATAR}
+                  alt=""
+                  className="w-14 h-14 rounded-full object-cover"
+                  onError={(e) => { (e.target as HTMLImageElement).src = DEFAULT_AVATAR; }}
+                />
                 <div>
                   <div className="font-bold text-gray-900 group-hover:text-primary-600 transition-colors">
                     {course.mentor_name || course.mentor}

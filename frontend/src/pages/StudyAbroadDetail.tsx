@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useParams, useNavigate } from 'react-router-dom';
 import {
   ChevronRight, MapPin, Clock, Globe, Star, DollarSign,
   GraduationCap, BookOpen, CheckCircle2, Calendar, Users,
@@ -11,6 +11,8 @@ import {
 import { motion } from 'framer-motion';
 import Tag from '@/components/ui/Tag';
 import http from '@/api/http';
+import { useAuthStore } from '@/store/auth';
+import { showToast } from '@/components/ui/ToastContainer';
 
 import type { LucideIcon } from 'lucide-react';
 
@@ -144,13 +146,17 @@ const HIGHLIGHT_ICON_MAP: Record<string, LucideIcon> = {
 
 export default function StudyAbroadDetail() {
   const { id: rawId } = useParams();
+  const navigate = useNavigate();
   const programId = parseInt(rawId || '1', 10);
+  const { user } = useAuthStore();
 
   const [prog, setProg] = useState<ProgramDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'overview' | 'requirements' | 'curriculum' | 'offers' | 'career'>('overview');
-  const [saved, setSaved] = useState(false);
+  const [isFavorited, setIsFavorited] = useState(false);
+  const [favoriteId, setFavoriteId] = useState<number | null>(null);
+  const [favoriteLoading, setFavoriteLoading] = useState(false);
 
   // 从后端 API 获取项目详情
   useEffect(() => {
@@ -208,6 +214,95 @@ export default function StudyAbroadDetail() {
         setLoading(false);
       });
   }, [programId]);
+
+  // 检查是否已收藏（学生登录时）
+  useEffect(() => {
+    if (!user || user.role !== 'student') return;
+    http.get('/student/favorites').then(res => {
+      const list = res.data.data?.favorites || [];
+      const fav = list.find((f: { target_type: string; target_id: number }) => f.target_type === 'program' && f.target_id === programId);
+      if (fav) {
+        setIsFavorited(true);
+        setFavoriteId(fav.id);
+      }
+    }).catch(() => {});
+  }, [user, programId]);
+
+  // 收藏/取消收藏
+  const toggleFavorite = async () => {
+    if (!user) {
+      showToast({ type: 'warning', title: '请先登录后再收藏' });
+      navigate('/login');
+      return;
+    }
+    if (user.role !== 'student') {
+      showToast({ type: 'warning', title: '仅学生用户可收藏项目' });
+      return;
+    }
+    setFavoriteLoading(true);
+    try {
+      if (isFavorited && favoriteId) {
+        await http.delete(`/student/favorites/${favoriteId}`);
+        setIsFavorited(false);
+        setFavoriteId(null);
+        showToast({ type: 'success', title: '已取消收藏' });
+      } else {
+        const res = await http.post('/student/favorites', {
+          target_type: 'program',
+          target_id: programId,
+          remark: `${prog?.school || ''} - ${prog?.program || ''}`,
+        });
+        setIsFavorited(true);
+        setFavoriteId(res.data.data?.id || null);
+        showToast({ type: 'success', title: '收藏成功' });
+      }
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message || '操作失败';
+      showToast({ type: 'error', title: msg });
+    } finally {
+      setFavoriteLoading(false);
+    }
+  };
+
+  // 分享：复制链接到剪贴板
+  const handleShare = async () => {
+    const url = window.location.href;
+    try {
+      await navigator.clipboard.writeText(url);
+      showToast({ type: 'success', title: '链接已复制到剪贴板' });
+    } catch {
+      // fallback
+      const input = document.createElement('input');
+      input.value = url;
+      document.body.appendChild(input);
+      input.select();
+      document.execCommand('copy');
+      document.body.removeChild(input);
+      showToast({ type: 'success', title: '链接已复制到剪贴板' });
+    }
+  };
+
+  // 咨询：创建聊天会话
+  const handleConsult = async () => {
+    if (!user) {
+      showToast({ type: 'warning', title: '请先登录后再咨询' });
+      navigate('/login');
+      return;
+    }
+    try {
+      const res = await http.post('/chat/conversations', {
+        type: 'user_service',
+        title: `咨询留学项目：${prog?.school || ''} - ${prog?.program || ''}`,
+      });
+      const convId = res.data.data?.id;
+      if (convId) {
+        showToast({ type: 'success', title: '已创建咨询会话' });
+        navigate('/chat');
+      }
+    } catch {
+      showToast({ type: 'error', title: '创建会话失败，请重试' });
+    }
+  };
 
   // 加载状态
   if (loading) {
@@ -365,19 +460,26 @@ export default function StudyAbroadDetail() {
 
             {/* 操作按钮 */}
             <div className="flex md:flex-col gap-3 shrink-0">
-              <button className="bg-primary-500 text-white px-6 py-3 rounded-xl font-bold hover:bg-primary-700 transition-colors flex items-center gap-2 shadow-lg shadow-primary-500/20">
+              <button
+                onClick={handleConsult}
+                className="bg-primary-500 text-white px-6 py-3 rounded-xl font-bold hover:bg-primary-700 transition-colors flex items-center gap-2 shadow-lg shadow-primary-500/20"
+              >
                 <MessageCircle className="w-4 h-4" /> 咨询该项目
               </button>
               <div className="flex gap-2">
                 <button
-                  onClick={() => setSaved(!saved)}
-                  className={`w-11 h-11 border rounded-xl flex items-center justify-center transition-colors ${
-                    saved ? 'bg-red-50 border-red-200 text-red-500' : 'bg-gray-50 border-gray-200 text-gray-500 hover:bg-red-50 hover:border-red-200 hover:text-red-500'
+                  onClick={toggleFavorite}
+                  disabled={favoriteLoading}
+                  className={`w-11 h-11 border rounded-xl flex items-center justify-center transition-colors disabled:opacity-50 ${
+                    isFavorited ? 'bg-red-50 border-red-200 text-red-500' : 'bg-gray-50 border-gray-200 text-gray-500 hover:bg-red-50 hover:border-red-200 hover:text-red-500'
                   }`}
                 >
-                  <Heart className={`w-5 h-5 ${saved ? 'fill-current' : ''}`} />
+                  <Heart className={`w-5 h-5 ${isFavorited ? 'fill-current' : ''}`} />
                 </button>
-                <button className="w-11 h-11 bg-gray-50 border border-gray-200 rounded-xl flex items-center justify-center hover:bg-blue-50 hover:border-blue-200 hover:text-blue-500 transition-colors text-gray-500">
+                <button
+                  onClick={handleShare}
+                  className="w-11 h-11 bg-gray-50 border border-gray-200 rounded-xl flex items-center justify-center hover:bg-blue-50 hover:border-blue-200 hover:text-blue-500 transition-colors text-gray-500"
+                >
                   <Share2 className="w-5 h-5" />
                 </button>
               </div>

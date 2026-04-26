@@ -409,15 +409,43 @@ export default function CourseForm() {
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1.5">
               <Video className="w-4 h-4 inline mr-1" />
-              视频链接
+              课程视频
             </label>
-            <input
-              type="url"
-              value={form.video_url}
-              onChange={e => updateField('video_url', e.target.value)}
-              className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 outline-none"
-              placeholder="输入视频 URL（可选）"
-            />
+            {form.video_url ? (
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg">
+                  <Video className="w-4 h-4 text-primary-500" />
+                  <span className="text-sm text-gray-600 truncate flex-1">{form.video_url}</span>
+                  <button type="button" onClick={() => updateField('video_url', '')} className="text-gray-400 hover:text-red-500">
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+                <input
+                  type="url"
+                  value={form.video_url}
+                  onChange={e => updateField('video_url', e.target.value)}
+                  className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 outline-none"
+                  placeholder="或替换为视频 URL"
+                />
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <FileUpload
+                  category="video"
+                  accept="video/mp4,video/webm,video/quicktime"
+                  placeholder="点击或拖拽上传视频（MP4/WebM，最大200MB）"
+                  maxSize={200 * 1024 * 1024}
+                  onSuccess={(result) => updateField('video_url', result.url)}
+                />
+                <input
+                  type="url"
+                  value={form.video_url}
+                  onChange={e => updateField('video_url', e.target.value)}
+                  className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 outline-none"
+                  placeholder="或输入视频 URL（YouTube/Bilibili）"
+                />
+              </div>
+            )}
           </div>
 
           {/* 课程价格 */}

@@ -12,37 +12,48 @@ router.get('/', async (req, res) => {
     const pageLimit = Math.min(Number(limit) || Number(pageSizeParam) || 20, 50);
     const page = Number(pageParam) || 1;
 
-    let sql = 'SELECT * FROM courses WHERE status = "active" AND (deleted_at IS NULL)';
+    // JOIN mentor_profiles 获取最新的导师头像
+    let sql = `SELECT c.*, mp.avatar AS mentor_avatar FROM courses c
+               LEFT JOIN mentor_profiles mp ON c.mentor_id = mp.id
+               WHERE c.status = 'active' AND (c.deleted_at IS NULL)`;
     const params = [];
 
     if (category) {
-      sql += ' AND category = ?';
+      sql += ' AND c.category = ?';
       params.push(category);
     }
     if (difficulty) {
-      sql += ' AND difficulty = ?';
+      sql += ' AND c.difficulty = ?';
       params.push(difficulty);
     }
     if (keyword) {
-      sql += ' AND (title LIKE ? OR mentor_name LIKE ? OR JSON_SEARCH(tags, "one", ?) IS NOT NULL)';
+      sql += ' AND (c.title LIKE ? OR c.mentor_name LIKE ? OR JSON_SEARCH(c.tags, "one", ?) IS NOT NULL)';
       const kw = `%${keyword}%`;
       params.push(kw, kw, `%${keyword}%`);
     }
 
     // 获取总数
-    let countSql = sql.replace('SELECT *', 'SELECT COUNT(*) as total');
-    const [countResult] = await pool.query(countSql, params);
+    let countSql = `SELECT COUNT(*) as total FROM courses c WHERE c.status = 'active' AND (c.deleted_at IS NULL)`;
+    const countParams = [];
+    if (category) { countSql += ' AND c.category = ?'; countParams.push(category); }
+    if (difficulty) { countSql += ' AND c.difficulty = ?'; countParams.push(difficulty); }
+    if (keyword) {
+      countSql += ' AND (c.title LIKE ? OR c.mentor_name LIKE ? OR JSON_SEARCH(c.tags, "one", ?) IS NOT NULL)';
+      const kw = `%${keyword}%`;
+      countParams.push(kw, kw, `%${keyword}%`);
+    }
+    const [countResult] = await pool.query(countSql, countParams);
     const total = countResult[0]?.total || 0;
 
     // 支持 page+pageSize 分页（前端默认）和 cursor 游标分页
     if (cursor && !isNaN(Number(cursor))) {
-      sql += ' AND id < ?';
+      sql += ' AND c.id < ?';
       params.push(Number(cursor));
-      sql += ' ORDER BY id DESC LIMIT ?';
+      sql += ' ORDER BY c.id DESC LIMIT ?';
       params.push(pageLimit + 1);
     } else {
       const offset = (page - 1) * pageLimit;
-      sql += ' ORDER BY id DESC LIMIT ? OFFSET ?';
+      sql += ' ORDER BY c.id DESC LIMIT ? OFFSET ?';
       params.push(pageLimit, offset);
     }
 
@@ -64,6 +75,8 @@ router.get('/', async (req, res) => {
       views: formatViews(course.views),
       rating: String(course.rating),
       mentor: course.mentor_name,
+      // 优先使用 mentor_profiles 表的最新头像
+      mentor_avatar: course.mentor_avatar || '',
     }));
 
     res.json({
@@ -87,7 +100,13 @@ router.get('/', async (req, res) => {
 // GET /api/courses/:id - 获取单个课程详情
 router.get('/:id', async (req, res) => {
   try {
-    const [rows] = await pool.query('SELECT * FROM courses WHERE id = ? AND deleted_at IS NULL', [req.params.id]);
+    // JOIN mentor_profiles 获取最新的导师头像
+    const [rows] = await pool.query(
+      `SELECT c.*, mp.avatar AS mentor_avatar FROM courses c
+       LEFT JOIN mentor_profiles mp ON c.mentor_id = mp.id
+       WHERE c.id = ? AND c.deleted_at IS NULL`,
+      [req.params.id]
+    );
     if (rows.length === 0) {
       return res.status(404).json({ code: 404, message: '课程不存在' });
     }
@@ -97,6 +116,7 @@ router.get('/:id', async (req, res) => {
     course.views = formatViews(course.views);
     course.rating = String(course.rating);
     course.mentor = course.mentor_name;
+    course.mentor_avatar = course.mentor_avatar || '';
 
     // 查询点赞数
     try {

@@ -37,10 +37,10 @@ export default function SceneBanner() {
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
             <Link
-              to="/guidance"
+              to="/mentors"
               className="inline-flex items-center gap-2 bg-white text-gray-900 rounded-full px-7 py-3 font-semibold hover:bg-gray-100 transition-colors shadow-lg hover:-translate-y-0.5 hover:shadow-xl transition-all duration-300 text-sm"
             >
-              了解更多关于启航
+              咨询导师
               <ArrowRight className="w-4 h-4" />
             </Link>
             <Link

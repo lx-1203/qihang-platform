@@ -41,7 +41,7 @@ router.get('/profile', async (req, res) => {
 });
 
 // 3.1 POST /api/company/profile - 创建/更新企业资料
-// 注：companies 表字段：company_name, industry, scale, description, logo, website, address, verify_status, verify_remark
+// 注：companies 表字段：company_name, industry, scale, description, logo, website, address, phone, wechat, contact_email
 router.post('/profile', async (req, res) => {
   try {
     const {
@@ -52,6 +52,9 @@ router.post('/profile', async (req, res) => {
       logo,
       website,
       address,
+      phone,
+      wechat,
+      contact_email,
     } = req.body;
 
     if (!company_name) {
@@ -71,7 +74,8 @@ router.post('/profile', async (req, res) => {
       await pool.query(
         `UPDATE companies SET
           company_name = ?, industry = ?, scale = ?, description = ?,
-          logo = ?, website = ?, address = ?
+          logo = ?, website = ?, address = ?,
+          phone = ?, wechat = ?, contact_email = ?
         WHERE user_id = ?`,
         [
           company_name,
@@ -81,9 +85,17 @@ router.post('/profile', async (req, res) => {
           logo || '',
           website || '',
           address || '',
+          phone || '',
+          wechat || '',
+          contact_email || '',
           req.user.id,
         ]
       );
+
+      // 同步更新 users 表的头像
+      if (logo !== undefined) {
+        await pool.query('UPDATE users SET avatar = ? WHERE id = ?', [logo || '', req.user.id]);
+      }
 
       const [updated] = await pool.query(
         'SELECT * FROM companies WHERE user_id = ?',
@@ -95,8 +107,8 @@ router.post('/profile', async (req, res) => {
       // 创建
       const [result] = await pool.query(
         `INSERT INTO companies
-          (user_id, company_name, industry, scale, description, logo, website, address)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+          (user_id, company_name, industry, scale, description, logo, website, address, phone, wechat, contact_email)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           req.user.id,
           company_name,
@@ -106,6 +118,9 @@ router.post('/profile', async (req, res) => {
           logo || '',
           website || '',
           address || '',
+          phone || '',
+          wechat || '',
+          contact_email || '',
         ]
       );
 
@@ -113,6 +128,11 @@ router.post('/profile', async (req, res) => {
         'SELECT * FROM companies WHERE id = ?',
         [result.insertId]
       );
+
+      // 同步更新 users 表的头像
+      if (logo) {
+        await pool.query('UPDATE users SET avatar = ? WHERE id = ?', [logo, req.user.id]);
+      }
 
       // 通知管理员有新企业认证申请
       try {

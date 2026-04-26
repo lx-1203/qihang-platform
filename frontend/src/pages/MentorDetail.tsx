@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { Star, Clock, Video, ChevronRight, MessageCircle, Calendar, Loader2, AlertCircle, Users } from 'lucide-react';
+import { Star, Clock, Video, ChevronRight, MessageCircle, Calendar, Loader2, AlertCircle, Users, Phone, Mail, MessageSquareText } from 'lucide-react';
 import { motion } from 'framer-motion';
 import http from '@/api/http';
 import { DEFAULT_AVATAR } from '@/constants';
@@ -23,6 +23,9 @@ interface MentorDetailData {
   price: number;
   available_time: string[];
   status: number;
+  phone: string;
+  wechat: string;
+  contact_email: string;
 }
 
 // 导师课程（从 courses 表关联查询）
@@ -78,6 +81,13 @@ export default function MentorDetail() {
     if (id) {
       fetchMentor();
     }
+  }, [id]);
+
+  // 页面重新可见时刷新（头像变更后同步）
+  useEffect(() => {
+    const handleFocus = () => { if (id) { http.get(`/mentors/${id}`).then(res => { const d = res.data?.data; if (d) setMentor(d); }).catch(() => {}); } };
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
   }, [id]);
 
   // 获取导师的课程
@@ -442,6 +452,48 @@ export default function MentorDetail() {
             <div className="mt-6 pt-6 border-t border-gray-100 text-center">
               <p className="text-xs text-gray-400">平台保障 · 不满意退款 · 隐私保护</p>
             </div>
+
+            {/* 联系方式 */}
+            {(mentor.phone || mentor.wechat || mentor.contact_email) && (
+              <div className="mt-6 pt-6 border-t border-gray-100">
+                <h3 className="text-sm font-bold text-gray-900 mb-3">联系方式</h3>
+                <div className="space-y-2.5">
+                  {mentor.phone && (
+                    <div className="flex items-center gap-2.5 text-sm">
+                      <div className="w-7 h-7 rounded-lg bg-blue-50 flex items-center justify-center flex-shrink-0">
+                        <Phone size={14} className="text-blue-600" />
+                      </div>
+                      <div>
+                        <p className="text-[10px] text-gray-400">电话</p>
+                        <p className="text-gray-700 font-medium">{mentor.phone}</p>
+                      </div>
+                    </div>
+                  )}
+                  {mentor.wechat && (
+                    <div className="flex items-center gap-2.5 text-sm">
+                      <div className="w-7 h-7 rounded-lg bg-green-50 flex items-center justify-center flex-shrink-0">
+                        <MessageSquareText size={14} className="text-green-600" />
+                      </div>
+                      <div>
+                        <p className="text-[10px] text-gray-400">微信</p>
+                        <p className="text-gray-700 font-medium">{mentor.wechat}</p>
+                      </div>
+                    </div>
+                  )}
+                  {mentor.contact_email && (
+                    <div className="flex items-center gap-2.5 text-sm">
+                      <div className="w-7 h-7 rounded-lg bg-amber-50 flex items-center justify-center flex-shrink-0">
+                        <Mail size={14} className="text-amber-600" />
+                      </div>
+                      <div>
+                        <p className="text-[10px] text-gray-400">邮箱</p>
+                        <p className="text-gray-700 font-medium">{mentor.contact_email}</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
           </motion.div>
         </div>
       </div>

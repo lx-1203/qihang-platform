@@ -60,6 +60,9 @@ router.get('/', async (req, res) => {
       price: mentor.price,
       bio: mentor.bio,
       user_id: mentor.user_id,
+      phone: mentor.phone || '',
+      wechat: mentor.wechat || '',
+      contact_email: mentor.contact_email || '',
     }));
 
     res.json({
@@ -96,6 +99,9 @@ router.get('/:id', async (req, res) => {
     mentor.expertise = typeof mentor.expertise === 'string' ? JSON.parse(mentor.expertise) : (mentor.expertise || []);
     mentor.available_time = typeof mentor.available_time === 'string' ? JSON.parse(mentor.available_time) : (mentor.available_time || []);
     mentor.rating = String(mentor.rating);
+    mentor.phone = mentor.phone || '';
+    mentor.wechat = mentor.wechat || '';
+    mentor.contact_email = mentor.contact_email || '';
 
     res.json({ code: 200, data: mentor });
   } catch (err) {

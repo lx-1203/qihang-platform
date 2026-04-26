@@ -65,11 +65,17 @@ export const useConfigStore = create<ConfigState>()((set, get) => ({
     set({ loading: true, error: null });
 
     try {
-      const res = await http.get('/config/public');
+      // forceRefresh 时加时间戳防浏览器/CDN 缓存
+      const url = forceRefresh ? `/config/public?t=${Date.now()}` : '/config/public';
+      const res = await http.get(url);
       if (res.data?.code === 200 && res.data.data) {
         const configs = res.data.data as ConfigMap;
         saveCache(configs);
         set({ configs, loaded: true, loading: false, error: null });
+        // forceRefresh 时清除旧缓存，防止下次启动加载过期数据
+        if (forceRefresh) {
+          try { localStorage.setItem(CACHE_TS_KEY, String(Date.now())); } catch { /* ignore */ }
+        }
       } else {
         // 非标准响应，使用缓存
         set({ loaded: true, loading: false, error: '配置响应格式异常' });

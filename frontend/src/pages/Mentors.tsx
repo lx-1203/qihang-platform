@@ -59,6 +59,13 @@ export default function Mentors() {
     fetchMentors();
   }, []);
 
+  // 页面重新可见时刷新（Profile 页改头像后返回同步）
+  useEffect(() => {
+    const handleFocus = () => fetchMentors();
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
+  }, []);
+
   async function fetchMentors() {
     try {
       setLoading(true);

@@ -26,6 +26,7 @@ interface CourseItem {
   tags?: string[];
   mentor?: string;
   mentor_name?: string;
+  mentor_avatar?: string;
   duration?: string;
   rating?: string;
   views?: number;
@@ -68,6 +69,13 @@ export default function Courses() {
 
   useEffect(() => {
     fetchCourses();
+  }, [fetchCourses]);
+
+  // 页面重新可见时刷新数据（Profile 页修改头像后返回时同步）
+  useEffect(() => {
+    const handleFocus = () => fetchCourses();
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
   }, [fetchCourses]);
 
   const handleSearch = () => {

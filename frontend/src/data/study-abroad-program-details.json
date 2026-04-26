@@ -341,6 +341,151 @@
         ],
         "topEmployers": ["Grab", "Shopee", "ByteDance", "Google", "Meta", "DBS Bank", "GovTech", "A*STAR"]
       }
+    },
+    {
+      "id": 10,
+      "school": "麻省理工学院",
+      "schoolEn": "Massachusetts Institute of Technology",
+      "program": "经济学 PhD",
+      "programEn": "Economics (PhD)",
+      "country": "美国",
+      "city": "Cambridge, MA",
+      "ranking": 1,
+      "subjectRanking": 1,
+      "deadline": "2025-12-15",
+      "tuition": "$61,440/年",
+      "tuitionCNY": "约 ¥440,000/年",
+      "duration": "4-5年（全日制）",
+      "intake": "2026年秋季",
+      "classSize": 25,
+      "intlRatio": "45%",
+      "employRate": "100%",
+      "avgSalary": "$180,000/年起",
+      "logo": "",
+      "cover": "",
+      "tags": ["诺贝尔奖摇篮", "学术顶尖", "全奖资助", "STEM", "博士项目"],
+      "description": "MIT经济学系是全球最顶尖的经济学研究机构之一，培养了8位诺贝尔经济学奖得主。项目采用纯研究导向培养模式，前两年完成核心课程训练（微观、宏观、计量三大核心），之后专注于原创性学术研究。\n\nMIT经济系拥有无与伦比的学术资源：与NBER（美国国家经济研究局）的深度合作、定期邀请全球顶级学者讲学、以及与哈佛大学的跨校选课机制。系内教授如Daron Acemoglu（2024诺贝尔奖得主）、Joshua Angrist（诺贝尔奖得主）、Esther Duflo（诺贝尔奖得主）等均为各自领域的开创性学者。\n\n该项目提供全额资助，学生无需为学费和生活费发愁，可以全身心投入学术研究。毕业生在学术界和业界均有极强的竞争力，多数进入Top 30高校任教或进入美联储、世界银行等国际机构担任核心职位。",
+      "highlights": [
+        { "text": "QS经济学学科排名全球第1", "icon": "Award" },
+        { "text": "培养了8位诺贝尔经济学奖得主（含2024年Acemoglu）", "icon": "Star" },
+        { "text": "100%毕业生就业/教职率", "icon": "Briefcase" },
+        { "text": "全额资助：学费全免 + 生活津贴$42,000/年", "icon": "DollarSign" },
+        { "text": "与哈佛大学跨校选课机制", "icon": "GraduationCap" },
+        { "text": "NBER深度合作，与顶级学者共事", "icon": "Users" },
+        { "text": "地处Cambridge，波士顿学术圈核心", "icon": "MapPin" },
+        { "text": "研究领域覆盖几乎所有经济学分支", "icon": "Target" }
+      ],
+      "requirements": {
+        "gpa": "GPA 3.8+/4.0（985/211均分90+，海本First Class Honours）",
+        "language": "TOEFL 100+ 或 IELTS 7.0+",
+        "background": "经济学或数学等强量化本科学位。需修过中级微观、中级宏观、计量经济学、多元微积分、线性代数、概率统计等先修课程。",
+        "other": "3封来自知名经济学家的强推荐信、研究计划（Research Proposal）、写作样本（1-2篇学术论文）、GRE（建议325+）",
+        "workExp": "不要求工作经验，但有独立研究经历（如发表论文、NBER暑期研究）是核心竞争力",
+        "interview": "部分申请者收到Zoom面试邀请（2-3位教授组成的面试小组），通常在2月进行"
+      },
+      "materials": [
+        { "name": "在线申请表", "required": true, "tip": "通过MIT Graduate Admissions提交" },
+        { "name": "成绩单（中英文官方）", "required": true, "tip": "需学校盖章，GPA 3.8+ 有竞争力" },
+        { "name": "3封推荐信", "required": true, "tip": "必须来自知名经济学家，强调研究潜力" },
+        { "name": "个人陈述 / 研究计划", "required": true, "tip": "阐述研究兴趣、方法论偏好和职业目标" },
+        { "name": "写作样本（学术论文）", "required": true, "tip": "1-2篇已发表或工作论文，展示研究能力" },
+        { "name": "GRE成绩", "required": true, "tip": "建议Quant 170, Verbal 160+, AW 5.0+" },
+        { "name": "托福/雅思成绩", "required": true, "tip": "托福100+ 或 雅思7.0+" },
+        { "name": "CV / 简历", "required": true, "tip": "突出研究经历、发表论文和量化课程" },
+        { "name": "本科先修课程说明", "required": false, "tip": "需修过中级微观、中级宏观、计量经济学、多元微积分、线性代数、概率统计" }
+      ],
+      "timeline": [
+        { "date": "2025-09-01", "event": "网申系统开放", "detail": "MIT Graduate Admissions在线申请系统开放" },
+        { "date": "2025-10-01", "event": "提前联系导师（建议）", "detail": "了解教授研究方向，有助于撰写Research Proposal" },
+        { "date": "2025-12-01", "event": "第一轮截止（建议）", "detail": "强烈建议在此前提交，录取概率最高" },
+        { "date": "2025-12-15", "event": "最终截止日期", "detail": "所有申请材料须在此日期前提交" },
+        { "date": "2026-02-15", "event": "面试通知", "detail": "部分申请者收到Zoom面试邀请" },
+        { "date": "2026-03-01", "event": "录取结果公布", "detail": "录取结果通过邮件和官网公布，同时发送全额资助方案" },
+        { "date": "2026-04-15", "event": "确认入学截止", "detail": "需在此日期前确认是否接受offer" },
+        { "date": "2026-09-01", "event": "秋季开学", "detail": "博士新生入学，开始核心课程训练" }
+      ],
+      "curriculum": [
+        {
+          "semester": "第一年（秋季）",
+          "courses": [
+            { "name": "微观经济学理论 I (Microeconomic Theory I)", "credits": 12, "type": "必修" },
+            { "name": "宏观经济学理论 I (Macroeconomic Theory I)", "credits": 12, "type": "必修" },
+            { "name": "计量经济学 I (Econometrics I)", "credits": 12, "type": "必修" },
+            { "name": "数学经济学 (Mathematics for Economists)", "credits": 6, "type": "必修" }
+          ]
+        },
+        {
+          "semester": "第一年（春季）",
+          "courses": [
+            { "name": "微观经济学理论 II (Microeconomic Theory II)", "credits": 12, "type": "必修" },
+            { "name": "宏观经济学理论 II (Macroeconomic Theory II)", "credits": 12, "type": "必修" },
+            { "name": "计量经济学 II (Econometrics II)", "credits": 12, "type": "必修" },
+            { "name": "研究研讨会 (Research Seminar)", "credits": 6, "type": "必修" }
+          ]
+        },
+        {
+          "semester": "第二年（秋季）",
+          "courses": [
+            { "name": "高级微观经济学 (Advanced Microeconomics)", "credits": 12, "type": "核心选修" },
+            { "name": "高级宏观经济学 (Advanced Macroeconomics)", "credits": 12, "type": "核心选修" },
+            { "name": "字段课程 I (Field Course I)", "credits": 12, "type": "选修" },
+            { "name": "助教培训 (TA Training)", "credits": 3, "type": "必修" }
+          ]
+        },
+        {
+          "semester": "第二年（春季）",
+          "courses": [
+            { "name": "字段课程 II (Field Course II)", "credits": 12, "type": "选修" },
+            { "name": "字段课程 III (Field Course III)", "credits": 12, "type": "选修" },
+            { "name": "论文工作坊 (Dissertation Workshop)", "credits": 6, "type": "必修" },
+            { "name": "资格考试准备 (Qualifying Exam Prep)", "credits": 6, "type": "必修" }
+          ]
+        },
+        {
+          "semester": "第三年及以后",
+          "courses": [
+            { "name": "博士论文研究 (PhD Dissertation Research)", "credits": 24, "type": "必修" },
+            { "name": "学术发表研讨会 (Job Market Seminar)", "credits": 6, "type": "必修" },
+            { "name": "选修领域课程", "credits": 12, "type": "选修" }
+          ]
+        }
+      ],
+      "offers": [
+        { "id": 1, "background": "985", "university": "北京大学 经济学", "gpa": "3.9/4.0", "ielts": "8.0", "gre": "332", "internship": "", "research": "3段科研+1篇SSCI", "result": "admitted", "date": "2026-03-01", "scholarship": "全奖 $103,000/年" },
+        { "id": 2, "background": "985", "university": "清华大学 金融学", "gpa": "3.85/4.0", "ielts": "7.5", "gre": "330", "internship": "", "research": "2段科研+NBER暑期研究", "result": "admitted", "date": "2026-03-01", "scholarship": "全奖 $103,000/年" },
+        { "id": 3, "background": "海本", "university": "LSE 经济学", "gpa": "First Class Honours", "ielts": "", "gre": "328", "internship": "世界银行实习", "research": "2段科研+1篇工作论文", "result": "admitted", "date": "2026-03-01", "scholarship": "全奖 $103,000/年" },
+        { "id": 4, "background": "985", "university": "复旦大学 数学与应用数学", "gpa": "3.88/4.0", "ielts": "7.5", "gre": "331", "internship": "", "research": "4段科研+2篇论文（1篇AER二作）", "result": "admitted", "date": "2026-03-01", "scholarship": "全奖 $103,000/年 + NSF Fellowship提名" },
+        { "id": 5, "background": "985", "university": "中国人民大学 经济学", "gpa": "3.82/4.0", "ielts": "7.0", "gre": "329", "internship": "", "research": "2段科研+1篇工作论文", "result": "waitlisted", "date": "2026-03-01", "scholarship": "" },
+        { "id": 6, "background": "211", "university": "上海财经大学 经济学", "gpa": "3.90/4.0", "ielts": "7.5", "gre": "327", "internship": "", "research": "3段科研+2篇论文", "result": "rejected", "date": "2026-03-01", "scholarship": "" },
+        { "id": 7, "background": "海本", "university": "UC Berkeley 经济学", "gpa": "3.92/4.0", "ielts": "", "gre": "333", "internship": "美联储旧金山联储实习", "research": "3段科研+1篇NBER工作论文", "result": "admitted", "date": "2026-03-01", "scholarship": "全奖 $103,000/年" },
+        { "id": 8, "background": "985", "university": "北京大学 数学科学学院", "gpa": "3.95/4.0", "ielts": "8.0", "gre": "334", "internship": "", "research": "5段科研+3篇论文（含1篇QJE二作）", "result": "admitted", "date": "2026-03-01", "scholarship": "全奖 $103,000/年 + Ford Foundation Fellowship" }
+      ],
+      "relatedPrograms": [
+        { "id": 99, "school": "哈佛大学", "program": "经济学 PhD", "ranking": 3 },
+        { "id": 100, "school": "斯坦福大学", "program": "经济学 PhD", "ranking": 5 },
+        { "id": 101, "school": "芝加哥大学", "program": "经济学 PhD", "ranking": 10 },
+        { "id": 102, "school": "耶鲁大学", "program": "经济学 PhD", "ranking": 16 }
+      ],
+      "employmentData": {
+        "industries": [
+          { "name": "学术界（高校教职）", "percent": 55 },
+          { "name": "中央银行/政府机构", "percent": 20 },
+          { "name": "金融科技/量化交易", "percent": 12 },
+          { "name": "咨询公司", "percent": 8 },
+          { "name": "国际组织", "percent": 5 }
+        ],
+        "topEmployers": [
+          "MIT / Harvard / Stanford 等Top高校",
+          "美联储（Fed）",
+          "世界银行（World Bank）",
+          "IMF（国际货币基金组织）",
+          "Jane Street / Two Sigma",
+          "麦肯锡 / 波士顿咨询",
+          "Google / Amazon 经济学研究团队"
+        ]
+      },
+      "scholarship": "MIT经济学博士项目提供全额资助（Full Funding）：\n- 学费全免（约$61,440/年）\n- 生活津贴：约$42,000/年（含TA/RA）\n- 健康保险全覆盖\n- 学术会议差旅资助\n- 第5年起可获Post-Preceptorial Fellowship\n- 外部奖学金：如 NSF Graduate Research Fellowship、Ford Foundation Fellowship",
+      "website": "https://economics.mit.edu/academics/phd-program"
     }
   ]
 }

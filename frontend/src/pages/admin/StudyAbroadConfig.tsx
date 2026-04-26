@@ -325,9 +325,11 @@ export default function StudyAbroadConfig() {
                           placeholder="点击或拖拽上传轮播图片"
                           className="mt-2"
                           onSuccess={(result) => {
-                            const newSlides = [...heroSlides];
-                            newSlides[index].image = result.url;
-                            setHeroSlides(newSlides);
+                            setHeroSlides(prev => {
+                              const next = [...prev];
+                              next[index] = { ...next[index], image: result.url };
+                              return next;
+                            });
                           }}
                         />
                       </div>
@@ -430,9 +432,11 @@ export default function StudyAbroadConfig() {
                         placeholder="上传服务卡片图片"
                         className="mt-2"
                         onSuccess={(result) => {
-                          const newCards = [...serviceCards];
-                          newCards[index].image = result.url;
-                          setServiceCards(newCards);
+                          setServiceCards(prev => {
+                            const next = [...prev];
+                            next[index] = { ...next[index], image: result.url };
+                            return next;
+                          });
                         }}
                       />
                     </div>
@@ -609,9 +613,11 @@ export default function StudyAbroadConfig() {
                           accept="image/*"
                           placeholder="上传学员照片"
                           onSuccess={(result) => {
-                            const newStories = [...studentStories];
-                            newStories[index].image = result.url;
-                            setStudentStories(newStories);
+                            setStudentStories(prev => {
+                              const next = [...prev];
+                              next[index] = { ...next[index], image: result.url };
+                              return next;
+                            });
                           }}
                         />
                       </div>
@@ -716,9 +722,11 @@ export default function StudyAbroadConfig() {
                         accept="image/*"
                         placeholder="上传背景图片"
                         onSuccess={(result) => {
-                          const newQuotes = [...newcomerQuotes];
-                          newQuotes[index].image = result.url;
-                          setNewcomerQuotes(newQuotes);
+                          setNewcomerQuotes(prev => {
+                            const next = [...prev];
+                            next[index] = { ...next[index], image: result.url };
+                            return next;
+                          });
                         }}
                       />
                     </div>
