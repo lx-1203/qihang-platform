@@ -18,6 +18,8 @@ interface Testimonial {
 }
 
 const DEFAULT_TESTIMONIALS: Testimonial[] = [
+  // ⚠️ 演示数据：当后端 /testimonials 接口无数据时作为 fallback 展示
+  // 上线后应通过管理后台录入真实学员评价
   {
     name: '张同学',
     avatar: '张',
@@ -59,14 +61,16 @@ const DEFAULT_TESTIMONIALS: Testimonial[] = [
 export default function SocialProofWall() {
   const { ref, isInView } = useInViewAnimation({ threshold: 0.15 });
   const [testimonials, setTestimonials] = useState<Testimonial[]>(DEFAULT_TESTIMONIALS);
+  const [isUsingDefaults, setIsUsingDefaults] = useState(true);
 
   // 尝试从后端获取评价数据，失败则使用默认值
   useEffect(() => {
-    http.get('/testimonials')
+    http.get('/config/social-proof')
       .then(res => {
         const list = res.data?.data?.list || res.data?.data;
         if (Array.isArray(list) && list.length > 0) {
           setTestimonials(list);
+          setIsUsingDefaults(false);
         }
       })
       .catch(() => {
@@ -96,6 +100,9 @@ export default function SocialProofWall() {
           <div className="inline-flex items-center gap-2 bg-yellow-50 text-yellow-700 px-4 py-1.5 rounded-full text-sm font-medium mb-4 border border-yellow-100">
             <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
             学员真实评价
+            {isUsingDefaults && (
+              <span className="ml-1 px-1.5 py-0.5 bg-amber-200 text-amber-800 rounded text-[10px] font-bold">演示数据</span>
+            )}
           </div>
           <h2 className="text-2xl md:text-3xl font-bold text-gray-900">
             他们在启航平台找到了方向

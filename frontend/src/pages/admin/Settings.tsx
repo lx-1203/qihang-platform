@@ -109,7 +109,7 @@ export default function AdminSettings() {
       setFetchErrorCode(null);
       const res = await http.get('/admin/audit-logs', { params: { page: 1, pageSize: 50 } });
       if (res.data?.code === 200 && res.data.data) {
-        setAuditLogs(res.data.data.list || res.data.data);
+        setAuditLogs(res.data?.data?.list || res.data?.data || []);
       } else {
         setAuditLogs([]);
         setFetchError('获取审计日志失败：响应格式异常');
@@ -149,7 +149,7 @@ export default function AdminSettings() {
         setSaveSuccess(key);
         toast.success('保存成功', `${cfg?.label || key} 已更新`);
         // 刷新配置 store 使前端页面生效
-        await refreshConfig();
+        await refreshConfig(true);
         setTimeout(() => setSaveSuccess(null), 2000);
         setEditingKey(null);
       } else {
@@ -507,18 +507,18 @@ export default function AdminSettings() {
                       log.action === 'delete' ? 'bg-red-100 text-red-700' :
                       log.action === 'login' ? 'bg-primary-100 text-primary-700' : 'bg-gray-100 text-gray-700'
                     }`}>
-                      {ACTION_MAP[log.action]?.charAt(0) || log.action.charAt(0)}
+                      {ACTION_MAP[log.action]?.charAt(0) || (log.action || '?').charAt(0)}
                     </div>
                     <div>
                       <p className="text-sm text-gray-900">
-                        <span className="font-medium">{log.operator_name}</span>
-                        <span className="text-gray-500"> {ACTION_MAP[log.action] || log.action}了 </span>
-                        <span className="font-medium">{TARGET_MAP[log.target_type] || log.target_type}</span>
+                        <span className="font-medium">{log.operator_name || '未知用户'}</span>
+                        <span className="text-gray-500"> {ACTION_MAP[log.action] || log.action || '操作'}了 </span>
+                        <span className="font-medium">{TARGET_MAP[log.target_type] || log.target_type || '未知'}</span>
                         {log.target_id && <span className="text-gray-500"> ID{log.target_id}</span>}
                       </p>
                       {log.before_data && (
                         <p className="text-xs text-gray-400 mt-1 font-mono truncate max-w-lg">
-                          变更: {log.before_data} → {log.after_data}
+                          变更: {log.before_data} → {log.after_data || ''}
                         </p>
                       )}
                     </div>

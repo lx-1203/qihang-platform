@@ -14,7 +14,7 @@ const router = Router();
 router.get('/', async (req, res) => {
   try {
     const [rows] = await pool.query(
-      'SELECT * FROM campus_timeline ORDER BY event_date ASC'
+      'SELECT * FROM campus_timeline ORDER BY sort_order ASC, id ASC'
     );
     res.json({ code: 200, data: rows });
   } catch (err) {

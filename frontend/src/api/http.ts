@@ -5,8 +5,11 @@ import { showToast } from '../components/ui/ToastContainer';
 // ====== Axios 实例配置 ======
 // baseURL 已含 /api 前缀，Vite 会将其代理到 localhost:3001
 
+// 🔴 API 前缀常量：供 http 实例和 raw fetch 共用（避免硬编码）
+export const API_PREFIX = '/api';
+
 const http = axios.create({
-  baseURL: '/api',
+  baseURL: API_PREFIX,
   headers: {
     'Content-Type': 'application/json',
     'X-Requested-With': 'XMLHttpRequest',  // CSRF 防护标头
@@ -72,7 +75,7 @@ http.interceptors.response.use(
         config._retry = true;
 
         try {
-          const res = await axios.post('/api/auth/refresh', { refreshToken });
+          const res = await axios.post(`${API_PREFIX}/auth/refresh`, { refreshToken });
           if (res.data?.code === 200) {
             const { token: newToken, refreshToken: newRefreshToken } = res.data.data;
             useAuthStore.getState().updateToken(newToken, newRefreshToken);

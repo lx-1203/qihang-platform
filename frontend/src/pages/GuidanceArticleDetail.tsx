@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { ChevronRight, Eye, Clock, User, ArrowLeft, Loader2, FileText } from 'lucide-react';
+import { ChevronRight, Eye, Clock, User, ArrowLeft, Loader2, FileText, Image, Heart, Share2, Check } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { marked } from 'marked';
 import DOMPurify from 'dompurify';
 import http from '@/api/http';
+import { useAuthStore } from '@/store/auth';
+import { showToast } from '@/components/ui/ToastContainer';
 
 interface ArticleDetail {
   id: number;
@@ -28,14 +30,21 @@ const categoryColors: Record<string, string> = {
 
 export default function GuidanceArticleDetail() {
   const { id } = useParams<{ id: string }>();
+  const { isAuthenticated } = useAuthStore();
   const [article, setArticle] = useState<ArticleDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [coverError, setCoverError] = useState(false);
+  const [isFavorited, setIsFavorited] = useState(false);
+  const [favoriteId, setFavoriteId] = useState<number | null>(null);
+  const [favoriteLoading, setFavoriteLoading] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     if (!id) return;
     setLoading(true);
     setError('');
+    setCoverError(false);
     http.get(`/articles/${id}`)
       .then(res => {
         if (res.data?.code === 200) {
@@ -51,6 +60,62 @@ export default function GuidanceArticleDetail() {
         setLoading(false);
       });
   }, [id]);
+
+  // 检查是否已收藏
+  useEffect(() => {
+    if (!isAuthenticated || !id) return;
+    http.get('/student/favorites', { params: { type: 'article' } })
+      .then(res => {
+        const favorites = res.data?.data?.favorites || res.data?.favorites || [];
+        const found = favorites.find((f: { target_type: string; target_id: number; id: number }) =>
+          f.target_type === 'article' && f.target_id === Number(id)
+        );
+        if (found) {
+          setIsFavorited(true);
+          setFavoriteId(found.id);
+        }
+      })
+      .catch(() => {});
+  }, [isAuthenticated, id]);
+
+  // 收藏/取消收藏
+  const handleFavorite = async () => {
+    if (!isAuthenticated) {
+      showToast({ type: 'warning', title: '请先登录', message: '登录后即可收藏文章' });
+      return;
+    }
+    if (favoriteLoading) return;
+    setFavoriteLoading(true);
+    try {
+      if (isFavorited && favoriteId) {
+        await http.delete(`/student/favorites/${favoriteId}`);
+        setIsFavorited(false);
+        setFavoriteId(null);
+        showToast({ type: 'success', title: '已取消收藏' });
+      } else {
+        const res = await http.post('/student/favorites', { target_type: 'article', target_id: Number(id) });
+        setIsFavorited(true);
+        setFavoriteId(res.data?.data?.id || null);
+        showToast({ type: 'success', title: '收藏成功' });
+      }
+    } catch {
+      showToast({ type: 'error', title: '操作失败', message: '请稍后重试' });
+    } finally {
+      setFavoriteLoading(false);
+    }
+  };
+
+  // 分享（复制链接）
+  const handleShare = async () => {
+    try {
+      await navigator.clipboard.writeText(window.location.href);
+      setCopied(true);
+      showToast({ type: 'success', title: '链接已复制', message: '可粘贴发送给好友' });
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      showToast({ type: 'error', title: '复制失败', message: '请手动复制地址栏链接' });
+    }
+  };
 
   const formatDate = (dateStr: string) => {
     const d = new Date(dateStr);
@@ -102,13 +167,18 @@ export default function GuidanceArticleDetail() {
           className="bg-white rounded-2xl overflow-hidden border border-gray-100 shadow-sm"
         >
           {/* 封面 */}
-          {article.cover && (
+          {article.cover && !coverError ? (
             <div className="h-72 sm:h-96 overflow-hidden">
               <img
                 src={article.cover}
                 alt={article.title}
                 className="w-full h-full object-cover"
+                onError={() => setCoverError(true)}
               />
+            </div>
+          ) : (
+            <div className="h-48 bg-gradient-to-br from-primary-100 to-primary-50 flex items-center justify-center">
+              <Image className="w-16 h-16 text-primary-300" />
             </div>
           )}
 
@@ -126,7 +196,7 @@ export default function GuidanceArticleDetail() {
             </h1>
 
             {/* 元信息 */}
-            <div className="flex flex-wrap items-center gap-6 text-sm text-gray-500 mb-10 pb-8 border-b border-gray-100">
+            <div className="flex flex-wrap items-center gap-6 text-sm text-gray-500 mb-6 pb-8 border-b border-gray-100">
               <span className="flex items-center gap-2">
                 <User className="w-5 h-5" />
                 {article.author}
@@ -139,6 +209,29 @@ export default function GuidanceArticleDetail() {
                 <Eye className="w-5 h-5" />
                 {article.view_count} 次阅读
               </span>
+            </div>
+
+            {/* 操作按钮 */}
+            <div className="flex items-center gap-3 mb-10 pb-8 border-b border-gray-100">
+              <button
+                onClick={handleFavorite}
+                disabled={favoriteLoading}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  isFavorited
+                    ? 'bg-red-50 text-red-600 border border-red-200'
+                    : 'bg-gray-50 text-gray-600 border border-gray-200 hover:bg-red-50 hover:text-red-600 hover:border-red-200'
+                } disabled:opacity-50`}
+              >
+                <Heart className={`w-4 h-4 ${isFavorited ? 'fill-current' : ''}`} />
+                {isFavorited ? '已收藏' : '收藏'}
+              </button>
+              <button
+                onClick={handleShare}
+                className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-gray-50 text-gray-600 border border-gray-200 hover:bg-primary-50 hover:text-primary-600 hover:border-primary-200 transition-colors"
+              >
+                {copied ? <Check className="w-4 h-4" /> : <Share2 className="w-4 h-4" />}
+                {copied ? '已复制' : '分享'}
+              </button>
             </div>
 
             {/* 正文 */}

@@ -5,7 +5,7 @@ import {
   CheckCircle2, AlertCircle, CircleDot, RefreshCw,
   MessageCircle, CalendarDays, User, ChevronDown,
   Loader2, Inbox, Zap, Mail, MailOpen, XCircle,
-  CheckSquare, Square, ChevronsUpDown
+  CheckSquare, Square, ChevronsUpDown, Info, Eye
 } from 'lucide-react';
 import http from '@/api/http';
 import { DEFAULT_AVATAR } from '@/constants';
@@ -14,6 +14,7 @@ import {
   adminSendMessage,
   adminMarkRead,
   adminChatStats,
+  adminAssignChat,
 } from '@/api/chat';
 import ChatBubble from '@/components/ChatBubble';
 import QuickReplies from '@/components/admin/QuickReplies';
@@ -129,6 +130,9 @@ export default function ChatManage() {
 
   // ====== 快捷回复面板 ======
   const [quickRepliesOpen, setQuickRepliesOpen] = useState(false);
+
+  // ====== 查看/管理模式 ======
+  const [viewMode, setViewMode] = useState<'view' | 'manage'>('view');
 
   // 搜索防抖：300ms
   useEffect(() => {
@@ -446,14 +450,56 @@ export default function ChatManage() {
           </h1>
           <p className="text-sm text-gray-500 mt-0.5">管理平台所有用户会话，及时回复用户咨询</p>
         </div>
-        <button
-          onClick={() => { fetchStats(); fetchConversations(); }}
-          className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-gray-600 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
-        >
-          <RefreshCw className="w-3.5 h-3.5" />
-          刷新
-        </button>
+        <div className="flex items-center gap-2">
+          {/* 查看/管理模式切换 */}
+          <div className="flex items-center bg-white border border-gray-200 rounded-lg overflow-hidden">
+            <button
+              onClick={() => setViewMode('view')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium transition-colors ${
+                viewMode === 'view'
+                  ? 'bg-primary-500 text-white'
+                  : 'text-gray-600 hover:bg-gray-50'
+              }`}
+            >
+              <MessageCircle className="w-3.5 h-3.5" />
+              查看模式
+            </button>
+            <button
+              onClick={() => setViewMode('manage')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium transition-colors ${
+                viewMode === 'manage'
+                  ? 'bg-primary-500 text-white'
+                  : 'text-gray-600 hover:bg-gray-50'
+              }`}
+            >
+              <Zap className="w-3.5 h-3.5" />
+              管理模式
+            </button>
+          </div>
+          <button
+            onClick={() => { fetchStats(); fetchConversations(); }}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-gray-600 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+          >
+            <RefreshCw className="w-3.5 h-3.5" />
+            刷新
+          </button>
+        </div>
       </div>
+
+      {/* ====== 客服功能说明横幅 ====== */}
+      <motion.div
+        initial={{ opacity: 0, y: -8 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="bg-blue-50 border border-blue-200 rounded-xl px-4 py-3 flex items-start gap-3"
+      >
+        <Info className="w-4 h-4 text-blue-600 flex-shrink-0 mt-0.5" />
+        <div>
+          <p className="text-sm text-blue-800">
+            <span className="font-medium">客服功能说明：</span>
+            本页面供管理员监控和管理所有咨询会话。客服专员可通过「客服工作台」（/agent/workbench）独立处理已分配的会话。管理员可在此查看全局数据、分配会话给客服专员，或在必要时接管会话。
+          </p>
+        </div>
+      </motion.div>
 
       {/* ====== 统计卡片 ====== */}
       <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
@@ -523,20 +569,27 @@ export default function ChatManage() {
         {/* ====== 左侧会话列表 ====== */}
         <div className="lg:col-span-4 xl:col-span-3 bg-white rounded-xl border border-gray-100 flex flex-col overflow-hidden">
           <div className="px-4 py-3 border-b border-gray-100 flex items-center gap-2">
-            {/* 全选复选框 */}
-            <button
-              onClick={toggleSelectAll}
-              className="flex-shrink-0 text-gray-400 hover:text-primary-500 transition-colors"
-              title={selectedIds.size === conversations.length ? '取消全选' : '全选'}
-            >
-              {selectedIds.size > 0 && selectedIds.size === conversations.length ? (
-                <CheckSquare className="w-4 h-4 text-primary-500" />
-              ) : (
-                <Square className="w-4 h-4" />
-              )}
-            </button>
+            {/* 全选复选框（管理模式下显示） */}
+            {viewMode === 'manage' && (
+              <button
+                onClick={toggleSelectAll}
+                className="flex-shrink-0 text-gray-400 hover:text-primary-500 transition-colors"
+                title={selectedIds.size === conversations.length ? '取消全选' : '全选'}
+              >
+                {selectedIds.size > 0 && selectedIds.size === conversations.length ? (
+                  <CheckSquare className="w-4 h-4 text-primary-500" />
+                ) : (
+                  <Square className="w-4 h-4" />
+                )}
+              </button>
+            )}
             <Users className="w-4 h-4 text-gray-400" />
             <span className="text-sm font-medium text-gray-700">会话列表</span>
+            {viewMode === 'view' && (
+              <span className="ml-auto text-[10px] text-primary-500 bg-primary-50 px-1.5 py-0.5 rounded-full font-medium">
+                只读
+              </span>
+            )}
           </div>
 
           <div className="flex-1 overflow-y-auto">
@@ -594,17 +647,19 @@ export default function ChatManage() {
                         }
                       `}
                     >
-                      {/* 复选框 */}
-                      <button
-                        onClick={(e) => toggleSelection(conv.id, e)}
-                        className="flex-shrink-0 mt-1 text-gray-300 hover:text-primary-500 transition-colors"
-                      >
-                        {isChecked ? (
-                          <CheckSquare className="w-4 h-4 text-primary-500" />
-                        ) : (
-                          <Square className="w-4 h-4" />
-                        )}
-                      </button>
+                      {/* 复选框（管理模式下显示） */}
+                      {viewMode === 'manage' && (
+                        <button
+                          onClick={(e) => toggleSelection(conv.id, e)}
+                          className="flex-shrink-0 mt-1 text-gray-300 hover:text-primary-500 transition-colors"
+                        >
+                          {isChecked ? (
+                            <CheckSquare className="w-4 h-4 text-primary-500" />
+                          ) : (
+                            <Square className="w-4 h-4" />
+                          )}
+                        </button>
+                      )}
 
                       {/* 头像 */}
                       <div className="relative flex-shrink-0">
@@ -673,9 +728,9 @@ export default function ChatManage() {
             )}
           </div>
 
-          {/* ====== 批量操作浮动工具栏 ====== */}
+          {/* ====== 批量操作浮动工具栏（仅管理模式显示） ====== */}
           <AnimatePresence>
-            {selectedIds.size > 0 && (
+            {viewMode === 'manage' && selectedIds.size > 0 && (
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -761,6 +816,23 @@ export default function ChatManage() {
                 <div className="flex items-center gap-2 text-xs text-gray-400">
                   <Clock className="w-3.5 h-3.5" />
                   创建于 {new Date(selectedConv.created_at).toLocaleDateString('zh-CN')}
+                  {/* 接管会话按钮 */}
+                  {viewMode === 'manage' && selectedConv.status !== 'closed' && !selectedConv.assigned_admin && (
+                    <button
+                      onClick={async () => {
+                        try {
+                          await adminAssignChat(selectedConv.id, /* 当前管理员ID由后端从JWT获取 */ 0);
+                          fetchConversations();
+                        } catch (err) {
+                          console.error('[ChatManage] 接管会话失败:', err);
+                        }
+                      }}
+                      className="ml-2 flex items-center gap-1 px-2.5 py-1 text-[11px] font-medium text-blue-600 bg-blue-50 border border-blue-200 rounded-md hover:bg-blue-100 transition-colors"
+                    >
+                      <Zap className="w-3 h-3" />
+                      接管会话
+                    </button>
+                  )}
                 </div>
               </div>
 
@@ -793,63 +865,38 @@ export default function ChatManage() {
                 )}
               </div>
 
-              {/* 回复输入框 — 仅非关闭状态可回复 */}
-              {selectedConv.status !== 'closed' ? (
+              {/* 回复输入框 — 查看模式或已关闭状态不显示 */}
+              {viewMode === 'view' ? (
+                // 查看模式：仅显示提示
+                <div className="px-5 py-3 border-t border-gray-100 bg-primary-50/50 text-center">
+                  <span className="text-xs text-primary-600 flex items-center justify-center gap-1.5">
+                    <MessageCircle className="w-3.5 h-3.5" />
+                    查看模式 — 仅浏览对话，如需回复请切换到管理模式
+                  </span>
+                </div>
+              ) : selectedConv.status !== 'closed' ? (
                 <div className="border-t border-gray-100 bg-white">
-                  {/* 快捷回复折叠面板 */}
-                  <div className="px-5 pt-2 pb-0">
-                    <button
-                      onClick={() => setQuickRepliesOpen(!quickRepliesOpen)}
-                      className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-primary-600 transition-colors py-1"
-                    >
-                      <ChevronsUpDown className="w-3.5 h-3.5" />
-                      快捷回复
-                      <span className="text-gray-300">|</span>
-                      <span className="text-gray-400">{quickRepliesOpen ? '收起' : '展开'}</span>
-                    </button>
-                  </div>
-                  <AnimatePresence>
-                    {quickRepliesOpen && (
-                      <motion.div
-                        initial={{ height: 0, opacity: 0 }}
-                        animate={{ height: 'auto', opacity: 1 }}
-                        exit={{ height: 0, opacity: 0 }}
-                        transition={{ duration: 0.2, ease: 'easeInOut' }}
-                        className="overflow-hidden px-5"
-                      >
-                        <div className="pb-2 pt-1">
-                          <QuickReplies onSelect={handleQuickReplySelect} />
-                        </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-
-                  {/* 输入区 */}
-                  <div className="px-5 py-3">
-                    <div className="flex items-end gap-3">
+                  {/* 管理员回复输入框 */}
+                  <div className="px-4 py-3">
+                    <div className="flex items-end gap-2">
                       <textarea
                         value={replyText}
-                        onChange={e => setReplyText(e.target.value)}
+                        onChange={(e) => setReplyText(e.target.value)}
                         onKeyDown={handleKeyDown}
-                        placeholder="输入回复内容... (Enter发送, Shift+Enter换行)"
-                        rows={2}
-                        className="flex-1 resize-none border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-400 transition-colors"
+                        placeholder="输入回复内容…"
+                        rows={1}
+                        className="flex-1 resize-none border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-400 transition-all max-h-24"
+                        style={{ minHeight: '40px' }}
                       />
                       <button
                         onClick={handleSend}
                         disabled={!replyText.trim() || sending}
-                        className={`
-                          flex items-center justify-center w-10 h-10 rounded-xl transition-all flex-shrink-0
-                          ${replyText.trim() && !sending
-                            ? 'bg-primary-600 text-white hover:bg-primary-700 shadow-sm shadow-primary-200'
-                            : 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                          }
-                        `}
+                        className="flex items-center justify-center w-10 h-10 rounded-xl bg-primary-500 text-white hover:bg-primary-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors flex-shrink-0"
                       >
                         {sending ? (
-                          <Loader2 className="w-4.5 h-4.5 animate-spin" />
+                          <RefreshCw className="w-4 h-4 animate-spin" />
                         ) : (
-                          <Send className="w-4.5 h-4.5" />
+                          <Send className="w-4 h-4" />
                         )}
                       </button>
                     </div>

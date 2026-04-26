@@ -443,7 +443,7 @@ export default function Navbar() {
                     aria-haspopup="true"
                   >
                     {user.avatar ? (
-                      <img src={user.avatar} alt="" className="w-7 h-7 rounded-full object-cover border border-gray-200" />
+                      <img src={user.avatar} alt="" className="w-7 h-7 rounded-full object-cover border border-gray-200" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
                     ) : (
                       <div className="w-7 h-7 rounded-full bg-primary-100 text-primary-700 flex items-center justify-center font-bold text-xs">
                         {user.nickname?.charAt(0) || user.email?.charAt(0) || 'U'}
@@ -641,7 +641,7 @@ export default function Navbar() {
               <div className="px-4 py-3 border-t border-gray-100 space-y-1">
                 <div className="flex items-center gap-3 px-3 py-2 mb-1">
                   {user.avatar ? (
-                    <img src={user.avatar} alt="" className="w-8 h-8 rounded-full object-cover border border-gray-200" />
+                    <img src={user.avatar} alt="" className="w-8 h-8 rounded-full object-cover border border-gray-200" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
                   ) : (
                     <div className="w-8 h-8 rounded-full bg-primary-100 text-primary-700 flex items-center justify-center font-bold text-sm">
                       {user.nickname?.charAt(0) || user.email?.charAt(0) || 'U'}

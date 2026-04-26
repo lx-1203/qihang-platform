@@ -27,6 +27,7 @@ import testimonialsRouter from './routes/testimonials.js';
 import platformFeaturesRouter from './routes/platformFeatures.js';
 import campusTimelineRouter from './routes/campusTimeline.js';
 import partnersRouter from './routes/partners.js';
+import agentRouter from './routes/agent.js';
 import { testConnection } from './db.js';
 import pool from './db.js';
 import { sqlInjectionGuard } from './middleware/sqlInjectionGuard.js';
@@ -195,6 +196,7 @@ app.use('/api/testimonials', testimonialsRouter);
 app.use('/api/platform-features', platformFeaturesRouter);
 app.use('/api/campus-timeline', campusTimelineRouter);
 app.use('/api/partners', partnersRouter);
+app.use('/api/agent', agentRouter);
 
 // ====== 健康检查（SEC-006：深度检查，含数据库连接验证）======
 app.get('/api/health', async (_req, res) => {

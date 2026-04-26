@@ -4,6 +4,7 @@ import MainLayout from '../layouts/MainLayout';
 const MentorLayout = lazy(() => import('../layouts/MentorLayout'));
 const CompanyLayout = lazy(() => import('../layouts/CompanyLayout'));
 const AdminLayout = lazy(() => import('../layouts/AdminLayout'));
+const AgentLayout = lazy(() => import('../layouts/AgentLayout'));
 import ProtectedRoute from '../components/ProtectedRoute';
 
 // 通用页面（立即加载）
@@ -62,6 +63,7 @@ const SuccessCasesConfig = lazy(() => import('../pages/admin/SuccessCasesConfig'
 const AdminThemeConfig = lazy(() => import('../pages/admin/ThemeConfig'));
 const AdminAnnouncements = lazy(() => import('../pages/admin/Announcements'));
 const AdminChatManage = lazy(() => import('../pages/admin/ChatManage'));
+const AdminAuditLogs = lazy(() => import('../pages/admin/AuditLogs'));
 
 // 懒加载页面 - 企业端
 const CompanyDashboardPage = lazy(() => import('../pages/company/Dashboard'));
@@ -79,6 +81,9 @@ const MentorAppointments = lazy(() => import('../pages/mentor/Appointments'));
 const MentorStudents = lazy(() => import('../pages/mentor/Students'));
 const MentorCourseForm = lazy(() => import('../pages/mentor/CourseForm'));
 const MentorResources = lazy(() => import('../pages/mentor/Resources'));
+
+// 懒加载页面 - 客服端
+const AgentWorkbench = lazy(() => import('../pages/agent/Workbench'));
 
 // 加载中组件
 // eslint-disable-next-line react-refresh/only-export-components
@@ -171,7 +176,7 @@ export const router = createBrowserRouter([
       },
       {
         path: 'study-abroad/articles/:id',
-        element: <Suspense fallback={<LoadingFallback />}><StudyAbroadArticles /></Suspense>
+        element: <Suspense fallback={<LoadingFallback />}><GuidanceArticleDetail /></Suspense>
       },
       {
         path: 'study-abroad/background',
@@ -383,8 +388,32 @@ export const router = createBrowserRouter([
         element: <Suspense fallback={<LoadingFallback />}><AdminChatManage /></Suspense>
       },
       {
+        path: 'audit-logs',
+        element: <Suspense fallback={<LoadingFallback />}><AdminAuditLogs /></Suspense>
+      },
+      {
         path: '',
         element: <Navigate to="dashboard" replace />
+      }
+    ]
+  },
+  {
+    path: '/agent',
+    element: (
+      <ProtectedRoute allowedRoles={['agent', 'admin']}>
+        <Suspense fallback={<LoadingFallback />}>
+          <AgentLayout />
+        </Suspense>
+      </ProtectedRoute>
+    ),
+    children: [
+      {
+        path: 'workbench',
+        element: <Suspense fallback={<LoadingFallback />}><AgentWorkbench /></Suspense>
+      },
+      {
+        path: '',
+        element: <Navigate to="workbench" replace />
       }
     ]
   },

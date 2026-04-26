@@ -8,6 +8,7 @@ import {
   Search, LayoutGrid, List, ExternalLink
 } from 'lucide-react';
 import http from '@/api/http';
+import { showToast } from '@/components/ui/ToastContainer';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
 import { ListSkeleton } from '../../components/ui/Skeleton';
 import ErrorState from '../../components/ui/ErrorState';
@@ -190,13 +191,15 @@ export default function Favorites() {
   async function removeFavorite(favoriteId: number, type: FavoriteTab) {
     try {
       await http.delete(`/student/favorites/${favoriteId}`);
-    } catch {
-      // API 未就绪，直接操作本地状态
+      // 更新本地状态
+      if (type === 'jobs') setJobs(prev => prev.filter(j => j.favoriteId !== favoriteId));
+      if (type === 'courses') setCourses(prev => prev.filter(c => c.favoriteId !== favoriteId));
+      if (type === 'mentors') setMentors(prev => prev.filter(m => m.favoriteId !== favoriteId));
+      showToast({ type: 'success', message: '已取消收藏' });
+    } catch (err) {
+      showToast({ type: 'error', message: '取消收藏失败，请稍后重试' });
+      if (import.meta.env.DEV) console.error('[DEV] Remove favorite error:', err);
     }
-    // 更新本地状态
-    if (type === 'jobs') setJobs(prev => prev.filter(j => j.favoriteId !== favoriteId));
-    if (type === 'courses') setCourses(prev => prev.filter(c => c.favoriteId !== favoriteId));
-    if (type === 'mentors') setMentors(prev => prev.filter(m => m.favoriteId !== favoriteId));
   }
 
   async function handleConfirmDelete() {

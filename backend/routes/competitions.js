@@ -27,7 +27,7 @@ router.get('/', async (req, res) => {
       params.push(level);
     }
     if (keyword) {
-      sql += ' AND (title LIKE ? OR organizer LIKE ?)';
+      sql += ' AND (name LIKE ? OR organizer LIKE ?)';
       const kw = `%${keyword}%`;
       params.push(kw, kw);
     }

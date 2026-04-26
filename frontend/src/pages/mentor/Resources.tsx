@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   FileText, Upload, Folder, Search, Plus, X, Download,
   Eye, Trash2, File, Image, Video, Link2, Clock,
-  BookOpen, Loader2
+  BookOpen, Loader2, AlertTriangle
 } from 'lucide-react';
 import { useToast } from '../../components/ui';
 import Tag from '@/components/ui/Tag';
@@ -76,6 +76,9 @@ export default function MentorResources() {
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
+  // 记录哪些资料的文件不存在（key: resource id, value: boolean）
+  const [brokenFiles, setBrokenFiles] = useState<Record<number, boolean>>({});
+
   // 上传表单
   const [uploadForm, setUploadForm] = useState({
     title: '',
@@ -94,7 +97,26 @@ export default function MentorResources() {
       if (searchQuery) params.keyword = searchQuery;
       const res = await http.get('/mentor/resources', { params });
       if (res.data?.code === 200) {
-        setResources(res.data.data.resources);
+        const list = res.data.data.resources || [];
+        setResources(list);
+
+        // 批量检查文件是否存在
+        if (list.length > 0) {
+          try {
+            const ids = list.map((r: Resource) => r.id);
+            const checkRes = await http.post('/mentor/resources/check', { ids });
+            if (checkRes.data?.code === 200) {
+              const results: Record<string, { exists: boolean; url: string }> = checkRes.data.data.results || {};
+              const broken: Record<number, boolean> = {};
+              for (const [id, info] of Object.entries(results)) {
+                if (!info.exists) broken[Number(id)] = true;
+              }
+              setBrokenFiles(broken);
+            }
+          } catch {
+            // 检查失败不影响列表展示
+          }
+        }
       }
     } catch (err) {
       console.error('获取资料列表失败:', err);
@@ -268,14 +290,21 @@ export default function MentorResources() {
                         </p>
                       </div>
                       <div className="flex items-center gap-1 shrink-0">
-                        <a
-                          href={resource.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="p-1.5 text-gray-400 hover:text-primary-600 rounded-lg hover:bg-primary-50 transition-colors"
-                        >
-                          <Eye className="w-4 h-4" />
-                        </a>
+                        {brokenFiles[resource.id] ? (
+                          <span className="p-1.5 text-amber-500" title="文件不存在或已被移除">
+                            <AlertTriangle className="w-4 h-4" />
+                          </span>
+                        ) : (
+                          <a
+                            href={`/api/mentor/resources/${resource.id}/download`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="p-1.5 text-gray-400 hover:text-primary-600 rounded-lg hover:bg-primary-50 transition-colors"
+                            title="预览/下载"
+                          >
+                            <Eye className="w-4 h-4" />
+                          </a>
+                        )}
                         <button
                           onClick={() => handleDelete(resource.id)}
                           className="p-1.5 text-gray-400 hover:text-red-600 rounded-lg hover:bg-red-50 transition-colors"
@@ -302,6 +331,12 @@ export default function MentorResources() {
                         <Clock className="w-3 h-3" />
                         {resource.created_at?.split('T')[0]}
                       </span>
+                      {brokenFiles[resource.id] && (
+                        <span className="flex items-center gap-1 text-amber-500 font-medium">
+                          <AlertTriangle className="w-3 h-3" />
+                          文件不存在
+                        </span>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -319,14 +354,14 @@ export default function MentorResources() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-black/40 z-50"
+              className="fixed inset-0 bg-black/40 z-[60]"
               onClick={() => setShowUploadModal(false)}
             />
             <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-lg bg-white rounded-2xl shadow-2xl z-50 p-6"
+              className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-lg bg-white rounded-2xl shadow-2xl z-[60] p-6"
             >
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-lg font-bold text-gray-900">上传资料</h2>

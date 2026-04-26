@@ -1,9 +1,10 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { motion } from 'framer-motion';
 import {
   Search, Filter, Users, GraduationCap, Briefcase,
   Mail, FileText, ChevronLeft, ChevronRight,
-  Loader2, User, X, Building2, BookOpen, Star, Tag, TrendingUp
+  Loader2, User, X, Building2, BookOpen, Star, Tag, TrendingUp,
+  MessageSquare, Calendar, Download
 } from 'lucide-react';
 import http from '@/api/http';
 import { showToast } from '@/components/ui/ToastContainer';
@@ -17,6 +18,7 @@ interface TalentItem {
   user_id: number;
   nickname: string;
   email: string;
+  phone: string;
   avatar: string;
   school: string;
   major: string;
@@ -25,6 +27,7 @@ interface TalentItem {
   job_intention: string;
   resume_url: string;
   bio: string;
+  registered_at?: string;
   /** 自定义标签（企业端本地管理） */
   _tags?: string[];
 }
@@ -76,6 +79,9 @@ export default function TalentSearch() {
   const [major, setMajor] = useState('');
   const [showFilters, setShowFilters] = useState(false);
 
+  // 搜索触发器：每次搜索/翻页递增，驱动 useEffect 统一发请求
+  const [searchTrigger, setSearchTrigger] = useState(0);
+
   // 标签管理（本地 localStorage 持久化）
   const [talentTags, setTalentTags] = useState<Record<number, string[]>>(() => {
     try {
@@ -114,59 +120,61 @@ export default function TalentSearch() {
     }));
   }, [talents, keyword, major, talentTags]);
 
+  // 统一数据获取：page 或 searchTrigger 变化时触发，避免双重请求
+  const fetchTalentsRef = useRef<{ keyword: string; school: string; major: string }>({ keyword: '', school: '', major: '' });
+
   useEffect(() => {
+    const fetchTalents = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const params: Record<string, string | number> = {
+          page: pagination.page,
+          pageSize: pagination.pageSize,
+        };
+        const { keyword: kw, school: sch, major: mj } = fetchTalentsRef.current;
+
+        if (kw) params.keyword = kw;
+        if (sch) params.school = sch;
+        if (mj) params.major = mj;
+
+        const res = await http.get('/company/talent', { params });
+        if (res.data?.code === 200 && res.data.data) {
+          const data = res.data.data;
+          setTalents(Array.isArray(data.students) ? data.students : []);
+          setPagination((prev) => ({
+            ...prev,
+            page: Number(data.pagination?.page || params.page),
+            pageSize: Number(data.pagination?.pageSize || params.pageSize),
+            total: Number(data.pagination?.total || 0),
+            totalPages: Number(data.pagination?.totalPages || 0),
+          }));
+        } else {
+          setError('获取人才数据失败，服务器返回异常');
+        }
+      } catch {
+        setError('搜索人才失败，请检查网络连接后重试');
+      } finally {
+        setLoading(false);
+      }
+    };
     fetchTalents();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pagination.page]);
-
-  const fetchTalents = async (overrides?: Partial<{ page: number; pageSize: number; keyword: string; school: string; major: string }>) => {
-    try {
-      setLoading(true);
-      setError(null);
-      const params: Record<string, string | number> = {
-        page: overrides?.page ?? pagination.page,
-        pageSize: overrides?.pageSize ?? pagination.pageSize,
-      };
-      const effectiveKeyword = overrides?.keyword ?? keyword;
-      const effectiveSchool = overrides?.school ?? school;
-      const effectiveMajor = overrides?.major ?? major;
-
-      if (effectiveKeyword) params.keyword = effectiveKeyword;
-      if (effectiveSchool) params.school = effectiveSchool;
-      if (effectiveMajor) params.major = effectiveMajor;
-
-      const res = await http.get('/company/talent', { params });
-      if (res.data?.code === 200 && res.data.data) {
-        const data = res.data.data;
-        setTalents(Array.isArray(data.students) ? data.students : []);
-        setPagination((prev) => ({
-          ...prev,
-          page: Number(data.pagination?.page || params.page),
-          pageSize: Number(data.pagination?.pageSize || params.pageSize),
-          total: Number(data.pagination?.total || 0),
-          totalPages: Number(data.pagination?.totalPages || 0),
-        }));
-      } else {
-        setError('获取人才数据失败，服务器返回异常');
-      }
-    } catch {
-      setError('搜索人才失败，请检查网络连接后重试');
-    } finally {
-      setLoading(false);
-    }
-  };
+  }, [pagination.page, searchTrigger]);
 
   const handleSearch = () => {
+    fetchTalentsRef.current = { keyword, school, major };
     setPagination((prev) => ({ ...prev, page: 1 }));
-    fetchTalents({ page: 1, keyword, school, major });
+    setSearchTrigger((t) => t + 1);
   };
 
   const handleClearFilters = () => {
     setKeyword('');
     setSchool('');
     setMajor('');
+    fetchTalentsRef.current = { keyword: '', school: '', major: '' };
     setPagination((prev) => ({ ...prev, page: 1 }));
-    fetchTalents({ page: 1, keyword: '', school: '', major: '' });
+    setSearchTrigger((t) => t + 1);
   };
 
   // 解析 skills 字段
@@ -282,7 +290,7 @@ export default function TalentSearch() {
           <span className="ml-3 text-gray-500">搜索中...</span>
         </div>
       ) : error ? (
-        <ErrorState message={error} onRetry={fetchTalents} />
+        <ErrorState message={error} onRetry={() => setSearchTrigger(t => t + 1)} />
       ) : talents.length === 0 ? (
         <div className="bg-white rounded-xl p-12 shadow-sm border border-gray-100 text-center">
           <Users className="w-16 h-16 text-gray-200 mx-auto mb-4" />
@@ -294,8 +302,10 @@ export default function TalentSearch() {
           </p>
         </div>
       ) : (
-        <div className="space-y-4">
-          {talentsWithScore.map((talent, index) => (
+        <div>
+          {/* 人才列表（可滚动区域） */}
+          <div className="space-y-4 overflow-y-auto max-h-[600px] pr-1 scroll-smooth">
+            {talentsWithScore.map((talent, index) => (
             <motion.div
               key={talent.id}
               initial={{ opacity: 0, y: 20 }}
@@ -410,6 +420,12 @@ export default function TalentSearch() {
                           {talent.email}
                         </span>
                       )}
+                      {talent.phone && (
+                        <span className="flex items-center gap-1">
+                          <Building2 size={12} />
+                          {talent.phone}
+                        </span>
+                      )}
                     </div>
                     <div className="flex gap-2">
                       {talent.resume_url && (
@@ -417,6 +433,7 @@ export default function TalentSearch() {
                           href={talent.resume_url}
                           target="_blank"
                           rel="noopener noreferrer"
+                          onClick={(e) => e.stopPropagation()}
                           className="flex items-center gap-1 px-3 py-1.5 bg-gray-50 text-gray-700 rounded-lg text-xs font-medium hover:bg-gray-100 transition-colors"
                         >
                           <FileText size={12} />
@@ -439,17 +456,25 @@ export default function TalentSearch() {
                         收藏
                       </button>
                       <button
-                        onClick={() => {
-                          if (talent.email) {
-                            window.location.href = `mailto:${talent.email}?subject=启航平台 - 邀请投递&body=你好，${talent.nickname}，我们在启航平台上看到了你的简历，觉得你非常适合我们的岗位，期待你的投递！`;
-                          } else {
-                            showToast({ type: 'error', title: '无法联系', message: '该候选人未提供邮箱地址' });
+                        onClick={async () => {
+                          try {
+                            const res = await http.post('/company/contact', {
+                              student_id: talent.user_id,
+                              message: `你好，${talent.nickname}，我们在启航平台上关注到了你，想进一步了解你的求职意向，期待与你沟通！`,
+                            });
+                            if (res.data?.code === 200) {
+                              showToast({ type: 'success', title: '联系请求已发送' });
+                            } else {
+                              showToast({ type: 'error', title: '发送失败', message: res.data?.message || '请稍后重试' });
+                            }
+                          } catch {
+                            showToast({ type: 'error', title: '发送失败', message: '网络异常' });
                           }
                         }}
                         className="flex items-center gap-1 px-3 py-1.5 bg-primary-50 text-primary-700 rounded-lg text-xs font-medium hover:bg-primary-100 transition-colors"
                       >
-                        <Mail size={12} />
-                        联系Ta
+                        <MessageSquare size={12} />
+                        发消息
                       </button>
                     </div>
                   </div>
@@ -457,6 +482,17 @@ export default function TalentSearch() {
               </div>
             </motion.div>
           ))}
+
+          {/* 空搜索结果提示 */}
+          {talentsWithScore.length === 0 && (
+            <div className="py-12 text-center">
+              <Users className="w-12 h-12 text-gray-200 mx-auto mb-3" />
+              <p className="text-gray-500 text-sm">
+                {keyword || school || major ? '筛选条件下没有匹配的人才，请调整搜索条件' : '暂无数据'}
+              </p>
+            </div>
+          )}
+          </div>
 
           {/* 分页 */}
           {pagination.totalPages > 1 && (
@@ -484,56 +520,82 @@ export default function TalentSearch() {
       )}
       {/* 人才详情弹窗 */}
       {detailStudent && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => setDetailStudent(null)}>
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50" onClick={() => setDetailStudent(null)}>
           <motion.div
             initial={{ scale: 0.95, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             onClick={e => e.stopPropagation()}
             className="bg-white rounded-2xl w-full max-w-lg max-h-[80vh] overflow-y-auto shadow-2xl"
           >
-            <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between sticky top-0 bg-white rounded-t-2xl">
+            <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between sticky top-0 bg-white rounded-t-2xl z-10">
               <h3 className="text-lg font-bold text-gray-900">人才详情</h3>
               <button onClick={() => setDetailStudent(null)} className="p-1.5 rounded-lg hover:bg-gray-100">
                 <X className="w-5 h-5 text-gray-400" />
               </button>
             </div>
             <div className="px-6 py-4 space-y-4">
+              {/* 头像 + 基本信息 */}
               <div className="flex items-center gap-4">
-                <div className="w-14 h-14 bg-primary-100 rounded-xl flex items-center justify-center text-primary-700 font-bold text-xl">
-                  {(detailStudent.nickname || '?')[0]}
-                </div>
-                <div>
+                {detailStudent.avatar ? (
+                  <img
+                    src={detailStudent.avatar || DEFAULT_AVATAR}
+                    alt={detailStudent.nickname}
+                    className="w-16 h-16 rounded-full object-cover border-2 border-gray-100"
+                  />
+                ) : (
+                  <div className="w-16 h-16 bg-primary-100 rounded-full flex items-center justify-center text-primary-700 font-bold text-xl">
+                    {(detailStudent.nickname || '?')[0]}
+                  </div>
+                )}
+                <div className="flex-1 min-w-0">
                   <h4 className="text-lg font-bold text-gray-900">{detailStudent.nickname || '未设置昵称'}</h4>
                   <p className="text-sm text-gray-500">{detailStudent.school || '未填写学校'}</p>
                 </div>
               </div>
-              {detailStudent.major && (
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-gray-500">专业</span>
-                  <span className="text-gray-900">{detailStudent.major}</span>
-                </div>
-              )}
-              {detailStudent.grade && (
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-gray-500">年级</span>
-                  <span className="text-gray-900">{detailStudent.grade}</span>
-                </div>
-              )}
+
+              {/* 求职意向 */}
               {detailStudent.job_intention && (
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-gray-500">求职意向</span>
-                  <span className="text-gray-900">{detailStudent.job_intention}</span>
+                <div className="bg-primary-50 rounded-lg px-4 py-2.5">
+                  <div className="flex items-center gap-2 text-sm">
+                    <Briefcase size={14} className="text-primary-600" />
+                    <span className="text-primary-700 font-medium">求职意向：{detailStudent.job_intention}</span>
+                  </div>
                 </div>
               )}
-              {detailStudent.bio && (
+
+              {/* 教育信息 */}
+              <div className="bg-gray-50 rounded-lg p-4 space-y-3">
+                <p className="text-sm font-medium text-gray-700 flex items-center gap-1.5">
+                  <GraduationCap size={14} className="text-gray-500" />
+                  教育信息
+                </p>
+                {detailStudent.school && (
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-gray-500">学校</span>
+                    <span className="text-gray-900 font-medium">{detailStudent.school}</span>
+                  </div>
+                )}
+                {detailStudent.major && (
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-gray-500">专业</span>
+                    <span className="text-gray-900">{detailStudent.major}</span>
+                  </div>
+                )}
+                {detailStudent.grade && (
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-gray-500">年级</span>
+                    <span className="text-gray-900">{detailStudent.grade}</span>
+                  </div>
+                )}
+              </div>
+
+              {/* 技能标签 */}
+              {detailStudent.skills && parseSkills(detailStudent.skills).length > 0 && (
                 <div>
-                  <p className="text-sm font-medium text-gray-700 mb-1">个人简介</p>
-                  <p className="text-sm text-gray-600 bg-gray-50 rounded-lg p-3">{detailStudent.bio}</p>
-                </div>
-              )}
-              {detailStudent.skills && (
-                <div>
-                  <p className="text-sm font-medium text-gray-700 mb-2">技能标签</p>
+                  <p className="text-sm font-medium text-gray-700 mb-2 flex items-center gap-1.5">
+                    <Tag size={14} className="text-gray-500" />
+                    技能标签
+                  </p>
                   <div className="flex flex-wrap gap-2">
                     {parseSkills(detailStudent.skills).map((skill: string) => (
                       <span key={skill} className="px-3 py-1 bg-primary-50 text-primary-700 rounded-full text-xs font-medium">{skill}</span>
@@ -541,12 +603,118 @@ export default function TalentSearch() {
                   </div>
                 </div>
               )}
-              {detailStudent.email && (
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-gray-500">邮箱</span>
-                  <span className="text-gray-900">{detailStudent.email}</span>
+
+              {/* 个人简介 */}
+              {detailStudent.bio && (
+                <div>
+                  <p className="text-sm font-medium text-gray-700 mb-1 flex items-center gap-1.5">
+                    <User size={14} className="text-gray-500" />
+                    个人简介
+                  </p>
+                  <p className="text-sm text-gray-600 bg-gray-50 rounded-lg p-3 leading-relaxed whitespace-pre-wrap">{detailStudent.bio}</p>
                 </div>
               )}
+
+              {/* 联系方式 */}
+              <div className="bg-gray-50 rounded-lg p-4 space-y-3">
+                <p className="text-sm font-medium text-gray-700 flex items-center gap-1.5">
+                  <Mail size={14} className="text-gray-500" />
+                  联系方式
+                </p>
+                {detailStudent.email && (
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-gray-500">邮箱</span>
+                    <span className="text-gray-900">{detailStudent.email}</span>
+                  </div>
+                )}
+                {detailStudent.phone && (
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-gray-500">手机号</span>
+                    <span className="text-gray-900">{detailStudent.phone}</span>
+                  </div>
+                )}
+                {!detailStudent.email && !detailStudent.phone && (
+                  <p className="text-xs text-gray-400">该候选人未提供联系方式</p>
+                )}
+              </div>
+
+              {/* 注册时间 */}
+              {detailStudent.registered_at && (
+                <div className="flex items-center justify-between text-xs text-gray-400">
+                  <span className="flex items-center gap-1">
+                    <Calendar size={12} />
+                    注册时间
+                  </span>
+                  <span>{new Date(detailStudent.registered_at).toLocaleDateString('zh-CN')}</span>
+                </div>
+              )}
+
+              {/* 操作按钮 */}
+              <div className="flex flex-wrap gap-3 pt-4 border-t border-gray-100">
+                {!detailStudent.resume_url && (
+                  <p className="text-xs text-gray-400 w-full mb-1">该学生暂未上传简历</p>
+                )}
+                {detailStudent.resume_url && (
+                  <a
+                    href={detailStudent.resume_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-1.5 px-4 py-2 bg-gray-50 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-100 transition-colors"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <FileText size={14} />
+                    查看简历
+                  </a>
+                )}
+                {detailStudent.resume_url && (
+                  <a
+                    href={detailStudent.resume_url}
+                    download
+                    className="flex items-center gap-1.5 px-4 py-2 bg-gray-50 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-100 transition-colors"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <Download size={14} />
+                    下载简历
+                  </a>
+                )}
+                <button
+                  onClick={() => {
+                    if (detailStudent.email) {
+                      window.open(
+                        `mailto:${detailStudent.email}?subject=${encodeURIComponent('启航平台 - 邀请投递')}&body=${encodeURIComponent(`你好，${detailStudent.nickname}，我们在启航平台上看到了你的简历，觉得你非常适合我们的岗位，期待你的投递！`)}`,
+                        '_blank'
+                      );
+                    } else {
+                      showToast({ type: 'error', title: '无法联系', message: '该候选人未提供邮箱地址' });
+                    }
+                  }}
+                  className="flex items-center gap-1.5 px-4 py-2 bg-primary-50 text-primary-700 rounded-lg text-sm font-medium hover:bg-primary-100 transition-colors"
+                >
+                  <Mail size={14} />
+                  发送邮件
+                </button>
+                <button
+                  onClick={async () => {
+                    try {
+                      const res = await http.post('/company/contact', {
+                        student_id: detailStudent.user_id,
+                        message: `你好，${detailStudent.nickname}，我们在启航平台上关注到了你，想进一步了解你的求职意向，期待与你沟通！`,
+                      });
+                      if (res.data?.code === 200) {
+                        showToast({ type: 'success', title: '联系请求已发送', message: '学生将会收到平台通知' });
+                      } else {
+                        showToast({ type: 'error', title: '发送失败', message: res.data?.message || '请稍后重试' });
+                      }
+                    } catch {
+                      showToast({ type: 'error', title: '发送失败', message: '网络异常，请稍后重试' });
+                    }
+                  }}
+                  className="flex items-center gap-1.5 px-4 py-2 bg-amber-50 text-amber-700 rounded-lg text-sm font-medium hover:bg-amber-100 transition-colors"
+                >
+                  <MessageSquare size={14} />
+                  发送消息
+                </button>
+              </div>
             </div>
           </motion.div>
         </div>

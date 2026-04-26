@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import http from '../../api/http';
 import Tag from '@/components/ui/Tag';
+import FileUpload from '@/components/ui/FileUpload';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
 import { showToast } from '@/components/ui/ToastContainer';
 import ErrorState from '../../components/ui/ErrorState';
@@ -339,7 +340,7 @@ export default function AdminStudyAbroad() {
 
       {/* Modal 弹窗 */}
       {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setShowModal(false)}>
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40" onClick={() => setShowModal(false)}>
           <div
             className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[85vh] overflow-y-auto mx-4"
             onClick={e => e.stopPropagation()}
@@ -370,6 +371,32 @@ export default function AdminStudyAbroad() {
                         <option key={opt.value} value={opt.value}>{opt.label}</option>
                       ))}
                     </select>
+                  ) : field.type === 'image' ? (
+                    <div className="space-y-2">
+                      {formData[field.key] ? (
+                        <div className="relative inline-block">
+                          <img
+                            src={String(formData[field.key])}
+                            alt={field.label}
+                            className="w-32 h-32 object-cover rounded-lg border border-gray-200"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setFormData(prev => ({ ...prev, [field.key]: '' }))}
+                            className="absolute -top-2 -right-2 p-1 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        </div>
+                      ) : null}
+                      <FileUpload
+                        category="cover"
+                        accept="image/jpeg,image/png,image/gif,image/webp"
+                        placeholder={`点击或拖拽上传${field.label}`}
+                        onSuccess={(result) => setFormData(prev => ({ ...prev, [field.key]: result.url }))}
+                        onError={(msg) => showToast({ type: 'error', title: msg })}
+                      />
+                    </div>
                   ) : field.type === 'textarea' ? (
                     <textarea
                       value={formData[field.key] || ''}
@@ -525,7 +552,7 @@ function getFormFields(tab: TabKey, universityOptions: { id: number; name: strin
         { key: 'country', label: '国家代码', required: true, placeholder: 'uk/us/de/fr...' },
         { key: 'city', label: '城市', placeholder: '如：伦敦' },
         { key: 'qs_ranking', label: 'QS排名', type: 'number', placeholder: '如：6' },
-        { key: 'logo', label: 'Logo URL', placeholder: 'https://...' },
+        { key: 'logo', label: 'Logo', type: 'image' },
         { key: 'description', label: '简介', type: 'textarea' },
         { key: 'gpa_min', label: '最低GPA', type: 'number', placeholder: '3.00' },
         { key: 'ielts_min', label: '雅思最低', type: 'number', placeholder: '6.5' },
@@ -602,7 +629,7 @@ function getFormFields(tab: TabKey, universityOptions: { id: number; name: strin
       return [
         { key: 'name', label: '姓名', required: true },
         { key: 'title', label: '头衔', placeholder: '资深英国留学顾问' },
-        { key: 'avatar', label: '头像URL', placeholder: 'https://...' },
+        { key: 'avatar', label: '头像', type: 'image' },
         { key: 'country', label: '负责国家代码', required: true, placeholder: 'uk/us/de...' },
         { key: 'experience', label: '从业年限', placeholder: '8年' },
         { key: 'education', label: '学历背景', placeholder: '帝国理工学院 MSc' },

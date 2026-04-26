@@ -89,4 +89,43 @@ test.describe('首页测试', () => {
     const footer = page.locator('footer');
     await expect(footer).toBeVisible({ timeout: 10000 });
   });
+
+  test('Hero 区域应显示标题和副标题', async ({ page }) => {
+    await page.waitForLoadState('networkidle');
+    // Hero h1 应该有内容（来自 ConfigStore 或默认值）
+    const h1 = page.locator('h1').first();
+    await expect(h1).toBeVisible();
+    const text = await h1.textContent();
+    expect(text?.trim().length).toBeGreaterThan(0);
+  });
+
+  test('快捷入口区域应正确渲染', async ({ page }) => {
+    await page.waitForLoadState('networkidle');
+    // 快捷入口通常是带图标的链接/按钮区域
+    // 检查导航到各子页面的入口存在
+    const links = page.locator('a[href="/jobs"], a[href="/courses"], a[href="/mentors"]');
+    const count = await links.count();
+    expect(count).toBeGreaterThanOrEqual(1);
+  });
+
+  test('热门岗位/导师/课程区域应存在', async ({ page }) => {
+    await page.waitForLoadState('networkidle');
+    // 页面应包含多个 section 区域
+    const sections = page.locator('section');
+    const count = await sections.count();
+    expect(count).toBeGreaterThanOrEqual(2);
+  });
+
+  test('API 失败时页面应降级显示默认内容', async ({ page }) => {
+    // Mock 所有 API 返回失败
+    await page.route('**/api/**', route => route.abort('connectionrefused'));
+    await page.goto('/', { waitUntil: 'domcontentloaded' });
+    await page.waitForTimeout(2000);
+
+    // 页面不应白屏，仍应渲染基础结构
+    const navbar = page.locator('nav');
+    await expect(navbar).toBeVisible();
+    const h1 = page.locator('h1').first();
+    await expect(h1).toBeVisible();
+  });
 });

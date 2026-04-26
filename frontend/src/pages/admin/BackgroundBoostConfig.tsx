@@ -104,7 +104,7 @@ export default function BackgroundBoostConfig() {
       if (res.data?.code === 200) {
         toast.success('保存成功', '背景提升页面配置已更新');
         setSaved(true);
-        await refreshConfig();
+        await refreshConfig(true);
         setTimeout(() => setSaved(false), 2000);
       } else {
         toast.error('保存失败', res.data?.message || '请稍后重试');
@@ -430,7 +430,7 @@ export default function BackgroundBoostConfig() {
 
       {/* 删除确认对话框 */}
       {deleteConfirm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 backdrop-blur-sm">
           <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
             className="bg-white rounded-xl p-6 max-w-md w-full mx-4 shadow-xl">
             <div className="flex items-start gap-3 mb-4">

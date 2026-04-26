@@ -30,12 +30,24 @@ const {
   errorMessages,
 } = jobsConfig;
 
+// 职能分类快捷导航（与后端 JOB_CATEGORIES 保持一致，API 返回失败时作为兜底）
+const CATEGORY_TAGS = [
+  { label: "全部", value: "全部" },
+  { label: "技术", value: "技术" },
+  { label: "产品", value: "产品" },
+  { label: "运营", value: "运营" },
+  { label: "设计", value: "设计" },
+  { label: "市场", value: "市场" },
+  { label: "销售", value: "销售" },
+  { label: "职能", value: "职能" },
+];
+
+// 招聘类型快捷导航（与后端 JOB_TYPES 保持一致）
 const QUICK_NAV_TAGS = [
   { label: "全部", value: "全部" },
-  { label: "社会招聘", value: "社会招聘" },
-  { label: "校园招聘", value: "校园招聘" },
-  { label: "实习生招聘", value: "实习生招聘" },
-  { label: "海外校招", value: "海外校招" },
+  { label: "校招", value: "校招" },
+  { label: "实习", value: "实习" },
+  { label: "社招", value: "社招" },
 ];
 
 interface JobItem {
@@ -71,9 +83,9 @@ export default function Jobs() {
   const [error, setError] = useState<string | null>(null);
   const pageSize = 20;
 
-  // 筛选选项（从 API filters 获取）
-  const [categories, setCategories] = useState<string[]>(["全部"]);
-  const [types, setTypes] = useState<string[]>(["全部"]);
+  // 筛选选项（从 API filters 获取，硬编码值作为兜底）
+  const [categories, setCategories] = useState<string[]>(CATEGORY_TAGS.map(t => t.value));
+  const [types, setTypes] = useState<string[]>(QUICK_NAV_TAGS.map(t => t.value));
   const [locations, setLocations] = useState<string[]>(["全国"]);
 
   // 搜索联想
@@ -146,10 +158,18 @@ export default function Jobs() {
         const data = res.data.data;
         setJobs(data.jobs || []);
         setTotal(data.total || 0);
-        // 首次加载时初始化筛选选项
+        // 首次加载时初始化筛选选项（API 返回与硬编码合并，确保始终有完整选项）
         if (data.filters) {
-          if (data.filters.categories) setCategories(data.filters.categories);
-          if (data.filters.types) setTypes(data.filters.types);
+          if (data.filters.categories) {
+            const apiCats = data.filters.categories as string[];
+            const merged = [...new Set([...CATEGORY_TAGS.map(t => t.value), ...apiCats])];
+            setCategories(merged);
+          }
+          if (data.filters.types) {
+            const apiTypes = data.filters.types as string[];
+            const merged = [...new Set([...QUICK_NAV_TAGS.map(t => t.value), ...apiTypes])];
+            setTypes(merged);
+          }
           if (data.filters.locations) setLocations(data.filters.locations);
         }
       }
@@ -309,22 +329,47 @@ export default function Jobs() {
       {/* 快捷导航标签 */}
       <div className="bg-white border-b border-gray-100 shadow-sm">
         <div className="container-main">
+          {/* 职能分类（主标签） */}
           <div className="flex items-center gap-1 overflow-x-auto py-3 scrollbar-hide">
-            {QUICK_NAV_TAGS.map((tag) => (
+            <span className="text-xs text-gray-400 font-medium mr-1 shrink-0">职能</span>
+            {CATEGORY_TAGS.map((tag) => (
               <button
-                key={tag.value}
-                onClick={() => handleFilterChange(setActiveType, tag.value)}
+                key={`cat-${tag.value}`}
+                onClick={() => handleFilterChange(setActiveCategory, tag.value)}
                 className="relative flex-shrink-0 px-5 py-2 rounded-full text-sm font-medium transition-all duration-200
                   focus-visible:ring-2 focus-visible:ring-primary-400/30 focus-visible:outline-none"
               >
-                {activeType === tag.value ? (
+                {activeCategory === tag.value ? (
                   <motion.span
-                    layoutId="quickNavIndicator"
+                    layoutId="categoryIndicator"
                     className="absolute inset-0 bg-primary-600 text-white rounded-full"
                     transition={{ type: "spring", stiffness: 350, damping: 30 }}
                   />
                 ) : null}
-                <span className={`relative z-10 ${activeType === tag.value ? "text-white" : "text-gray-600 hover:text-primary-600"}`}>
+                <span className={`relative z-10 ${activeCategory === tag.value ? "text-white" : "text-gray-600 hover:text-primary-600"}`}>
+                  {tag.label}
+                </span>
+              </button>
+            ))}
+          </div>
+          {/* 招聘类型（次标签） */}
+          <div className="flex items-center gap-1 overflow-x-auto pb-3 scrollbar-hide">
+            <span className="text-xs text-gray-400 font-medium mr-1 shrink-0">类型</span>
+            {QUICK_NAV_TAGS.map((tag) => (
+              <button
+                key={`type-${tag.value}`}
+                onClick={() => handleFilterChange(setActiveType, tag.value)}
+                className="relative flex-shrink-0 px-4 py-1.5 rounded-full text-xs font-medium transition-all duration-200
+                  focus-visible:ring-2 focus-visible:ring-primary-400/30 focus-visible:outline-none"
+              >
+                {activeType === tag.value ? (
+                  <motion.span
+                    layoutId="typeIndicator"
+                    className="absolute inset-0 bg-primary-100 text-primary-700 rounded-full border border-primary-200"
+                    transition={{ type: "spring", stiffness: 350, damping: 30 }}
+                  />
+                ) : null}
+                <span className={`relative z-10 ${activeType === tag.value ? "text-primary-700 font-bold" : "text-gray-500 hover:text-primary-600"}`}>
                   {tag.label}
                 </span>
               </button>

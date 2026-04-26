@@ -67,7 +67,7 @@ export default function AdminDashboard() {
     })();
   }, []);
 
-  const regTrend = stats?.regTrend || [0, 0, 0, 0, 0, 0, 0];
+  const regTrend = (stats?.regTrend || [0, 0, 0, 0, 0, 0, 0]).map(v => (Number.isFinite(v) ? v : 0));
   const regMax = Math.max(...regTrend, 1);
 
   const [auditLogs, setAuditLogs] = useState<{ time: string; action: string; type: 'success' | 'warning' | 'error' | 'info' }[]>([]);
@@ -348,7 +348,7 @@ export default function AdminDashboard() {
       </div>
 
       {/* 引导组件 - 气泡模式 + 首次访问自动触发 */}
-      <OnboardingGuide role="admin" bubbleMode forceShow={isFirstVisit || showGuide} />
+      <OnboardingGuide role="admin" forceShow={isFirstVisit || showGuide} />
 
       {/* 引导触发按钮（非首次访问时显示） */}
       {!isFirstVisit && (

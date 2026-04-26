@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FileText, Eye, Clock, ChevronRight, Search, Loader2 } from 'lucide-react';
+import { FileText, Eye, Clock, ChevronRight, Search, Loader2, Image } from 'lucide-react';
 import http from '@/api/http';
 import Tag from '@/components/ui/Tag';
 
@@ -27,6 +27,7 @@ export default function GuidanceArticles() {
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
+  const [imageErrors, setImageErrors] = useState<Set<number>>(new Set());
   const pageSize = 9;
 
   const fetchArticles = useCallback(async () => {
@@ -152,17 +153,18 @@ export default function GuidanceArticles() {
                     className="block bg-white rounded-2xl overflow-hidden border border-gray-100 shadow-sm hover:shadow-lg hover:border-primary-200 transition-all group h-full"
                   >
                     {/* 封面 */}
-                    {article.cover ? (
+                    {article.cover && !imageErrors.has(article.id) ? (
                       <div className="h-44 overflow-hidden">
                         <img
                           src={article.cover}
                           alt={article.title}
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                          onError={() => setImageErrors(prev => new Set(prev).add(article.id))}
                         />
                       </div>
                     ) : (
                       <div className="h-44 bg-gradient-to-br from-primary-100 to-primary-50 flex items-center justify-center">
-                        <FileText className="w-12 h-12 text-primary-300" />
+                        <Image className="w-12 h-12 text-primary-300" />
                       </div>
                     )}
 

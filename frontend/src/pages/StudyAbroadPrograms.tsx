@@ -77,6 +77,13 @@ interface ApiProgramRow {
   tags?: string | string[];
   region?: string;
   country?: string;
+  // 后端 JOIN universities 表返回的字段
+  university_id?: number;
+  university_name?: string;
+  university_name_en?: string;
+  university_logo?: string;
+  qs_ranking?: number;
+  category?: string;
 }
 
 /** 展平后的项目（含大学信息 + 筛选用字段） */

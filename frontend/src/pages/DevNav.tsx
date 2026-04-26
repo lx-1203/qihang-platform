@@ -123,12 +123,12 @@ export default function DevNav() {
       if (isAuthenticated) {
         await logout();
       }
-      const DEV_ACCOUNTS = {
-        admin:   { email: 'admin@example.com',       password: 'admin123' },
-        company: { email: 'hr@bytedance.com',        password: 'password123' },
-        mentor:  { email: 'chen@mentor.com',         password: 'password123' },
-        student: { email: 'student1@example.com',    password: 'password123' },
-      };
+      const DEV_ACCOUNTS = import.meta.env.DEV ? {
+        admin:   { email: 'admin@qihang.com',   password: 'admin123' },
+        company: { email: 'hr@bytedance.com',   password: 'password123' },
+        mentor:  { email: 'chen@mentor.com',     password: 'password123' },
+        student: { email: 'student@example.com', password: 'password123' },
+      } : {};
       const res = await http.post('/auth/login', DEV_ACCOUNTS[role]);
       const { token, refreshToken, user: loginUser } = res.data.data;
       setAuth(token, loginUser, refreshToken);

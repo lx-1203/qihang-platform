@@ -6,6 +6,7 @@ import http from '@/api/http';
 import { DEFAULT_AVATAR } from '@/constants';
 import { useAuthStore } from '@/store/auth';
 import { useToast } from '@/components/ui/ToastContainer';
+import { useChatStore } from '@/store/chat';
 
 // 导师详情数据结构（匹配后端 mentor_profiles 表）
 interface MentorDetailData {
@@ -41,12 +42,14 @@ export default function MentorDetail() {
   const navigate = useNavigate();
   const { isAuthenticated } = useAuthStore();
   const toast = useToast();
+  const { createConversation, selectConversation } = useChatStore();
 
   const [mentor, setMentor] = useState<MentorDetailData | null>(null);
   const [courses, setCourses] = useState<MentorCourse[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [bookingLoading, setBookingLoading] = useState(false);
+  const [chatLoading, setChatLoading] = useState(false);
   const [showBookingModal, setShowBookingModal] = useState(false);
   const [bookingNote, setBookingNote] = useState('');
   const [selectedTime, setSelectedTime] = useState('');
@@ -105,31 +108,33 @@ export default function MentorDetail() {
     }
     setShowBookingModal(true);
     setBookingNote(`我想预约${mentor?.name}老师的1v1辅导服务`);
-    if (mentor?.available_time && mentor.available_time.length > 0) {
-      setSelectedTime(mentor.available_time[0]);
-    } else {
-      setSelectedTime('');
-    }
+    setSelectedTime('');
   };
 
   const submitBooking = async () => {
-    if (!selectedTime) {
-      toast.error('表单不完整', '请选择一个预约时间段');
+    if (!bookingNote.trim()) {
+      toast.error('表单不完整', '请填写留言内容');
       return;
     }
 
     try {
       setBookingLoading(true);
+      const note = selectedTime
+        ? `【意向时间段：${selectedTime}】 ${bookingNote}`
+        : bookingNote;
       await http.post('/student/appointments', {
         mentor_id: mentor?.id,
-        type: '1v1辅导',
-        note: `【意向时间段：${selectedTime}】 ${bookingNote}`,
+        service_title: '1v1辅导',
+        note,
+        ...(selectedTime ? { appointment_time: selectedTime } : {}),
+        fee: mentor?.price || 0,
       });
-      toast.success('预约成功', '您的预约申请已提交，请等待导师确认');
+      toast.success('预约已提交', selectedTime ? '您的预约申请已提交，请等待导师确认' : '您的留言已提交，导师将尽快回复');
       setShowBookingModal(false);
     } catch (err: unknown) {
-      const error = err as { message?: string };
-      toast.error('预约失败', error?.message || '请稍后重试');
+      const axiosErr = err as { response?: { data?: { message?: string } }; message?: string };
+      const msg = axiosErr?.response?.data?.message || axiosErr?.message || '请稍后重试';
+      toast.error('预约失败', msg);
     } finally {
       setBookingLoading(false);
     }
@@ -213,26 +218,44 @@ export default function MentorDetail() {
             </div>
             <div className="w-full md:w-auto mt-6 md:mt-0 flex gap-4">
                <button
-                 onClick={() => {
+                 onClick={async () => {
                    if (!isAuthenticated) {
                      navigate('/login', { state: { returnUrl: `/mentors/${id}` } });
                      return;
                    }
-                   navigate('/chat');
+                   if (chatLoading) return;
+                   setChatLoading(true);
+                   try {
+                     const convId = await createConversation('user_service', mentor.user_id, `与${mentor.name}的对话`);
+                     if (convId) {
+                       await selectConversation(convId);
+                       navigate('/chat');
+                     }
+                   } catch {
+                     toast.error('创建会话失败', '请稍后重试');
+                   } finally {
+                     setChatLoading(false);
+                   }
                  }}
-                 className="flex-1 md:flex-none flex items-center justify-center gap-2 bg-white border border-gray-300 text-gray-700 px-6 py-3 rounded-lg font-medium hover:bg-gray-50 transition-colors shadow-sm"
+                 disabled={chatLoading}
+                 className="flex-1 md:flex-none flex items-center justify-center gap-2 bg-white border border-gray-300 text-gray-700 px-6 py-3 rounded-lg font-medium hover:bg-gray-50 transition-colors shadow-sm disabled:opacity-50"
                >
-                 <MessageCircle size={18} />
-                 私信咨询
+                 {chatLoading ? <Loader2 size={18} className="animate-spin" /> : <MessageCircle size={18} />}
+                 {chatLoading ? '创建中...' : '私信咨询'}
                </button>
-               <button
-                 onClick={handleBookAppointment}
-                 disabled={bookingLoading}
-                 className="flex-1 md:flex-none bg-primary-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-primary-700 transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-               >
-                 {bookingLoading ? <Loader2 size={18} className="animate-spin" /> : <Calendar size={18} />}
-                 {bookingLoading ? '提交中...' : '立即预约'}
-               </button>
+               <div className="flex-1 md:flex-none">
+                 <button
+                   onClick={handleBookAppointment}
+                   disabled={bookingLoading}
+                   className="w-full bg-primary-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-primary-700 transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                 >
+                   {bookingLoading ? <Loader2 size={18} className="animate-spin" /> : <Calendar size={18} />}
+                   {bookingLoading ? '提交中...' : '立即预约'}
+                 </button>
+                 {!mentor.available_time || mentor.available_time.length === 0 ? (
+                   <p className="text-xs text-amber-600 mt-1.5 text-center">导师暂未设置时间，可留言沟通</p>
+                 ) : null}
+               </div>
             </div>
           </motion.div>
         </div>
@@ -374,11 +397,11 @@ export default function MentorDetail() {
               {/* 辅导服务卡片 */}
               <div
                 onClick={handleBookAppointment}
-                className="border border-gray-200 rounded-lg p-4 hover:border-primary-500 transition-colors cursor-pointer group"
+                className="border border-gray-200 hover:border-primary-500 rounded-lg p-4 transition-colors group cursor-pointer"
               >
                 <div className="flex justify-between items-start mb-2">
                   <h3 className="font-bold text-gray-900 group-hover:text-primary-600 transition-colors">预约1V1辅导</h3>
-                  <span className="font-bold text-orange-500">
+                  <span className={`font-bold ${mentor.price > 0 ? 'text-orange-500' : 'text-green-500'}`}>
                     {mentor.price > 0 ? `¥${mentor.price}` : '免费'}
                   </span>
                 </div>
@@ -424,7 +447,7 @@ export default function MentorDetail() {
       </div>
       {/* 预约弹窗 */}
       {showBookingModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => setShowBookingModal(false)}>
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50" onClick={() => setShowBookingModal(false)}>
           <motion.div
             initial={{ scale: 0.95, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
@@ -439,19 +462,23 @@ export default function MentorDetail() {
             </div>
             <div className="p-6 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">选择预约时间</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">选择预约时间（选填）</label>
                 {mentor.available_time && mentor.available_time.length > 0 ? (
                   <select
                     value={selectedTime}
                     onChange={e => setSelectedTime(e.target.value)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 outline-none"
                   >
+                    <option value="">不限时间（待协商）</option>
                     {mentor.available_time.map((time, idx) => (
                       <option key={idx} value={time}>{time}</option>
                     ))}
                   </select>
                 ) : (
-                  <p className="text-sm text-red-500">导师暂未设置可用时间段，请先私信沟通</p>
+                  <p className="text-sm text-amber-600 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2.5 flex items-center gap-2">
+                    <AlertCircle size={16} className="flex-shrink-0" />
+                    <span>该导师暂未设置可预约时间，您可以先留言沟通</span>
+                  </p>
                 )}
               </div>
               <div>
@@ -466,12 +493,37 @@ export default function MentorDetail() {
               </div>
               <button
                 onClick={submitBooking}
-                disabled={bookingLoading || !selectedTime}
+                disabled={bookingLoading || !bookingNote.trim()}
                 className="w-full bg-primary-600 text-white py-2.5 rounded-lg font-medium hover:bg-primary-700 disabled:opacity-50 transition-colors flex items-center justify-center gap-2"
               >
                 {bookingLoading && <Loader2 size={16} className="animate-spin" />}
                 提交预约
               </button>
+              {!mentor.available_time || mentor.available_time.length === 0 ? (
+                <button
+                  onClick={async () => {
+                    if (chatLoading) return;
+                    setChatLoading(true);
+                    try {
+                      setShowBookingModal(false);
+                      const convId = await createConversation('user_service', mentor.user_id, `与${mentor.name}的对话`);
+                      if (convId) {
+                        await selectConversation(convId);
+                        navigate('/chat');
+                      }
+                    } catch {
+                      toast.error('创建会话失败', '请稍后重试');
+                    } finally {
+                      setChatLoading(false);
+                    }
+                  }}
+                  disabled={chatLoading}
+                  className="w-full bg-white border border-gray-300 text-gray-700 py-2.5 rounded-lg font-medium hover:bg-gray-50 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+                >
+                  {chatLoading ? <Loader2 size={16} className="animate-spin" /> : <MessageCircle size={16} />}
+                  {chatLoading ? '创建中...' : '直接私信咨询导师'}
+                </button>
+              ) : null}
             </div>
           </motion.div>
         </div>

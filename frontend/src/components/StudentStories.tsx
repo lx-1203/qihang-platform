@@ -1,8 +1,17 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronLeft, ChevronRight, Quote, ArrowRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Quote, ArrowRight, User } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import http from '@/api/http';
+
+/** 判断字符串是否为有效图片 URL */
+function isImageUrl(str?: string): boolean {
+  if (!str) return false;
+  const s = str.trim();
+  if (s.length < 4) return false;
+  // 支持 http/https/相对路径/以图片扩展名结尾
+  return /^https?:\/\//.test(s) || /^\//.test(s) || /\.(jpe?g|png|gif|webp|svg|bmp|ico)(\?|$)/i.test(s);
+}
 
 // ====== 学员故事墙 ======
 
@@ -15,9 +24,12 @@ interface Story {
   content: string;
   gradient: string;
   initial: string;
+  photo?: string;
 }
 
 const DEFAULT_STORIES: Story[] = [
+  // ⚠️ 演示数据：当后端配置无成功案例时作为 fallback 展示
+  // 上线后应通过管理后台录入真实学员故事
   {
     name: '李明',
     role: '产品经理',
@@ -62,6 +74,7 @@ const DEFAULT_STORIES: Story[] = [
 
 export default function StudentStories() {
   const [stories, setStories] = useState<Story[]>(DEFAULT_STORIES);
+  const [isUsingDefaults, setIsUsingDefaults] = useState(true);
   const [current, setCurrent] = useState(0);
   const timerRef = useRef<ReturnType<typeof setInterval>>();
 
@@ -72,17 +85,28 @@ export default function StudentStories() {
         const config = res.data?.data?.success_cases_page_config;
         if (config?.cases && Array.isArray(config.cases) && config.cases.length > 0) {
           // 将后端数据映射为组件所需格式
-          const mapped: Story[] = config.cases.slice(0, 4).map((c: Record<string, string>) => ({
-            name: c.name,
-            role: c.achievement || '',
-            company: c.school?.split('·')[0]?.trim() || '',
-            year: '',
-            quote: c.quote,
-            content: c.quote,
-            gradient: c.color || 'from-primary-500 to-primary-600',
-            initial: c.avatar || c.name?.[0] || '',
-          }));
+          const mapped: Story[] = config.cases.slice(0, 4).map((c: Record<string, string>) => {
+            // 智能判断：photo 和 avatar 都可能是 URL 或单字符
+            const photoUrl = isImageUrl(c.photo) ? c.photo
+              : isImageUrl(c.avatar) ? c.avatar
+              : undefined;
+            const initialChar = !photoUrl
+              ? (c.avatar && c.avatar.length <= 2 ? c.avatar : '') || c.name?.[0] || ''
+              : '';
+            return {
+              name: c.name,
+              role: c.achievement || '',
+              company: c.school?.split('·')[0]?.trim() || '',
+              year: '',
+              quote: c.quote,
+              content: c.quote,
+              gradient: c.color || 'from-primary-500 to-primary-600',
+              initial: initialChar,
+              photo: photoUrl,
+            };
+          });
           setStories(mapped);
+          setIsUsingDefaults(false);
         }
       })
       .catch(() => {
@@ -106,6 +130,13 @@ export default function StudentStories() {
   const story = stories[current];
   const isReversed = current % 2 === 1;
 
+  /** 图片加载失败时的处理：清除 photo 回退到首字母 */
+  const handlePhotoError = useCallback((idx: number) => {
+    setStories(prev => prev.map((s, i) =>
+      i === idx ? { ...s, photo: undefined } : s
+    ));
+  }, []);
+
   return (
     <section className="py-12">
       {/* 标题 */}
@@ -117,7 +148,12 @@ export default function StudentStories() {
           </h2>
           <div className="h-px w-12 bg-gradient-to-l from-transparent to-primary-300" />
         </div>
-        <p className="text-gray-500 text-sm">来自真实学员的求职经历分享</p>
+        <p className="text-gray-500 text-sm">
+          来自真实学员的求职经历分享
+          {isUsingDefaults && (
+            <span className="ml-2 px-1.5 py-0.5 bg-amber-200 text-amber-800 rounded text-[10px] font-bold">演示数据</span>
+          )}
+        </p>
       </div>
 
       {/* 故事卡片 */}
@@ -132,17 +168,35 @@ export default function StudentStories() {
             className={`flex ${isReversed ? 'flex-col-reverse md:flex-row-reverse' : 'flex-col md:flex-row'} gap-6 md:gap-8 items-stretch min-h-[320px]`}
           >
             {/* 图片区域 */}
-            <div className={`w-full md:w-[40%] rounded-2xl bg-gradient-to-br ${story.gradient} relative overflow-hidden flex items-center justify-center min-h-[200px] md:min-h-0`}>
-              {/* 装饰 */}
-              <div className="absolute -top-10 -right-10 w-40 h-40 bg-white/10 rounded-full" />
-              <div className="absolute -bottom-6 -left-6 w-28 h-28 bg-white/10 rounded-full" />
-              <div className="absolute top-6 left-6">
-                <Quote className="w-8 h-8 text-white/30" />
-              </div>
-              {/* 首字母大字 */}
-              <span className="text-[120px] md:text-[160px] font-bold text-white/20 select-none leading-none">
-                {story.initial}
-              </span>
+            <div className={`w-full md:w-[40%] rounded-2xl bg-gradient-to-br ${story.gradient} relative overflow-hidden flex items-center justify-center min-h-[200px] md:min-h-[280px]`}>
+              {story.photo ? (
+                /* 有照片时显示真实图片，加载失败时回退到首字母 */
+                <img
+                  src={story.photo}
+                  alt={`${story.name}的照片`}
+                  className="absolute inset-0 w-full h-full object-cover"
+                  loading="eager"
+                  decoding="async"
+                  onError={() => handlePhotoError(current)}
+                />
+              ) : (
+                <>
+                  {/* 装饰 */}
+                  <div className="absolute -top-10 -right-10 w-40 h-40 bg-white/10 rounded-full" />
+                  <div className="absolute -bottom-6 -left-6 w-28 h-28 bg-white/10 rounded-full" />
+                  <div className="absolute top-6 left-6">
+                    <Quote className="w-8 h-8 text-white/30" />
+                  </div>
+                  {/* 首字母或通用图标 */}
+                  {story.initial ? (
+                    <span className="text-[120px] md:text-[160px] font-bold text-white/20 select-none leading-none">
+                      {story.initial}
+                    </span>
+                  ) : (
+                    <User className="w-24 h-24 md:w-32 md:h-32 text-white/20" />
+                  )}
+                </>
+              )}
               {/* 姓名标签 */}
               <div className="absolute bottom-4 left-4 bg-white/20 backdrop-blur-sm rounded-lg px-3 py-1.5">
                 <span className="text-white text-sm font-medium">{story.name}</span>

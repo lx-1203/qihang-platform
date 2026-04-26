@@ -8,6 +8,7 @@ import {
 import http from '@/api/http';
 import ErrorState from '@/components/ui/ErrorState';
 import { DEFAULT_AVATAR } from '@/constants';
+import FileUpload from '@/components/ui/FileUpload';
 
 // ====== 导师资料编辑页 ======
 // 个人信息编辑、专长标签、可用时间段管理
@@ -81,13 +82,20 @@ export default function MentorProfile() {
   async function handleSave() {
     try {
       setSaving(true);
-      await http.post('/mentor/profile', profile);
+      // 将前端字段名映射为后端字段名，确保 availableSlots 正确保存
+      const payload = {
+        ...profile,
+        available_time: profile.availableSlots,
+        price: profile.pricePerSession,
+      };
+      await http.post('/mentor/profile', payload);
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
-    } catch {
-      // 保存失败时不做特殊处理，保持当前数据
-      setSaved(true);
-      setTimeout(() => setSaved(false), 2000);
+    } catch (err) {
+      // 保存失败时给出提示
+      console.error('保存资料失败:', err);
+      setError('保存失败，请稍后重试');
+      setTimeout(() => setError(null), 3000);
     } finally {
       setSaving(false);
     }
@@ -231,15 +239,26 @@ export default function MentorProfile() {
               <div className="w-full">
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   <Image className="w-4 h-4 inline mr-1" />
-                  头像链接
+                  上传头像
                 </label>
-                <input
-                  type="url"
-                  value={profile.avatar}
-                  onChange={e => updateField('avatar', e.target.value)}
-                  placeholder="输入头像图片URL"
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                <FileUpload
+                  category="avatar"
+                  accept="image/*"
+                  placeholder="点击或拖拽上传头像（JPG/PNG，最大5MB）"
+                  onSuccess={(result) => updateField('avatar', result.url)}
                 />
+                {profile.avatar && (
+                  <div className="mt-2">
+                    <label className="block text-xs text-gray-500 mb-1">或输入图片URL</label>
+                    <input
+                      type="url"
+                      value={profile.avatar}
+                      onChange={e => updateField('avatar', e.target.value)}
+                      placeholder="输入头像图片URL"
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                    />
+                  </div>
+                )}
               </div>
             </div>
           </motion.div>

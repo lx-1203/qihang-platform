@@ -3,10 +3,11 @@ import { motion } from 'framer-motion';
 import {
   Building2, Globe, MapPin, Phone, Mail,
   Save, Loader2, CheckCircle, Shield,
-  Camera, Users, FileText, ExternalLink
+  Users, FileText, ExternalLink
 } from 'lucide-react';
 import http from '@/api/http';
 import CityPicker from '@/components/ui/CityPicker';
+import FileUpload from '@/components/ui/FileUpload';
 import { DetailSkeleton } from '../../components/ui/Skeleton';
 import ErrorState from '../../components/ui/ErrorState';
 import { showToast } from '../../components/ui/ToastContainer';
@@ -185,39 +186,20 @@ export default function CompanyProfile() {
         className="bg-white rounded-xl p-6 shadow-sm border border-gray-100"
       >
         <div className="flex items-start gap-6">
-          <div className="relative group">
-            <img
-              src={profile.logoUrl}
-              alt="企业Logo"
-              className="w-24 h-24 rounded-xl object-cover border-2 border-gray-200"
-            />
-            <div className="absolute inset-0 bg-black/40 rounded-xl opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity cursor-pointer">
-              <Camera className="w-6 h-6 text-white" />
-              <input
-                type="file"
+          <div className="flex flex-col items-center gap-4">
+            <div className="w-24 h-24 rounded-xl bg-gray-100 flex items-center justify-center overflow-hidden border-2 border-gray-200">
+              {profile.logoUrl ? (
+                <img src={profile.logoUrl} alt="企业Logo" className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+              ) : (
+                <Building2 className="w-10 h-10 text-gray-300" />
+              )}
+            </div>
+            <div className="w-48">
+              <FileUpload
+                category="avatar"
                 accept="image/*"
-                className="absolute inset-0 opacity-0 cursor-pointer"
-                title="点击上传企业Logo"
-                onChange={async (e) => {
-                  const file = e.target.files?.[0];
-                  if (!file) return;
-                  const formData = new FormData();
-                  formData.append('file', file);
-                  formData.append('category', 'avatar');
-                  try {
-                    const res = await http.post('/upload', formData, { headers: { 'Content-Type': 'multipart/form-data' }});
-                    if (res.data?.code === 200) {
-                       updateField('logoUrl', res.data.data.url);
-                       showToast({ type: 'success', title: '上传成功' });
-                    } else {
-                       showToast({ type: 'error', title: '上传失败', message: res.data?.message || '未知错误' });
-                    }
-                  } catch {
-                     showToast({ type: 'error', title: '上传失败', message: '网络错误' });
-                  }
-                  // clear input
-                  e.target.value = '';
-                }}
+                placeholder="点击或拖拽上传Logo（JPG/PNG，最大5MB）"
+                onSuccess={(result) => updateField('logoUrl', result.url)}
               />
             </div>
           </div>
@@ -306,7 +288,7 @@ export default function CompanyProfile() {
 
           {/* Logo URL */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">Logo 链接</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">或输入 Logo URL</label>
             <input
               type="text"
               value={profile.logoUrl}

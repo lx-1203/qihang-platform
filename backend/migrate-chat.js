@@ -19,6 +19,7 @@ async function migrateChatTables() {
         status          ENUM('active','closed','pending') NOT NULL DEFAULT 'active'
                         COMMENT 'active=进行中, closed=已结束, pending=等待客服',
         assigned_admin  INT DEFAULT NULL COMMENT '分配的客服管理员ID',
+        assigned_agent  INT DEFAULT NULL COMMENT '分配的客服专员ID',
         last_message    VARCHAR(500) DEFAULT '' COMMENT '最后一条消息摘要',
         last_message_at TIMESTAMP NULL DEFAULT NULL COMMENT '最后消息时间',
         unread_user     INT NOT NULL DEFAULT 0 COMMENT '用户未读消息数',
@@ -38,7 +39,7 @@ async function migrateChatTables() {
         id              BIGINT AUTO_INCREMENT PRIMARY KEY,
         conversation_id INT NOT NULL COMMENT '所属会话ID',
         sender_id       INT NOT NULL COMMENT '发送者用户ID (0=AI/系统)',
-        sender_role     ENUM('user','admin','ai','system') NOT NULL DEFAULT 'user'
+        sender_role     ENUM('user','admin','agent','ai','system') NOT NULL DEFAULT 'user'
                         COMMENT '发送者角色',
         content         TEXT NOT NULL COMMENT '消息内容',
         msg_type        ENUM('text','image','file','system_notice') NOT NULL DEFAULT 'text'
@@ -62,6 +63,34 @@ async function migrateChatTables() {
       console.error(`  ❌ 表 ${table.name} 创建失败:`, err.message);
       throw err;
     }
+  }
+
+  // 增量迁移：添加 assigned_agent 列（兼容已有数据库）
+  try {
+    await pool.query("ALTER TABLE chat_conversations ADD COLUMN assigned_agent INT DEFAULT NULL COMMENT '分配的客服专员ID' AFTER assigned_admin");
+    console.log('  ✅ chat_conversations.assigned_agent 列添加成功');
+  } catch (err) {
+    if (err.code === 'ER_DUP_FIELDNAME') {
+      console.log('  ⏭️  chat_conversations.assigned_agent 列已存在，跳过');
+    } else {
+      console.error('  ⚠️  添加 assigned_agent 列失败:', err.message);
+    }
+  }
+
+  // 增量迁移：更新 sender_role ENUM 添加 agent
+  try {
+    await pool.query("ALTER TABLE chat_messages MODIFY COLUMN sender_role ENUM('user','admin','agent','ai','system') NOT NULL DEFAULT 'user' COMMENT '发送者角色'");
+    console.log('  ✅ chat_messages.sender_role ENUM 更新成功');
+  } catch (err) {
+    console.error('  ⚠️  更新 sender_role ENUM 失败:', err.message);
+  }
+
+  // 增量迁移：更新 users.role ENUM 添加 agent
+  try {
+    await pool.query("ALTER TABLE users MODIFY COLUMN role ENUM('student','company','mentor','admin','agent') NOT NULL DEFAULT 'student' COMMENT '角色'");
+    console.log('  ✅ users.role ENUM 更新成功');
+  } catch (err) {
+    console.error('  ⚠️  更新 users.role ENUM 失败:', err.message);
   }
 
   console.log('\n  🎉 聊天系统数据库迁移完成！\n');

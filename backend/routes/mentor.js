@@ -15,7 +15,7 @@ router.use(authMiddleware, requireRole('mentor'));
 router.post('/profile', async (req, res) => {
   try {
     const userId = req.user.id;
-    const { name, title, bio, expertise, price, available_time } = req.body;
+    const { name, title, bio, expertise, price, available_time, avatar, phone } = req.body;
 
     if (!title || !bio) {
       return res.status(400).json({ code: 400, message: '头衔和简介不能为空' });
@@ -25,11 +25,20 @@ router.post('/profile', async (req, res) => {
     const [existing] = await pool.query('SELECT id FROM mentor_profiles WHERE user_id = ?', [userId]);
 
     if (existing.length > 0) {
-      // 更新
+      // 更新导师资料
       await pool.query(
         `UPDATE mentor_profiles SET name = ?, title = ?, bio = ?, expertise = ?, price = ?, available_time = ? WHERE user_id = ?`,
         [name || '', title, bio, JSON.stringify(expertise || []), price || 0, JSON.stringify(available_time || []), userId]
       );
+      // 同步更新 users 表的头像和手机号
+      if (avatar !== undefined || phone !== undefined) {
+        const userFields = [];
+        const userParams = [];
+        if (avatar !== undefined) { userFields.push('avatar = ?'); userParams.push(avatar); }
+        if (phone !== undefined) { userFields.push('phone = ?'); userParams.push(phone); }
+        userParams.push(userId);
+        await pool.query(`UPDATE users SET ${userFields.join(', ')} WHERE id = ?`, userParams);
+      }
       const [rows] = await pool.query(
         `SELECT mp.*, u.nickname, u.avatar, u.email, u.phone
          FROM mentor_profiles mp JOIN users u ON mp.user_id = u.id
@@ -43,6 +52,14 @@ router.post('/profile', async (req, res) => {
         `INSERT INTO mentor_profiles (user_id, name, title, bio, expertise, price, available_time) VALUES (?, ?, ?, ?, ?, ?, ?)`,
         [userId, name || '', title, bio, JSON.stringify(expertise || []), price || 0, JSON.stringify(available_time || [])]
       );
+
+      // 通知管理员有新导师入驻申请
+      try {
+        await NotificationTemplates.newMentorApplication(name || title || '未知导师');
+      } catch (notifyErr) {
+        console.error('发送导师认证通知失败(不影响主流程):', notifyErr);
+      }
+
       const [rows] = await pool.query(
         `SELECT mp.*, u.nickname, u.avatar, u.email, u.phone
          FROM mentor_profiles mp JOIN users u ON mp.user_id = u.id
@@ -289,9 +306,11 @@ router.get('/appointments', async (req, res) => {
   try {
     const { status } = req.query;
     let sql = `
-      SELECT a.*, u.nickname AS student_name, u.avatar AS student_avatar, u.email AS student_email
+      SELECT a.*, u.nickname AS student_name, u.avatar AS student_avatar, u.email AS student_email,
+             s.school AS student_school, s.major AS student_major
       FROM appointments a
       JOIN users u ON a.student_id = u.id
+      LEFT JOIN students s ON a.student_id = s.user_id
       WHERE a.mentor_id = ?
     `;
     const params = [req.user.id];
@@ -534,6 +553,80 @@ router.get('/stats/directions', async (req, res) => {
 });
 
 // ==================== 资料库管理 ====================
+
+// POST /api/mentor/resources/check - 批量检查资料文件是否存在（供前端验证链接有效性）
+router.post('/resources/check', async (req, res) => {
+  try {
+    const { ids } = req.body;
+    if (!Array.isArray(ids) || ids.length === 0) {
+      return res.json({ code: 200, data: { results: {} } });
+    }
+
+    const fs = await import('fs');
+    const path = await import('path');
+    const uploadsDir = path.default.resolve(path.default.dirname(new URL(import.meta.url).pathname), '..', 'uploads');
+
+    const results = {};
+    for (const id of ids) {
+      const [rows] = await pool.query('SELECT id, url FROM mentor_resources WHERE id = ?', [id]);
+      if (rows.length === 0) {
+        results[id] = { exists: false, url: null };
+        continue;
+      }
+      const url = rows[0].url;
+      // 将 URL 路径映射到磁盘路径（防止目录穿越）
+      const diskPath = path.default.resolve(uploadsDir, url.replace(/^\/uploads\//, ''));
+      if (!diskPath.startsWith(uploadsDir)) {
+        results[id] = { exists: false, url };
+        continue;
+      }
+      results[id] = { exists: fs.default.existsSync(diskPath), url };
+    }
+
+    res.json({ code: 200, data: { results } });
+  } catch (err) {
+    console.error('检查资料文件存在性失败:', err);
+    res.status(500).json({ code: 500, message: '服务器内部错误' });
+  }
+});
+
+// GET /api/mentor/resources/:id/download - 下载/预览资料（递增下载次数）
+router.get('/resources/:id/download', async (req, res) => {
+  try {
+    const resourceId = Number(req.params.id);
+    const [rows] = await pool.query('SELECT * FROM mentor_resources WHERE id = ?', [resourceId]);
+    if (rows.length === 0) {
+      return res.status(404).json({ code: 404, message: '资料不存在' });
+    }
+
+    const resource = rows[0];
+    const url = resource.url;
+
+    // 递增下载次数
+    await pool.query('UPDATE mentor_resources SET download_count = download_count + 1 WHERE id = ?', [resourceId]);
+
+    // 将 URL 路径映射到磁盘路径，检查文件是否存在（防止目录穿越）
+    const fs = await import('fs');
+    const path = await import('path');
+    const uploadsDir = path.default.resolve(path.default.dirname(new URL(import.meta.url).pathname), '..', 'uploads');
+    const diskPath = path.default.resolve(uploadsDir, url.replace(/^\/uploads\//, ''));
+
+    if (!diskPath.startsWith(uploadsDir)) {
+      return res.status(400).json({ code: 400, message: '无效的文件路径' });
+    }
+
+    if (fs.default.existsSync(diskPath)) {
+      // 文件存在，直接下载
+      return res.download(diskPath, resource.title + path.default.extname(diskPath));
+    }
+
+    // 文件不存在，返回 404 提示
+    res.status(404).json({ code: 404, message: '文件不存在或已被移除，请联系导师重新上传' });
+  } catch (err) {
+    console.error('下载资料失败:', err);
+    res.status(500).json({ code: 500, message: '服务器内部错误' });
+  }
+});
 
 // GET /api/mentor/resources - 获取当前导师的资料列表
 router.get('/resources', async (req, res) => {

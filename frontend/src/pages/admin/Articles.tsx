@@ -3,7 +3,8 @@ import { motion } from 'framer-motion';
 import {
   Search, FileText, Plus, Edit, Trash2, Eye, EyeOff,
   MoreVertical, Loader2, Save, X,
-  ArrowUpDown, ArrowUp, ArrowDown
+  ArrowUpDown, ArrowUp, ArrowDown,
+  Share2, Heart, Image
 } from 'lucide-react';
 import http from '@/api/http';
 import FileUpload from '@/components/ui/FileUpload';
@@ -50,12 +51,25 @@ export default function AdminArticles() {
   });
   const [saving, setSaving] = useState(false);
 
+  // 收藏状态
+  const [favoritedIds, setFavoritedIds] = useState<Set<number>>(new Set());
+
   // 排序状态
   const [sortField, setSortField] = useState<string>('created_at');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
 
   // 删除确认对话框
   const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; articleId: number | null }>({ open: false, articleId: null });
+
+  // 封面图加载失败追踪
+  const [imageErrors, setImageErrors] = useState<Set<string>>(new Set());
+  const markImageError = (key: string) => {
+    setImageErrors(prev => {
+      const next = new Set(prev);
+      next.add(key);
+      return next;
+    });
+  };
 
   const fetchArticles = async (keyword = '', cat = '全部', stat = '') => {
     setLoading(true);
@@ -172,6 +186,42 @@ export default function AdminArticles() {
   const handleUploadSuccess = (url: string) => {
     setFormData(prev => ({ ...prev, cover: url }));
     showToast({ type: 'success', title: '封面上传成功' });
+  };
+
+  // 分享文章 - 复制链接到剪贴板
+  const handleShare = async (article: ArticleItem) => {
+    const url = `${window.location.origin}/articles/${article.id}`;
+    try {
+      await navigator.clipboard.writeText(url);
+      showToast({ type: 'success', title: '链接已复制到剪贴板' });
+    } catch {
+      showToast({ type: 'error', title: '复制失败，请手动复制' });
+    }
+  };
+
+  // 收藏/取消收藏文章
+  const handleToggleFavorite = async (article: ArticleItem) => {
+    const isFavorited = favoritedIds.has(article.id);
+    try {
+      if (isFavorited) {
+        await http.delete(`/student/favorites/${article.id}`);
+        setFavoritedIds(prev => {
+          const next = new Set(prev);
+          next.delete(article.id);
+          return next;
+        });
+        showToast({ type: 'success', title: '已取消收藏' });
+      } else {
+        await http.post('/student/favorites', {
+          target_type: 'article',
+          target_id: article.id,
+        });
+        setFavoritedIds(prev => new Set(prev).add(article.id));
+        showToast({ type: 'success', title: '收藏成功' });
+      }
+    } catch {
+      showToast({ type: 'error', title: '操作失败，请重试' });
+    }
   };
 
   const formatDate = (dateStr: string) => {
@@ -335,11 +385,16 @@ export default function AdminArticles() {
                 >
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-3">
-                      {article.cover ? (
-                        <img src={article.cover} alt="" className="w-12 h-12 rounded-lg object-cover" />
+                      {article.cover && !imageErrors.has(`table-${article.id}`) ? (
+                        <img
+                          src={article.cover}
+                          alt=""
+                          className="w-12 h-12 rounded-lg object-cover"
+                          onError={() => markImageError(`table-${article.id}`)}
+                        />
                       ) : (
                         <div className="w-12 h-12 rounded-lg bg-primary-50 flex items-center justify-center">
-                          <FileText className="w-6 h-6 text-primary-300" />
+                          <Image className="w-6 h-6 text-primary-300" />
                         </div>
                       )}
                       <div>
@@ -367,10 +422,27 @@ export default function AdminArticles() {
                   </td>
                   <td className="px-6 py-4 text-sm text-gray-500">{formatDate(article.created_at)}</td>
                   <td className="px-6 py-4 text-right relative">
-                    <button
-                      onClick={() => setActionMenu(actionMenu === article.id ? null : article.id)}
-                      className="p-1.5 rounded-lg hover:bg-gray-100"
-                    >
+                    <div className="flex items-center justify-end gap-1">
+                      <button
+                        onClick={() => handleShare(article)}
+                        title="分享"
+                        className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-primary-600 transition-colors"
+                      >
+                        <Share2 className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => handleToggleFavorite(article)}
+                        title={favoritedIds.has(article.id) ? '取消收藏' : '收藏'}
+                        className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors"
+                      >
+                        <Heart
+                          className={`w-4 h-4 ${favoritedIds.has(article.id) ? 'fill-red-500 text-red-500' : 'text-gray-400 hover:text-red-400'}`}
+                        />
+                      </button>
+                      <button
+                        onClick={() => setActionMenu(actionMenu === article.id ? null : article.id)}
+                        className="p-1.5 rounded-lg hover:bg-gray-100"
+                      >
                       <MoreVertical className="w-4 h-4 text-gray-400" />
                     </button>
                     {actionMenu === article.id && (
@@ -398,6 +470,7 @@ export default function AdminArticles() {
                         </button>
                       </div>
                     )}
+                    </div>
                   </td>
                 </motion.tr>
               ))}
@@ -407,7 +480,7 @@ export default function AdminArticles() {
       )}
 
       {showModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[60] p-4">
           <div className="bg-white rounded-2xl w-full max-w-3xl max-h-[90vh] overflow-hidden">
             <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
               <h2 className="text-xl font-bold text-gray-900">
@@ -470,9 +543,28 @@ export default function AdminArticles() {
                   <label className="block text-sm font-medium text-gray-700 mb-2">封面图</label>
                   {formData.cover ? (
                     <div className="relative inline-block">
-                      <img src={formData.cover} alt="封面" className="w-40 h-28 object-cover rounded-lg border border-gray-200" />
+                      {imageErrors.has('modal-cover') ? (
+                        <div className="w-40 h-28 rounded-lg border border-gray-200 bg-gray-50 flex flex-col items-center justify-center gap-1">
+                          <Image className="w-8 h-8 text-gray-300" />
+                          <span className="text-xs text-gray-400">图片加载失败</span>
+                        </div>
+                      ) : (
+                        <img
+                          src={formData.cover}
+                          alt="封面"
+                          className="w-40 h-28 object-cover rounded-lg border border-gray-200"
+                          onError={() => markImageError('modal-cover')}
+                        />
+                      )}
                       <button
-                        onClick={() => setFormData(prev => ({ ...prev, cover: '' }))}
+                        onClick={() => {
+                          setImageErrors(prev => {
+                            const next = new Set(prev);
+                            next.delete('modal-cover');
+                            return next;
+                          });
+                          setFormData(prev => ({ ...prev, cover: '' }));
+                        }}
                         className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-0.5 hover:bg-red-600"
                       >
                         <X className="w-3 h-3" />
@@ -480,7 +572,7 @@ export default function AdminArticles() {
                     </div>
                   ) : (
                     <FileUpload
-                      onUploadSuccess={handleUploadSuccess}
+                      onSuccess={(result) => handleUploadSuccess(result.url)}
                       category="cover"
                       accept="image/*"
                     />

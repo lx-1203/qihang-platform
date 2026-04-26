@@ -73,13 +73,13 @@ export default function Login() {
   const navigate = useNavigate();
   const location = useLocation();
   const { setAuth } = useAuthStore();
-  // 🔧 开发模式快速登录账号
-  const DEV_ACCOUNTS = [
-    { label: '管理员', email: 'admin@example.com', password: 'admin123', color: 'bg-red-100 text-red-700 border-red-200' },
-    { label: '学生', email: 'student1@example.com', password: 'password123', color: 'bg-blue-100 text-blue-700 border-blue-200' },
+  // 🔧 开发模式快速登录账号（整个声明在 DEV 条件下，生产构建被 tree-shake 移除）
+  const DEV_ACCOUNTS = import.meta.env.DEV ? [
+    { label: '管理员', email: 'admin@qihang.com', password: 'admin123', color: 'bg-red-100 text-red-700 border-red-200' },
+    { label: '学生', email: 'student@example.com', password: 'password123', color: 'bg-blue-100 text-blue-700 border-blue-200' },
     { label: '企业', email: 'hr@bytedance.com', password: 'password123', color: 'bg-green-100 text-green-700 border-green-200' },
     { label: '导师', email: 'chen@mentor.com', password: 'password123', color: 'bg-purple-100 text-purple-700 border-purple-200' },
-  ];
+  ] : [];
 
   async function handleDevQuickLogin(accountEmail: string, accountPassword: string) {
     setError('');
@@ -449,7 +449,9 @@ export default function Login() {
                     id="email"
                     name="email"
                     type="email"
-                    autoComplete="email"
+                    autoComplete="off"
+                    data-1p-ignore
+                    data-lpignore="true"
                     required
                     value={email}
                     onChange={e => setEmail(e.target.value)}
@@ -490,7 +492,9 @@ export default function Login() {
                     id="password"
                     name="password"
                     type={showPassword ? "text" : "password"}
-                    autoComplete={isLogin ? "current-password" : "new-password"}
+                    autoComplete="off"
+                    data-1p-ignore
+                    data-lpignore="true"
                     required
                     value={password}
                     onChange={e => setPassword(e.target.value)}
@@ -543,7 +547,9 @@ export default function Login() {
                       id="confirmPassword"
                       name="confirmPassword"
                       type={showConfirmPassword ? "text" : "password"}
-                      autoComplete="new-password"
+                      autoComplete="off"
+                      data-1p-ignore
+                      data-lpignore="true"
                       required
                       value={confirmPassword}
                       onChange={e => setConfirmPassword(e.target.value)}

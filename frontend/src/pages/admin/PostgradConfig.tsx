@@ -101,7 +101,7 @@ export default function PostgradConfig() {
       if (res.data?.code === 200) {
         toast.success('保存成功', '考研页面配置已更新，刷新页面后可见变更');
         setSaved(true);
-        await refreshConfig();
+        await refreshConfig(true);
         setTimeout(() => setSaved(false), 2000);
       } else {
         toast.error('保存失败', res.data?.message || '请稍后重试');
@@ -239,7 +239,7 @@ export default function PostgradConfig() {
 
       {/* 删除确认对话框 */}
       {deleteConfirm !== null && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 backdrop-blur-sm">
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}

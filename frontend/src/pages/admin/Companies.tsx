@@ -280,7 +280,7 @@ export default function AdminCompanies() {
 
       {/* 企业详情弹窗 */}
       {detailCompany && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => { setDetailCompany(null); setFeedbackText(''); }}>
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50" onClick={() => { setDetailCompany(null); setFeedbackText(''); }}>
           <motion.div
             initial={{ scale: 0.95, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
@@ -296,7 +296,7 @@ export default function AdminCompanies() {
             <div className="px-6 py-4 space-y-4">
               <div className="flex items-center gap-4">
                 {detailCompany.logo ? (
-                  <img src={detailCompany.logo} alt={detailCompany.company_name} className="w-16 h-16 rounded-xl object-cover" />
+                  <img src={detailCompany.logo} alt={detailCompany.company_name} className="w-16 h-16 rounded-xl object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
                 ) : (
                   <div className="w-16 h-16 bg-blue-100 rounded-xl flex items-center justify-center">
                     <Building2 className="w-8 h-8 text-blue-600" />
@@ -372,7 +372,7 @@ export default function AdminCompanies() {
 
       {/* 驳回弹窗 */}
       {reviewModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => setReviewModal(null)}>
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50" onClick={() => setReviewModal(null)}>
           <motion.div
             initial={{ scale: 0.95, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}

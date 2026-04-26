@@ -87,7 +87,7 @@ export default function ConfirmDialog({
     <AnimatePresence>
       {open && (
         <div
-          className="fixed inset-0 z-[9999] flex items-center justify-center"
+          className="fixed inset-0 z-[65] flex items-center justify-center"
           onKeyDown={handleKeyDown}
         >
           {/* 蒙层 */}

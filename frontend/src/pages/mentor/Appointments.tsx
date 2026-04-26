@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   Calendar, Clock, CheckCircle, XCircle,
   CalendarCheck, CalendarX, Search,
-  DollarSign, Timer, AlertCircle, Video
+  DollarSign, Timer, AlertCircle, Video,
+  Plus, Settings, ChevronDown, ChevronUp
 } from 'lucide-react';
 import http from '@/api/http';
+import { showToast } from '@/components/ui/ToastContainer';
 import { ListSkeleton } from '../../components/ui/Skeleton';
 import ErrorState from '../../components/ui/ErrorState';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
@@ -56,10 +58,68 @@ export default function MentorAppointments() {
   const [rejectingId, setRejectingId] = useState<number | null>(null);
   const [rejectLoading, setRejectLoading] = useState(false);
   const [meetingLinks, setMeetingLinks] = useState<Record<number, string>>({});
+  const [availableSlots, setAvailableSlots] = useState<string[]>([]);
+  const [slotInput, setSlotInput] = useState('');
+  const [showSlotPanel, setShowSlotPanel] = useState(false);
+  const [savingSlots, setSavingSlots] = useState(false);
 
   useEffect(() => {
     fetchAppointments();
+    fetchAvailableSlots();
   }, []);
+
+  // 获取导师可用时间段
+  async function fetchAvailableSlots() {
+    try {
+      const res = await http.get('/mentor/profile');
+      if (res.data?.code === 200 && res.data.data?.profile) {
+        const p = res.data.data.profile;
+        const slots = Array.isArray(p.available_time)
+          ? p.available_time
+          : (typeof p.available_time === 'string' ? JSON.parse(p.available_time || '[]') : []);
+        setAvailableSlots(slots);
+      }
+    } catch {
+      // 时间段为可选功能，静默失败即可
+    }
+  }
+
+  // 添加时间段
+  function addSlot() {
+    const trimmed = slotInput.trim();
+    if (trimmed && !availableSlots.includes(trimmed)) {
+      setAvailableSlots(prev => [...prev, trimmed]);
+      setSlotInput('');
+    }
+  }
+
+  // 删除时间段
+  function removeSlot(slot: string) {
+    setAvailableSlots(prev => prev.filter(s => s !== slot));
+  }
+
+  // 保存可用时间段（需先获取现有资料再合并更新）
+  async function saveAvailableSlots() {
+    try {
+      setSavingSlots(true);
+      const profileRes = await http.get('/mentor/profile');
+      const existing = profileRes.data?.data?.profile || {};
+      await http.post('/mentor/profile', {
+        name: existing.name || '',
+        title: existing.title || '导师',
+        bio: existing.bio || '暂无简介',
+        expertise: existing.expertise || [],
+        price: existing.price || 0,
+        available_time: availableSlots,
+        avatar: existing.avatar || '',
+      });
+      showToast('时间段保存成功', 'success');
+    } catch {
+      showToast('保存失败，请稍后重试', 'error');
+    } finally {
+      setSavingSlots(false);
+    }
+  }
 
   async function fetchAppointments() {
     try {
@@ -68,14 +128,48 @@ export default function MentorAppointments() {
       if (res.data?.code === 200 && res.data.data) {
         const raw = res.data.data;
         // 后端可能返回 {appointments: [...]} 或 {list: [...]} 或直接是数组
-        const list = Array.isArray(raw.list)
+        const list: any[] = Array.isArray(raw.list)
           ? raw.list
           : Array.isArray(raw.appointments)
             ? raw.appointments
             : Array.isArray(raw)
               ? raw
               : [];
-        setAppointments(list);
+        // 后端返回 snake_case 字段，前端需要 camelCase 映射
+        const mapped: Appointment[] = list.map((item: any) => {
+          const dt = item.appointment_time ? new Date(item.appointment_time) : null;
+          // 2099-12-31 是"待协商时间"的占位值
+          const isPlaceholder = dt && dt.getFullYear() >= 2099;
+          const dateStr = isPlaceholder ? '' : (dt ? dt.toISOString().split('T')[0] : (item.date || ''));
+          const timeStr = isPlaceholder
+            ? '待协商'
+            : (dt ? dt.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', hour12: false }) : (item.time || ''));
+          // 学生姓名：优先 nickname → email 前缀（过滤特殊字符） → '未知学生'
+          const sanitizeName = (s: string) => s
+            .replace(/[\u200B\u200C\u200D\uFEFF]/g, '') // 零宽字符
+            .replace(/[\u0000-\u001F\u007F-\u009F]/g, '') // 控制字符
+            .replace(/\p{Emoji_Presentation}/gu, '') // emoji
+            .trim();
+          const rawName = item.student_name || item.studentName || '';
+          const studentName = sanitizeName(rawName)
+            || (item.student_email ? item.student_email.split('@')[0].replace(/[^a-zA-Z0-9\u4e00-\u9fa5]/g, '') : '')
+            || '未知学生';
+          return {
+            id: item.id,
+            studentName,
+            studentAvatar: item.student_avatar || item.studentAvatar || '',
+            studentSchool: item.student_school || item.studentSchool || '',
+            service: item.service_title || item.service || '',
+            date: dateStr,
+            time: timeStr,
+            duration: item.duration || 60,
+            status: item.status,
+            fee: item.fee || 0,
+            note: item.note || '',
+            meeting_link: item.meeting_link || '',
+          };
+        });
+        setAppointments(mapped);
       }
     } catch (err) {
       setError('数据加载失败，请刷新重试');
@@ -155,9 +249,15 @@ export default function MentorAppointments() {
 
   // 解析日期用于日历指示器
   function parseDateParts(dateStr: string) {
-    const d = new Date(dateStr);
     const months = ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'];
     const weekdays = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
+    if (!dateStr) {
+      return { month: '', day: '?', weekday: '待定' };
+    }
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) {
+      return { month: '', day: '?', weekday: '待定' };
+    }
     return {
       month: months[d.getMonth()],
       day: d.getDate(),
@@ -167,6 +267,7 @@ export default function MentorAppointments() {
 
   // 判断是否为今天
   function isToday(dateStr: string) {
+    if (!dateStr) return false;
     const today = new Date().toISOString().split('T')[0];
     return dateStr === today;
   }
@@ -216,6 +317,101 @@ export default function MentorAppointments() {
           </motion.div>
         ))}
       </div>
+
+      {/* 可用时间段管理 */}
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.2 }}
+        className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden"
+      >
+        <button
+          onClick={() => setShowSlotPanel(!showSlotPanel)}
+          className="w-full flex items-center justify-between p-4 hover:bg-gray-50 transition-colors"
+        >
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-primary-50 rounded-lg flex items-center justify-center">
+              <Settings className="w-5 h-5 text-primary-600" />
+            </div>
+            <div className="text-left">
+              <h3 className="font-bold text-gray-900">可用时间段设置</h3>
+              <p className="text-xs text-gray-500">
+                {availableSlots.length > 0
+                  ? `已设置 ${availableSlots.length} 个时间段`
+                  : '暂未设置时间段，学生将无法预约'}
+              </p>
+            </div>
+          </div>
+          {showSlotPanel ? (
+            <ChevronUp className="w-5 h-5 text-gray-400" />
+          ) : (
+            <ChevronDown className="w-5 h-5 text-gray-400" />
+          )}
+        </button>
+
+        <AnimatePresence>
+          {showSlotPanel && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.2 }}
+            >
+              <div className="px-4 pb-4 border-t border-gray-100 pt-4">
+                {/* 已有时间段列表 */}
+                <div className="space-y-2 mb-4">
+                  {availableSlots.length === 0 && (
+                    <p className="text-sm text-gray-400 text-center py-4">暂无可用时间段，请添加</p>
+                  )}
+                  {availableSlots.map((slot, i) => (
+                    <div
+                      key={i}
+                      className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+                    >
+                      <div className="flex items-center gap-2">
+                        <Clock className="w-4 h-4 text-primary-500" />
+                        <span className="text-sm text-gray-700">{slot}</span>
+                      </div>
+                      <button
+                        onClick={() => removeSlot(slot)}
+                        className="text-gray-400 hover:text-red-500 transition-colors"
+                      >
+                        <XCircle className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+
+                {/* 添加新时间段 */}
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={slotInput}
+                    onChange={e => setSlotInput(e.target.value)}
+                    onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addSlot())}
+                    placeholder="例如：周一 09:00-12:00"
+                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                  />
+                  <button
+                    onClick={addSlot}
+                    className="flex items-center gap-1 px-4 py-2 bg-primary-600 text-white rounded-lg text-sm font-medium hover:bg-primary-700 transition-colors"
+                  >
+                    <Plus className="w-4 h-4" />
+                    添加
+                  </button>
+                  <button
+                    onClick={saveAvailableSlots}
+                    disabled={savingSlots}
+                    className="flex items-center gap-1 px-4 py-2 bg-white text-primary-600 border border-primary-300 rounded-lg text-sm font-medium hover:bg-primary-50 transition-colors disabled:opacity-50"
+                  >
+                    {savingSlots ? '保存中...' : '保存'}
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </motion.div>
 
       {/* 筛选标签 + 搜索 */}
       <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
@@ -292,8 +488,12 @@ export default function MentorAppointments() {
                   <div className="flex items-start justify-between">
                     <div className="flex items-start gap-4">
                       {/* 学生头像 */}
-                      <div className="w-12 h-12 rounded-full bg-primary-100 text-primary-700 font-bold flex items-center justify-center text-lg shrink-0">
-                        {apt.studentAvatar}
+                      <div className="w-12 h-12 rounded-full bg-primary-100 text-primary-700 font-bold flex items-center justify-center text-lg shrink-0 overflow-hidden">
+                        {apt.studentAvatar && apt.studentAvatar.startsWith('http') ? (
+                          <img src={apt.studentAvatar} alt={apt.studentName} className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                        ) : (
+                          apt.studentName?.charAt(0) || '?'
+                        )}
                       </div>
                       <div>
                         <div className="flex items-center gap-2 mb-1">

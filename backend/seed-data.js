@@ -32,6 +32,20 @@ function randDate(start, end) {
     .toISOString().split('T')[0];
 }
 
+// 根据职位标题智能推断分类（与前端 CATEGORY_TAGS 保持一致：技术/产品/运营/设计/市场/销售/职能）
+function inferJobCategory(title) {
+  const t = String(title);
+  if (/前端|后端|Java|Python|算法|开发|架构师|测试|运维|DevOps|嵌入式|安全|大数据|AI|人工智能|深度学习|NLP|机器学习|C\+\+|Golang|Rust|全栈|数据库|云计算|数据工程|后端|移动端|iOS|Android|Go |PHP|Node|Ruby/.test(t)) return '技术';
+  if (/产品|PM |产品经理|Product/.test(t)) return '产品';
+  if (/运营|内容运营|社群|用户增长|活动策划|新媒体|社区|SEO|SEM/.test(t)) return '运营';
+  if (/设计|UI|UX|视觉|交互|创意|美术|动效/.test(t)) return '设计';
+  if (/市场|品牌|营销|推广|公关|媒介/.test(t)) return '市场';
+  if (/销售|BD|商务拓展|客户经理|大客户|渠道|Sales/.test(t)) return '销售';
+  if (/人力|行政|财务|法务|合规|HR|行政|秘书|助理|前台|人事|总助|总裁办/.test(t)) return '职能';
+  if (/教育|教学|老师|讲师|管培|培训/.test(t)) return '职能';
+  return '技术'; // 默认归入技术
+}
+
 // 解析SQL文件中的所有 INSERT INTO tableName (...) VALUES ...; 块
 function extractInsertBlocks(sqlContent, tableName) {
   const blocks = [];
@@ -355,7 +369,7 @@ async function importCampusJobs() {
           [
             title, companyId, '新东方教育科技集团', city,
             get('salary_range') || '12K-20K', jobType,
-            get('job_type') || '教育', get('job_description') || '', get('requirements') || '',
+            inferJobCategory(title), get('job_description') || '', get('requirements') || '',
             randInt(0, 1), randInt(50, 5000),
           ]
         );
@@ -636,15 +650,14 @@ async function seedBaseData() {
   // --- 4c. 更多职位 ---
   log(tag, '创建企业职位...');
   const [companyIds] = await pool.query("SELECT id, company_name FROM companies");
-  const jobTitles = ['前端开发工程师','Java后端开发','Python开发','算法工程师','数据分析师','产品经理','UI设计师','测试工程师','DevOps工程师','全栈工程师','运营专员','市场专员','人力资源专员','财务分析师','嵌入式开发工程师','安全工程师','游戏开发工程师','深度学习工程师','NLP工程师','商业分析师'];
+  const jobTitles = ['前端开发工程师','Java后端开发','Python开发','算法工程师','数据分析师','产品经理','UI设计师','测试工程师','DevOps工程师','全栈工程师','运营专员','市场专员','人力资源专员','财务分析师','嵌入式开发工程师','安全工程师','游戏开发工程师','深度学习工程师','NLP工程师','商业分析师','品牌营销经理','大客户销售经理','渠道销售经理','市场推广专员','新媒体运营','客户成功经理'];
   const jobLocations = ['北京','上海','广州','深圳','杭州','成都','武汉','南京','西安','苏州'];
   const salaries = ['8K-15K','10K-18K','12K-20K','15K-25K','18K-30K','20K-35K','25K-40K'];
-  const jobCategories = ['技术','产品','运营','市场','设计','职能'];
   const jobTypes = ['校招', '实习', '社招'];
 
   for (const title of jobTitles) {
     const comp = randChoice(companyIds);
-    const cat = title.includes('产品') ? '产品' : title.includes('运营') || title.includes('市场') ? '运营' : title.includes('设计') ? '设计' : title.includes('人力') || title.includes('财务') ? '职能' : '技术';
+    const cat = inferJobCategory(title);
     await pool.query(
       `INSERT INTO jobs (title, company_id, company_name, location, salary, type, category, description, requirements, urgent, view_count)
        VALUES (?,?,?,?,?,?,?,?,?,?,?)`,
@@ -823,7 +836,7 @@ async function importZhaopin() {
         title, companyId, '新东方教育科技集团',
         String(title).match(/^([^-]+)/)?.[1] || '北京',
         get('salary_range') || '12K-20K', jobType,
-        get('job_type') || '教育', get('job_description') || '',
+        inferJobCategory(title), get('job_description') || '',
         get('requirements') || '', randInt(0, 1), randInt(50, 5000),
       ]);
 

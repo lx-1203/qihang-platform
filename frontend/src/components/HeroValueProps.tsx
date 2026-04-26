@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion';
 import { Target, Zap, ShieldCheck, type LucideIcon } from 'lucide-react';
 import { useInViewAnimation } from '@/hooks/useInViewAnimation';
+import { useConfigStore } from '@/store/config';
 import homeConfig from '@/data/home-ui-config.json';
 
 // ====== 核心价值锚点组件 ======
@@ -17,8 +18,8 @@ const CARD_ACCENTS = [
   { gradient: 'from-blue-400 to-primary-400', glow: 'shadow-blue-200/60' },
 ];
 
-// 从配置文件读取价值主张列表
-const VALUE_PROPS = homeConfig.heroValueProps.map((item, idx) => ({
+// 静态默认值（fallback）
+const DEFAULT_VALUE_PROPS = homeConfig.heroValueProps.map((item, idx) => ({
   ...item,
   icon: ICON_MAP[item.icon] ?? Target,
   accent: CARD_ACCENTS[idx] ?? CARD_ACCENTS[0],
@@ -26,6 +27,15 @@ const VALUE_PROPS = homeConfig.heroValueProps.map((item, idx) => ({
 
 export default function HeroValueProps() {
   const { ref, isInView } = useInViewAnimation({ threshold: 0.2 });
+
+  // 从 config store 读取，fallback 到静态 JSON
+  const storeProps = useConfigStore(s => s.getJson<Array<{ title: string; description: string; icon: string; color: string; bg: string; borderColor: string }>>('home_ui_config'));
+  const rawProps = storeProps?.heroValueProps;
+  const VALUE_PROPS = (Array.isArray(rawProps) && rawProps.length > 0 ? rawProps : homeConfig.heroValueProps).map((item, idx) => ({
+    ...item,
+    icon: ICON_MAP[item.icon] ?? Target,
+    accent: CARD_ACCENTS[idx] ?? CARD_ACCENTS[0],
+  }));
 
   return (
     <motion.div

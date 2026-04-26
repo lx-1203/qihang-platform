@@ -188,7 +188,8 @@ router.get('/resumes', async (req, res) => {
 
     let sql = `
       SELECT r.*, j.title AS job_title, j.company_name,
-             j.logo AS company_logo, j.salary AS job_salary, j.location AS job_location
+             j.logo AS company_logo, j.salary AS job_salary, j.location AS job_location,
+             j.type AS job_type
       FROM resumes r
       LEFT JOIN jobs j ON r.job_id = j.id
       WHERE r.student_id = ?
@@ -210,6 +211,86 @@ router.get('/resumes', async (req, res) => {
   }
 });
 
+/**
+ * DELETE /api/student/resumes/:id - 撤回投递
+ */
+router.delete('/resumes/:id', async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const resumeId = parseInt(req.params.id);
+
+    if (isNaN(resumeId)) {
+      return res.status(400).json({ code: 400, message: '无效的投递ID' });
+    }
+
+    // 验证归属
+    const [rows] = await pool.query(
+      'SELECT id, status FROM resumes WHERE id = ? AND student_id = ?',
+      [resumeId, userId]
+    );
+    if (!rows.length) {
+      return res.status(404).json({ code: 404, message: '投递记录不存在' });
+    }
+
+    // 已通过/已面试的不允许撤回
+    if (['offered', 'interview'].includes(rows[0].status)) {
+      return res.status(400).json({ code: 400, message: '当前状态不允许撤回' });
+    }
+
+    // 查询关联的企业信息，用于撤回通知
+    let companyUserId = null;
+    let jobTitle = '';
+    let studentName = '';
+    try {
+      const [resumeInfo] = await pool.query(
+        `SELECT j.company_id, j.title AS job_title, u.nickname AS student_name
+         FROM resumes r
+         JOIN jobs j ON r.job_id = j.id
+         JOIN users u ON r.student_id = u.id
+         WHERE r.id = ?`,
+        [resumeId]
+      );
+      if (resumeInfo.length > 0) {
+        const companyId = resumeInfo[0].company_id;
+        jobTitle = resumeInfo[0].job_title;
+        studentName = resumeInfo[0].student_name;
+        // 查找企业对应的 user_id
+        const [companyUser] = await pool.query(
+          'SELECT user_id FROM companies WHERE id = ?',
+          [companyId]
+        );
+        if (companyUser.length > 0) {
+          companyUserId = companyUser[0].user_id;
+        }
+      }
+    } catch (queryErr) {
+      console.error('查询撤回信息失败(不影响撤回操作):', queryErr);
+    }
+
+    await pool.query('DELETE FROM resumes WHERE id = ? AND student_id = ?', [resumeId, userId]);
+
+    // 通知企业：学生撤回了投递
+    if (companyUserId) {
+      try {
+        await createNotification({
+          user_id: companyUserId,
+          type: 'resume',
+          title: '投递已撤回',
+          content: `${studentName} 撤回了对「${jobTitle}」职位的投递`,
+          related_type: 'resume',
+          related_id: resumeId,
+        });
+      } catch (notifyErr) {
+        console.error('发送撤回通知失败(不影响主流程):', notifyErr);
+      }
+    }
+    res.json({ code: 200, message: '撤回成功' });
+  } catch (err) {
+    console.error('撤回投递失败:', err);
+    res.status(500).json({ code: 500, message: '服务器内部错误' });
+  }
+});
+
 // ==================== 导师预约 ====================
 
 /**
@@ -220,8 +301,8 @@ router.post('/appointments', idempotency(), async (req, res) => {
     const userId = req.user.id;
     const { mentor_id, appointment_time, duration, note, fee, service_title } = req.body;
 
-    if (!mentor_id || !appointment_time) {
-      return res.status(400).json({ code: 400, message: '导师ID和预约时间不能为空' });
+    if (!mentor_id) {
+      return res.status(400).json({ code: 400, message: '导师ID不能为空' });
     }
 
     // 检查导师是否存在（通过 mentor_profiles 表，mentor_id 是 users.id）
@@ -235,18 +316,21 @@ router.post('/appointments', idempotency(), async (req, res) => {
       return res.status(404).json({ code: 404, message: '导师不存在或暂不可预约' });
     }
 
+    // 如果未提供预约时间，使用占位时间（导师后续可确认实际时间）
+    const resolvedTime = appointment_time || '2099-12-31 00:00:00';
+
     // 创建预约
     const [result] = await pool.query(
       `INSERT INTO appointments (student_id, mentor_id, appointment_time, duration, note, fee, service_title, status)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-      [userId, mentor_id, appointment_time, duration || 60, note || '', fee || 0, service_title || '', 'pending']
+      [userId, mentor_id, resolvedTime, duration || 60, note || '', fee || 0, service_title || '', 'pending']
     );
 
     // 通知导师有新的预约请求
     try {
       const [studentRows] = await pool.query('SELECT nickname FROM users WHERE id = ?', [userId]);
       const studentName = studentRows[0]?.nickname || '未知学生';
-      const timeStr = new Date(appointment_time).toLocaleString('zh-CN');
+      const timeStr = appointment_time ? new Date(appointment_time).toLocaleString('zh-CN') : '待协商';
       await NotificationTemplates.newAppointmentRequest(mentor_id, studentName, timeStr);
     } catch (notifyErr) {
       console.error('发送预约通知失败(不影响主流程):', notifyErr);
@@ -490,7 +574,7 @@ router.get('/favorites', async (req, res) => {
     const userId = req.user.id;
     const { type } = req.query; // job / course / mentor
 
-    let sql = 'SELECT * FROM favorites WHERE user_id = ?';
+    let sql = 'SELECT *, created_at AS favorited_at FROM favorites WHERE user_id = ?';
     const params = [userId];
 
     if (type && type !== 'all') {
@@ -502,19 +586,31 @@ router.get('/favorites', async (req, res) => {
 
     const [rows] = await pool.query(sql, params);
 
-    // 批量查关联信息
+    // 批量查关联信息（补充展示所需的完整字段）
     const enriched = await Promise.all(
       rows.map(async (fav) => {
         let detail = {};
         try {
           if (fav.target_type === 'job') {
-            const [j] = await pool.query('SELECT title, company_name AS subtitle, logo AS image, salary AS extra FROM jobs WHERE id = ?', [fav.target_id]);
+            const [j] = await pool.query(
+              `SELECT title, company_name, location, salary, job_type, tags, logo,
+                      created_at FROM jobs WHERE id = ?`,
+              [fav.target_id]
+            );
             detail = j[0] || {};
-          } else if (fav.target_type === 'course') {
-            const [c] = await pool.query('SELECT title, mentor_name AS subtitle, cover AS image, rating AS extra FROM courses WHERE id = ?', [fav.target_id]);
+          } else if (fav.target_type === 'course' || fav.target_type === 'course_like') {
+            const [c] = await pool.query(
+              `SELECT title, mentor_name, category, price, rating, student_count,
+                      cover, created_at FROM courses WHERE id = ?`,
+              [fav.target_id]
+            );
             detail = c[0] || {};
           } else if (fav.target_type === 'mentor') {
-            const [m] = await pool.query('SELECT name AS title, title AS subtitle, avatar AS image, rating AS extra FROM mentor_profiles WHERE id = ?', [fav.target_id]);
+            const [m] = await pool.query(
+              `SELECT name, title AS mentor_title, avatar, rating, expertise AS specialty,
+                      rating_count AS review_count, price, created_at FROM mentor_profiles WHERE id = ?`,
+              [fav.target_id]
+            );
             detail = m[0] || {};
           }
         } catch {
@@ -543,7 +639,7 @@ router.post('/favorites', idempotency(), async (req, res) => {
       return res.status(400).json({ code: 400, message: '收藏类型和目标ID不能为空' });
     }
 
-    if (!['job', 'course', 'mentor'].includes(target_type)) {
+    if (!['job', 'course', 'mentor', 'course_like'].includes(target_type)) {
       return res.status(400).json({ code: 400, message: '无效的收藏类型' });
     }
 

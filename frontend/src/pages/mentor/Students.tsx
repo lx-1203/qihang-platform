@@ -7,6 +7,7 @@ import {
   User
 } from 'lucide-react';
 import http from '@/api/http';
+import { showToast } from '@/components/ui/ToastContainer';
 import ErrorState from '@/components/ui/ErrorState';
 import { DEFAULT_AVATAR } from '@/constants';
 
@@ -27,6 +28,7 @@ export default function MentorStudents() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchKeyword, setSearchKeyword] = useState('');
+  const [chatLoadingId, setChatLoadingId] = useState<number | null>(null);
 
   // 获取学生列表
   useEffect(() => {
@@ -173,15 +175,33 @@ export default function MentorStudents() {
 
               {/* 操作按钮 */}
               <div className="flex gap-2 pt-3 border-t border-gray-100">
-                <a
-                  href={`mailto:${student.email}?subject=启航平台 - 导师消息&body=你好，${student.nickname || '同学'}，`}
-                  className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-primary-50 text-primary-700 rounded-lg text-sm font-medium hover:bg-primary-100 transition-colors"
-                >
-                  <MessageCircle size={14} />
-                  发消息
-                </a>
                 <button
-                  onClick={() => navigate('/mentor/appointments')}
+                  onClick={async () => {
+                    try {
+                      setChatLoadingId(student.id);
+                      const res = await http.post('/chat/conversations', { target_user_id: student.id });
+                      if (res.data?.code === 200 && res.data.data?.id) {
+                        navigate(`/chat/${res.data.data.id}`);
+                      }
+                    } catch (err) {
+                      showToast('创建聊天失败，请稍后重试', 'error');
+                      if (import.meta.env.DEV) console.error('[DEV] createChat error:', err);
+                    } finally {
+                      setChatLoadingId(null);
+                    }
+                  }}
+                  disabled={chatLoadingId === student.id}
+                  className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-primary-50 text-primary-700 rounded-lg text-sm font-medium hover:bg-primary-100 transition-colors disabled:opacity-50"
+                >
+                  {chatLoadingId === student.id ? (
+                    <Loader2 size={14} className="animate-spin" />
+                  ) : (
+                    <MessageCircle size={14} />
+                  )}
+                  联系学生
+                </button>
+                <button
+                  onClick={() => navigate(`/mentor/appointments?studentId=${student.id}`)}
                   className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-gray-50 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-100 transition-colors"
                 >
                   <Calendar size={14} />

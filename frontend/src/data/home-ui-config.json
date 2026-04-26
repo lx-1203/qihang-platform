@@ -110,6 +110,13 @@
     }
   ],
 
+  "stats": {
+    "students": { "value": 12580, "label": "注册学生", "suffix": "+" },
+    "companies": { "value": 860, "label": "合作企业", "suffix": "+" },
+    "mentors": { "value": 320, "label": "认证导师", "suffix": "+" },
+    "jobs": { "value": 4520, "label": "在招职位", "suffix": "+" }
+  },
+
   "valueSections": [
     {
       "role": "对学生",

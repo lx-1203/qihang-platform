@@ -404,14 +404,16 @@ export default function AdminAnnouncements() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-black/40 z-50"
+              className="fixed inset-0 bg-black/40 z-[60] flex items-center justify-center"
               onClick={() => setShowEditor(false)}
             />
             <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-2xl bg-white rounded-2xl shadow-2xl z-50 p-6 max-h-[85vh] overflow-y-auto"
+              className="z-[61] fixed inset-0 flex items-center justify-center pointer-events-none"
+            >
+            <div className="w-full max-w-2xl bg-white rounded-2xl shadow-2xl p-6 max-h-[85vh] overflow-y-auto pointer-events-auto"
             >
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-lg font-bold text-gray-900">
@@ -464,7 +466,7 @@ export default function AdminAnnouncements() {
                     <FileUpload
                       category="general"
                       accept="image/*"
-                      onUpload={(url: string) => setForm(prev => ({ ...prev, image_url: url }))}
+                      onSuccess={(result) => setForm(prev => ({ ...prev, image_url: result.url }))}
                     />
                   )}
                 </div>
@@ -535,6 +537,7 @@ export default function AdminAnnouncements() {
                   {form.publishAt ? '定时发布' : '立即发布'}
                 </button>
               </div>
+            </div>
             </motion.div>
           </>
         )}

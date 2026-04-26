@@ -9,6 +9,7 @@ import {
 import http from '@/api/http';
 import { COURSE_CATEGORIES } from '@/constants';
 import { showToast } from '@/components/ui/ToastContainer';
+import FileUpload from '@/components/ui/FileUpload';
 
 // ====== 导师端 - 课程创建/编辑全页面表单 ======
 
@@ -180,6 +181,7 @@ export default function CourseForm() {
 
   // 提交
   async function handleSubmit() {
+    if (submitting) return; // 防止重复提交
     if (!validate()) return;
 
     try {
@@ -212,6 +214,7 @@ export default function CourseForm() {
   }
 
   function handleBack() {
+    if (submitting) return; // 保存中禁止离开
     if (isDirty) {
       if (!window.confirm('表单内容尚未保存，确定要离开吗？')) return;
     }
@@ -237,7 +240,8 @@ export default function CourseForm() {
         <div className="flex items-center gap-3">
           <button
             onClick={handleBack}
-            className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
+            disabled={submitting}
+            className="p-2 rounded-lg hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <ArrowLeft className="w-5 h-5 text-gray-600" />
           </button>
@@ -370,15 +374,35 @@ export default function CourseForm() {
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1.5">
               <Image className="w-4 h-4 inline mr-1" />
-              封面图片链接
+              封面图片
             </label>
-            <input
-              type="url"
-              value={form.cover}
-              onChange={e => updateField('cover', e.target.value)}
-              className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 outline-none"
-              placeholder="输入封面图片 URL（可选）"
-            />
+            {form.cover ? (
+              <div className="space-y-2">
+                <div className="relative inline-block">
+                  <img src={form.cover} alt="封面预览" className="w-40 h-24 object-cover rounded-lg border border-gray-200" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                  <button
+                    onClick={() => updateField('cover', '')}
+                    className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center text-xs hover:bg-red-600"
+                  >
+                    ×
+                  </button>
+                </div>
+                <input
+                  type="url"
+                  value={form.cover}
+                  onChange={e => updateField('cover', e.target.value)}
+                  className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 outline-none"
+                  placeholder="或输入封面图片 URL"
+                />
+              </div>
+            ) : (
+              <FileUpload
+                category="cover"
+                accept="image/*"
+                placeholder="点击或拖拽上传封面图（JPG/PNG，最大5MB）"
+                onSuccess={(result) => updateField('cover', result.url)}
+              />
+            )}
           </div>
 
           {/* 视频链接 */}
@@ -492,7 +516,8 @@ export default function CourseForm() {
       >
         <button
           onClick={handleBack}
-          className="px-6 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+          disabled={submitting}
+          className="px-6 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
           取消
         </button>

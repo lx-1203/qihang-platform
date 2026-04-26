@@ -49,6 +49,7 @@ export default function ProtectedRoute({ allowedRoles, children }: ProtectedRout
       company: '/company/dashboard',
       mentor: '/mentor/dashboard',
       student: '/',
+      agent: '/agent/workbench',
     };
     return <Navigate to={roleHome[user.role] || '/'} replace />;
   }

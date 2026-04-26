@@ -126,9 +126,10 @@ export default function CourseManage() {
 
   // 格式化浏览量
   function formatViews(n: number): string {
-    if (n >= 10000) return (n / 10000).toFixed(1) + 'w';
-    if (n >= 1000) return (n / 1000).toFixed(1) + 'k';
-    return String(n);
+    const num = Number(n) || 0;
+    if (num >= 10000) return (num / 10000).toFixed(1) + 'w';
+    if (num >= 1000) return (num / 1000).toFixed(1) + 'k';
+    return String(num);
   }
 
   if (loading) return <div className="space-y-6"><TableSkeleton rows={8} cols={7} /></div>;
@@ -245,7 +246,7 @@ export default function CourseManage() {
                       {/* 课程封面 */}
                       <div className="w-14 h-10 bg-gray-100 rounded-lg flex items-center justify-center shrink-0">
                         {course.cover ? (
-                          <img src={course.cover} alt="" className="w-full h-full object-cover rounded-lg" />
+                          <img src={course.cover} alt="" className="w-full h-full object-cover rounded-lg" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
                         ) : (
                           <BookOpen className="w-5 h-5 text-gray-400" />
                         )}

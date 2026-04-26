@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Lightbulb, Rocket, Trophy, Users, Zap, ExternalLink, ChevronRight, Loader2 } from 'lucide-react';
+import { Lightbulb, Rocket, Trophy, Users, Zap, ExternalLink, ChevronRight, Loader2, Megaphone } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import Tag from '@/components/ui/Tag';
 import { useConfigStore } from '@/store/config';
@@ -20,6 +20,8 @@ interface Competition {
   deadline: string;
   tags?: string[];
   registration_url?: string;
+  image?: string;
+  link?: string;
 }
 
 interface Resource {
@@ -44,20 +46,28 @@ export default function Entrepreneurship() {
   const [resourcesLoading, setResourcesLoading] = useState(true);
   const [resourcesError, setResourcesError] = useState(false);
 
-  // 加载竞赛列表
+  // 加载竞赛列表（API 优先，无数据时回退到配置中心）
+  const configCompetitions = entrepreneurshipConfig.competitions || [];
   useEffect(() => {
     http.get('/competitions', { params: { status: '报名中', pageSize: 4 } })
       .then(res => {
         if (res.data?.code === 200) {
-          setCompetitions(res.data.data.list || []);
-          setCompetitionsTotal(res.data.data.total || 0);
+          const list = res.data.data.list || [];
+          if (list.length > 0) {
+            setCompetitions(list);
+            setCompetitionsTotal(res.data.data.total || 0);
+          } else {
+            // API 无数据，使用配置中心的竞赛列表
+            setCompetitions(configCompetitions.slice(0, 4));
+            setCompetitionsTotal(configCompetitions.length);
+          }
         } else {
           setCompetitionsError(true);
         }
       })
       .catch(() => setCompetitionsError(true))
       .finally(() => setCompetitionsLoading(false));
-  }, []);
+  }, [configCompetitions]);
 
   // 加载创业资料
   useEffect(() => {
@@ -92,14 +102,16 @@ export default function Entrepreneurship() {
             <p className="text-[16px] md:text-[18px] text-gray-300 leading-relaxed mb-8">
               {heroDesc}
             </p>
-            <div className="flex gap-4">
+            <div className="flex flex-wrap gap-4">
               <button
                 onClick={() => navigate('/partners')}
-                className="bg-primary-500 text-white px-8 py-3.5 rounded-xl font-bold hover:bg-primary-700 transition-colors shadow-lg shadow-primary-500/20"
+                className="bg-primary-500 text-white px-10 py-4 rounded-xl font-bold text-[16px] hover:bg-primary-600 transition-all shadow-xl shadow-primary-500/30 hover:shadow-primary-500/40 hover:scale-[1.03] active:scale-[0.98] flex items-center gap-2"
               >
+                <Megaphone className="w-5 h-5" />
                 发布招募信息
               </button>
-              <button onClick={() => navigate('/partners')} className="bg-white text-primary-600 border-2 border-white px-8 py-3.5 rounded-xl font-bold hover:bg-primary-50 transition-colors shadow-lg">
+              <button onClick={() => navigate('/partners')} className="bg-white/90 backdrop-blur text-primary-600 border-2 border-primary-400 px-10 py-4 rounded-xl font-bold text-[16px] hover:bg-primary-50 hover:border-primary-500 transition-all shadow-lg flex items-center gap-2">
+                <Users className="w-5 h-5" />
                 寻找合伙人
               </button>
             </div>
@@ -132,7 +144,10 @@ export default function Entrepreneurship() {
             ) : (
               <div className="space-y-4">
                 {competitions.map((comp) => (
-                  <div key={comp.id} className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md hover:border-primary-500/30 transition-all flex flex-col md:flex-row md:items-center justify-between gap-4">
+                  <div key={comp.id} className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md hover:border-primary-500/30 transition-all flex flex-col md:flex-row gap-4">
+                    {comp.image && (
+                      <img src={comp.image} alt={comp.title || comp.name || ''} className="w-full md:w-40 h-28 object-cover rounded-xl border border-gray-100 shrink-0" />
+                    )}
                     <div className="flex-grow">
                       <div className="flex items-center gap-2 mb-2">
                         <Tag variant="red" size="sm">
@@ -156,15 +171,16 @@ export default function Entrepreneurship() {
                     </div>
                     <button
                       onClick={() => {
-                        if (comp.registration_url) {
-                          window.open(comp.registration_url, '_blank', 'noopener,noreferrer');
+                        const url = comp.link || comp.registration_url;
+                        if (url) {
+                          window.open(url, '_blank', 'noopener,noreferrer');
                         } else {
                           navigate('/guidance/articles');
                         }
                       }}
                       className="shrink-0 md:w-auto w-full py-2.5 px-6 rounded-xl border border-gray-200 text-gray-600 font-medium hover:bg-gray-50 hover:text-gray-900 transition-colors flex justify-center items-center gap-2"
                     >
-                      {comp.registration_url ? '前往报名' : '查看详情'} <ExternalLink className="w-4 h-4" />
+                      {(comp.link || comp.registration_url) ? '前往报名' : '查看详情'} <ExternalLink className="w-4 h-4" />
                     </button>
                   </div>
                 ))}
@@ -183,8 +199,9 @@ export default function Entrepreneurship() {
               <p className="text-[14px] text-gray-500 mb-6">
                 缺技术？缺运营？在这里发布招募贴，快速集结你的梦幻初创团队。{competitionsTotal > 0 && (<>目前已有 <span className="text-primary-500 font-bold">{competitionsTotal.toLocaleString()}</span> 个赛事可参与。</>)}
               </p>
-              <button onClick={() => navigate('/partners')} className="w-full bg-white border border-primary-500 text-primary-500 py-3 rounded-xl font-bold hover:bg-primary-500 hover:text-white transition-colors">
-                进入大厅
+              <button onClick={() => navigate('/partners')} className="w-full bg-primary-500 border border-primary-500 text-white py-3 rounded-xl font-bold hover:bg-primary-600 transition-all shadow-lg shadow-primary-500/20 flex items-center justify-center gap-2">
+                <Megaphone className="w-4 h-4" />
+                发布招募信息
               </button>
             </div>
 

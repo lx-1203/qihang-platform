@@ -1,7 +1,7 @@
 // ====== 用户与认证类型 ======
 
 /** 用户角色 */
-export type UserRole = 'student' | 'company' | 'mentor' | 'admin';
+export type UserRole = 'student' | 'company' | 'mentor' | 'admin' | 'agent';
 
 /** 用户基础信息 */
 export interface User {

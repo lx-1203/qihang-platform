@@ -107,7 +107,7 @@ export default function SuccessCasesConfig() {
       if (res.data?.code === 200) {
         toast.success('保存成功', '成功案例配置已更新');
         setSaved(true);
-        await refreshConfig();
+        await refreshConfig(true);
         setTimeout(() => setSaved(false), 2000);
       } else {
         toast.error('保存失败', res.data?.message || '请稍后重试');
@@ -242,7 +242,7 @@ export default function SuccessCasesConfig() {
                       <div>
                         <label className="block text-xs font-medium text-gray-500 mb-1">头像字</label>
                         <input value={item.avatar}
-                          onChange={e => { const arr = [...cases]; arr[idx] = { ...arr[idx], avatar: e.target.value }; setCases(arr); }}
+                          onChange={e => { const v = e.target.value; if (v.length <= 1 && /^[\u4e00-\u9fa5a-zA-Z]?$/.test(v)) { const arr = [...cases]; arr[idx] = { ...arr[idx], avatar: v }; setCases(arr); } }}
                           className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                           placeholder="单字，如：张" maxLength={1} />
                         <label className="block text-xs font-medium text-gray-500 mb-1 mt-3">或上传头像图片</label>
@@ -404,7 +404,7 @@ export default function SuccessCasesConfig() {
                       name={`value-${idx}`}
                       type="number"
                       value={stat.value}
-                      onChange={e => { const arr = [...stats]; arr[idx] = { ...arr[idx], value: Number(e.target.value) }; setStats(arr); }}
+                      onChange={e => { const arr = [...stats]; arr[idx] = { ...arr[idx], value: Number(e.target.value) || 0 }; setStats(arr); }}
                       className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-transparent" />
                   </div>
                   <div>
@@ -433,7 +433,7 @@ export default function SuccessCasesConfig() {
 
       {/* 删除确认对话框 */}
       {deleteConfirm !== null && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 backdrop-blur-sm">
           <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
             className="bg-white rounded-xl p-6 max-w-md w-full mx-4 shadow-xl">
             <div className="flex items-start gap-3 mb-4">

@@ -3,11 +3,12 @@ import pool from '../db.js';
 
 const router = Router();
 
-// GET /api/mentors - 获取导师列表（游标分页 + 筛选）
+// GET /api/mentors - 获取导师列表（支持分页 + 游标分页 + 筛选）
 router.get('/', async (req, res) => {
   try {
-    const { keyword, cursor, limit = 20 } = req.query;
-    const pageLimit = Math.min(Number(limit), 50);
+    const { keyword, cursor, page: pageParam, limit = 20, pageSize: pageSizeParam } = req.query;
+    const pageLimit = Math.min(Number(limit) || Number(pageSizeParam) || 20, 50);
+    const page = Number(pageParam) || 1;
 
     let sql = 'SELECT * FROM mentor_profiles WHERE verify_status = "approved" AND status = 1';
     const params = [];
@@ -18,22 +19,29 @@ router.get('/', async (req, res) => {
       params.push(kw, kw, `%${keyword}%`, `%${keyword}%`);
     }
 
-    // 游标分页：如果提供了 cursor（上一页最后一条的 id），则只查询 id 更小的记录
+    // 获取总数
+    let countSql = sql.replace('SELECT *', 'SELECT COUNT(*) as total');
+    const [countResult] = await pool.query(countSql, params);
+    const total = countResult[0]?.total || 0;
+
+    // 支持 page+pageSize 分页（前端默认）和 cursor 游标分页
     if (cursor && !isNaN(Number(cursor))) {
       sql += ' AND id < ?';
       params.push(Number(cursor));
+      sql += ' ORDER BY id DESC LIMIT ?';
+      params.push(pageLimit + 1);
+    } else {
+      const offset = (page - 1) * pageLimit;
+      sql += ' ORDER BY id DESC LIMIT ? OFFSET ?';
+      params.push(pageLimit, offset);
     }
-
-    // 排序：按 id 倒序（最新的在前），确保游标稳定
-    sql += ' ORDER BY id DESC LIMIT ?';
-    params.push(pageLimit + 1);
 
     const [mentors] = await pool.query(sql, params);
 
-    // 判断是否有下一页
+    // 判断是否有下一页（游标模式）
     let nextCursor = null;
     let items = mentors;
-    if (mentors.length > pageLimit) {
+    if (cursor && !isNaN(Number(cursor)) && mentors.length > pageLimit) {
       items = mentors.slice(0, pageLimit);
       const lastItem = items[items.length - 1];
       nextCursor = lastItem.id;
@@ -58,8 +66,11 @@ router.get('/', async (req, res) => {
       code: 200,
       data: {
         mentors: parsedMentors,
+        total,
+        page,
+        pageSize: pageLimit,
         nextCursor,
-        hasMore: nextCursor !== null,
+        hasMore: nextCursor !== null || (page * pageLimit) < total,
         limit: pageLimit,
       },
     });

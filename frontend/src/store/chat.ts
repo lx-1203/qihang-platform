@@ -10,6 +10,7 @@ export interface ChatConversation {
   type: 'user_service' | 'ai_chat';
   status: 'active' | 'closed' | 'pending';
   assigned_admin: number | null;
+  assigned_agent: number | null;
   last_message: string;
   last_message_at: string | null;
   unread_user: number;
@@ -19,13 +20,14 @@ export interface ChatConversation {
   user_avatar?: string;
   user_email?: string;
   admin_nickname?: string;
+  agent_nickname?: string;
 }
 
 export interface ChatMessage {
   id: number;
   conversation_id: number;
   sender_id: number;
-  sender_role: 'user' | 'admin' | 'ai' | 'system';
+  sender_role: 'user' | 'admin' | 'agent' | 'ai' | 'system';
   content: string;
   msg_type: 'text' | 'image' | 'file' | 'system_notice';
   file_url: string;
@@ -55,7 +57,7 @@ interface ChatState {
 
   // Actions
   fetchConversations: () => Promise<void>;
-  createConversation: (type?: 'user_service' | 'ai_chat') => Promise<number | null>;
+  createConversation: (type?: 'user_service' | 'ai_chat', targetUserId?: number, title?: string, companyId?: number) => Promise<number | null>;
   selectConversation: (id: number) => Promise<void>;
   sendMessage: (content: string) => Promise<boolean>;
   resendMessage: (messageIndex: number) => Promise<boolean>;
@@ -92,9 +94,9 @@ export const useChatStore = create<ChatState>((set, get) => ({
   },
 
   // 创建新会话
-  createConversation: async (type = 'user_service') => {
+  createConversation: async (type = 'user_service', targetUserId?: number, title?: string, companyId?: number) => {
     try {
-      const res = await chatApi.createConversation(type);
+      const res = await chatApi.createConversation(type, targetUserId, title, companyId);
       if (res.data?.code === 200) {
         const newConv = res.data.data;
         // 刷新列表

@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
-import { Save, Plus, Trash2, Eye, CheckCircle2, Loader2, AlertTriangle, Rocket } from 'lucide-react';
+import { Save, Plus, Trash2, Eye, CheckCircle2, Loader2, AlertTriangle, Rocket, X } from 'lucide-react';
 import { motion } from 'framer-motion';
 import http from '@/api/http';
 import { useToast } from '@/components/ui';
+import FileUpload from '@/components/ui/FileUpload';
 import { handleApiFailure } from '@/utils/connectionStatus';
 import { useConfigStore } from '@/store/config';
 import { Skeleton, CardSkeleton } from '@/components/ui/Skeleton';
@@ -10,10 +11,10 @@ import { Skeleton, CardSkeleton } from '@/components/ui/Skeleton';
 // 默认配置
 const DEFAULT_ENTREPRENEURSHIP_CONFIG = {
   competitions: [
-    { id: 1, name: '"挑战杯"全国大学生课外学术科技作品竞赛', level: '国家级', status: '报名中', deadline: '2024-05-30', tags: ['学术研究', '科技创新'] },
-    { id: 2, name: '中国国际"互联网+"大学生创新创业大赛', level: '国家级', status: '即将开始', deadline: '2024-06-15', tags: ['创业项目', '商业计划'] },
-    { id: 3, name: '全国大学生电子商务"创新、创意及创业"挑战赛', level: '国家级', status: '进行中', deadline: '2024-04-20', tags: ['电商', '三创'] },
-    { id: 4, name: '全国大学生数学建模竞赛', level: '国家级', status: '报名中', deadline: '2024-09-01', tags: ['算法', '数据分析'] }
+    { id: 1, name: '"挑战杯"全国大学生课外学术科技作品竞赛', level: '国家级', status: '报名中', deadline: '2024-05-30', tags: ['学术研究', '科技创新'], image: '', link: '' },
+    { id: 2, name: '中国国际"互联网+"大学生创新创业大赛', level: '国家级', status: '即将开始', deadline: '2024-06-15', tags: ['创业项目', '商业计划'], image: '', link: '' },
+    { id: 3, name: '全国大学生电子商务"创新、创意及创业"挑战赛', level: '国家级', status: '进行中', deadline: '2024-04-20', tags: ['电商', '三创'], image: '', link: '' },
+    { id: 4, name: '全国大学生数学建模竞赛', level: '国家级', status: '报名中', deadline: '2024-09-01', tags: ['算法', '数据分析'], image: '', link: '' }
   ],
   heroTitle: '点燃你的创业梦',
   heroDesc: '寻找志同道合的合伙人，获取专业的创业指导，参与顶级赛事，对接天使投资。让每一个疯狂的想法都有机会改变世界。'
@@ -93,7 +94,7 @@ export default function EntrepreneurshipConfig() {
       if (res.data?.code === 200) {
         toast.success('保存成功', '创业页面配置已更新，刷新页面后可见变更');
         setSaved(true);
-        await refreshConfig();
+        await refreshConfig(true);
         setTimeout(() => setSaved(false), 2000);
       } else {
         toast.error('保存失败', res.data?.message || '请稍后重试');
@@ -114,7 +115,9 @@ export default function EntrepreneurshipConfig() {
       level: '国家级',
       status: '报名中',
       deadline: '',
-      tags: []
+      tags: [],
+      image: '',
+      link: ''
     }]);
   };
 
@@ -279,6 +282,39 @@ export default function EntrepreneurshipConfig() {
                     className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                     placeholder="学术研究, 科技创新" />
                 </div>
+                <div className="md:col-span-2">
+                  <label className="block text-xs font-medium text-gray-500 mb-1">赛事图片</label>
+                  {comp.image ? (
+                    <div className="relative group">
+                      <img src={comp.image} alt="" className="w-full h-32 object-cover rounded-lg border border-gray-200" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                      <button
+                        onClick={() => { const arr = [...competitions]; arr[idx] = { ...arr[idx], image: '' }; setCompetitions(arr); }}
+                        className="absolute top-2 right-2 p-1.5 bg-black/50 text-white rounded-lg opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ) : (
+                    <FileUpload
+                      category="cover"
+                      accept="image/jpeg,image/png,image/gif,image/webp"
+                      placeholder="上传赛事封面图"
+                      className="!py-3"
+                      onSuccess={(result) => {
+                        const arr = [...competitions];
+                        arr[idx] = { ...arr[idx], image: result.url };
+                        setCompetitions(arr);
+                      }}
+                    />
+                  )}
+                </div>
+                <div className="md:col-span-2">
+                  <label className="block text-xs font-medium text-gray-500 mb-1">赛事链接</label>
+                  <input value={comp.link}
+                    onChange={e => { const arr = [...competitions]; arr[idx] = { ...arr[idx], link: e.target.value }; setCompetitions(arr); }}
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm font-mono focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                    placeholder="https://example.com/competition" />
+                </div>
               </div>
                 </motion.div>
               )}
@@ -295,7 +331,7 @@ export default function EntrepreneurshipConfig() {
 
       {/* 删除确认对话框 */}
       {deleteConfirm !== null && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 backdrop-blur-sm">
           <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
             className="bg-white rounded-xl p-6 max-w-md w-full mx-4 shadow-xl">
             <div className="flex items-start gap-3 mb-4">

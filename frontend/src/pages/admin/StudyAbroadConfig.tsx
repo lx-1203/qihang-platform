@@ -114,7 +114,7 @@ export default function StudyAbroadConfig() {
         toast.success('保存成功', '留学板块配置已更新，刷新页面后可见变更');
         setSaved(true);
         // 刷新配置 store
-        await refreshConfig();
+        await refreshConfig(true);
         setTimeout(() => setSaved(false), 2000);
       } else {
         toast.error('保存失败', res.data?.message || '请稍后重试');
@@ -332,7 +332,7 @@ export default function StudyAbroadConfig() {
                         />
                       </div>
                       <div className="relative aspect-video bg-gray-100 rounded-xl overflow-hidden">
-                        <img src={slide.image} alt="" className="w-full h-full object-cover" />
+                        {slide.image ? <img src={slide.image} alt="" className="w-full h-full object-cover" /> : <div className="w-full h-full bg-gray-200 flex items-center justify-center text-gray-400 text-xs">暂无图片</div>}
                       </div>
                     </div>
                   </div>
@@ -437,7 +437,7 @@ export default function StudyAbroadConfig() {
                       />
                     </div>
                     <div className="aspect-video bg-gray-100 rounded-lg overflow-hidden">
-                      <img src={card.image} alt="" className="w-full h-full object-cover" />
+                      {card.image ? <img src={card.image} alt="" className="w-full h-full object-cover" /> : <div className="w-full h-full bg-gray-200 flex items-center justify-center text-gray-400 text-xs">暂无图片</div>}
                     </div>
                   </div>
                 </motion.div>
@@ -570,7 +570,7 @@ export default function StudyAbroadConfig() {
                               value={story.likes}
                               onChange={(e) => {
                                 const newStories = [...studentStories];
-                                newStories[index].likes = Number(e.target.value);
+                                newStories[index].likes = Number(e.target.value) || 0;
                                 setStudentStories(newStories);
                               }}
                               className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
@@ -583,7 +583,7 @@ export default function StudyAbroadConfig() {
                               value={story.views}
                               onChange={(e) => {
                                 const newStories = [...studentStories];
-                                newStories[index].views = Number(e.target.value);
+                                newStories[index].views = Number(e.target.value) || 0;
                                 setStudentStories(newStories);
                               }}
                               className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
@@ -616,7 +616,7 @@ export default function StudyAbroadConfig() {
                         />
                       </div>
                       <div className="aspect-square bg-gray-100 rounded-xl overflow-hidden">
-                        <img src={story.image} alt="" className="w-full h-full object-cover" />
+                        {story.image ? <img src={story.image} alt="" className="w-full h-full object-cover" /> : <div className="w-full h-full bg-gray-200 flex items-center justify-center text-gray-400 text-xs">暂无图片</div>}
                       </div>
                     </div>
                   </div>
@@ -723,7 +723,7 @@ export default function StudyAbroadConfig() {
                       />
                     </div>
                     <div className="aspect-video bg-gray-100 rounded-lg overflow-hidden">
-                      <img src={quote.image} alt="" className="w-full h-full object-cover" />
+                      {quote.image ? <img src={quote.image} alt="" className="w-full h-full object-cover" /> : <div className="w-full h-full bg-gray-200 flex items-center justify-center text-gray-400 text-xs">暂无图片</div>}
                     </div>
                   </div>
                 </motion.div>
@@ -735,7 +735,7 @@ export default function StudyAbroadConfig() {
 
       {/* 删除确认对话框 */}
       {deleteConfirm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 backdrop-blur-sm">
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}

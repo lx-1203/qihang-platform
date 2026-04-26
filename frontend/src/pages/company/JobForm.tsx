@@ -361,13 +361,22 @@ export default function JobForm() {
             <label className="block text-sm font-medium text-gray-700 mb-1.5">
               职位分类
             </label>
-            <input
-              type="text"
+            <select
+              id="job-category"
+              name="category"
               value={form.category}
               onChange={e => updateField('category', e.target.value)}
-              className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 outline-none"
-              placeholder="如：技术、产品、运营、市场"
-            />
+              className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 outline-none bg-white"
+            >
+              <option value="">请选择分类</option>
+              <option value="技术">技术</option>
+              <option value="产品">产品</option>
+              <option value="运营">运营</option>
+              <option value="设计">设计</option>
+              <option value="市场">市场</option>
+              <option value="销售">销售</option>
+              <option value="职能">职能</option>
+            </select>
           </div>
 
           {/* 急招标记 */}

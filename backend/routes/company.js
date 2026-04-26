@@ -114,6 +114,13 @@ router.post('/profile', async (req, res) => {
         [result.insertId]
       );
 
+      // 通知管理员有新企业认证申请
+      try {
+        await NotificationTemplates.newCompanyApplication(company_name || '未知企业');
+      } catch (notifyErr) {
+        console.error('发送企业认证通知失败(不影响主流程):', notifyErr);
+      }
+
       res
         .status(201)
         .json({ code: 201, message: '企业资料创建成功', data: { company: created[0] } });
@@ -442,6 +449,34 @@ router.get('/resumes', async (req, res) => {
     `;
     const [rows] = await pool.query(dataSql, [...params, pageSizeNum, offset]);
 
+    // 自动将 pending 状态的简历标记为 viewed，并通知学生
+    try {
+      const [pendingResumes] = await pool.query(
+        `SELECT r.id, r.student_id, j.title AS job_title
+         FROM resumes r
+         JOIN jobs j ON r.job_id = j.id
+         WHERE j.company_id = ? AND r.status = 'pending'`,
+        [companyId]
+      );
+      if (pendingResumes.length > 0) {
+        const ids = pendingResumes.map(r => r.id);
+        await pool.query(
+          `UPDATE resumes SET status = 'viewed' WHERE id IN (${ids.map(() => '?').join(',')})`,
+          ids
+        );
+        // 逐条通知学生
+        for (const resume of pendingResumes) {
+          try {
+            await NotificationTemplates.resumeStatusChanged(resume.student_id, resume.job_title, 'viewed');
+          } catch (notifyErr) {
+            console.error('发送简历查看通知失败(不影响主流程):', notifyErr);
+          }
+        }
+      }
+    } catch (autoViewErr) {
+      console.error('自动标记简历已查看失败(不影响主流程):', autoViewErr);
+    }
+
     res.json({
       code: 200,
       data: {
@@ -647,7 +682,7 @@ router.get('/talent', async (req, res) => {
 
     // 分页
     const dataSql = `
-      SELECT s.*, u.nickname, u.email, u.avatar
+      SELECT s.*, u.nickname, u.email, u.avatar, u.phone, u.created_at AS registered_at
       ${joins} ${where}
       ORDER BY s.updated_at DESC
       LIMIT ? OFFSET ?

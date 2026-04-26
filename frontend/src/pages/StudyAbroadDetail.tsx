@@ -105,6 +105,14 @@ interface ProgramDetail {
   avgSalary: string;
   logo: string;
   cover: string;
+  /** 后端 JOIN universities 表返回的字段名 */
+  university_logo?: string;
+  university_cover?: string;
+  university_name_zh?: string;
+  university_name_en?: string;
+  university_region?: string;
+  university_city?: string;
+  university_website?: string;
   tags: string[];
   description: string;
   highlights: ProgramHighlight[];
@@ -117,6 +125,13 @@ interface ProgramDetail {
   employmentData: EmploymentData;
   website: string;
   scholarship: string;
+  /** DB: gpa_min / toefl_min / ielts_min / gre_required / gre_avg / gmat_avg */
+  gpaMin?: number;
+  toeflMin?: number;
+  ieltsMin?: number;
+  greRequired?: number;
+  greAvg?: number;
+  gmatAvg?: number;
 }
 
 // 高亮图标映射：JSON 中存储字符串，渲染时映射为 Lucide 组件
@@ -144,7 +159,44 @@ export default function StudyAbroadDetail() {
     http.get(`/programs/${programId}`)
       .then((res) => {
         if (res.data?.code === 200 && res.data.data) {
-          setProg(res.data.data as ProgramDetail);
+          const raw = res.data.data;
+          // 后端 JOIN universities 表返回 university_logo/university_cover 等字段
+          // 映射到前端使用的 logo/cover/school/schoolEn 等字段
+          const mapped: ProgramDetail = {
+            ...raw,
+            // 院校信息：从 universities 表 JOIN 字段映射
+            logo: raw.university_logo || raw.logo || '',
+            cover: raw.university_cover || raw.cover || '',
+            school: raw.university_name_zh || raw.school || '',
+            schoolEn: raw.university_name_en || raw.schoolEn || '',
+            country: raw.university_region || raw.country || '',
+            city: raw.university_city || raw.city || '',
+            ranking: raw.qs_ranking || raw.ranking || 0,
+            website: raw.university_website || raw.website || '',
+            // 专业名称：DB 字段为 name_zh / name_en，前端使用 program / programEn
+            program: raw.name_zh || raw.program || '',
+            programEn: raw.name_en || raw.programEn || '',
+            // 费用：DB 字段为 tuition_total
+            tuition: raw.tuition_total || raw.tuition || '',
+            tuitionCNY: raw.tuition_cny || raw.tuitionCNY || '',
+            // 学科排名：QS 排名复用
+            subjectRanking: raw.qs_ranking || raw.subjectRanking || 0,
+            // 就业数据：DB 字段为 employment_rate / avg_salary (snake_case)
+            employRate: raw.employment_rate != null ? `${raw.employment_rate}%` : (raw.employRate || ''),
+            avgSalary: raw.avg_salary || raw.avgSalary || '',
+            // 录取条件：DB 字段为 gpa_min / toefl_min / ielts_min / gre_required / gre_avg / gmat_avg
+            gpaMin: raw.gpa_min ?? raw.gpaMin ?? undefined,
+            toeflMin: raw.toefl_min ?? raw.toeflMin ?? undefined,
+            ieltsMin: raw.ielts_min ?? raw.ieltsMin ?? undefined,
+            greRequired: raw.gre_required ?? raw.greRequired ?? undefined,
+            greAvg: raw.gre_avg ?? raw.greAvg ?? undefined,
+            gmatAvg: raw.gmat_avg ?? raw.gmatAvg ?? undefined,
+            // 入学信息
+            intake: raw.intake || '',
+            classSize: raw.class_size || raw.classSize || 0,
+            intlRatio: raw.intl_ratio || raw.intlRatio || '',
+          };
+          setProg(mapped);
         } else {
           setError('项目数据格式异常');
         }
@@ -215,12 +267,28 @@ export default function StudyAbroadDetail() {
     { key: 'career' as const, label: '就业去向', icon: Briefcase },
   ];
 
+  // 获取校徽 URL，空值时返回内联 SVG 占位图
+  const logoUrl = prog.logo || "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 80 80'%3E%3Crect fill='%2314b8a6' width='80' height='80' rx='16'/%3E%3Ctext x='50%25' y='54%25' dominant-baseline='middle' text-anchor='middle' fill='white' font-size='28' font-weight='bold'%3E🎓%3C/text%3E%3C/svg%3E";
+  // 获取封面 URL，空值时返回内联 SVG 占位图
+  const coverUrl = prog.cover || "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 400'%3E%3Crect fill='%230f172a' width='1200' height='400'/%3E%3C/svg%3E";
+
   const tags = Array.isArray(prog.tags) ? prog.tags : [];
   const highlights = Array.isArray(prog.highlights) ? prog.highlights : [];
   const timeline = Array.isArray(prog.timeline) ? prog.timeline : [];
   const relatedPrograms = Array.isArray(prog.relatedPrograms) ? prog.relatedPrograms : [];
   const materials = Array.isArray(prog.materials) ? prog.materials : [];
   const offers = Array.isArray(prog.offers) ? prog.offers : [];
+  // requirements 可能是结构化对象（前端生成数据）或纯文本字符串（DB seed）
+  // 如果是字符串则使用默认空对象，避免访问 .gpa 等属性时得到 undefined
+  const requirements = (prog.requirements && typeof prog.requirements === 'object' && !Array.isArray(prog.requirements))
+    ? prog.requirements
+    : { gpa: '', language: '', background: '', other: '', workExp: '', interview: '' };
+  const curriculum = Array.isArray(prog.curriculum) ? prog.curriculum : [];
+  // employmentData 必须是包含 industries/topEmployers 的对象，防止 undefined.length 崩溃
+  const employmentData = (prog.employmentData && typeof prog.employmentData === 'object' && !Array.isArray(prog.employmentData))
+    ? { industries: Array.isArray(prog.employmentData.industries) ? prog.employmentData.industries : [],
+        topEmployers: Array.isArray(prog.employmentData.topEmployers) ? prog.employmentData.topEmployers : [] }
+    : { industries: [], topEmployers: [] };
 
   const admittedCount = offers.filter(o => o.result === 'admitted').length;
   const rejectedCount = offers.filter(o => o.result === 'rejected').length;
@@ -231,7 +299,7 @@ export default function StudyAbroadDetail() {
 
       {/* ====== 顶部封面 ====== */}
       <div className="relative h-[240px] md:h-[320px] overflow-hidden bg-slate-900">
-        <img src={prog.cover} alt="" onError={(e) => { (e.target as HTMLImageElement).src = '/placeholder-cover.svg' }} className="w-full h-full object-cover opacity-40" />
+        <img src={coverUrl} alt="" onError={(e) => { (e.target as HTMLImageElement).src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 400'%3E%3Crect fill='%230f172a' width='1200' height='400'/%3E%3C/svg%3E"; }} className="w-full h-full object-cover opacity-40" />
         <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/60 to-transparent" />
         <div className="absolute inset-0 bg-gradient-to-r from-primary-500/10 via-transparent to-primary-500/10" />
       </div>
@@ -251,7 +319,7 @@ export default function StudyAbroadDetail() {
           <div className="flex flex-col md:flex-row md:items-start gap-6">
             {/* Logo */}
             <div className="w-20 h-20 rounded-2xl bg-gray-100 overflow-hidden shrink-0 shadow-md ring-2 ring-gray-50">
-              <img src={prog.logo} alt={prog.school} onError={(e) => { (e.target as HTMLImageElement).src = '/default-avatar.svg' }} className="w-full h-full object-cover" />
+              <img src={logoUrl} alt={prog.school} onError={(e) => { (e.target as HTMLImageElement).src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 80 80'%3E%3Crect fill='%2314b8a6' width='80' height='80' rx='16'/%3E%3Ctext x='50%25' y='54%25' dominant-baseline='middle' text-anchor='middle' fill='white' font-size='28' font-weight='bold'%3E🎓%3C/text%3E%3C/svg%3E"; }} className="w-full h-full object-cover" />
             </div>
 
             {/* 信息 */}
@@ -320,8 +388,10 @@ export default function StudyAbroadDetail() {
           <div className="mt-6 bg-orange-50 border border-orange-100 rounded-xl p-4 flex items-center gap-3">
             <AlertCircle className="w-5 h-5 text-orange-500 shrink-0" />
             <div className="text-[14px]">
-              <span className="font-bold text-orange-700">申请截止日期：{prog.deadline}</span>
-              <span className="text-orange-600 ml-2">距截止还有 {Math.max(0, Math.ceil((new Date(prog.deadline).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))} 天</span>
+              <span className="font-bold text-orange-700">申请截止日期：{prog.deadline || '待定'}</span>
+              {prog.deadline && !isNaN(new Date(prog.deadline).getTime()) && (
+                <span className="text-orange-600 ml-2">距截止还有 {Math.max(0, Math.ceil((new Date(prog.deadline).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))} 天</span>
+              )}
               <span className="text-orange-500 ml-2 text-[13px]">（建议提前1个月提交，第一轮录取概率更高）</span>
             </div>
           </div>
@@ -359,19 +429,24 @@ export default function StudyAbroadDetail() {
                 <div className="text-[15px] text-gray-600 leading-relaxed mb-8 whitespace-pre-line">{prog.description}</div>
 
                 <h3 className="text-[20px] font-bold text-gray-900 mb-4">项目亮点</h3>
+                {highlights.length > 0 && (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-8">
                   {highlights.map((h, idx: number) => {
-                  const HIcon = HIGHLIGHT_ICON_MAP[h.icon] || Star;
+                  // 兼容两种格式：对象 {text, icon} 或纯字符串
+                  const hText = typeof h === 'string' ? h : (h?.text ?? '');
+                  const hIcon = typeof h === 'string' ? '' : (h?.icon ?? '');
+                  const HIcon = HIGHLIGHT_ICON_MAP[hIcon] || Star;
                   return (
                     <div key={idx} className="flex items-start gap-3 bg-gray-50 rounded-xl p-4 border border-gray-100">
                       <div className="w-10 h-10 bg-primary-50 rounded-xl flex items-center justify-center shrink-0">
                         <HIcon className="w-5 h-5 text-primary-500" />
                       </div>
-                      <span className="text-[14px] text-gray-700 font-medium pt-2">{h.text}</span>
+                      <span className="text-[14px] text-gray-700 font-medium pt-2">{hText}</span>
                     </div>
                   );
                 })}
                 </div>
+                )}
 
                 <h3 className="text-[20px] font-bold text-gray-900 mb-4">奖学金信息</h3>
                 <div className="text-[15px] text-gray-600 leading-relaxed mb-8 bg-gray-50 rounded-xl p-6 border border-gray-100 whitespace-pre-line">{prog.scholarship}</div>
@@ -379,7 +454,8 @@ export default function StudyAbroadDetail() {
                 <h3 className="text-[20px] font-bold text-gray-900 mb-4">申请时间线</h3>
                 <div className="relative pl-6 border-l-2 border-gray-200 space-y-6">
                   {timeline.map((item, idx) => {
-                    const isPast = new Date(item.date) < new Date();
+                    const itemDate = new Date(item.date);
+                    const isPast = !isNaN(itemDate.getTime()) && itemDate < new Date();
                     return (
                       <div key={idx} className="relative">
                         <div className={`absolute -left-[25px] w-3 h-3 rounded-full border-2 ${
@@ -427,29 +503,63 @@ export default function StudyAbroadDetail() {
             {activeTab === 'requirements' && (
               <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
                 <h3 className="text-[20px] font-bold text-gray-900 mb-6">录取要求</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-                  {[
-                    { label: '学术成绩', value: prog.requirements.gpa, icon: Star, color: 'text-amber-500', bg: 'bg-amber-50', border: 'border-amber-100' },
-                    { label: '语言要求', value: prog.requirements.language, icon: Globe, color: 'text-sky-500', bg: 'bg-sky-50', border: 'border-sky-100' },
-                    { label: '专业背景', value: prog.requirements.background, icon: GraduationCap, color: 'text-primary-500', bg: 'bg-primary-50', border: 'border-primary-100' },
-                    { label: '申请材料', value: prog.requirements.other, icon: FileText, color: 'text-green-500', bg: 'bg-green-50', border: 'border-green-100' },
-                    { label: '工作经验', value: prog.requirements.workExp, icon: Briefcase, color: 'text-blue-500', bg: 'bg-blue-50', border: 'border-blue-100' },
-                    { label: '面试要求', value: prog.requirements.interview, icon: MessageCircle, color: 'text-rose-500', bg: 'bg-rose-50', border: 'border-rose-100' },
-                  ].map((req, idx) => (
-                    <div key={idx} className={`${req.bg} rounded-xl p-5 border ${req.border}`}>
-                      <div className="flex items-center gap-3 mb-3">
-                        <div className={`w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-sm`}>
-                          <req.icon className={`w-5 h-5 ${req.color}`} />
+
+                {/* 如果后端返回了结构化的 requirements（含 gpa/language 等字段），显示卡片网格 */}
+                {(requirements.gpa || requirements.language || requirements.background || requirements.other || requirements.workExp || requirements.interview) ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+                    {[
+                      { label: '学术成绩', value: requirements.gpa, icon: Star, color: 'text-amber-500', bg: 'bg-amber-50', border: 'border-amber-100' },
+                      { label: '语言要求', value: requirements.language, icon: Globe, color: 'text-sky-500', bg: 'bg-sky-50', border: 'border-sky-100' },
+                      { label: '专业背景', value: requirements.background, icon: GraduationCap, color: 'text-primary-500', bg: 'bg-primary-50', border: 'border-primary-100' },
+                      { label: '申请材料', value: requirements.other, icon: FileText, color: 'text-green-500', bg: 'bg-green-50', border: 'border-green-100' },
+                      { label: '工作经验', value: requirements.workExp, icon: Briefcase, color: 'text-blue-500', bg: 'bg-blue-50', border: 'border-blue-100' },
+                      { label: '面试要求', value: requirements.interview, icon: MessageCircle, color: 'text-rose-500', bg: 'bg-rose-50', border: 'border-rose-100' },
+                    ].filter(r => r.value).map((req, idx) => (
+                      <div key={idx} className={`${req.bg} rounded-xl p-5 border ${req.border}`}>
+                        <div className="flex items-center gap-3 mb-3">
+                          <div className={`w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-sm`}>
+                            <req.icon className={`w-5 h-5 ${req.color}`} />
+                          </div>
+                          <h4 className="text-[16px] font-bold text-gray-900">{req.label}</h4>
                         </div>
-                        <h4 className="text-[16px] font-bold text-gray-900">{req.label}</h4>
+                        <p className="text-[14px] text-gray-600 leading-relaxed">{req.value}</p>
                       </div>
-                      <p className="text-[14px] text-gray-600 leading-relaxed">{req.value}</p>
+                    ))}
+                  </div>
+                ) : null}
+
+                {/* 后端 requirements 字段为纯文本（如「3封推荐信、SOP、CV、GRE成绩」），直接展示 */}
+                {typeof prog.requirements === 'string' && prog.requirements && (
+                  <div className="mb-8 bg-gray-50 rounded-xl p-6 border border-gray-100">
+                    <h4 className="text-[16px] font-bold text-gray-900 mb-3 flex items-center gap-2">
+                      <FileText className="w-5 h-5 text-primary-500" /> 申请要求
+                    </h4>
+                    <p className="text-[14px] text-gray-600 leading-relaxed whitespace-pre-line">{prog.requirements}</p>
+                  </div>
+                )}
+
+                {/* 完整硬性条件：GPA / 托福 / 雅思 / GRE */}
+                {(prog.gpaMin || prog.toeflMin || prog.ieltsMin || prog.greRequired != null) && (
+                  <div className="mb-8">
+                    <h4 className="text-[16px] font-bold text-gray-900 mb-3 flex items-center gap-2">
+                      <Award className="w-5 h-5 text-primary-500" /> 硬性条件
+                    </h4>
+                    <div className="flex flex-wrap gap-3">
+                      {prog.gpaMin && <span className="bg-white px-3 py-2 rounded-lg border border-gray-100 text-[14px]">GPA ≥ {prog.gpaMin}</span>}
+                      {prog.toeflMin && <span className="bg-white px-3 py-2 rounded-lg border border-gray-100 text-[14px]">TOEFL ≥ {prog.toeflMin}</span>}
+                      {prog.ieltsMin && <span className="bg-white px-3 py-2 rounded-lg border border-gray-100 text-[14px]">IELTS ≥ {prog.ieltsMin}</span>}
+                      {prog.greRequired === 1 && <span className="bg-white px-3 py-2 rounded-lg border border-gray-100 text-[14px]">需要 GRE {prog.greAvg ? `(均分 ${prog.greAvg})` : ''}</span>}
+                      {prog.greRequired === 0 && <span className="bg-white px-3 py-2 rounded-lg border border-gray-100 text-[14px]">GRE 可选</span>}
+                      {prog.gmatAvg && <span className="bg-white px-3 py-2 rounded-lg border border-gray-100 text-[14px]">GMAT 均分 {prog.gmatAvg}</span>}
                     </div>
-                  ))}
-                </div>
+                  </div>
+                )}
 
                 <h3 className="text-[20px] font-bold text-gray-900 mb-4">申请材料清单</h3>
                 <div className="bg-gray-50 rounded-xl border border-gray-100 divide-y divide-gray-100">
+                  {materials.length === 0 && (
+                    <div className="text-center py-8 text-gray-400 text-[14px]">暂无详细材料清单数据</div>
+                  )}
                   {materials.map((mat, idx) => (
                     <div key={idx} className="flex items-center justify-between px-5 py-4">
                       <div className="flex items-center gap-3">
@@ -490,13 +600,16 @@ export default function StudyAbroadDetail() {
                 <h3 className="text-[20px] font-bold text-gray-900 mb-2">课程设置</h3>
                 <p className="text-[14px] text-gray-400 mb-6">总学分 180 分，其中必修课程 120 分 + 选修课程 60 分</p>
                 <div className="space-y-6">
-                  {prog.curriculum.map((sem, idx) => (
+                  {curriculum.length === 0 && (
+                    <div className="text-center py-8 text-gray-400 text-[14px]">暂无课程设置数据</div>
+                  )}
+                  {curriculum.map((sem, idx) => (
                     <div key={idx} className="bg-gray-50 rounded-xl p-6 border border-gray-100">
                       <h4 className="text-[16px] font-bold text-primary-500 mb-4 flex items-center gap-2">
                         <BookOpen className="w-5 h-5" /> {sem.semester}
                       </h4>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        {sem.courses.map((course, cIdx) => (
+                        {(Array.isArray(sem.courses) ? sem.courses : []).map((course, cIdx) => (
                           <div key={cIdx} className="bg-white rounded-lg px-4 py-3 border border-gray-100 flex items-center gap-3">
                             <div className="w-8 h-8 bg-primary-50 rounded-lg flex items-center justify-center text-[13px] font-bold text-primary-500">
                               {cIdx + 1}
@@ -527,7 +640,7 @@ export default function StudyAbroadDetail() {
                 {/* 统计概览 */}
                 <div className="grid grid-cols-4 gap-4 mb-8">
                   {[
-                    { label: '总数据量', value: prog.offers.length, color: 'text-primary-500', bg: 'bg-primary-50', border: 'border-primary-100' },
+                    { label: '总数据量', value: offers.length, color: 'text-primary-500', bg: 'bg-primary-50', border: 'border-primary-100' },
                     { label: 'Offer', value: admittedCount, color: 'text-green-600', bg: 'bg-green-50', border: 'border-green-100' },
                     { label: 'Rejected', value: rejectedCount, color: 'text-red-600', bg: 'bg-red-50', border: 'border-red-100' },
                     { label: 'Waitlisted', value: waitlistedCount, color: 'text-yellow-600', bg: 'bg-yellow-50', border: 'border-yellow-100' },
@@ -543,12 +656,12 @@ export default function StudyAbroadDetail() {
                 <div className="bg-gray-50 rounded-xl p-5 border border-gray-100 mb-6">
                   <div className="flex items-center justify-between mb-3">
                     <span className="text-[14px] font-medium text-gray-700">录取率分布</span>
-                    <span className="text-[14px] font-bold text-green-600">{Math.round(admittedCount / prog.offers.length * 100)}% 录取</span>
+                    <span className="text-[14px] font-bold text-green-600">{offers.length > 0 ? Math.round(admittedCount / offers.length * 100) : 0}% 录取</span>
                   </div>
                   <div className="w-full h-4 bg-gray-200 rounded-full overflow-hidden flex">
-                    <div className="bg-green-500 h-full" style={{ width: `${admittedCount / prog.offers.length * 100}%` }} />
-                    <div className="bg-yellow-400 h-full" style={{ width: `${waitlistedCount / prog.offers.length * 100}%` }} />
-                    <div className="bg-red-400 h-full" style={{ width: `${rejectedCount / prog.offers.length * 100}%` }} />
+                    <div className="bg-green-500 h-full" style={{ width: `${offers.length > 0 ? admittedCount / offers.length * 100 : 0}%` }} />
+                    <div className="bg-yellow-400 h-full" style={{ width: `${offers.length > 0 ? waitlistedCount / offers.length * 100 : 0}%` }} />
+                    <div className="bg-red-400 h-full" style={{ width: `${offers.length > 0 ? rejectedCount / offers.length * 100 : 0}%` }} />
                   </div>
                   <div className="flex gap-4 mt-2 text-[11px] text-gray-500">
                     <span className="flex items-center gap-1"><span className="w-2 h-2 bg-green-500 rounded-full" /> Offer</span>
@@ -559,7 +672,10 @@ export default function StudyAbroadDetail() {
 
                 {/* 录取列表 */}
                 <div className="space-y-3">
-                  {prog.offers.map((offer) => (
+                  {offers.length === 0 && (
+                    <div className="text-center py-8 text-gray-400 text-[14px]">暂无录取数据</div>
+                  )}
+                  {offers.map((offer) => (
                     <div key={offer.id} className="bg-gray-50 rounded-xl p-4 border border-gray-100 hover:border-gray-200 transition-colors">
                       <div className="flex flex-col md:flex-row md:items-center gap-3">
                         <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
@@ -628,7 +744,10 @@ export default function StudyAbroadDetail() {
                 {/* 行业分布 */}
                 <h4 className="text-[16px] font-bold text-gray-900 mb-4">行业分布</h4>
                 <div className="space-y-3 mb-8">
-                  {prog.employmentData.industries.map((ind, idx) => (
+                  {employmentData.industries.length === 0 && (
+                    <div className="text-center py-6 text-gray-400 text-[14px]">暂无行业分布数据</div>
+                  )}
+                  {employmentData.industries.map((ind, idx) => (
                     <div key={idx} className="flex items-center gap-3">
                       <span className="text-[13px] text-gray-500 w-24 shrink-0">{ind.name}</span>
                       <div className="flex-grow h-8 bg-gray-100 rounded-full overflow-hidden">
@@ -648,7 +767,10 @@ export default function StudyAbroadDetail() {
                 {/* 代表性雇主 */}
                 <h4 className="text-[16px] font-bold text-gray-900 mb-4">代表性雇主</h4>
                 <div className="flex flex-wrap gap-3">
-                  {prog.employmentData.topEmployers.map((emp, idx) => (
+                  {employmentData.topEmployers.length === 0 && (
+                    <div className="text-center py-6 text-gray-400 text-[14px] w-full">暂无雇主数据</div>
+                  )}
+                  {employmentData.topEmployers.map((emp, idx) => (
                     <div key={idx} className="bg-gray-50 rounded-xl px-5 py-3 border border-gray-100 text-[14px] font-medium text-gray-700">
                       {emp}
                     </div>

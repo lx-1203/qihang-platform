@@ -262,22 +262,26 @@
     {
       "label": "合作院校",
       "value": "3,200+",
-      "icon": "Building2"
+      "icon": "Building2",
+      "demo": true
     },
     {
       "label": "成功案例",
       "value": "18,600+",
-      "icon": "Award"
+      "icon": "Award",
+      "demo": true
     },
     {
       "label": "Offer 总数",
       "value": "26,400+",
-      "icon": "Trophy"
+      "icon": "Trophy",
+      "demo": true
     },
     {
       "label": "平均录取率",
       "value": "94.7%",
-      "icon": "Target"
+      "icon": "Target",
+      "demo": true
     }
   ],
 

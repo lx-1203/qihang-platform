@@ -295,7 +295,7 @@ router.get('/programs', async (req, res) => {
 
     const [list] = await pool.query(
       `SELECT p.*, u.name_zh AS university_name, u.name_en AS university_name_en,
-              u.region, u.country, u.city, u.logo AS university_logo, u.qs_ranking
+              u.region, u.country, u.city, u.logo AS university_logo, u.cover AS university_cover, u.qs_ranking
        FROM programs p JOIN universities u ON p.university_id = u.id
        ${where}
        ORDER BY u.qs_ranking IS NULL, u.qs_ranking ASC, p.id ASC

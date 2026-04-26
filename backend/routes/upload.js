@@ -210,13 +210,27 @@ router.post('/multiple', authMiddleware, (req, res) => {
                    category === 'resume' ? 'resumes' :
                    category === 'cover' ? 'covers' : 'general';
 
-    const files = req.files.map(file => ({
-      url: `/uploads/${subDir}/${file.filename}`,
-      filename: file.filename,
-      originalname: file.originalname,
-      mimetype: file.mimetype,
-      size: file.size,
-    }));
+    const files = [];
+    for (const file of req.files) {
+      // 验证文件签名（Magic Bytes）
+      const sigValid = validateFileSignature(file.path, file.mimetype);
+      if (!sigValid) {
+        // 删除无效文件
+        try { fs.unlinkSync(file.path); } catch {}
+        continue; // 跳过无效文件
+      }
+      files.push({
+        url: `/uploads/${subDir}/${file.filename}`,
+        filename: file.filename,
+        originalname: file.originalname,
+        mimetype: file.mimetype,
+        size: file.size,
+      });
+    }
+
+    if (files.length === 0) {
+      return res.status(400).json({ code: 400, message: '上传的文件均无效，请检查文件格式' });
+    }
 
     res.json({
       code: 200,

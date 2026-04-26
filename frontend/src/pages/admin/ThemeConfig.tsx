@@ -177,7 +177,7 @@ export default function ThemeConfig() {
       if (res.data?.code === 200) {
         toast.success('保存成功', '主题配置已更新，全局样式已生效');
         // 刷新配置 store
-        await refreshConfig();
+        await refreshConfig(true);
       } else {
         toast.error('保存失败', res.data?.message || '请稍后重试');
       }

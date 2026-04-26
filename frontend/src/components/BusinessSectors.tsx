@@ -71,6 +71,9 @@ export default function BusinessSectors() {
         <p className="text-gray-500 text-base max-w-xl mx-auto">
           六大事业板块，覆盖教育、生活、文旅全领域，总有一个舞台让你闪耀
         </p>
+        {configData._meta?.demoData && (
+          <span className="inline-block mt-2 px-1.5 py-0.5 bg-amber-200 text-amber-800 rounded text-[10px] font-bold">岗位数为演示数据</span>
+        )}
       </div>
 
       <motion.div

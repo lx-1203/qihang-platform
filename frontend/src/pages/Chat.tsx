@@ -12,6 +12,7 @@ import ChatBubble from '@/components/ChatBubble';
 import MessageInput from '@/components/chat/MessageInput';
 import FAQList from '@/components/chat/FAQList';
 import { useAuthStore } from '@/store/auth';
+import { transferToHuman } from '@/api/chat';
 import { Skeleton } from '@/components/ui/Skeleton';
 import Tag from '@/components/ui/Tag';
 
@@ -205,6 +206,8 @@ export default function Chat() {
   const [mobileView, setMobileView] = useState<'list' | 'chat'>('list');
   // 新建会话加载状态
   const [creating, setCreating] = useState(false);
+  // 新建会话类型选择
+  const [newConvType, setNewConvType] = useState<'ai_chat' | 'user_service'>('ai_chat');
   // 是否显示 "滚动到底部" 按钮
   const [showScrollDown, setShowScrollDown] = useState(false);
   // 游客消息（未登录体验对话）
@@ -339,14 +342,26 @@ export default function Chat() {
     if (creating) return;
     setCreating(true);
     try {
-      const newId = await createConversation('user_service');
+      const newId = await createConversation(newConvType);
       if (newId) {
         await selectConversation(newId);
       }
     } finally {
       setCreating(false);
     }
-  }, [creating, createConversation, selectConversation]);
+  }, [creating, createConversation, selectConversation, newConvType]);
+
+  // ====== 转人工客服 ======
+  const handleTransferToHuman = useCallback(async () => {
+    if (!currentConversationId) return;
+    try {
+      await transferToHuman(currentConversationId);
+      // 刷新会话列表以更新类型标签
+      await fetchConversations();
+    } catch (err) {
+      console.error('[Chat] 转人工失败:', err);
+    }
+  }, [currentConversationId, fetchConversations]);
 
   // ====== 选择会话 ======
 
@@ -581,6 +596,32 @@ export default function Chat() {
           >
             {/* 列表头部 */}
             <div className="p-4 border-b border-gray-100 space-y-3">
+              {/* 会话类型选择 */}
+              <div className="flex rounded-lg bg-gray-100 p-0.5">
+                <button
+                  onClick={() => setNewConvType('ai_chat')}
+                  className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-md text-xs font-medium transition-all ${
+                    newConvType === 'ai_chat'
+                      ? 'bg-white text-primary-600 shadow-sm'
+                      : 'text-gray-500 hover:text-gray-700'
+                  }`}
+                >
+                  <Bot className="w-3.5 h-3.5" />
+                  AI 助手
+                </button>
+                <button
+                  onClick={() => setNewConvType('user_service')}
+                  className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-md text-xs font-medium transition-all ${
+                    newConvType === 'user_service'
+                      ? 'bg-white text-blue-600 shadow-sm'
+                      : 'text-gray-500 hover:text-gray-700'
+                  }`}
+                >
+                  <Headphones className="w-3.5 h-3.5" />
+                  人工客服
+                </button>
+              </div>
+
               {/* 新建会话按钮 */}
               <button
                 onClick={handleCreateConversation}
@@ -595,7 +636,7 @@ export default function Chat() {
                 ) : (
                   <Plus className="w-4 h-4" />
                 )}
-                新建会话
+                新建{newConvType === 'ai_chat' ? 'AI' : '人工'}会话
               </button>
 
               {/* 搜索框 */}
@@ -712,6 +753,17 @@ export default function Chat() {
                     <Clock className="w-3 h-3" />
                     {formatRelativeTime(currentConversation.created_at)}
                   </span>
+
+                  {/* 转人工按钮 — 仅 AI 会话且未分配客服时显示 */}
+                  {currentConversation.type === 'ai_chat' && !currentConversation.admin_nickname && currentConversation.status !== 'closed' && (
+                    <button
+                      onClick={handleTransferToHuman}
+                      className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-blue-600 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 transition-colors flex-shrink-0"
+                    >
+                      <Headphones className="w-3.5 h-3.5" />
+                      转人工
+                    </button>
+                  )}
                 </div>
 
                 {/* 消息列表 */}

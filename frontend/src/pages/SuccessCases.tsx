@@ -191,9 +191,22 @@ export default function SuccessCases() {
                 <div className="p-6">
                   <div className="flex items-start gap-4 mb-4">
                     <div
-                      className={`w-12 h-12 rounded-xl bg-gradient-to-br ${item.color} flex items-center justify-center text-white font-bold text-lg shrink-0 shadow-sm`}
+                      className={`w-12 h-12 rounded-xl bg-gradient-to-br ${item.color} flex items-center justify-center text-white font-bold text-lg shrink-0 shadow-sm overflow-hidden`}
                     >
-                      {item.avatar}
+                      {item.avatar && (item.avatar.startsWith('http') || item.avatar.startsWith('/uploads') || item.avatar.includes('.')) ? (
+                        <img
+                          src={item.avatar}
+                          alt={item.name}
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).style.display = 'none';
+                            (e.target as HTMLImageElement).nextElementSibling?.setAttribute('style', 'display:flex');
+                          }}
+                        />
+                      ) : null}
+                      <span style={item.avatar && (item.avatar.startsWith('http') || item.avatar.startsWith('/uploads') || item.avatar.includes('.')) ? {display: 'none'} : {}} className="flex items-center justify-center w-full h-full">
+                        {(item.avatar && item.avatar.length <= 2 && /^[\u4e00-\u9fa5a-zA-Z]$/.test(item.avatar)) ? item.avatar : (item.name?.[0] || '?')}
+                      </span>
                     </div>
                     <div className="min-w-0">
                       <h3 className="text-base font-bold text-gray-900 group-hover:text-primary-600 transition-colors">

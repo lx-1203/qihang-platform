@@ -21,8 +21,8 @@ interface ConfigState {
   /** 最近一次错误 */
   error: string | null;
 
-  /** 拉取公开配置（首屏调用一次） */
-  fetchConfigs: () => Promise<void>;
+  /** 拉取公开配置（首屏调用一次，forceRefresh 跳过 loading 守卫） */
+  fetchConfigs: (forceRefresh?: boolean) => Promise<void>;
 
   /** 通用读取：获取原始值 */
   get: (key: string, fallback?: unknown) => unknown;
@@ -59,9 +59,9 @@ export const useConfigStore = create<ConfigState>()((set, get) => ({
   loading: false,
   error: null,
 
-  fetchConfigs: async () => {
-    // 避免重复请求
-    if (get().loading) return;
+  fetchConfigs: async (forceRefresh = false) => {
+    // 避免重复请求（forceRefresh 跳过守卫，用于保存后刷新）
+    if (!forceRefresh && get().loading) return;
     set({ loading: true, error: null });
 
     try {
@@ -69,7 +69,7 @@ export const useConfigStore = create<ConfigState>()((set, get) => ({
       if (res.data?.code === 200 && res.data.data) {
         const configs = res.data.data as ConfigMap;
         saveCache(configs);
-        set({ configs, loaded: true, loading: false });
+        set({ configs, loaded: true, loading: false, error: null });
       } else {
         // 非标准响应，使用缓存
         set({ loaded: true, loading: false, error: '配置响应格式异常' });

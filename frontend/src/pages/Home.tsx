@@ -40,9 +40,6 @@ const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
   Building2, Award, Users, FileText,
 };
 
-// ====== 文案配置快捷访问 ======
-const t = homeConfig.textResources;
-
 // ====== 首页 ======
 // 学生为主的门户首页，登录后展示个性化推荐和引导
 
@@ -135,15 +132,29 @@ export default function Home() {
     } catch { setCoursesError(true); }
   };
 
-  const rawHomeConfig = useConfigStore(s => s.getJson('home_ui_config', null)) as Record<string, unknown> | null;
-  const rawHeroSlides = rawHomeConfig?.heroSlides as Array<{ id: string; title: string; subtitle: string; gradient: string; cta: string; ctaLink: string }> | undefined;
-  const [heroSlidesFromApi, setHeroSlidesFromApi] = useState<Array<{ id: string; title: string; subtitle: string; gradient: string; cta: string; ctaLink: string }>>([]);
+  // 从配置中心读取首页所有可配置项（DB → config store → JSON 静态兜底）
+  // HomeConfig 后台保存的是统一的 home_ui_config（包含 heroSlides/quickEntries/courseColors/valueSections 等子字段）
+  const rawHomeConfig = useConfigStore(s => s.getJson<Record<string, unknown>>('home_ui_config'));
+  const rawHeroSlidesFromStore = rawHomeConfig?.heroSlides as Array<{ id: string; title: string; subtitle: string; gradient: string; cta: string; ctaLink: string; image?: string }> | undefined;
+  const rawQuickEntriesFromStore = rawHomeConfig?.quickEntries as Array<{ icon: string; badge?: string; link: string; bg: string; color: string; label: string; desc: string }> | undefined;
+  const rawCourseColorsFromStore = rawHomeConfig?.courseColors as string[] | undefined;
+  const rawValueSectionsFromStore = rawHomeConfig?.valueSections as Array<{ icon: string; bg: string; border: string; gradientFrom: string; gradientTo: string; color: string; role: string; points: string[] }> | undefined;
+  const rawTextResourcesFromStore = rawHomeConfig?.textResources as Record<string, unknown> | undefined;
+
+  // 文案：配置中心优先，降级到 JSON 静态文件
+  const t = (rawTextResourcesFromStore as typeof homeConfig.textResources) || homeConfig.textResources;
+
+  // 轮播：配置中心优先，降级到 JSON 静态文件
+  const heroSlidesSource = Array.isArray(rawHeroSlidesFromStore) && rawHeroSlidesFromStore.length > 0
+    ? rawHeroSlidesFromStore
+    : null;
+  const [heroSlidesFromApi, setHeroSlidesFromApi] = useState<Array<{ id: string; title: string; subtitle: string; gradient: string; cta: string; ctaLink: string; image?: string }>>([]);
 
   useEffect(() => {
-    if (Array.isArray(rawHeroSlides) && rawHeroSlides.length > 0) {
-      setHeroSlidesFromApi(rawHeroSlides as typeof heroSlidesFromApi);
+    if (heroSlidesSource) {
+      setHeroSlidesFromApi(heroSlidesSource as typeof heroSlidesFromApi);
     }
-  }, [rawHeroSlides]);
+  }, [heroSlidesSource]);
 
   const slides = heroSlidesFromApi.length > 0
     ? heroSlidesFromApi.map((s, idx) => ({
@@ -152,13 +163,15 @@ export default function Home() {
         bg: s.gradient,
         cta: s.cta,
         link: s.ctaLink,
+        image: s.image,
       }))
-    : homeConfig.heroSlides.map((s: { title: string; subtitle: string; gradient: string; cta: string; ctaLink: string }, idx: number) => ({
+    : homeConfig.heroSlides.map((s: { title: string; subtitle: string; gradient: string; cta: string; ctaLink: string; image?: string }, idx: number) => ({
         title: idx === 0 ? heroTitle.replace('，', '，\n') : s.title,
         sub: idx === 0 ? heroSubtitle : s.subtitle,
         bg: s.gradient,
         cta: s.cta,
         link: s.ctaLink,
+        image: s.image,
       }));
 
   useEffect(() => {
@@ -166,23 +179,30 @@ export default function Home() {
     return () => clearInterval(timerRef.current);
   }, [slides.length]);
 
-  // 统计数字（从 API 获取真实数据，加载前显示 0）
+  // 统计数字（API 实时数据优先，配置中心仅覆盖 label/suffix）
+  const homeUiConfig = useConfigStore(s => s.getJson<Record<string, unknown>>('home_ui_config', null));
+  const configuredStats = homeUiConfig?.stats as Record<string, { value: number; label: string; suffix: string }> | undefined;
   const platformStats = [
-    { label: '注册学生', value: platformStatsData ? `${platformStatsData.students}+` : '0', icon: Users },
-    { label: '合作企业', value: platformStatsData ? `${platformStatsData.companies}+` : '0', icon: Building2 },
-    { label: '认证导师', value: platformStatsData ? `${platformStatsData.mentors}+` : '0', icon: Award },
-    { label: '在招职位', value: platformStatsData ? `${platformStatsData.jobs}+` : '0', icon: FileText },
+    { label: configuredStats?.students?.label || '注册学生', value: platformStatsData ? `${platformStatsData.students.toLocaleString()}${configuredStats?.students?.suffix || '+'}` : '0', icon: Users, link: '/register' },
+    { label: configuredStats?.companies?.label || '合作企业', value: platformStatsData ? `${platformStatsData.companies.toLocaleString()}${configuredStats?.companies?.suffix || '+'}` : '0', icon: Building2, link: '/jobs' },
+    { label: configuredStats?.mentors?.label || '认证导师', value: platformStatsData ? `${platformStatsData.mentors.toLocaleString()}${configuredStats?.mentors?.suffix || '+'}` : '0', icon: Award, link: '/mentors' },
+    { label: configuredStats?.jobs?.label || '在招职位', value: platformStatsData ? `${platformStatsData.jobs.toLocaleString()}${configuredStats?.jobs?.suffix || '+'}` : '0', icon: FileText, link: '/jobs' },
   ];
 
-  // 快捷入口（从 JSON 配置读取，图标字符串映射为组件）
-  const quickEntries = homeConfig.quickEntries.map((e: { icon: string; badge?: string; link: string; bg: string; color: string; label: string; desc: string }) => ({
+  // 快捷入口（配置中心优先，降级到 JSON 静态文件；图标字符串映射为组件）
+  const quickEntriesSource = Array.isArray(rawQuickEntriesFromStore) && rawQuickEntriesFromStore.length > 0
+    ? rawQuickEntriesFromStore
+    : homeConfig.quickEntries;
+  const quickEntries = quickEntriesSource.map((e: { icon: string; badge?: string; link: string; bg: string; color: string; label: string; desc: string }) => ({
     ...e,
     icon: ICON_MAP[e.icon] || Briefcase,
     badge: e.badge as 'new' | undefined,
   }));
 
-  // 课程封面颜色映射（从 JSON 配置读取）
-  const courseColors = homeConfig.courseColors;
+  // 课程封面颜色映射（配置中心优先，降级到 JSON 静态文件）
+  const courseColors = (Array.isArray(rawCourseColorsFromStore) && rawCourseColorsFromStore.length > 0)
+    ? rawCourseColorsFromStore
+    : homeConfig.courseColors;
 
   return (
     <div>
@@ -197,6 +217,9 @@ export default function Home() {
             style={getCarouselGPUStyle()}
             className={`absolute inset-0 bg-gradient-to-br ${slides[currentSlide].bg}`}
           >
+            {slides[currentSlide].image && (
+              <img src={slides[currentSlide].image} alt="" className="absolute inset-0 w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+            )}
             <div className="absolute inset-0 bg-black/20" />
             <div className="absolute top-20 right-20 w-96 h-96 bg-white/5 rounded-full blur-3xl" />
             <div className="absolute -bottom-10 -left-20 w-72 h-72 bg-white/5 rounded-full blur-3xl" />
@@ -309,10 +332,10 @@ export default function Home() {
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 bg-primary-600 rounded-full flex items-center justify-center text-white font-bold text-lg">
-                  {user.nickname?.[0] || t.welcome.avatarFallback}
+                  {(user.nickname || user.name || '')?.[0] || t.welcome.avatarFallback}
                 </div>
                 <div>
-                  <h2 className="text-lg font-bold text-gray-900">{t.welcome.title.replace('{nickname}', user.nickname || '')}</h2>
+                  <h2 className="text-lg font-bold text-gray-900">{t.welcome.title.replace('{nickname}', user.nickname || user.name || '')}</h2>
                   <p className="text-sm text-gray-500">{t.welcome.subtitle}</p>
                 </div>
               </div>
@@ -349,9 +372,10 @@ export default function Home() {
             const numValue = numMatch ? parseInt(numMatch[1], 10) : 0;
             const suffix = s.value.replace(/^\d+/, '');
             return (
-            <motion.div key={i} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }}
+            <Link key={i} to={s.link} className="focus-visible:outline-none">
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }}
               className="bg-white rounded-xl p-5 text-center shadow-sm border border-gray-100
-                hover:shadow-md hover:-translate-y-1 hover:border-primary-100 transition-all duration-300 group cursor-default"
+                hover:shadow-md hover:-translate-y-1 hover:border-primary-100 transition-all duration-300 group cursor-pointer"
             >
               <div className="w-10 h-10 bg-primary-50 rounded-lg flex items-center justify-center mx-auto mb-2
                 ring-1 ring-primary-100/50 shadow-sm shadow-primary-100/50
@@ -365,6 +389,7 @@ export default function Home() {
               </div>
               <div className="text-xs text-gray-500 mt-0.5">{s.label}</div>
             </motion.div>
+            </Link>
             );
           })}
         </div>
@@ -572,7 +597,7 @@ export default function Home() {
                     </div>
                     <div className="flex items-center justify-between mt-2 text-xs text-gray-500">
                       <span>{c.mentor || c.mentor_name || ''}</span>
-                      <span>{c.views} 次播放</span>
+                      <span>{c.views ?? 0} 次播放</span>
                     </div>
                   </div>
                 </Link>
@@ -610,7 +635,7 @@ export default function Home() {
           <h2 className="text-xl font-bold text-gray-900 text-center mb-2">{t.sections.valueProposition.title}</h2>
           <p className="text-sm text-gray-500 text-center mb-8">{t.sections.valueProposition.subtitle}</p>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {homeConfig.valueSections.map((item: { icon: string; bg: string; border: string; gradientFrom: string; gradientTo: string; color: string; role: string; points: string[] }, i: number) => {
+            {(Array.isArray(rawValueSectionsFromStore) && rawValueSectionsFromStore.length > 0 ? rawValueSectionsFromStore : homeConfig.valueSections).map((item: { icon: string; bg: string; border: string; gradientFrom: string; gradientTo: string; color: string; role: string; points: string[] }, i: number) => {
               const IconComp = ICON_MAP[item.icon] || GraduationCap;
               return (
               <motion.div key={i} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 + i * 0.1 }}

@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { User, UserRole } from '../types';
+import { API_PREFIX } from '../api/http';
 
 // ====== 认证状态管理（Zustand + 持久化） ======
 
@@ -54,7 +55,7 @@ export const useAuthStore = create<AuthState>()(
         const refreshToken = get().refreshToken;
         if (refreshToken) {
           try {
-            await fetch('/api/auth/logout', {
+            await fetch(`${API_PREFIX}/auth/logout`, {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',

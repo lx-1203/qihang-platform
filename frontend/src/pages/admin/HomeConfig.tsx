@@ -1,16 +1,19 @@
 import { useState, useEffect } from 'react';
-import { Save, Plus, Trash2, Eye, CheckCircle2, ArrowRight, Loader2, AlertTriangle } from 'lucide-react';
+import { Save, Plus, Trash2, Eye, CheckCircle2, ArrowRight, Loader2, AlertTriangle, X, BarChart3 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import http from '@/api/http';
 import { useToast } from '@/components/ui';
+import FileUpload from '@/components/ui/FileUpload';
 import { useConfigStore } from '@/store/config';
 import { Skeleton, CardSkeleton } from '@/components/ui/Skeleton';
 import homeConfig from '../../data/home-ui-config.json';
 import { handleApiFailure } from '@/utils/connectionStatus';
 
-type HeroSlide = typeof homeConfig.heroSlides[0];
+type HeroSlide = typeof homeConfig.heroSlides[0] & { image?: string };
 type QuickEntry = typeof homeConfig.quickEntries[0];
 type ValueSection = typeof homeConfig.valueSections[0];
+type StatItem = { value: number; label: string; suffix: string };
+type StatsData = Record<string, StatItem>;
 
 const GRADIENT_PRESETS = [
   { name: '品牌色渐变', value: 'from-primary-400 to-primary-600' },
@@ -26,11 +29,12 @@ const GRADIENT_PRESETS = [
 export default function HomeConfig() {
   const toast = useToast();
   const refreshConfig = useConfigStore((s) => s.fetchConfigs);
-  const [activeTab, setActiveTab] = useState<'hero' | 'entries' | 'colors' | 'values'>('hero');
+  const [activeTab, setActiveTab] = useState<'hero' | 'entries' | 'colors' | 'values' | 'stats'>('hero');
   const [heroSlides, setHeroSlides] = useState<HeroSlide[]>(homeConfig.heroSlides);
   const [quickEntries, setQuickEntries] = useState<QuickEntry[]>(homeConfig.quickEntries);
   const [courseColors, setCourseColors] = useState<string[]>(homeConfig.courseColors);
   const [valueSections, setValueSections] = useState<ValueSection[]>(homeConfig.valueSections);
+  const [stats, setStats] = useState<StatsData>(homeConfig.stats as StatsData);
   const [saved, setSaved] = useState(false);
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -55,6 +59,7 @@ export default function HomeConfig() {
               if (parsedConfig.quickEntries) setQuickEntries(parsedConfig.quickEntries);
               if (parsedConfig.courseColors) setCourseColors(parsedConfig.courseColors);
               if (parsedConfig.valueSections) setValueSections(parsedConfig.valueSections);
+              if (parsedConfig.stats) setStats(parsedConfig.stats);
             } catch {
               toast.warning('配置解析失败', '使用默认配置');
             }
@@ -106,6 +111,7 @@ export default function HomeConfig() {
       quickEntries,
       courseColors,
       valueSections,
+      stats,
       _meta: {
         ...homeConfig._meta,
         lastUpdated: new Date().toISOString().split('T')[0],
@@ -123,8 +129,8 @@ export default function HomeConfig() {
       if (res.data?.code === 200) {
         toast.success('保存成功', '首页配置已更新，刷新页面后可见变更');
         setSaved(true);
-        // 刷新配置 store
-        await refreshConfig();
+        // 强制刷新配置 store（跳过 loading 守卫）
+        await refreshConfig(true);
         setTimeout(() => setSaved(false), 2000);
       } else {
         toast.error('保存失败', res.data?.message || '请稍后重试');
@@ -139,6 +145,7 @@ export default function HomeConfig() {
   const tabs = [
     { key: 'hero' as const, label: 'Hero 轮播' },
     { key: 'entries' as const, label: '快捷入口' },
+    { key: 'stats' as const, label: '平台数据' },
     { key: 'colors' as const, label: '课程配色' },
     { key: 'values' as const, label: '平台价值' },
   ];
@@ -279,6 +286,32 @@ export default function HomeConfig() {
                       ))}
                     </div>
                   </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-500 mb-1">背景图片（可选，优先于渐变色）</label>
+                    {slide.image ? (
+                      <div className="relative group">
+                        <img src={slide.image} alt="" className="w-full h-32 object-cover rounded-lg border border-gray-200" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                        <button
+                          onClick={() => { const arr = [...heroSlides]; arr[idx] = { ...arr[idx], image: '' }; setHeroSlides(arr); }}
+                          className="absolute top-2 right-2 p-1.5 bg-black/50 text-white rounded-lg opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ) : (
+                      <FileUpload
+                        category="cover"
+                        accept="image/jpeg,image/png,image/gif,image/webp"
+                        placeholder="上传轮播背景图（建议 1920x600）"
+                        className="!py-4"
+                        onSuccess={(result) => {
+                          const arr = [...heroSlides];
+                          arr[idx] = { ...arr[idx], image: result.url };
+                          setHeroSlides(arr);
+                        }}
+                      />
+                    )}
+                  </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <label className="block text-xs font-medium text-gray-500 mb-1">按钮文字</label>
@@ -293,7 +326,11 @@ export default function HomeConfig() {
                   </div>
                 </div>
                 {/* 实时预览 */}
-                <div className={`mt-4 rounded-xl p-6 bg-gradient-to-br ${slide.gradient} text-white`}>
+                <div className={`mt-4 rounded-xl p-6 bg-gradient-to-br ${slide.gradient} text-white relative overflow-hidden`}>
+                  {slide.image && (
+                    <img src={slide.image} alt="" className="absolute inset-0 w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                  )}
+                  {slide.image && <div className="absolute inset-0 bg-black/40" />}
                   <h4 className="text-lg font-bold whitespace-pre-line mb-1">{slide.title}</h4>
                   <p className="text-sm text-white/70 mb-3">{slide.subtitle}</p>
                   <span className="inline-flex items-center gap-1 bg-white text-gray-900 px-3 py-1.5 rounded-lg text-xs font-bold">
@@ -304,7 +341,7 @@ export default function HomeConfig() {
                 )}
               </motion.div>
             ))}
-            <button onClick={() => setHeroSlides([...heroSlides, { id: `slide-${Date.now()}`, title: '新轮播标题', subtitle: '副标题描述', gradient: 'from-gray-700 to-gray-900', cta: '了解更多', ctaLink: '/' }])}
+            <button onClick={() => setHeroSlides([...heroSlides, { id: `slide-${Date.now()}`, title: '新轮播标题', subtitle: '副标题描述', gradient: 'from-gray-700 to-gray-900', cta: '了解更多', ctaLink: '/', image: '' }])}
               className="w-full py-3 border-2 border-dashed border-gray-300 rounded-xl text-sm text-gray-500 hover:border-primary-400 hover:text-primary-600 transition-colors flex items-center justify-center gap-2">
               <Plus className="w-4 h-4" /> 添加轮播
             </button>
@@ -373,6 +410,84 @@ export default function HomeConfig() {
               className="w-full py-3 border-2 border-dashed border-gray-300 rounded-xl text-sm text-gray-500 hover:border-primary-400 hover:text-primary-600 transition-colors flex items-center justify-center gap-2">
               <Plus className="w-4 h-4" /> 添加入口
             </button>
+          </div>
+        )}
+
+        {/* ====== 平台数据统计编辑 ====== */}
+        {activeTab === 'stats' && (
+          <div className="space-y-4">
+            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+              className="bg-white rounded-xl border border-gray-200 p-6">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-10 h-10 rounded-xl bg-primary-50 flex items-center justify-center">
+                  <BarChart3 className="w-5 h-5 text-primary-600" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-gray-900">首页统计数据</h3>
+                  <p className="text-xs text-gray-500">修改首页展示的平台数据，设置后将覆盖实时统计数字</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                {Object.entries(stats).map(([key, item]) => (
+                  <div key={key} className="bg-gray-50 rounded-xl p-4 border border-gray-100">
+                    <label className="block text-xs font-medium text-gray-500 mb-2">{item.label}</label>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="number"
+                        min={0}
+                        value={item.value}
+                        onChange={e => setStats({
+                          ...stats,
+                          [key]: { ...item, value: parseInt(e.target.value) || 0 }
+                        })}
+                        className="flex-1 px-3 py-2.5 border border-gray-200 rounded-lg text-lg font-bold text-gray-900 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                      />
+                      <span className="text-sm text-gray-400 font-medium">{item.suffix}</span>
+                    </div>
+                    <div className="mt-3">
+                      <label className="block text-xs text-gray-400 mb-1">显示标签</label>
+                      <input
+                        type="text"
+                        value={item.label}
+                        onChange={e => setStats({
+                          ...stats,
+                          [key]: { ...item, label: e.target.value }
+                        })}
+                        className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                      />
+                    </div>
+                    <div className="mt-2">
+                      <label className="block text-xs text-gray-400 mb-1">后缀</label>
+                      <input
+                        type="text"
+                        value={item.suffix}
+                        onChange={e => setStats({
+                          ...stats,
+                          [key]: { ...item, suffix: e.target.value }
+                        })}
+                        className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* 预览 */}
+              <div className="mt-6 bg-gradient-to-br from-primary-600 via-primary-700 to-primary-800 rounded-xl p-6">
+                <h4 className="text-white/70 text-xs font-medium mb-4">预览效果</h4>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+                  {Object.values(stats).map((item) => (
+                    <div key={item.label} className="text-center">
+                      <div className="text-2xl md:text-3xl font-bold text-white">
+                        {item.value.toLocaleString()}{item.suffix}
+                      </div>
+                      <div className="text-sm text-white/70 mt-1">{item.label}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </motion.div>
           </div>
         )}
 
@@ -488,7 +603,7 @@ export default function HomeConfig() {
 
       {/* 删除确认对话框 */}
       {deleteConfirm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 backdrop-blur-sm">
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}

@@ -297,7 +297,7 @@ router.put('/users/:id/role', async (req, res) => {
     const { id } = req.params;
     const { role } = req.body;
 
-    const allowedRoles = ['student', 'company', 'mentor', 'admin'];
+    const allowedRoles = ['student', 'company', 'mentor', 'admin', 'agent'];
     if (!role || !allowedRoles.includes(role)) {
       return res.status(400).json({ code: 400, message: '无效的角色类型' });
     }
@@ -333,13 +333,13 @@ router.delete('/users/:id', async (req, res) => {
       return res.status(400).json({ code: 400, message: '不能删除自己的账号' });
     }
 
-    const [result] = await pool.query('DELETE FROM users WHERE id = ?', [id]);
+    const [result] = await pool.query('UPDATE users SET status = 0 WHERE id = ?', [id]);
 
     if (result.affectedRows === 0) {
       return res.status(404).json({ code: 404, message: '用户不存在' });
     }
 
-    res.json({ code: 200, message: '用户已删除' });
+    res.json({ code: 200, message: '用户已禁用' });
   } catch (err) {
     console.error('删除用户失败:', err);
     res.status(500).json({ code: 500, message: '服务器内部错误' });
@@ -519,7 +519,7 @@ router.get('/mentors', async (req, res) => {
 router.put('/mentors/:id/verify', async (req, res) => {
   try {
     const { id } = req.params;
-    const { status } = req.body;
+    const { status, remark = '' } = req.body;
 
     if (status === undefined || ![0, 1].includes(Number(status))) {
       return res.status(400).json({ code: 400, message: 'status 必须为 0 或 1' });
@@ -538,13 +538,13 @@ router.put('/mentors/:id/verify', async (req, res) => {
     const [existing] = await pool.query('SELECT id FROM mentor_profiles WHERE user_id = ?', [id]);
     if (existing.length > 0) {
       await pool.query(
-        'UPDATE mentor_profiles SET verify_status = ? WHERE user_id = ?',
-        [verifyStatus, id]
+        'UPDATE mentor_profiles SET verify_status = ?, verify_remark = ? WHERE user_id = ?',
+        [verifyStatus, remark, id]
       );
     } else {
       await pool.query(
-        'INSERT INTO mentor_profiles (user_id, verify_status) VALUES (?, ?)',
-        [id, verifyStatus]
+        'INSERT INTO mentor_profiles (user_id, verify_status, verify_remark) VALUES (?, ?, ?)',
+        [id, verifyStatus, remark]
       );
     }
 
@@ -554,7 +554,7 @@ router.put('/mentors/:id/verify', async (req, res) => {
     // 通知导师用户审核结果
     try {
       const approved = Number(status) === 1;
-      await NotificationTemplates.mentorVerified(Number(id), approved, '');
+      await NotificationTemplates.mentorVerified(Number(id), approved, remark);
     } catch (notifyErr) {
       console.error('发送导师审核通知失败(不影响主流程):', notifyErr);
     }
@@ -581,26 +581,28 @@ router.get('/jobs', async (req, res) => {
     const params = [];
 
     if (keyword) {
-      where += ' AND (title LIKE ? OR company_name LIKE ?)';
+      where += ' AND (j.title LIKE ? OR j.company_name LIKE ?)';
       const kw = `%${keyword}%`;
       params.push(kw, kw);
     }
     if (type && type !== '全部') {
-      where += ' AND type = ?';
+      where += ' AND j.type = ?';
       params.push(type);
     }
     if (status) {
-      where += ' AND status = ?';
+      where += ' AND j.status = ?';
       params.push(status);
     }
 
     // 总数
-    const [countRows] = await pool.query(`SELECT COUNT(*) AS total FROM jobs ${where}`, params);
+    const [countRows] = await pool.query(`SELECT COUNT(*) AS total FROM jobs j ${where}`, params);
     const total = countRows[0].total;
 
-    // 分页查询
+    // 分页查询（JOIN companies 获取 user_id 用于审核反馈通知）
     const [jobs] = await pool.query(
-      `SELECT * FROM jobs ${where} ORDER BY created_at DESC LIMIT ? OFFSET ?`,
+      `SELECT j.*, c.user_id AS company_user_id FROM jobs j
+       LEFT JOIN companies c ON j.company_id = c.id
+       ${where} ORDER BY j.created_at DESC LIMIT ? OFFSET ?`,
       [...params, limit, offset]
     );
 
@@ -669,18 +671,20 @@ router.get('/courses', async (req, res) => {
     const params = [];
 
     if (keyword) {
-      where += ' AND (title LIKE ? OR mentor_name LIKE ?)';
+      where += ' AND (co.title LIKE ? OR co.mentor_name LIKE ?)';
       const kw = `%${keyword}%`;
       params.push(kw, kw);
     }
 
     // 总数
-    const [countRows] = await pool.query(`SELECT COUNT(*) AS total FROM courses ${where}`, params);
+    const [countRows] = await pool.query(`SELECT COUNT(*) AS total FROM courses co ${where}`, params);
     const total = countRows[0].total;
 
-    // 分页查询
+    // 分页查询（JOIN mentor_profiles 获取 user_id 用于审核反馈通知）
     const [courses] = await pool.query(
-      `SELECT * FROM courses ${where} ORDER BY created_at DESC LIMIT ? OFFSET ?`,
+      `SELECT co.*, mp.user_id AS mentor_user_id FROM courses co
+       LEFT JOIN mentor_profiles mp ON co.mentor_id = mp.id
+       ${where} ORDER BY co.created_at DESC LIMIT ? OFFSET ?`,
       [...params, limit, offset]
     );
 
@@ -820,18 +824,30 @@ router.get('/audit-logs', async (req, res) => {
       params.push(Number(operator_id));
     }
 
-    const [countRows] = await pool.query(
-      `SELECT COUNT(*) AS total FROM audit_logs ${where}`,
-      params
-    );
-    const total = countRows[0].total;
+    // 容错：如果表不存在则返回空列表
+    let total = 0;
+    let logs = [];
+    try {
+      const [countRows] = await pool.query(
+        `SELECT COUNT(*) AS total FROM audit_logs ${where}`,
+        params
+      );
+      total = countRows[0].total;
 
-    const [logs] = await pool.query(
-      `SELECT * FROM audit_logs ${where}
-       ORDER BY created_at DESC
-       LIMIT ? OFFSET ?`,
-      [...params, limit, offset]
-    );
+      [logs] = await pool.query(
+        `SELECT * FROM audit_logs ${where}
+         ORDER BY created_at DESC
+         LIMIT ? OFFSET ?`,
+        [...params, limit, offset]
+      );
+    } catch (tableErr) {
+      // 表不存在时返回空列表而非报错
+      if (tableErr.code === 'ER_NO_SUCH_TABLE' || tableErr.errno === 1146) {
+        console.warn('audit_logs 表不存在，返回空列表');
+      } else {
+        throw tableErr;
+      }
+    }
 
     res.json({
       code: 200,
@@ -1149,7 +1165,8 @@ router.get('/programs', async (req, res) => {
     const offset = (Math.max(1, Number(page)) - 1) * Number(pageSize);
 
     const [list] = await pool.query(
-      `SELECT p.*, u.name_zh AS university_name, u.name_en AS university_name_en, u.region
+      `SELECT p.*, u.name_zh AS university_name, u.name_en AS university_name_en, u.region,
+              u.logo AS university_logo, u.cover AS university_cover
        FROM programs p LEFT JOIN universities u ON p.university_id = u.id
        WHERE ${where} ORDER BY p.id DESC LIMIT ? OFFSET ?`,
       [...params, Number(pageSize), offset]
@@ -1166,7 +1183,7 @@ router.get('/programs', async (req, res) => {
 router.get('/programs/:id', async (req, res) => {
   try {
     const [rows] = await pool.query(
-      `SELECT p.*, u.name_zh AS university_name FROM programs p LEFT JOIN universities u ON p.university_id = u.id WHERE p.id = ?`,
+      `SELECT p.*, u.name_zh AS university_name, u.logo AS university_logo, u.cover AS university_cover FROM programs p LEFT JOIN universities u ON p.university_id = u.id WHERE p.id = ?`,
       [req.params.id]
     );
     if (rows.length === 0) return res.status(404).json({ code: 404, message: '项目不存在' });
@@ -1362,10 +1379,15 @@ router.delete('/study-abroad-offers/:id', async (req, res) => {
 // 时间线列表
 router.get('/study-abroad-timeline', async (req, res) => {
   try {
-    const { page = 1, pageSize = 50, type, status } = req.query;
+    const { page = 1, pageSize = 50, type, status, keyword } = req.query;
     let where = '1=1';
     const params = [];
 
+    if (keyword) {
+      where += ' AND (title LIKE ? OR description LIKE ? OR category LIKE ?)';
+      const kw = `%${keyword}%`;
+      params.push(kw, kw, kw);
+    }
     if (type) { where += ' AND type = ?'; params.push(type); }
     if (status) { where += ' AND status = ?'; params.push(status); }
 
@@ -1374,7 +1396,7 @@ router.get('/study-abroad-timeline', async (req, res) => {
     const offset = (Math.max(1, Number(page)) - 1) * Number(pageSize);
 
     const [list] = await pool.query(
-      `SELECT * FROM study_abroad_timeline WHERE ${where} ORDER BY date ASC LIMIT ? OFFSET ?`,
+      `SELECT * FROM study_abroad_timeline ${where} ORDER BY date ASC LIMIT ? OFFSET ?`,
       [...params, Number(pageSize), offset]
     );
 
@@ -1580,8 +1602,8 @@ router.get('/health', async (_req, res) => {
     });
   } catch (err) {
     console.error('健康检查失败:', err);
-    res.json({
-      code: 200,
+    res.status(503).json({
+      code: 503,
       data: {
         database: { status: 'error', latency: 0 },
         server: {
@@ -1598,7 +1620,11 @@ router.get('/health', async (_req, res) => {
 router.get('/jobs/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const [rows] = await pool.query('SELECT * FROM jobs WHERE id = ?', [id]);
+    const [rows] = await pool.query(
+      `SELECT j.*, c.user_id AS company_user_id
+       FROM jobs j LEFT JOIN companies c ON j.company_id = c.id
+       WHERE j.id = ?`, [id]
+    );
     if (rows.length === 0) {
       return res.status(404).json({ code: 404, message: '职位不存在' });
     }
@@ -1615,7 +1641,11 @@ router.get('/jobs/:id', async (req, res) => {
 router.get('/courses/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const [rows] = await pool.query('SELECT * FROM courses WHERE id = ?', [id]);
+    const [rows] = await pool.query(
+      `SELECT c.*, m.user_id AS mentor_user_id
+       FROM courses c LEFT JOIN mentor_profiles m ON c.mentor_id = m.user_id
+       WHERE c.id = ?`, [id]
+    );
     if (rows.length === 0) {
       return res.status(404).json({ code: 404, message: '课程不存在' });
     }
@@ -1635,16 +1665,99 @@ router.post('/feedback', async (req, res) => {
     if (!userId || !title) {
       return res.status(400).json({ code: 400, message: '缺少必填参数' });
     }
-    await createNotification({
-      userId,
-      type: 'review',
-      title,
-      content: content || '',
-      link: '/notifications',
-    });
+
+    // 校验 userId 是有效数字
+    const targetUserId = Number(userId);
+    if (!targetUserId || targetUserId <= 0) {
+      return res.status(400).json({ code: 400, message: '无效的用户ID' });
+    }
+
+    try {
+      await createNotification({
+        userId: targetUserId,
+        type: 'system',
+        title,
+        content: content || '',
+        link: '/notifications',
+      });
+    } catch (notifyErr) {
+      // 通知发送失败不影响主流程
+      console.error('发送反馈通知失败(不影响主流程):', notifyErr);
+    }
     res.json({ code: 200, message: '反馈已发送' });
   } catch (err) {
     console.error('发送反馈失败:', err);
+    res.status(500).json({ code: 500, message: '服务器内部错误' });
+  }
+});
+
+// ==================== 2.16 竞赛信息管理 ====================
+router.get('/competitions', async (req, res) => {
+  try {
+    const { page = 1, pageSize = 20, status, level, keyword } = req.query;
+    let where = 'WHERE 1=1';
+    const params = [];
+    if (status) { where += ' AND status = ?'; params.push(status); }
+    if (level) { where += ' AND level = ?'; params.push(level); }
+    if (keyword) { where += ' AND (name LIKE ? OR organizer LIKE ?)'; params.push(`%${keyword}%`, `%${keyword}%`); }
+
+    const [countRows] = await pool.query(`SELECT COUNT(*) AS total FROM competitions ${where}`, params);
+    const total = countRows[0].total;
+    const offset = (Math.max(1, Number(page)) - 1) * Number(pageSize);
+    const [list] = await pool.query(`SELECT * FROM competitions ${where} ORDER BY created_at DESC LIMIT ? OFFSET ?`, [...params, Number(pageSize), offset]);
+    res.json({ code: 200, data: { list, total, page: Number(page), pageSize: Number(pageSize) } });
+  } catch (err) {
+    console.error('获取竞赛列表失败:', err);
+    res.status(500).json({ code: 500, message: '服务器内部错误' });
+  }
+});
+
+router.post('/competitions', async (req, res) => {
+  try {
+    const { name, level, organizer, status, deadline, description, registration_url, tags } = req.body;
+    if (!name) return res.status(400).json({ code: 400, message: '竞赛名称不能为空' });
+    const [result] = await pool.query(
+      'INSERT INTO competitions (name, level, organizer, status, deadline, description, registration_url, tags) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+      [name, level || '国家级', organizer || '', status || '报名中', deadline || null, description || '', registration_url || '', tags ? JSON.stringify(tags) : null]
+    );
+    const [rows] = await pool.query('SELECT * FROM competitions WHERE id = ?', [result.insertId]);
+    res.json({ code: 200, message: '创建成功', data: rows[0] });
+  } catch (err) {
+    console.error('创建竞赛失败:', err);
+    res.status(500).json({ code: 500, message: '服务器内部错误' });
+  }
+});
+
+router.put('/competitions/:id', async (req, res) => {
+  try {
+    const { name, level, organizer, status, deadline, description, registration_url, tags } = req.body;
+    const fields = [];
+    const params = [];
+    if (name !== undefined) { fields.push('name = ?'); params.push(name); }
+    if (level !== undefined) { fields.push('level = ?'); params.push(level); }
+    if (organizer !== undefined) { fields.push('organizer = ?'); params.push(organizer); }
+    if (status !== undefined) { fields.push('status = ?'); params.push(status); }
+    if (deadline !== undefined) { fields.push('deadline = ?'); params.push(deadline); }
+    if (description !== undefined) { fields.push('description = ?'); params.push(description); }
+    if (registration_url !== undefined) { fields.push('registration_url = ?'); params.push(registration_url); }
+    if (tags !== undefined) { fields.push('tags = ?'); params.push(JSON.stringify(tags)); }
+    if (!fields.length) return res.status(400).json({ code: 400, message: '无更新字段' });
+    params.push(req.params.id);
+    await pool.query(`UPDATE competitions SET ${fields.join(', ')} WHERE id = ?`, params);
+    const [rows] = await pool.query('SELECT * FROM competitions WHERE id = ?', [req.params.id]);
+    res.json({ code: 200, message: '更新成功', data: rows[0] });
+  } catch (err) {
+    console.error('更新竞赛失败:', err);
+    res.status(500).json({ code: 500, message: '服务器内部错误' });
+  }
+});
+
+router.delete('/competitions/:id', async (req, res) => {
+  try {
+    await pool.query('DELETE FROM competitions WHERE id = ?', [req.params.id]);
+    res.json({ code: 200, message: '删除成功' });
+  } catch (err) {
+    console.error('删除竞赛失败:', err);
     res.status(500).json({ code: 500, message: '服务器内部错误' });
   }
 });

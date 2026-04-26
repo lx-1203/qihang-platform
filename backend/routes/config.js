@@ -122,10 +122,32 @@ router.post('/batch', authMiddleware, requireRole('admin'), auditMiddleware('upd
 
       for (const [key, value] of Object.entries(configs)) {
         const stringValue = typeof value === 'object' ? JSON.stringify(value) : String(value);
-        await conn.execute(
+
+        // 先尝试更新（仅 is_editable=1 的配置可更新）
+        const [result] = await conn.execute(
           `UPDATE site_configs SET config_value = ?, updated_at = NOW() WHERE config_key = ? AND is_editable = 1`,
           [stringValue, key]
         );
+
+        if (result.affectedRows === 0) {
+          // UPDATE 未匹配行：可能 key 不存在，或 is_editable=0
+          const [existing] = await conn.execute(
+            `SELECT id, is_editable FROM site_configs WHERE config_key = ?`, [key]
+          );
+
+          if (existing.length === 0) {
+            // key 不存在 → 插入新行
+            await conn.execute(
+              `INSERT INTO site_configs (config_key, config_value, config_type, config_group, label, description, is_public, is_editable, sort_order)
+               VALUES (?, ?, 'json', 'homepage', ?, ?, 1, 1, 99)`,
+              [key, stringValue, key, `由管理员通过可视化配置页面创建`]
+            );
+          } else if (!existing[0].is_editable) {
+            // key 存在但 is_editable=0 → 跳过，不允许强制更新
+            console.warn(`[配置批量更新] 跳过不可编辑的配置: ${key}`);
+          }
+          // else: key 存在且 is_editable=1 但 UPDATE 未匹配（理论上不会发生）
+        }
       }
 
       await conn.commit();
@@ -144,16 +166,36 @@ router.post('/batch', authMiddleware, requireRole('admin'), auditMiddleware('upd
 
 // ====== 公开静态配置接口（无需认证）======
 
-// GET /api/config/categories - 课程分类列表
-router.get('/categories', (_req, res) => {
+// GET /api/config/categories - 课程分类列表（从数据库读取，fallback 到默认值）
+router.get('/categories', async (_req, res) => {
+  try {
+    const [rows] = await pool.execute(
+      `SELECT config_value FROM site_configs WHERE config_key = 'course_categories' AND is_public = 1`
+    );
+    if (rows.length > 0) {
+      let value = rows[0].config_value;
+      try { value = JSON.parse(value); } catch { /* keep as string */ }
+      return res.json({ code: 200, data: Array.isArray(value) ? value : [value] });
+    }
+  } catch { /* fallback */ }
   res.json({
     code: 200,
     data: ['简历指导', '面试辅导', '职业规划', '考研指导', '创业指导', '留学规划'],
   });
 });
 
-// GET /api/config/skills - 常用技能列表
-router.get('/skills', (_req, res) => {
+// GET /api/config/skills - 常用技能列表（从数据库读取，fallback 到默认值）
+router.get('/skills', async (_req, res) => {
+  try {
+    const [rows] = await pool.execute(
+      `SELECT config_value FROM site_configs WHERE config_key = 'common_skills' AND is_public = 1`
+    );
+    if (rows.length > 0) {
+      let value = rows[0].config_value;
+      try { value = JSON.parse(value); } catch { /* keep as string */ }
+      return res.json({ code: 200, data: Array.isArray(value) ? value : [value] });
+    }
+  } catch { /* fallback */ }
   res.json({
     code: 200,
     data: [
@@ -164,11 +206,76 @@ router.get('/skills', (_req, res) => {
   });
 });
 
-// GET /api/config/grades - 年级选项
-router.get('/grades', (_req, res) => {
+// GET /api/config/grades - 年级选项（从数据库读取，fallback 到默认值）
+router.get('/grades', async (_req, res) => {
+  try {
+    const [rows] = await pool.execute(
+      `SELECT config_value FROM site_configs WHERE config_key = 'student_grades' AND is_public = 1`
+    );
+    if (rows.length > 0) {
+      let value = rows[0].config_value;
+      try { value = JSON.parse(value); } catch { /* keep as string */ }
+      return res.json({ code: 200, data: Array.isArray(value) ? value : [value] });
+    }
+  } catch { /* fallback */ }
   res.json({
     code: 200,
     data: ['大一', '大二', '大三', '大四', '研一', '研二', '研三', '博士'],
+  });
+});
+
+// GET /api/config/social-proof - 社会证明墙学员评价（从数据库读取，fallback 到默认值）
+router.get('/social-proof', async (_req, res) => {
+  try {
+    const [rows] = await pool.execute(
+      `SELECT config_value FROM site_configs WHERE config_key = 'social_proof_testimonials' AND is_public = 1`
+    );
+    if (rows.length > 0) {
+      let value = rows[0].config_value;
+      try { value = JSON.parse(value); } catch { /* keep as string */ }
+      return res.json({ code: 200, data: Array.isArray(value) ? value : [value] });
+    }
+  } catch { /* fallback */ }
+  res.json({
+    code: 200,
+    data: [
+      {
+        name: '张同学',
+        avatar: '张',
+        school: '南京大学',
+        company: '腾讯',
+        position: '产品经理',
+        quote: '通过启航平台的模拟面试，我找到了自己的不足并快速改进，最终拿到了心仪的 Offer！',
+        color: 'from-blue-500 to-cyan-500',
+      },
+      {
+        name: '李同学',
+        avatar: '李',
+        school: '浙江大学',
+        company: '阿里巴巴',
+        position: '前端工程师',
+        quote: '平台上的导师非常专业，一对一辅导让我对技术面试信心倍增。',
+        color: 'from-amber-500 to-orange-500',
+      },
+      {
+        name: '王同学',
+        avatar: '王',
+        school: '华中科技大学',
+        company: '字节跳动',
+        position: '后端开发',
+        quote: '从简历打磨到面试准备，启航平台提供了一站式的求职支持，省时省心。',
+        color: 'from-primary-500 to-teal-600',
+      },
+      {
+        name: '赵同学',
+        avatar: '赵',
+        school: '上海交通大学',
+        company: '美团',
+        position: '数据分析师',
+        quote: '平台推荐的岗位非常精准，帮我节省了大量筛选时间。',
+        color: 'from-green-500 to-emerald-500',
+      },
+    ],
   });
 });
 

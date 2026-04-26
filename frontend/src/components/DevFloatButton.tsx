@@ -80,15 +80,16 @@ export default function DevFloatButton() {
   // /dev 页面本身不显示
   if (location.pathname === '/dev') return null;
 
-  // 种子用户账号（密码统一为 password123，管理员为 admin123）
-  const DEV_ACCOUNTS = {
-    admin:   { email: 'admin@example.com',       password: 'admin123' },
-    company: { email: 'hr@bytedance.com',        password: 'password123' },
-    mentor:  { email: 'chen@mentor.com',         password: 'password123' },
-    student: { email: 'student1@example.com',    password: 'password123' },
-  };
+  // 种子用户账号（仅在开发模式可用，生产构建被 tree-shake 移除）
+  const DEV_ACCOUNTS = import.meta.env.DEV ? {
+    admin:   { email: 'admin@qihang.com',   password: 'admin123' },
+    company: { email: 'hr@bytedance.com',   password: 'password123' },
+    mentor:  { email: 'chen@mentor.com',     password: 'password123' },
+    student: { email: 'student@example.com', password: 'password123' },
+    agent:   { email: 'agent@qihang.com',    password: 'agent123' },
+  } : {};
 
-  async function switchRole(role: 'admin' | 'company' | 'mentor' | 'student') {
+  async function switchRole(role: 'admin' | 'company' | 'mentor' | 'student' | 'agent') {
     if (switching) return;
     setSwitching(true);
     try {
@@ -108,6 +109,7 @@ export default function DevFloatButton() {
         company: '/company/dashboard',
         mentor: '/mentor/dashboard',
         student: '/student/profile',
+        agent: '/agent/workbench',
       } as const;
       navigate(roleHome[role]);
     } catch (err: any) {
@@ -171,6 +173,7 @@ export default function DevFloatButton() {
                       { role: 'company' as const, label: '企业', color: 'bg-blue-600 hover:bg-blue-700' },
                       { role: 'mentor' as const, label: '导师', color: 'bg-emerald-600 hover:bg-emerald-700' },
                       { role: 'student' as const, label: '学生', color: 'bg-primary-600 hover:bg-primary-700' },
+                      { role: 'agent' as const, label: '客服', color: 'bg-sky-600 hover:bg-sky-700' },
                     ]).map(item => (
                       <button
                         key={item.role}

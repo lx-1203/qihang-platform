@@ -16,7 +16,7 @@
 import pool from '../db.js';
 
 /**
- * @typedef {'system' | 'appointment' | 'resume' | 'review' | 'approval' | 'general'} NotificationType
+ * @typedef {'system' | 'job' | 'appointment' | 'course' | 'announcement' | 'resume' | 'review' | 'approval' | 'general' | 'other'} NotificationType
  */
 
 /**
@@ -30,11 +30,28 @@ import pool from '../db.js';
  * @returns {Promise<number>} 新创建的通知ID
  */
 export async function createNotification({ userId, type = 'general', title, content = '', link = '' }) {
-  const [result] = await pool.query(
-    'INSERT INTO notifications (user_id, type, title, content, link) VALUES (?, ?, ?, ?, ?)',
-    [userId, type, title, content, link]
-  );
-  return result.insertId;
+  // 有效的通知类型（与数据库 ENUM 对齐）
+  const validTypes = ['system', 'job', 'appointment', 'course', 'announcement', 'resume', 'review', 'approval', 'general', 'other'];
+  const safeType = validTypes.includes(type) ? type : 'general';
+
+  try {
+    const [result] = await pool.query(
+      'INSERT INTO notifications (user_id, type, title, content, link) VALUES (?, ?, ?, ?, ?)',
+      [userId, safeType, title, content, link]
+    );
+    return result.insertId;
+  } catch (err) {
+    // 如果 ENUM 不包含该类型（旧数据库），降级为 general 重试
+    if (err.code === 'WARN_DATA_TRUNCATED' || err.code === 'ER_TRUNCATED_WRONG_VALUE') {
+      console.warn(`[通知] 类型 "${type}" 不在数据库 ENUM 中，降级为 general`);
+      const [result] = await pool.query(
+        'INSERT INTO notifications (user_id, type, title, content, link) VALUES (?, ?, ?, ?, ?)',
+        [userId, 'general', title, content, link]
+      );
+      return result.insertId;
+    }
+    throw err;
+  }
 }
 
 /**
@@ -121,9 +138,10 @@ export const NotificationTemplates = {
   /** 简历状态变更 */
   resumeStatusChanged: (userId, jobTitle, status) => {
     const statusLabels = {
+      pending: '待筛选',
       viewed: '已查看',
       interview: '面试邀请',
-      offer: '录用通知',
+      offered: '录用通知',
       rejected: '未通过',
     };
     return createNotification({

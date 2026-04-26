@@ -22,6 +22,21 @@ import { useConfigStore } from '@/store/config';
 
 // ====== API 映射函数 ======
 
+/** 安全解析 JSON 字符串，失败或结果非数组时返回 fallback */
+function safeJsonParse<T = string[]>(value: unknown, fallback: T = [] as unknown as T): T {
+  if (value === null || value === undefined) return fallback;
+  if (Array.isArray(value)) return value as T;
+  if (typeof value === 'string') {
+    try {
+      const parsed = JSON.parse(value);
+      return Array.isArray(parsed) ? (parsed as T) : fallback;
+    } catch {
+      return fallback;
+    }
+  }
+  return fallback;
+}
+
 /** 将 API 返回的 snake_case 行映射为 OfferItem */
 function mapApiOffer(row: Record<string, unknown>): OfferItem {
   return {
@@ -33,8 +48,8 @@ function mapApiOffer(row: Record<string, unknown>): OfferItem {
     ielts: (row.ielts as number) ?? null,
     toefl: (row.toefl as number) ?? null,
     gre: (row.gre as number) ?? null,
-    internship: typeof row.internship === 'string' ? JSON.parse(row.internship) : ((row.internship as string[]) || []),
-    research: typeof row.research === 'string' ? JSON.parse(row.research) : ((row.research as string[]) || []),
+    internship: safeJsonParse(row.internship) as string[],
+    research: safeJsonParse(row.research) as string[],
     result: row.result as string,
     country: row.country as string,
     school: row.school as string,
@@ -42,7 +57,7 @@ function mapApiOffer(row: Record<string, unknown>): OfferItem {
     scholarship: (row.scholarship as string) || '',
     story: (row.story as string) || '',
     date: (row.date as string)?.slice?.(0, 10) || (row.date as string),
-    tags: typeof row.tags === 'string' ? JSON.parse(row.tags) : ((row.tags as string[]) || []),
+    tags: safeJsonParse(row.tags) as string[],
     likes: (row.likes as number) || 0,
   };
 }
@@ -54,7 +69,7 @@ function mapApiConsultant(row: Record<string, unknown>): ConsultantItem {
     name: row.name as string,
     title: (row.title as string) || '',
     avatar: (row.avatar as string) || null,
-    specialty: typeof row.specialty === 'string' ? JSON.parse(row.specialty) : ((row.specialty as string[]) || []),
+    specialty: safeJsonParse(row.specialty) as string[],
     experience: (row.experience as string) || '',
     education: (row.education as string) || '',
     successCases: (row.success_cases as number) || 0,
@@ -309,7 +324,7 @@ export default function StudyAbroad() {
 
     const loadCountries = http.get('/study-abroad/countries')
       .then(res => {
-        const apiList = res.data.data;
+        const apiList = res.data?.data;
         if (Array.isArray(apiList)) {
           setCountries(apiList as CountryItem[]);
         }
@@ -333,9 +348,7 @@ export default function StudyAbroad() {
             logo: (row.logo as string) || '',
             cover: (row.cover as string) || '',
             programs: (row.programs as ProgramItem[]) || [],
-            highlights: typeof row.highlights === 'string'
-              ? JSON.parse(row.highlights)
-              : ((row.highlights as string[]) || []),
+            highlights: safeJsonParse(row.highlights) as string[],
           }));
           setUniversities(mapped);
         }
@@ -357,7 +370,7 @@ export default function StudyAbroad() {
 
     const loadConsultants = http.get('/study-abroad/consultants')
       .then(res => {
-        const apiList = res.data.data;
+        const apiList = res.data?.data;
         if (Array.isArray(apiList)) {
           setConsultants(apiList.map(mapApiConsultant));
         }
@@ -368,14 +381,16 @@ export default function StudyAbroad() {
 
     const loadArticles = http.get('/articles', { params: { category: 'study-abroad' } })
       .then(res => {
-        const apiList = res.data.data?.list || res.data.data;
+        // 后端返回 { data: { articles: [...], total, page, pageSize } }
+        const data = res.data?.data;
+        const apiList = data?.articles || data?.list || (Array.isArray(data) ? data : null);
         if (Array.isArray(apiList)) {
           setArticles(apiList.slice(0, 6).map((a: Record<string, unknown>) => ({
             id: String(a.id),
             title: (a.title as string) || '',
             category: (a.category as string) || '',
-            views: (a.views as number) || 0,
-            hot: ((a.views as number) || 0) > 10000,
+            views: (a.view_count as number) || (a.views as number) || 0,
+            hot: ((a.view_count as number) || (a.views as number) || 0) > 10000,
           })));
         }
       })
@@ -541,6 +556,10 @@ export default function StudyAbroad() {
 
         {/* ====== 平台数据 ====== */}
         <section className="mb-14">
+          <div className="flex items-center gap-2 mb-4">
+            <span className="px-1.5 py-0.5 bg-amber-200 text-amber-800 rounded text-[10px] font-bold">演示数据</span>
+            <span className="text-xs text-gray-400">以下统计为演示数据，实际数据待平台运营后更新</span>
+          </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {STATS.map((stat, idx) => (
               <motion.div key={idx} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: idx * 0.1 }}
@@ -736,13 +755,13 @@ export default function StudyAbroad() {
                   <p className="text-[13px] text-gray-500 mb-4 leading-relaxed line-clamp-2">{story.story}</p>
                   <div className="flex items-center justify-between">
                     <div className="flex flex-wrap gap-2">
-                      {story.tags.map((tag: string) => (
+                      {(story.tags || []).map((tag: string) => (
                         <Tag key={tag} variant="primary" size="xs">{tag}</Tag>
                       ))}
                     </div>
                     <div className="flex items-center gap-3 text-[12px] text-gray-400">
-                      <span className="flex items-center gap-1"><Heart className="w-3.5 h-3.5" />{story.likes}</span>
-                      <span className="flex items-center gap-1"><Users className="w-3.5 h-3.5" />{story.views}</span>
+                      <span className="flex items-center gap-1"><Heart className="w-3.5 h-3.5" />{story.likes || 0}</span>
+                      <span className="flex items-center gap-1"><Users className="w-3.5 h-3.5" />{story.views || 0}</span>
                     </div>
                   </div>
                 </div>

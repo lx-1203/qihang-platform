@@ -25,7 +25,7 @@ const CREATE_USERS_TABLE = `
     email       VARCHAR(255) NOT NULL UNIQUE COMMENT '邮箱（登录账号）',
     password    VARCHAR(255) NOT NULL COMMENT '密码（bcrypt哈希）',
     nickname    VARCHAR(100) DEFAULT '' COMMENT '昵称',
-    role        ENUM('student', 'company', 'mentor', 'admin') NOT NULL DEFAULT 'student' COMMENT '角色',
+    role        ENUM('student', 'company', 'mentor', 'admin', 'agent') NOT NULL DEFAULT 'student' COMMENT '角色',
     avatar      VARCHAR(500) DEFAULT '' COMMENT '头像URL',
     phone       VARCHAR(20)  DEFAULT '' COMMENT '手机号',
     status      TINYINT NOT NULL DEFAULT 1 COMMENT '状态: 1=正常, 0=禁用',
@@ -169,6 +169,7 @@ const CREATE_APPOINTMENTS_TABLE = `
     mentor_remark   TEXT COMMENT '导师备注',
     service_title   VARCHAR(200) DEFAULT '' COMMENT '服务/辅导标题',
     fee             DECIMAL(10,2) DEFAULT 0.00 COMMENT '费用',
+    meeting_link    VARCHAR(500) DEFAULT '' COMMENT '线上会议链接',
     review_rating   DECIMAL(2,1) DEFAULT NULL COMMENT '学生评分 (完成后)',
     review_content  TEXT COMMENT '学生评价 (完成后)',
     created_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -205,7 +206,7 @@ const CREATE_FAVORITES_TABLE = `
   CREATE TABLE IF NOT EXISTS favorites (
     id              INT AUTO_INCREMENT PRIMARY KEY,
     user_id         INT NOT NULL COMMENT '用户ID',
-    target_type     ENUM('job', 'course', 'mentor') NOT NULL COMMENT '收藏类型',
+    target_type     ENUM('job', 'course', 'mentor', 'course_like') NOT NULL COMMENT '收藏类型',
     target_id       INT NOT NULL COMMENT '收藏目标ID',
     created_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '收藏时间',
     UNIQUE KEY uk_user_target (user_id, target_type, target_id),
@@ -505,6 +506,7 @@ const CREATE_CHAT_CONVERSATIONS_TABLE = `
     unread_user     INT NOT NULL DEFAULT 0 COMMENT '用户未读数',
     unread_admin    INT NOT NULL DEFAULT 0 COMMENT '管理员未读数',
     assigned_admin  INT DEFAULT NULL COMMENT '分配的管理员ID',
+    target_user_id  INT DEFAULT NULL COMMENT '目标用户ID（私信对接的真人）',
     created_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     INDEX idx_user_id (user_id),
     INDEX idx_status (status),
@@ -645,6 +647,52 @@ const CREATE_CAMPUS_TIMELINE_TABLE = `
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='校招时间轴表'
 `;
 
+const CREATE_PARTNER_POSTS_TABLE = `
+  CREATE TABLE IF NOT EXISTS partner_posts (
+    id              INT AUTO_INCREMENT PRIMARY KEY,
+    user_id         INT NOT NULL COMMENT '发布者 user_id',
+    title           VARCHAR(200) NOT NULL COMMENT '招募标题',
+    project_name    VARCHAR(200) NOT NULL COMMENT '项目名称',
+    project_desc    TEXT NOT NULL COMMENT '项目描述',
+    stage           VARCHAR(50) NOT NULL COMMENT '项目阶段 (idea/mvp/growth/scale)',
+    industry        VARCHAR(100) NOT NULL COMMENT '行业领域',
+    location        VARCHAR(200) DEFAULT '' COMMENT '工作地点',
+    positions       JSON NOT NULL COMMENT '招募岗位列表',
+    equity_range    VARCHAR(100) DEFAULT '' COMMENT '股权范围',
+    highlights      JSON COMMENT '项目亮点',
+    team_size       INT DEFAULT 1 COMMENT '团队规模',
+    funding_status  VARCHAR(100) DEFAULT '' COMMENT '融资状态',
+    contact_method  VARCHAR(50) DEFAULT 'platform' COMMENT '联系方式类型',
+    contact_info    VARCHAR(500) DEFAULT '' COMMENT '联系方式',
+    view_count      INT DEFAULT 0 COMMENT '浏览量',
+    apply_count     INT DEFAULT 0 COMMENT '申请数',
+    status          ENUM('active', 'closed', 'draft') NOT NULL DEFAULT 'active' COMMENT '状态',
+    created_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    updated_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    INDEX idx_user_id (user_id),
+    INDEX idx_status (status),
+    INDEX idx_stage (stage),
+    INDEX idx_industry (industry)
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='合伙人招募帖表'
+`;
+
+const CREATE_PARTNER_APPLICATIONS_TABLE = `
+  CREATE TABLE IF NOT EXISTS partner_applications (
+    id          INT AUTO_INCREMENT PRIMARY KEY,
+    post_id     INT NOT NULL COMMENT '关联招募帖',
+    user_id     INT NOT NULL COMMENT '申请人 user_id',
+    message     TEXT COMMENT '申请留言',
+    skills      JSON COMMENT '申请人技能',
+    experience  TEXT COMMENT '相关经验',
+    status      ENUM('pending', 'accepted', 'rejected') NOT NULL DEFAULT 'pending' COMMENT '审核状态',
+    created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '申请时间',
+    updated_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    INDEX idx_post_id (post_id),
+    INDEX idx_user_id (user_id),
+    INDEX idx_status (status)
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='合伙人申请表'
+`;
+
 // ========== 按依赖关系排列的建表顺序 ==========
 const TABLE_DEFINITIONS = [
   { name: 'users',           sql: CREATE_USERS_TABLE },
@@ -677,6 +725,8 @@ const TABLE_DEFINITIONS = [
   { name: 'testimonials',           sql: CREATE_TESTIMONIALS_TABLE },
   { name: 'platform_features',      sql: CREATE_PLATFORM_FEATURES_TABLE },
   { name: 'campus_timeline',        sql: CREATE_CAMPUS_TIMELINE_TABLE },
+  { name: 'partner_posts',          sql: CREATE_PARTNER_POSTS_TABLE },
+  { name: 'partner_applications',   sql: CREATE_PARTNER_APPLICATIONS_TABLE },
 ];
 
 // ========== 种子数据 ==========
@@ -914,6 +964,437 @@ async function seedJobs(conn, userIdMap) {
       tags: JSON.stringify(['快消', '轮岗', '快速晋升']),
       description: '加入联合利华管理培训生项目,通过2-3年的系统轮岗培养,快速成长为业务部门的核心管理人才。',
       requirements: '1. 2026届本科及以上学历\n2. 优秀的领导力和沟通能力\n3. 有学生干部或社团组织经验优先\n4. 流利的英语听说读写能力',
+      urgent: 0,
+    },
+    // --- 市场分类 ---
+    {
+      title: '品牌营销管培生 (2026届)',
+      companyEmail: 'hr@bytedance.com',
+      company_name: '字节跳动（南京）科技有限公司',
+      logo: '/default-avatar.svg',
+      location: '北京/上海',
+      salary: '15k-25k',
+      type: '校招',
+      category: '市场',
+      tags: JSON.stringify(['品牌策划', '市场营销', '数据分析']),
+      description: '参与字节跳动旗下产品的品牌策划与市场推广,制定营销方案并推动落地执行。',
+      requirements: '1. 2026届本科及以上学历,市场营销/广告学相关专业\n2. 有品牌策划或市场推广实习经验优先\n3. 具备良好的创意能力和文案功底\n4. 熟悉社交媒体平台运营',
+      urgent: 0,
+    },
+    {
+      title: '市场推广专员',
+      companyEmail: 'hr@mihoyo.com',
+      company_name: '上海米哈游网络科技股份有限公司',
+      logo: '/default-avatar.svg',
+      location: '上海',
+      salary: '12k-20k',
+      type: '校招',
+      category: '市场',
+      tags: JSON.stringify(['游戏推广', '社媒营销', 'KOL合作']),
+      description: '负责米哈游新游戏产品的市场推广,包括线上线下活动策划、KOL合作、媒体投放等工作。',
+      requirements: '1. 本科及以上学历,市场营销相关专业\n2. 热爱游戏行业,了解二次元文化\n3. 有活动策划或市场推广经验优先\n4. 具备良好的沟通协调能力',
+      urgent: 0,
+    },
+    // --- 销售分类 ---
+    {
+      title: '大客户销售经理 (2026届)',
+      companyEmail: 'hr@tencent.com',
+      company_name: '深圳市腾讯计算机系统有限公司',
+      logo: '/default-avatar.svg',
+      location: '北京/上海/广州',
+      salary: '15k-30k',
+      type: '校招',
+      category: '销售',
+      tags: JSON.stringify(['大客户', 'ToB销售', '商务谈判']),
+      description: '负责腾讯云、企业微信等ToB产品的客户开拓与维护,完成销售目标。',
+      requirements: '1. 2026届本科及以上学历\n2. 优秀的沟通表达和商务谈判能力\n3. 有销售实习经验或校园创业经历优先\n4. 抗压能力强,目标导向',
+      urgent: 1,
+    },
+    {
+      title: '渠道销售实习生',
+      companyEmail: 'hr@xiaohongshu.com',
+      company_name: '行吟信息科技（上海）有限公司',
+      logo: '/default-avatar.svg',
+      location: '上海',
+      salary: '200-300/天',
+      type: '实习',
+      category: '销售',
+      tags: JSON.stringify(['渠道拓展', '商务合作', '广告销售']),
+      description: '协助进行小红书商业化渠道的客户开拓与维护,参与广告销售全流程。',
+      requirements: '1. 在校本科/硕士,市场营销相关专业\n2. 每周至少出勤4天\n3. 有较强的沟通能力和抗压能力\n4. 对互联网广告行业有兴趣',
+      urgent: 0,
+    },
+    // --- 补充更多技术/产品/运营/设计 ---
+    {
+      title: 'Java后端开发工程师',
+      companyEmail: 'hr@baidu.com',
+      company_name: '北京百度网讯科技有限公司',
+      logo: '/default-avatar.svg',
+      location: '北京',
+      salary: '20k-35k',
+      type: '校招',
+      category: '技术',
+      tags: JSON.stringify(['Java', 'Spring Boot', '微服务']),
+      description: '负责百度核心搜索业务后端系统的设计与开发,参与高并发分布式系统的架构优化。',
+      requirements: '1. 2026届本科及以上学历,计算机相关专业\n2. 熟练掌握Java/Spring Boot等后端技术栈\n3. 熟悉MySQL/Redis/消息队列等中间件\n4. 有良好的编码习惯和团队协作能力',
+      urgent: 0,
+    },
+    {
+      title: '产品经理 - 内容方向',
+      companyEmail: 'hr@xiaohongshu.com',
+      company_name: '行吟信息科技（上海）有限公司',
+      logo: '/default-avatar.svg',
+      location: '上海',
+      salary: '18k-30k',
+      type: '社招',
+      category: '产品',
+      tags: JSON.stringify(['内容社区', '用户增长', '数据分析']),
+      description: '负责小红书内容社区产品的需求分析和产品设计,推动产品迭代优化。',
+      requirements: '1. 本科及以上学历,3年以上互联网产品经验\n2. 有内容社区或UGC产品经验优先\n3. 具备优秀的数据分析和用户洞察能力\n4. 良好的跨部门沟通协调能力',
+      urgent: 0,
+    },
+    {
+      title: '新媒体运营专员',
+      companyEmail: 'hr@tencent.com',
+      company_name: '深圳市腾讯计算机系统有限公司',
+      logo: '/default-avatar.svg',
+      location: '深圳',
+      salary: '10k-18k',
+      type: '校招',
+      category: '运营',
+      tags: JSON.stringify(['公众号', '短视频', '内容策划']),
+      description: '负责腾讯旗下产品的社交媒体账号运营,策划并执行新媒体传播方案。',
+      requirements: '1. 2026届本科及以上学历\n2. 有新媒体运营经验,熟悉微信/抖音等平台\n3. 具备优秀的文案撰写和内容策划能力\n4. 对互联网行业有浓厚兴趣',
+      urgent: 0,
+    },
+    {
+      title: '视觉设计师',
+      companyEmail: 'hr@bytedance.com',
+      company_name: '字节跳动（南京）科技有限公司',
+      logo: '/default-avatar.svg',
+      location: '北京/上海',
+      salary: '15k-25k',
+      type: '校招',
+      category: '设计',
+      tags: JSON.stringify(['品牌设计', '视觉传达', 'Illustrator']),
+      description: '负责字节跳动旗下产品的品牌视觉设计,包括活动海报、运营素材、品牌物料等。',
+      requirements: '1. 2026届设计相关专业本科及以上学历\n2. 精通 Photoshop/Illustrator/Figma 等设计工具\n3. 具备良好的审美和创意能力\n4. 有作品集者优先',
+      urgent: 0,
+    },
+    // ====== 扩充职位数据（每个分类至少8-10条） ======
+    // 技术类
+    {
+      title: 'Java后端开发工程师',
+      companyEmail: 'hr@alibaba.com',
+      company_name: '阿里巴巴（杭州）网络技术有限公司',
+      logo: '/default-avatar.svg',
+      location: '杭州',
+      salary: '22k-35k',
+      type: '校招',
+      category: '技术',
+      tags: JSON.stringify(['Java', 'Spring Boot', '微服务']),
+      description: '负责阿里巴巴电商平台后端系统开发,参与高并发场景下的架构设计与优化。',
+      requirements: '1. 2026届本科及以上学历,计算机相关专业\n2. 扎实的Java基础,熟悉Spring Boot/MyBatis\n3. 了解MySQL/Redis/MQ等中间件\n4. 有良好的编码规范',
+      urgent: 1,
+    },
+    {
+      title: 'Python数据分析师',
+      companyEmail: 'hr@meituan.com',
+      company_name: '北京三快在线科技有限公司',
+      logo: '/default-avatar.svg',
+      location: '北京',
+      salary: '18k-30k',
+      type: '校招',
+      category: '技术',
+      tags: JSON.stringify(['Python', '数据分析', 'SQL']),
+      description: '负责美团业务数据的采集、清洗、分析,输出数据报告,支撑业务决策。',
+      requirements: '1. 2026届本科及以上,统计学/计算机/数学相关专业\n2. 熟练使用Python/SQL进行数据处理\n3. 熟悉常用统计分析方法\n4. 有数据可视化能力者优先',
+      urgent: 0,
+    },
+    {
+      title: 'iOS开发工程师',
+      companyEmail: 'hr@xiaomi.com',
+      company_name: '小米科技有限责任公司',
+      logo: '/default-avatar.svg',
+      location: '北京/南京',
+      salary: '20k-32k',
+      type: '校招',
+      category: '技术',
+      tags: JSON.stringify(['iOS', 'Swift', 'Objective-C']),
+      description: '负责小米手机系统应用的iOS端开发,参与性能优化和用户体验提升。',
+      requirements: '1. 2026届本科及以上学历\n2. 熟悉iOS开发框架,掌握Swift/Objective-C\n3. 了解iOS设计模式和App架构\n4. 有个人作品或开源项目者优先',
+      urgent: 0,
+    },
+    {
+      title: '算法工程师 - NLP方向',
+      companyEmail: 'hr@baidu.com',
+      company_name: '北京百度网讯科技有限公司',
+      logo: '/default-avatar.svg',
+      location: '北京',
+      salary: '28k-45k',
+      type: '校招',
+      category: '技术',
+      tags: JSON.stringify(['NLP', '深度学习', '大模型']),
+      description: '参与百度大语言模型的研发和优化,推动NLP技术在搜索、对话等场景的应用。',
+      requirements: '1. 2026届硕士及以上,计算机/AI相关专业\n2. 熟悉NLP基础算法和深度学习框架\n3. 有大模型训练/微调经验者优先\n4. 在顶会发表过论文者优先',
+      urgent: 1,
+    },
+    // 产品类
+    {
+      title: '产品经理 - 内容社区方向',
+      companyEmail: 'hr@bytedance.com',
+      company_name: '字节跳动（南京）科技有限公司',
+      logo: '/default-avatar.svg',
+      location: '北京',
+      salary: '20k-30k',
+      type: '校招',
+      category: '产品',
+      tags: JSON.stringify(['内容产品', '用户增长', '数据驱动']),
+      description: '负责内容社区产品的需求调研、功能设计和数据分析,推动产品迭代优化。',
+      requirements: '1. 2026届本科及以上学历\n2. 对内容产品有深入理解,熟悉抖音/小红书等平台\n3. 具备数据分析能力和用户洞察能力\n4. 有互联网产品实习经验者优先',
+      urgent: 0,
+    },
+    {
+      title: 'B端产品经理',
+      companyEmail: 'hr@dingtalk.com',
+      company_name: '钉钉（杭州）科技有限公司',
+      logo: '/default-avatar.svg',
+      location: '杭州',
+      salary: '18k-28k',
+      type: '校招',
+      category: '产品',
+      tags: JSON.stringify(['B端产品', '企业服务', 'SaaS']),
+      description: '负责钉钉企业协作产品的需求分析和功能设计,提升企业办公效率。',
+      requirements: '1. 2026届本科及以上学历\n2. 了解B端产品设计方法论\n3. 有企业服务或SaaS产品认知者优先\n4. 具备较强的逻辑思维和沟通能力',
+      urgent: 0,
+    },
+    {
+      title: '产品运营实习生',
+      companyEmail: 'hr@xiaohongshu.com',
+      company_name: '行吟信息科技（上海）有限公司',
+      logo: '/default-avatar.svg',
+      location: '上海',
+      salary: '150-200/天',
+      type: '实习',
+      category: '产品',
+      tags: JSON.stringify(['社区运营', '内容审核', '用户运营']),
+      description: '协助产品经理进行用户调研、竞品分析和数据整理,参与产品迭代讨论。',
+      requirements: '1. 2027届在校生,专业不限\n2. 热爱互联网,熟悉小红书等社交平台\n3. 有良好的沟通和文档能力\n4. 每周至少4天到岗',
+      urgent: 0,
+    },
+    // 运营类
+    {
+      title: '社群运营专员',
+      companyEmail: 'hr@pinduoduo.com',
+      company_name: '上海寻梦信息技术有限公司',
+      logo: '/default-avatar.svg',
+      location: '上海',
+      salary: '12k-18k',
+      type: '校招',
+      category: '运营',
+      tags: JSON.stringify(['社群运营', '私域流量', '用户活跃']),
+      description: '负责用户社群的搭建和维护,策划社群活动,提升用户活跃度和留存率。',
+      requirements: '1. 2026届本科及以上学历\n2. 有社群运营或用户运营经验者优先\n3. 具备优秀的文案撰写和活动策划能力\n4. 性格开朗,善于与人沟通',
+      urgent: 0,
+    },
+    {
+      title: '电商运营管培生',
+      companyEmail: 'hr@jd.com',
+      company_name: '北京京东世纪贸易有限公司',
+      logo: '/default-avatar.svg',
+      location: '北京',
+      salary: '15k-22k',
+      type: '校招',
+      category: '运营',
+      tags: JSON.stringify(['电商运营', '活动策划', '数据分析']),
+      description: '参与京东电商平台的运营工作,包括商品管理、活动策划和数据分析。',
+      requirements: '1. 2026届本科及以上学历\n2. 对电商行业有浓厚兴趣\n3. 具备数据分析和活动策划能力\n4. 有电商运营实习经验者优先',
+      urgent: 1,
+    },
+    {
+      title: '短视频运营实习生',
+      companyEmail: 'hr@kuaishou.com',
+      company_name: '北京快手科技有限公司',
+      logo: '/default-avatar.svg',
+      location: '北京',
+      salary: '120-180/天',
+      type: '实习',
+      category: '运营',
+      tags: JSON.stringify(['短视频', '内容运营', '创意策划']),
+      description: '协助完成短视频内容的策划、拍摄和发布,参与数据分析和内容优化。',
+      requirements: '1. 2027届在校生,传媒/新闻相关专业优先\n2. 热爱短视频,熟悉抖音/快手平台\n3. 有创意,善于捕捉热点\n4. 每周至少3天到岗',
+      urgent: 0,
+    },
+    // 设计类
+    {
+      title: 'UI/UX设计师',
+      companyEmail: 'hr@huawei.com',
+      company_name: '华为技术有限公司',
+      logo: '/default-avatar.svg',
+      location: '深圳/南京',
+      salary: '18k-28k',
+      type: '校招',
+      category: '设计',
+      tags: JSON.stringify(['UI设计', 'UX设计', '鸿蒙生态']),
+      description: '负责华为终端产品的UI/UX设计,参与鸿蒙生态应用的交互设计。',
+      requirements: '1. 2026届设计相关专业本科及以上\n2. 精通Figma/Sketch/Adobe XD等设计工具\n3. 具备良好的设计思维和用户体验意识\n4. 有完整项目作品集',
+      urgent: 1,
+    },
+    {
+      title: '游戏原画设计师',
+      companyEmail: 'hr@netease.com',
+      company_name: '杭州网易雷火科技有限公司',
+      logo: '/default-avatar.svg',
+      location: '杭州',
+      salary: '15k-25k',
+      type: '校招',
+      category: '设计',
+      tags: JSON.stringify(['游戏原画', '概念设计', 'Photoshop']),
+      description: '负责游戏项目的角色、场景原画设计,参与美术风格定义和概念设计。',
+      requirements: '1. 2026届美术/设计相关专业\n2. 精通Photoshop,有扎实的绘画功底\n3. 有游戏原画或插画作品集\n4. 对游戏行业有热情',
+      urgent: 0,
+    },
+    {
+      title: '交互设计师实习生',
+      companyEmail: 'hr@tencent.com',
+      company_name: '深圳市腾讯计算机系统有限公司',
+      logo: '/default-avatar.svg',
+      location: '深圳',
+      salary: '150-250/天',
+      type: '实习',
+      category: '设计',
+      tags: JSON.stringify(['交互设计', '用户体验', '原型设计']),
+      description: '协助设计师完成产品的交互设计和原型制作,参与用户研究和可用性测试。',
+      requirements: '1. 2027届设计/心理学相关专业\n2. 熟悉Figma/Axure等原型工具\n3. 了解交互设计基本原则\n4. 有作品集者优先',
+      urgent: 0,
+    },
+    // 市场类
+    {
+      title: '海外市场拓展',
+      companyEmail: 'hr@tiktok.com',
+      company_name: '字节跳动（南京）科技有限公司',
+      logo: '/default-avatar.svg',
+      location: '上海/海外',
+      salary: '20k-35k',
+      type: '校招',
+      category: '市场',
+      tags: JSON.stringify(['海外市场', '商务拓展', '英语流利']),
+      description: '负责TikTok海外市场的拓展和运营,与当地合作伙伴建立关系。',
+      requirements: '1. 2026届本科及以上学历\n2. 英语流利,具备跨文化沟通能力\n3. 对海外市场有浓厚兴趣\n4. 有海外留学或工作经历者优先',
+      urgent: 1,
+    },
+    {
+      title: '公关传播专员',
+      companyEmail: 'hr@mi.com',
+      company_name: '小米科技有限责任公司',
+      logo: '/default-avatar.svg',
+      location: '北京',
+      salary: '15k-22k',
+      type: '校招',
+      category: '市场',
+      tags: JSON.stringify(['公关', '品牌传播', '媒体关系']),
+      description: '负责小米品牌的公关传播工作,包括媒体关系维护、新闻稿撰写和危机公关。',
+      requirements: '1. 2026届本科及以上,新闻传播相关专业优先\n2. 具备优秀的文案撰写能力\n3. 有媒体或公关实习经验者优先\n4. 性格外向,善于沟通',
+      urgent: 0,
+    },
+    {
+      title: '广告投放优化师',
+      companyEmail: 'hr@bytedance.com',
+      company_name: '字节跳动（南京）科技有限公司',
+      logo: '/default-avatar.svg',
+      location: '北京/上海',
+      salary: '18k-28k',
+      type: '校招',
+      category: '市场',
+      tags: JSON.stringify(['广告投放', '信息流', 'ROI优化']),
+      description: '负责巨量引擎平台的广告投放优化,分析投放数据,提升广告效果。',
+      requirements: '1. 2026届本科及以上学历\n2. 对数字营销有浓厚兴趣\n3. 具备数据分析能力,熟练使用Excel\n4. 有广告投放经验者优先',
+      urgent: 0,
+    },
+    // 销售类
+    {
+      title: '大客户销售 - 云计算方向',
+      companyEmail: 'hr@aliyun.com',
+      company_name: '阿里云计算有限公司',
+      logo: '/default-avatar.svg',
+      location: '北京/上海/杭州',
+      salary: '15k-25k+提成',
+      type: '校招',
+      category: '销售',
+      tags: JSON.stringify(['云计算', '大客户', '解决方案']),
+      description: '负责阿里云产品的大客户销售,挖掘客户需求,提供云计算解决方案。',
+      requirements: '1. 2026届本科及以上学历\n2. 具备良好的沟通和谈判能力\n3. 对云计算技术有基本了解\n4. 有销售或商务拓展实习经验者优先',
+      urgent: 0,
+    },
+    {
+      title: '商务拓展经理',
+      companyEmail: 'hr@meituan.com',
+      company_name: '北京三快在线科技有限公司',
+      logo: '/default-avatar.svg',
+      location: '北京/上海',
+      salary: '18k-30k+提成',
+      type: '校招',
+      category: '销售',
+      tags: JSON.stringify(['BD', '商户拓展', 'O2O']),
+      description: '负责美团外卖/到店业务的商户拓展,建立和维护商户关系。',
+      requirements: '1. 2026届本科及以上学历\n2. 性格外向,抗压能力强\n3. 具备优秀的沟通和谈判能力\n4. 有地推或BD经验者优先',
+      urgent: 1,
+    },
+    {
+      title: 'SaaS销售代表',
+      companyEmail: 'hr@feishu.cn',
+      company_name: '飞书（北京）科技有限公司',
+      logo: '/default-avatar.svg',
+      location: '北京/上海/深圳',
+      salary: '12k-20k+提成',
+      type: '校招',
+      category: '销售',
+      tags: JSON.stringify(['SaaS', '企业服务', '客户成功']),
+      description: '负责飞书企业版的销售推广,为客户演示产品功能,促成合作。',
+      requirements: '1. 2026届本科及以上学历\n2. 对企业服务/SaaS行业有兴趣\n3. 具备较强的沟通和表达能力\n4. 有销售实习经验者优先',
+      urgent: 0,
+    },
+    // 职能类
+    {
+      title: '人力资源管培生',
+      companyEmail: 'hr@huawei.com',
+      company_name: '华为技术有限公司',
+      logo: '/default-avatar.svg',
+      location: '深圳/南京',
+      salary: '15k-22k',
+      type: '校招',
+      category: '职能',
+      tags: JSON.stringify(['HR', '招聘', '组织发展']),
+      description: '参与华为人力资源管理工作,包括招聘、培训、绩效管理等模块轮岗。',
+      requirements: '1. 2026届本科及以上,人力资源管理相关专业优先\n2. 具备良好的沟通和组织能力\n3. 对人力资源管理有浓厚兴趣\n4. 有HR实习经验者优先',
+      urgent: 0,
+    },
+    {
+      title: '财务分析实习生',
+      companyEmail: 'hr@jd.com',
+      company_name: '北京京东世纪贸易有限公司',
+      logo: '/default-avatar.svg',
+      location: '北京',
+      salary: '150-200/天',
+      type: '实习',
+      category: '职能',
+      tags: JSON.stringify(['财务分析', 'Excel', '数据处理']),
+      description: '协助财务部门进行数据分析、报表编制和预算管理工作。',
+      requirements: '1. 2027届在校生,财务/会计相关专业\n2. 熟练使用Excel和财务软件\n3. 具备良好的数据分析能力\n4. 每周至少4天到岗',
+      urgent: 0,
+    },
+    {
+      title: '行政助理',
+      companyEmail: 'hr@xiaomi.com',
+      company_name: '小米科技有限责任公司',
+      logo: '/default-avatar.svg',
+      location: '北京',
+      salary: '8k-12k',
+      type: '校招',
+      category: '职能',
+      tags: JSON.stringify(['行政', '办公管理', '活动策划']),
+      description: '负责公司日常行政事务管理,包括办公环境维护、会议安排和活动组织。',
+      requirements: '1. 2026届本科及以上学历\n2. 具备良好的组织协调能力\n3. 熟练使用Office办公软件\n4. 工作细致,责任心强',
       urgent: 0,
     },
   ];
@@ -1439,16 +1920,42 @@ async function seedSiteConfigs(conn) {
       { icon: 'Award', title: '收获Offer', desc: '薪资谈判技巧指导', link: '/guidance' },
       { icon: 'TrendingUp', title: '成长进阶', desc: '职场导师长期陪伴', link: '/courses' }
     ]), type: 'json', group: 'homepage', label: '首页求职流程步骤', desc: '首页求职流程7步配置（图标/标题/描述/链接）', sort: 12 },
-    { key: 'home_stats_jobs', value: '10000+', type: 'string', group: 'homepage', label: '职位总数展示', desc: '首页统计-职位数', sort: 13 },
-    { key: 'home_stats_companies', value: '500+', type: 'string', group: 'homepage', label: '合作企业展示', desc: '首页统计-企业数', sort: 14 },
-    { key: 'home_stats_mentors', value: '200+', type: 'string', group: 'homepage', label: '导师总数展示', desc: '首页统计-导师数', sort: 15 },
-    { key: 'home_stats_students', value: '50000+', type: 'string', group: 'homepage', label: '服务学生展示', desc: '首页统计-服务学生数', sort: 16 },
+    { key: 'home_stats_jobs', value: '0', type: 'string', group: 'homepage', label: '职位总数展示', desc: '首页统计-职位数（由 /stats/public API 动态返回真实数据）', sort: 13 },
+    { key: 'home_stats_companies', value: '0', type: 'string', group: 'homepage', label: '合作企业展示', desc: '首页统计-企业数（由 /stats/public API 动态返回真实数据）', sort: 14 },
+    { key: 'home_stats_mentors', value: '0', type: 'string', group: 'homepage', label: '导师总数展示', desc: '首页统计-导师数（由 /stats/public API 动态返回真实数据）', sort: 15 },
+    { key: 'home_stats_students', value: '0', type: 'string', group: 'homepage', label: '服务学生展示', desc: '首页统计-服务学生数（由 /stats/public API 动态返回真实数据）', sort: 16 },
     { key: 'home_features', value: JSON.stringify([
       { title: '精准求职', desc: '海量校招/实习岗位，智能推荐匹配', icon: 'Briefcase' },
       { title: '1v1辅导', desc: '行业资深导师，一对一职业规划', icon: 'Users' },
       { title: '考研考公', desc: '一站式备考资讯与经验分享', icon: 'GraduationCap' },
       { title: '留学申请', desc: '海外院校库+背景提升+选校评估', icon: 'Globe' }
     ]), type: 'json', group: 'homepage', label: '首页功能模块', desc: '首页四大核心功能卡片', sort: 17 },
+    { key: 'home_ui_config', value: JSON.stringify({
+      heroSlides: [
+        { id: 'slide-1', title: '你的职业发展，\n从启航开始', subtitle: '连接梦想与机遇，助力每一位大学生迈向理想职业', gradient: 'from-primary-600 via-primary-700 to-primary-800', cta: '开始探索', ctaLink: '/jobs', image: '' },
+        { id: 'slide-2', title: '大咖导师\n1对1辅导', subtitle: '简历精修、模拟面试、职业规划，帮你拿到心仪Offer', gradient: 'from-teal-500 via-emerald-600 to-cyan-800', cta: '找导师', ctaLink: '/mentors', image: '' },
+        { id: 'slide-3', title: '留学 · 考研 · 创业\n一站全覆盖', subtitle: '无论你选择哪条路，我们都为你保驾护航', gradient: 'from-cyan-500 via-teal-600 to-slate-800', cta: '了解更多', ctaLink: '/study-abroad', image: '' }
+      ],
+      quickEntries: [
+        { label: '校招直通车', desc: '名企实习/校招', icon: 'Briefcase', link: '/jobs', color: 'text-primary-600', bg: 'bg-gradient-to-br from-primary-50 to-primary-100/70' },
+        { label: '大咖1v1', desc: '导师辅导预约', icon: 'MessageCircle', link: '/mentors', color: 'text-primary-600', bg: 'bg-gradient-to-br from-teal-50 to-primary-100/70' },
+        { label: '干货资料库', desc: '免费课程学习', icon: 'BookOpen', link: '/courses', color: 'text-amber-500', bg: 'bg-gradient-to-br from-amber-50 to-orange-100/70' },
+        { label: '留学申请', desc: '院校评估/文书', icon: 'Globe', link: '/study-abroad', color: 'text-fuchsia-600', bg: 'bg-gradient-to-br from-fuchsia-50 to-pink-100/70', badge: 'new' },
+        { label: '考研保研', desc: '择校/备考策略', icon: 'GraduationCap', link: '/postgrad', color: 'text-rose-500', bg: 'bg-gradient-to-br from-rose-50 to-red-100/70' }
+      ],
+      courseColors: [
+        'from-primary-400 to-primary-500',
+        'from-blue-400 to-blue-500',
+        'from-fuchsia-400 to-pink-500',
+        'from-amber-400 to-orange-500'
+      ],
+      valueSections: [
+        { role: '对学生', icon: 'GraduationCap', color: 'text-primary-600', bg: 'bg-primary-50', border: 'border-primary-100', gradientFrom: 'from-primary-400', gradientTo: 'to-primary-600', points: ['一站搜索校招/实习/社招岗位', '1v1预约行业大咖导师辅导', '免费学习简历、面试、职业规划课程', '获取考研/留学/创业全方位资讯'] },
+        { role: '对企业', icon: 'Building2', color: 'text-blue-600', bg: 'bg-blue-50', border: 'border-blue-100', gradientFrom: 'from-blue-400', gradientTo: 'to-blue-600', points: ['零门槛发布招聘岗位', 'Kanban式简历筛选管理', '精准人才搜索与推荐', '数据化招聘效果分析'] },
+        { role: '对导师', icon: 'Award', color: 'text-emerald-600', bg: 'bg-emerald-50', border: 'border-emerald-100', gradientFrom: 'from-emerald-400', gradientTo: 'to-emerald-600', points: ['自主管理课程与辅导档期', '获取学生真实评价反馈', '平台推广增加个人影响力', '数据化运营提升辅导质量'] }
+      ],
+      _meta: { version: '1.0', lastUpdated: '2026-04-25', description: '首页 UI 配置 — 管理员可通过后台配置页修改，无需改代码' }
+    }), type: 'json', group: 'homepage', label: '首页UI可视化配置', desc: '首页轮播/入口/配色/价值板块等可视化配置（由管理员后台编辑）', sort: 18 },
 
     // ===== 联系方式 =====
     { key: 'contact_email', value: 'support@qihang.com', type: 'string', group: 'contact', label: '客服邮箱', desc: '页脚和联系页面展示', sort: 20 },
@@ -1470,7 +1977,7 @@ async function seedSiteConfigs(conn) {
     { key: 'studyabroad_service_hours', value: '服务时间：周一至周六 9:00-21:00', type: 'string', group: 'studyabroad', label: '留学服务时间', desc: '留学咨询服务工作时间', sort: 43 },
 
     // ===== 通用 =====
-    { key: 'footer_icp', value: '苏ICP备XXXXXXXX号', type: 'string', group: 'general', label: 'ICP备案号', desc: '页脚备案号展示', sort: 50 },
+    { key: 'footer_icp', value: '', type: 'string', group: 'general', label: 'ICP备案号', desc: '页脚备案号展示（需填入真实备案号）', sort: 50 },
     { key: 'footer_copyright', value: '© 2026 江苏初晓云网络科技有限公司', type: 'string', group: 'general', label: '版权信息', desc: '页脚版权声明', sort: 51 },
     { key: 'maintenance_mode', value: 'false', type: 'boolean', group: 'general', label: '维护模式', desc: '开启后前端显示维护页面', sort: 52, is_public: 1 },
     { key: 'announcement', value: '', type: 'string', group: 'general', label: '全站公告', desc: '顶部公告条内容（为空则不显示）', sort: 53 },
@@ -1684,7 +2191,7 @@ async function seedSiteConfigs(conn) {
       ],
       cases: [
         {
-          id: 1, name: "张同学", avatar: "张",
+          id: 1, name: "张同学", avatar: "张", photo: "",
           school: "南京大学 · 计算机科学与技术", category: "job",
           achievement: "斩获腾讯 PCG 产品经理 Offer",
           quote: "在启航平台上预约了3次模拟面试，导师的反馈非常精准，帮我找到了自我介绍和项目阐述中的短板。最终群面和终面都很顺利，拿到了SP Offer！",
@@ -1692,7 +2199,7 @@ async function seedSiteConfigs(conn) {
           color: "from-blue-500 to-cyan-500", bgLight: "bg-blue-50", textColor: "text-blue-600"
         },
         {
-          id: 2, name: "李同学", avatar: "李",
+          id: 2, name: "李同学", avatar: "李", photo: "",
           school: "浙江大学 · 金融学", category: "job",
           achievement: "成功入职中金公司投资银行部",
           quote: "平台上的简历精修服务让我的简历焕然一新，行业导师还帮我梳理了金融建模和估值分析的面试思路。从实习到正式offer，启航一路陪伴。",
@@ -1700,7 +2207,7 @@ async function seedSiteConfigs(conn) {
           color: "from-amber-500 to-orange-500", bgLight: "bg-amber-50", textColor: "text-amber-600"
         },
         {
-          id: 3, name: "王同学", avatar: "王",
+          id: 3, name: "王同学", avatar: "王", photo: "",
           school: "华中科技大学 · 机械工程", category: "postgrad",
           achievement: "跨考上海交通大学计算机专业 初试 410 分",
           quote: "作为跨考生压力很大，但启航平台的考研课程体系很完整，尤其是数据结构和算法课程帮了大忙。学长学姐的经验分享也给了我很大的信心。",
@@ -1708,7 +2215,7 @@ async function seedSiteConfigs(conn) {
           color: "from-purple-500 to-indigo-500", bgLight: "bg-purple-50", textColor: "text-purple-600"
         },
         {
-          id: 4, name: "赵同学", avatar: "赵",
+          id: 4, name: "赵同学", avatar: "赵", photo: "",
           school: "武汉大学 · 英语语言文学", category: "abroad",
           achievement: "收获伦敦大学学院 (UCL) 教育学硕士录取",
           quote: "平台留学专区的文书写作指导课程非常实用，导师帮我反复打磨PS和推荐信。从选校定位到签证办理，每一步都有清晰的指引。",
@@ -1716,7 +2223,7 @@ async function seedSiteConfigs(conn) {
           color: "from-sky-500 to-blue-500", bgLight: "bg-sky-50", textColor: "text-sky-600"
         },
         {
-          id: 5, name: "陈同学", avatar: "陈",
+          id: 5, name: "陈同学", avatar: "陈", photo: "",
           school: "东南大学 · 电子信息工程", category: "startup",
           achievement: "创立智能硬件公司，获天使轮融资 200 万",
           quote: "在启航平台的创业专区找到了技术合伙人和设计师，还参加了平台组织的路演活动，直接对接到了投资人。从想法到公司成立只用了半年！",
@@ -1724,7 +2231,7 @@ async function seedSiteConfigs(conn) {
           color: "from-emerald-500 to-teal-500", bgLight: "bg-emerald-50", textColor: "text-emerald-600"
         },
         {
-          id: 6, name: "刘同学", avatar: "刘",
+          id: 6, name: "刘同学", avatar: "刘", photo: "",
           school: "北京师范大学 · 心理学", category: "postgrad",
           achievement: "保研至北京大学心理与认知科学学院",
           quote: "大三暑假通过平台了解到各校夏令营信息并提前准备，导师帮我准备了研究计划书和面试答辩。最终拿到了北大优秀营员资格，顺利推免。",
@@ -1732,7 +2239,7 @@ async function seedSiteConfigs(conn) {
           color: "from-rose-500 to-pink-500", bgLight: "bg-rose-50", textColor: "text-rose-600"
         },
         {
-          id: 7, name: "孙同学", avatar: "孙",
+          id: 7, name: "孙同学", avatar: "孙", photo: "",
           school: "同济大学 · 建筑学", category: "abroad",
           achievement: "获得哈佛大学 GSD 建筑学硕士全额奖学金",
           quote: "平台上有很多海外名校的学长分享作品集制作经验，导师还帮我联系了在GSD就读的学姐做portfolio review。这些资源对建筑留学生来说太宝贵了。",
@@ -1740,7 +2247,7 @@ async function seedSiteConfigs(conn) {
           color: "from-violet-500 to-purple-500", bgLight: "bg-violet-50", textColor: "text-violet-600"
         },
         {
-          id: 8, name: "周同学", avatar: "周",
+          id: 8, name: "周同学", avatar: "周", photo: "",
           school: "中山大学 · 市场营销", category: "job",
           achievement: "拿下字节跳动商业化运营管培生 Offer",
           quote: "从简历海投石沉大海到精准投递，启航平台彻底改变了我的求职策略。职业导师帮我做了SWOT分析，定位到了最适合我的赛道。两个月内拿到4个offer！",
@@ -1748,7 +2255,7 @@ async function seedSiteConfigs(conn) {
           color: "from-cyan-500 to-teal-500", bgLight: "bg-cyan-50", textColor: "text-cyan-600"
         },
         {
-          id: 9, name: "吴同学", avatar: "吴",
+          id: 9, name: "吴同学", avatar: "吴", photo: "",
           school: "复旦大学 · 数据科学", category: "startup",
           achievement: "创办 AI 教育科技公司，入选国家级孵化器",
           quote: "启航平台的创新创业课程体系帮我理清了商业模式，还在平台上认识了现在的CTO。我们的AI自适应学习产品已经服务了3000多名学生。",
@@ -1756,7 +2263,7 @@ async function seedSiteConfigs(conn) {
           color: "from-teal-500 to-green-500", bgLight: "bg-teal-50", textColor: "text-teal-600"
         },
         {
-          id: 10, name: "郑同学", avatar: "郑",
+          id: 10, name: "郑同学", avatar: "郑", photo: "",
           school: "西安交通大学 · 临床医学", category: "postgrad",
           achievement: "考研至协和医学院 初试专业课满分",
           quote: "医学考研复习量巨大，平台上系统的备考规划帮我合理分配时间。还有同校学长一对一辅导西医综合，针对性特别强。感谢启航让我实现了梦想！",
@@ -2672,7 +3179,7 @@ async function initDatabase() {
   console.log('  就业指导平台 - 数据库初始化 (V2.0)');
   console.log('========================================\n');
 
-  const totalSteps = 5;
+  const totalSteps = 6;
   let conn;
 
   // 1. 连接 MySQL
@@ -2715,7 +3222,39 @@ async function initDatabase() {
     process.exit(1);
   }
 
-  // 4. 插入默认管理员
+  // 3.5 补充缺失字段（ALTER TABLE 兼容已有数据库）
+  try {
+    const alterStatements = [
+      // chat_messages 表: is_read 字段
+      `ALTER TABLE chat_messages ADD COLUMN is_read TINYINT(1) NOT NULL DEFAULT 0 COMMENT '是否已读: 0=未读, 1=已读' AFTER file_url`,
+      // chat_conversations 表: target_user_id 字段
+      `ALTER TABLE chat_conversations ADD COLUMN target_user_id INT DEFAULT NULL COMMENT '目标用户ID（私信对接的真人）' AFTER assigned_admin`,
+      // favorites 表: 扩展 target_type 枚举支持 course_like（点赞）
+      `ALTER TABLE favorites MODIFY COLUMN target_type ENUM('job', 'course', 'mentor', 'course_like') NOT NULL COMMENT '收藏类型'`,
+      // notifications 表: 确保 type 枚举包含所有需要的类型
+      `ALTER TABLE notifications MODIFY COLUMN type ENUM('system','job','appointment','course','announcement','resume','review','approval','general','other') NOT NULL DEFAULT 'system' COMMENT '通知类型'`,
+    ];
+    for (const stmt of alterStatements) {
+      try {
+        await conn.query(stmt);
+        // 如果执行成功，说明字段之前不存在，现在已添加
+        const colName = stmt.match(/ADD COLUMN (\w+)/)?.[1] || '未知';
+        console.log(`  [4/${totalSteps}] 字段 "${colName}" 已补充`);
+      } catch (alterErr) {
+        // ER_DUP_COLUMN_NAME (1060) = 字段已存在，忽略
+        if (alterErr.errno === 1060) {
+          // 字段已存在，无需操作
+        } else {
+          console.warn(`  [4/${totalSteps}] ALTER 跳过: ${alterErr.message}`);
+        }
+      }
+    }
+  } catch (err) {
+    // 非致命错误，打印警告但不中断
+    console.warn(`  [4/${totalSteps}] 字段补充时出错（非致命）:`, err.message);
+  }
+
+  // 5. 插入默认管理员
   try {
     const [rows] = await conn.query('SELECT id FROM users WHERE email = ?', ['admin@qihang.com']);
     if (rows.length === 0) {
@@ -2724,20 +3263,39 @@ async function initDatabase() {
         'INSERT INTO users (email, password, nickname, role) VALUES (?, ?, ?, ?)',
         ['admin@qihang.com', hashedPassword, '超级管理员', 'admin']
       );
-      console.log(`  [4/${totalSteps}] 默认管理员账号已创建`);
+      console.log(`  [5/${totalSteps}] 默认管理员账号已创建`);
       console.log('        邮箱: admin@qihang.com');
       console.log('        密码: admin123');
     } else {
-      console.log(`  [4/${totalSteps}] 默认管理员账号已存在，跳过`);
+      console.log(`  [5/${totalSteps}] 默认管理员账号已存在，跳过`);
     }
   } catch (err) {
     console.error('  ❌ 插入默认管理员失败:', err.message);
     process.exit(1);
   }
 
-  // 5. 插入种子数据
+  // 6. 插入默认客服专员
   try {
-    console.log(`  [5/${totalSteps}] 开始插入种子数据...`);
+    const [rows] = await conn.query('SELECT id FROM users WHERE email = ?', ['agent@qihang.com']);
+    if (rows.length === 0) {
+      const hashedPassword = await bcrypt.hash('agent123', 10);
+      await conn.query(
+        'INSERT INTO users (email, password, nickname, role) VALUES (?, ?, ?, ?)',
+        ['agent@qihang.com', hashedPassword, '客服专员', 'agent']
+      );
+      console.log(`  [6/${totalSteps}] 默认客服专员账号已创建`);
+      console.log('        邮箱: agent@qihang.com');
+      console.log('        密码: agent123');
+    } else {
+      console.log(`  [6/${totalSteps}] 默认客服专员账号已存在，跳过`);
+    }
+  } catch (err) {
+    console.error('  ⚠️  插入默认客服专员失败（非致命）:', err.message);
+  }
+
+  // 6. 插入种子数据
+  try {
+    console.log(`  [6/${totalSteps}] 开始插入种子数据...`);
     const userIdMap = await seedUsers(conn);
     console.log(`        ✔ 种子用户 (${Object.keys(userIdMap).length} 个)`);
 

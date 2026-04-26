@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import {
   Briefcase, Building2, Calendar, MapPin,
   Clock, Eye, Phone, CheckCircle2, XCircle,
-  Search, Filter, ExternalLink
+  Search, Filter, ExternalLink, Trash2
 } from 'lucide-react';
 import http from '@/api/http';
 import { ListSkeleton } from '../../components/ui/Skeleton';
@@ -63,9 +63,9 @@ export default function MyApplications() {
       if (showLoading) setLoading(true);
       const res = await http.get('/student/resumes');
       if (res.data?.code === 200 && res.data.data) {
-        // 后端返回 {list: [...]} 或 {resumes: [...]} 或数组
+        // 后端返回 {resumes: [...]} 或 {list: [...]} 或数组
         const raw = res.data.data;
-                const list = Array.isArray(raw.list)
+        const list = Array.isArray(raw.list)
           ? raw.list
           : Array.isArray(raw.resumes)
             ? raw.resumes
@@ -74,14 +74,21 @@ export default function MyApplications() {
               : [];
         const normalized = list.map((r: Record<string, unknown>) => ({
           ...r,
+          id: r.id,
           jobTitle: r.job_title || r.jobTitle || '',
           companyName: r.company_name || r.companyName || '',
           companyLogo: r.company_logo || r.companyLogo || '',
-          jobType: r.job_type || r.jobType || '',
+          jobType: r.job_type || r.jobType || r.type || '',
+          salary: r.job_salary || r.salary || '',
+          location: r.job_location || r.location || '',
+          jobId: r.job_id || r.jobId || 0,
           appliedAt: r.created_at || r.appliedAt || '',
-          statusUpdatedAt: r.updated_at || r.statusUpdatedAt || ''
+          statusUpdatedAt: r.updated_at || r.statusUpdatedAt || '',
+          status: r.status || 'pending',
         }));
         setApplications(normalized);
+      } else {
+        setError(res.data?.message || '数据加载失败');
       }
     } catch (err) {
       setError('数据加载失败，请刷新重试');
@@ -90,6 +97,21 @@ export default function MyApplications() {
       if (showLoading) setLoading(false);
     }
   }, []);
+
+  // 撤回投递
+  const handleWithdraw = async (id: number) => {
+    if (!confirm('确定要撤回该投递吗？')) return;
+    try {
+      const res = await http.delete(`/student/resumes/${id}`);
+      if (res.data?.code === 200) {
+        setApplications(prev => prev.filter(app => app.id !== id));
+      } else {
+        alert(res.data?.message || '撤回失败');
+      }
+    } catch {
+      alert('撤回失败，请稍后重试');
+    }
+  };
 
   // 初始加载
   useEffect(() => {
@@ -309,13 +331,25 @@ export default function MyApplications() {
                     </div>
                   </div>
 
-                  {/* 查看详情 */}
-                  <Link
-                    to={`/jobs/${app.jobId}`}
-                    className="flex items-center gap-1 text-xs text-gray-400 hover:text-primary-600 transition-colors flex-shrink-0 mt-1"
-                  >
-                    <ExternalLink className="w-3.5 h-3.5" />
-                  </Link>
+                  {/* 操作按钮 */}
+                  <div className="flex flex-col items-center gap-2 flex-shrink-0 mt-1">
+                    <Link
+                      to={`/jobs/${app.jobId}`}
+                      className="flex items-center gap-1 text-xs text-gray-400 hover:text-primary-600 transition-colors"
+                      title="查看职位"
+                    >
+                      <ExternalLink className="w-3.5 h-3.5" />
+                    </Link>
+                    {!['offered', 'interview'].includes(app.status) && (
+                      <button
+                        onClick={() => handleWithdraw(app.id)}
+                        className="text-xs text-gray-400 hover:text-red-500 transition-colors"
+                        title="撤回投递"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                  </div>
                 </div>
               </motion.div>
             );

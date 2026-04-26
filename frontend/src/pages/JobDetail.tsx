@@ -13,11 +13,13 @@ import {
   Eye,
   Tag as TagIcon,
   Heart,
+  MessageCircle,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuthStore } from '@/store/auth';
 import http from '@/api/http';
 import TagComponent from '@/components/ui/Tag';
+import { useChatStore } from '@/store/chat';
 
 /** 职位详情数据类型 */
 interface JobData {
@@ -45,6 +47,7 @@ export default function JobDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user, isAuthenticated } = useAuthStore();
+  const { createConversation, selectConversation } = useChatStore();
 
   const [job, setJob] = useState<JobData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -54,6 +57,7 @@ export default function JobDetail() {
   const [isFavorited, setIsFavorited] = useState(false);
   const [favoriteId, setFavoriteId] = useState<number | null>(null);
   const [favoriteLoading, setFavoriteLoading] = useState(false);
+  const [chatLoading, setChatLoading] = useState(false);
 
   // 获取职位详情
   useEffect(() => {
@@ -208,6 +212,28 @@ export default function JobDetail() {
     }
     setTimeout(() => setMessage(null), 3000);
   }, [user, id, isFavorited, favoriteId, favoriteLoading, navigate]);
+
+  // 联系企业
+  const handleContactCompany = useCallback(async () => {
+    if (!user) {
+      navigate('/login', { state: { returnUrl: `/jobs/${id}` } });
+      return;
+    }
+    if (chatLoading) return;
+    setChatLoading(true);
+    try {
+      const convId = await createConversation('user_service', undefined, `咨询${job?.company_name || '企业'}`, job?.company_id);
+      if (convId) {
+        await selectConversation(convId);
+        navigate('/chat');
+      }
+    } catch {
+      setMessage({ type: 'error', text: '创建会话失败，请稍后重试' });
+    } finally {
+      setChatLoading(false);
+    }
+    setTimeout(() => setMessage(null), 3000);
+  }, [user, job, id, chatLoading, createConversation, selectConversation, navigate]);
 
   // 投递按钮是否应禁用
   const isApplyDisabled =
@@ -403,6 +429,16 @@ export default function JobDetail() {
                 {isFavorited ? '已收藏' : '收藏'}
               </button>
 
+              {/* 联系企业按钮 */}
+              <button
+                onClick={handleContactCompany}
+                disabled={chatLoading}
+                className="flex items-center justify-center gap-1.5 px-4 py-3 rounded-xl font-medium text-sm transition-all border bg-white text-gray-600 border-gray-200 hover:bg-gray-50 disabled:opacity-50"
+              >
+                {chatLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <MessageCircle className="w-5 h-5" />}
+                {chatLoading ? '创建中...' : '联系企业'}
+              </button>
+
               {/* 投递按钮 */}
               <button
                 onClick={handleApply}
@@ -536,7 +572,7 @@ export default function JobDetail() {
                 </div>
               </div>
 
-              <div className="mt-6 pt-6 border-t border-gray-100">
+              <div className="mt-6 pt-6 border-t border-gray-100 space-y-3">
                 <button
                   onClick={handleApply}
                   disabled={isApplyDisabled}
@@ -562,6 +598,14 @@ export default function JobDetail() {
                   ) : (
                     '立即投递'
                   )}
+                </button>
+                <button
+                  onClick={handleContactCompany}
+                  disabled={chatLoading}
+                  className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg font-medium transition-colors border border-gray-200 text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+                >
+                  {chatLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <MessageCircle className="w-4 h-4" />}
+                  {chatLoading ? '创建中...' : '联系企业'}
                 </button>
                 <p className="text-xs text-gray-400 text-center mt-3">
                   平台保障 · 信息真实 · 隐私保护

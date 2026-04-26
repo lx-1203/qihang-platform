@@ -635,7 +635,7 @@ export default function OnboardingGuide({ role, inline = false, bubbleMode = fal
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 40, scale: 0.95 }}
               transition={modalTransition}
-              className="fixed inset-x-4 top-[10%] md:inset-auto md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:w-[580px] z-[9991] bg-white rounded-2xl shadow-2xl overflow-hidden max-h-[80vh] flex flex-col"
+              className="fixed inset-0 flex items-center justify-center z-[9991] md:inset-auto md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:w-[580px] bg-white rounded-2xl shadow-2xl overflow-hidden max-h-[80vh] flex flex-col mx-4 md:mx-0"
             >
               {/* 头部 */}
               <div className="bg-gradient-to-r from-slate-900 to-slate-800 text-white px-6 py-5 relative">

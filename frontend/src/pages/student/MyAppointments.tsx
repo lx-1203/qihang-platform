@@ -86,15 +86,15 @@ export default function MyAppointments() {
           mentorTitle: (a.mentor_title || a.mentorTitle || '') as string,
           serviceTitle: (a.service_title || a.serviceTitle || '') as string,
           serviceType: (a.service_title || a.serviceType || '导师辅导') as string,
-          date: a.appointment_time ? String(a.appointment_time).slice(0, 10) : ((a.date || '') as string),
-          time: a.appointment_time ? String(a.appointment_time).slice(11, 16) : ((a.time || '') as string),
+          date: a.appointment_time && !String(a.appointment_time).startsWith('2099') ? String(a.appointment_time).slice(0, 10) : '',
+          time: a.appointment_time && !String(a.appointment_time).startsWith('2099') ? String(a.appointment_time).slice(11, 16) : '待协商',
           duration: Number(a.duration || 60),
           fee: Number(a.fee || 0),
           location: (a.location || '线上') as string,
           hasReviewed: !!a.review_rating,
           rating: a.review_rating as number | undefined,
           reviewContent: a.review_content as string | undefined,
-          status: (['pending', 'confirmed'].includes(String(a.status)) ? 'upcoming' : a.status || 'upcoming') as AppointmentStatus,
+          status: (['pending', 'confirmed'].includes(String(a.status)) ? 'upcoming' : (['cancelled', 'rejected'].includes(String(a.status)) ? 'cancelled' : (a.status || 'upcoming'))) as AppointmentStatus,
         }));
         setAppointments(normalized);
       } else {
@@ -379,11 +379,14 @@ export default function MyAppointments() {
         open={showCancelDialog}
         title="确认取消预约？"
         description="取消后需要重新预约，已提交的信息不会保留。"
-        confirmText={cancelling ? '取消中...' : '确认取消'}
+        loading={cancelling}
+        confirmText="确认取消"
         onConfirm={handleCancelAppointment}
         onCancel={() => {
-          setShowCancelDialog(false);
-          setCancellingId(null);
+          if (!cancelling) {
+            setShowCancelDialog(false);
+            setCancellingId(null);
+          }
         }}
       />
     </div>

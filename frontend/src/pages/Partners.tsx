@@ -70,8 +70,8 @@ export default function Partners() {
       if (keyword) params.keyword = keyword;
 
       const res = await http.get('/partners', { params });
-      setPosts(res.data.data.list);
-      setTotal(res.data.data.total);
+      setPosts(res.data?.data?.list || []);
+      setTotal(res.data?.data?.total || 0);
     } catch (err) {
       console.error('获取招募列表失败:', err);
     } finally {

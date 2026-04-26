@@ -19,29 +19,64 @@ import {
   BookOpen,
   Rocket,
   TrendingUp,
-  Award
+  Award,
+  Headphones
 } from 'lucide-react';
 import DevFloatButton from '../components/DevFloatButton';
 import { useReducedMotion } from '../hooks/useReducedMotion';
 import { useAuthStore } from '../store/auth';
 
-const SIDEBAR_NAV = [
-  { name: '数据总览', href: '/admin/dashboard', icon: BarChart },
-  { name: '用户管理', href: '/admin/users', icon: Users },
-  { name: '企业资质审核', href: '/admin/companies', icon: Building2 },
-  { name: '导师资质审核', href: '/admin/mentors', icon: ShieldCheck },
-  { name: '文章管理', href: '/admin/articles', icon: FileText },
-  { name: '客服管理', href: '/admin/chat', icon: MessageSquare },
-  { name: '课程与内容管理', href: '/admin/content', icon: Video },
-  { name: '留学数据管理', href: '/admin/study-abroad', icon: Globe },
-  { name: '公告管理', href: '/admin/announcements', icon: Megaphone },
-  { name: '首页配置', href: '/admin/home-config', icon: Home },
-  { name: '考研配置', href: '/admin/postgrad-config', icon: BookOpen },
-  { name: '创业配置', href: '/admin/entrepreneurship-config', icon: Rocket },
-  { name: '背景提升配置', href: '/admin/backgroundboost-config', icon: TrendingUp },
-  { name: '案例配置', href: '/admin/successcases-config', icon: Award },
-  { name: '系统设置', href: '/admin/settings', icon: Settings },
+type NavItem = { name: string; href: string; icon: typeof BarChart };
+type NavSection = { label: string; items: NavItem[] };
+
+const SIDEBAR_SECTIONS: NavSection[] = [
+  {
+    label: '概览',
+    items: [
+      { name: '数据总览', href: '/admin/dashboard', icon: BarChart },
+    ],
+  },
+  {
+    label: '用户与审核',
+    items: [
+      { name: '用户管理', href: '/admin/users', icon: Users },
+      { name: '企业资质审核', href: '/admin/companies', icon: Building2 },
+      { name: '导师资质审核', href: '/admin/mentors', icon: ShieldCheck },
+    ],
+  },
+  {
+    label: '内容管理',
+    items: [
+      { name: '文章管理', href: '/admin/articles', icon: FileText },
+      { name: '客服管理', href: '/admin/chat', icon: MessageSquare },
+      { name: '客服工作台', href: '/agent/workbench', icon: Headphones },
+      { name: '课程与内容管理', href: '/admin/content', icon: Video },
+      { name: '留学数据管理', href: '/admin/study-abroad', icon: Globe },
+      { name: '公告管理', href: '/admin/announcements', icon: Megaphone },
+    ],
+  },
+  {
+    label: '页面配置',
+    items: [
+      { name: '首页配置', href: '/admin/home-config', icon: Home },
+      { name: '考研配置', href: '/admin/postgrad-config', icon: BookOpen },
+      { name: '创业配置', href: '/admin/entrepreneurship-config', icon: Rocket },
+      { name: '创业招募', href: '/admin/entrepreneurship-config', icon: Megaphone },
+      { name: '背景提升配置', href: '/admin/backgroundboost-config', icon: TrendingUp },
+      { name: '案例配置', href: '/admin/successcases-config', icon: Award },
+    ],
+  },
+  {
+    label: '系统',
+    items: [
+      { name: '系统设置', href: '/admin/settings', icon: Settings },
+      { name: '审计日志', href: '/admin/audit-logs', icon: FileText },
+    ],
+  },
 ];
+
+/** 扁平导航列表（用于匹配当前路由高亮） */
+const SIDEBAR_NAV = SIDEBAR_SECTIONS.flatMap((s) => s.items);
 
 export default function AdminLayout() {
   const location = useLocation();
@@ -87,25 +122,34 @@ export default function AdminLayout() {
         </button>
       </div>
 
-      <nav className="flex-1 py-6 px-4 space-y-1 overflow-y-auto" role="navigation" aria-label="管理后台导航">
-        {SIDEBAR_NAV.map((item) => {
-          const isActive = location.pathname === item.href || location.pathname.startsWith(item.href + '/');
-          return (
-            <Link
-              key={item.name}
-              to={item.href}
-              className={`flex items-center gap-3 px-3 py-2.5 rounded-lg font-medium transition-colors ${
-                isActive
-                  ? 'bg-primary-600 text-white'
-                  : 'text-slate-400 hover:bg-slate-800 hover:text-white'
-              }`}
-              aria-current={isActive ? 'page' : undefined}
-            >
-              <item.icon className={`w-5 h-5 ${isActive ? 'text-white' : 'text-slate-400'}`} />
-              {item.name}
-            </Link>
-          );
-        })}
+      <nav className="flex-1 py-4 px-4 space-y-4 overflow-y-auto" role="navigation" aria-label="管理后台导航">
+        {SIDEBAR_SECTIONS.map((section) => (
+          <div key={section.label}>
+            <div className="px-3 mb-1.5 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+              {section.label}
+            </div>
+            <div className="space-y-0.5">
+              {section.items.map((item) => {
+                const isActive = location.pathname === item.href || location.pathname.startsWith(item.href + '/');
+                return (
+                  <Link
+                    key={item.name}
+                    to={item.href}
+                    className={`flex items-center gap-3 px-3 py-2 rounded-lg font-medium transition-colors ${
+                      isActive
+                        ? 'bg-primary-600 text-white'
+                        : 'text-slate-400 hover:bg-slate-800 hover:text-white'
+                    }`}
+                    aria-current={isActive ? 'page' : undefined}
+                  >
+                    <item.icon className={`w-5 h-5 ${isActive ? 'text-white' : 'text-slate-400'}`} />
+                    {item.name}
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+        ))}
       </nav>
 
       <div className="p-4 border-t border-slate-800 bg-slate-950 shrink-0">

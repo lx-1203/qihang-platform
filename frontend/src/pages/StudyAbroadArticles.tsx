@@ -1,13 +1,14 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import {
   BookOpen, ChevronRight, Search, Clock, Eye,
   TrendingUp, FileText, MessageCircle, Sparkles,
-  ThumbsUp, Star
+  ThumbsUp, Star, Loader2
 } from 'lucide-react';
 import TagComponent from '@/components/ui/Tag';
 import { motion } from 'framer-motion';
 import { useConfigStore } from '@/store/config';
+import http from '@/api/http';
 
 // 默认配置（当后端不可用时使用）
 const DEFAULT_STUDY_ABROAD_ARTICLES_CONFIG = {
@@ -49,12 +50,33 @@ const DEFAULT_STUDY_ABROAD_ARTICLES_CONFIG = {
 
 export default function StudyAbroadArticles() {
   const articlesConfig = useConfigStore().getJson('study_abroad_articles_config') || DEFAULT_STUDY_ABROAD_ARTICLES_CONFIG;
-  const FEATURED_ARTICLE = articlesConfig.featured || DEFAULT_STUDY_ABROAD_ARTICLES_CONFIG.featured;
-  const ARTICLES = articlesConfig.articles || DEFAULT_STUDY_ABROAD_ARTICLES_CONFIG.articles;
-  const HOT_TOPICS = articlesConfig.hotTopics || DEFAULT_STUDY_ABROAD_ARTICLES_CONFIG.hotTopics;
+  const [apiArticles, setApiArticles] = useState<Array<{ id: number; title: string; category: string; cover: string; summary: string; author: string; view_count: number; created_at: string }>>([]);
+  const [apiLoading, setApiLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState('全部');
   const [searchKeyword, setSearchKeyword] = useState('');
   const [sortBy, setSortBy] = useState<'latest' | 'popular'>('latest');
+
+  // 优先从 API 获取文章，fallback 到 config store
+  useEffect(() => {
+    setApiLoading(true);
+    http.get('/articles', { params: { pageSize: 50 } })
+      .then(res => {
+        if (res.data?.code === 200 && res.data.data?.articles?.length > 0) {
+          setApiArticles(res.data.data.articles);
+        }
+      })
+      .catch(() => {})
+      .finally(() => setApiLoading(false));
+  }, []);
+
+  // 合并 API 数据和 config 数据
+  const FEATURED_ARTICLE = apiArticles.length > 0
+    ? { ...apiArticles[0], excerpt: apiArticles[0].summary || '', views: apiArticles[0].view_count || 0, likes: 0, date: apiArticles[0].created_at?.split('T')[0] || '', readTime: '5 min', tags: [] }
+    : articlesConfig.featured || DEFAULT_STUDY_ABROAD_ARTICLES_CONFIG.featured;
+  const ARTICLES = apiArticles.length > 0
+    ? apiArticles.map(a => ({ ...a, excerpt: a.summary || '', views: a.view_count || 0, likes: 0, date: a.created_at?.split('T')[0] || '', readTime: '5 min', tags: [] }))
+    : articlesConfig.articles || DEFAULT_STUDY_ABROAD_ARTICLES_CONFIG.articles;
+  const HOT_TOPICS = articlesConfig.hotTopics || DEFAULT_STUDY_ABROAD_ARTICLES_CONFIG.hotTopics;
 
   // 动态生成分类列表
   const CATEGORIES = ['全部', ...Array.from(new Set(ARTICLES.map((a: { category: string }) => a.category)))];
@@ -86,6 +108,7 @@ export default function StudyAbroadArticles() {
           <div>
             <h1 className="text-[30px] font-bold text-gray-900 flex items-center gap-3 mb-2">
               <BookOpen className="w-8 h-8 text-primary-500" /> 留学资讯
+              {apiLoading && <Loader2 className="w-5 h-5 text-primary-400 animate-spin" />}
             </h1>
             <p className="text-[15px] text-gray-500">申请攻略、就读体验、语言备考、文书写作，<span className="font-bold text-gray-900">{ARTICLES.length}+</span> 篇精选文章</p>
           </div>
@@ -123,7 +146,7 @@ export default function StudyAbroadArticles() {
                     <span className="flex items-center gap-1"><Clock className="w-3.5 h-3.5" />{FEATURED_ARTICLE.readTime}</span>
                   </div>
                   <div className="flex items-center gap-3 text-[13px] text-gray-400">
-                    <span className="flex items-center gap-1"><Eye className="w-3.5 h-3.5" />{(FEATURED_ARTICLE.views / 1000).toFixed(1)}k</span>
+                    <span className="flex items-center gap-1"><Eye className="w-3.5 h-3.5" />{((FEATURED_ARTICLE.views || 0) / 1000).toFixed(1)}k</span>
                     <span className="flex items-center gap-1"><ThumbsUp className="w-3.5 h-3.5" />{FEATURED_ARTICLE.likes}</span>
                   </div>
                 </div>

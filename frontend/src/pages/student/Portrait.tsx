@@ -526,7 +526,7 @@ export default function StudentPortrait() {
                       value={dim.value}
                       onChange={(e) => {
                         const newDims = [...dimensions];
-                        newDims[idx] = { ...dim, value: parseInt(e.target.value) };
+                        newDims[idx] = { ...dim, value: parseInt(e.target.value, 10) || 0 };
                         setDimensions(newDims);
                       }}
                       className="w-full h-1.5 bg-gray-200 rounded-full appearance-none cursor-pointer accent-primary-500"

@@ -26,16 +26,16 @@ export default defineConfig(({ mode }) => {
     // 生产环境使用 CDN 作为静态资源基础路径
     base: mode === 'production' && cdnUrl ? cdnUrl : '/',
 
-    // API 代理：/api -> localhost:3001
+    // API 代理：/api -> 后端服务（默认 localhost:3001，可通过 VITE_API_URL 配置）
     server: {
       port: 5173,
       proxy: {
         '/api': {
-          target: 'http://localhost:3001',
+          target: env.VITE_API_URL || 'http://localhost:3001',
           changeOrigin: true,
         },
         '/uploads': {
-          target: 'http://localhost:3001',
+          target: env.VITE_API_URL || 'http://localhost:3001',
           changeOrigin: true,
         },
       },

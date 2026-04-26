@@ -197,9 +197,14 @@ export default function AdminContent() {
   // 发送反馈
   async function sendFeedback() {
     if (!detailItem || !feedbackText.trim()) return;
+    const userId = detailItem._type === 'job' ? detailItem.company_user_id : detailItem.mentor_user_id;
+    if (!userId) {
+      showToast({ type: 'error', title: '无法发送反馈：未找到用户信息' });
+      return;
+    }
     setFeedbackSending(true);
     try {
-      const userId = detailItem._type === 'job' ? detailItem.company_id : detailItem.mentor_id;
+      // 使用 JOIN 查询返回的 user_id（companies.user_id / mentor_profiles.user_id）而非表的主键 ID
       const itemName = detailItem.title;
       await http.post('/admin/feedback', {
         userId,
@@ -433,7 +438,7 @@ export default function AdminContent() {
 
       {/* 详情弹窗 */}
       {(detailItem || detailLoading) && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => { setDetailItem(null); setFeedbackText(''); }}>
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50" onClick={() => { setDetailItem(null); setFeedbackText(''); }}>
           <motion.div
             initial={{ scale: 0.95, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}

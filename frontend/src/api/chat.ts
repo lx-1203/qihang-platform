@@ -5,8 +5,8 @@ import http from './http';
 // 用户端 API
 
 /** 创建新会话 */
-export function createConversation(type: 'user_service' | 'ai_chat' = 'user_service') {
-  return http.post('/chat/conversations', { type });
+export function createConversation(type: 'user_service' | 'ai_chat' = 'user_service', targetUserId?: number, title?: string, companyId?: number) {
+  return http.post('/chat/conversations', { type, target_user_id: targetUserId, title, company_id: companyId });
 }
 
 /** 获取用户会话列表 */
@@ -38,6 +38,11 @@ export function markRead(conversationId: number) {
 /** 关闭会话 */
 export function closeConversation(conversationId: number) {
   return http.put(`/chat/conversations/${conversationId}/close`);
+}
+
+/** 转人工客服 */
+export function transferToHuman(conversationId: number) {
+  return http.post(`/chat/conversations/${conversationId}/transfer-to-human`);
 }
 
 // 管理员端 API

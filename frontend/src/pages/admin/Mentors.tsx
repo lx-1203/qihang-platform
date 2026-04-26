@@ -201,7 +201,7 @@ export default function AdminMentors() {
               <div className="flex items-start justify-between">
                 <div className="flex items-start gap-4">
                   {mentor.avatar ? (
-                    <img src={mentor.avatar || DEFAULT_AVATAR} alt={mentor.name} className="w-14 h-14 rounded-xl object-cover" />
+                    <img src={mentor.avatar || DEFAULT_AVATAR} alt={mentor.name} className="w-14 h-14 rounded-xl object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
                   ) : (
                     <div className="w-14 h-14 bg-primary-100 rounded-xl flex items-center justify-center">
                       <Award className="w-7 h-7 text-primary-600" />
@@ -280,7 +280,7 @@ export default function AdminMentors() {
 
       {/* 导师详情弹窗 */}
       {detailMentor && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => { setDetailMentor(null); setFeedbackText(''); }}>
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50" onClick={() => { setDetailMentor(null); setFeedbackText(''); }}>
           <motion.div
             initial={{ scale: 0.95, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
@@ -296,7 +296,7 @@ export default function AdminMentors() {
             <div className="px-6 py-4 space-y-4">
               <div className="flex items-center gap-4">
                 {detailMentor.avatar ? (
-                  <img src={detailMentor.avatar} alt={detailMentor.name} className="w-16 h-16 rounded-xl object-cover" />
+                  <img src={detailMentor.avatar} alt={detailMentor.name} className="w-16 h-16 rounded-xl object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
                 ) : (
                   <div className="w-16 h-16 bg-primary-100 rounded-xl flex items-center justify-center">
                     <Award className="w-8 h-8 text-primary-600" />
@@ -374,7 +374,7 @@ export default function AdminMentors() {
 
       {/* 驳回弹窗 */}
       {reviewModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => setReviewModal(null)}>
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50" onClick={() => setReviewModal(null)}>
           <motion.div
             initial={{ scale: 0.95, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}

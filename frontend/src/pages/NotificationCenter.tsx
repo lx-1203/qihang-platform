@@ -16,10 +16,10 @@ import { ListSkeleton } from '@/components/ui/Skeleton';
 
 interface NotificationItem {
   id: number;
-  type: 'appointment' | 'resume' | 'system' | 'verify';
+  type: 'appointment' | 'resume' | 'system' | 'approval' | 'general' | 'review';
   title: string;
   content: string;
-  related_id: number | null;
+  link: string;
   is_read: number;
   created_at: string;
 }
@@ -28,7 +28,9 @@ const TYPE_CONFIG: Record<string, { label: string; icon: typeof Bell; color: str
   appointment: { label: '预约通知', icon: Calendar, color: 'text-blue-600', bg: 'bg-blue-100' },
   resume: { label: '简历通知', icon: Briefcase, color: 'text-green-600', bg: 'bg-green-100' },
   system: { label: '系统通知', icon: Megaphone, color: 'text-primary-600', bg: 'bg-primary-100' },
-  verify: { label: '审核通知', icon: Shield, color: 'text-amber-600', bg: 'bg-amber-100' },
+  approval: { label: '审核通知', icon: Shield, color: 'text-amber-600', bg: 'bg-amber-100' },
+  general: { label: '系统通知', icon: Megaphone, color: 'text-primary-600', bg: 'bg-primary-100' },
+  review: { label: '评价通知', icon: Check, color: 'text-purple-600', bg: 'bg-purple-100' },
 };
 
 export default function NotificationCenter() {
@@ -56,8 +58,8 @@ export default function NotificationCenter() {
         params: { page, pageSize, type: typeFilter, is_read: readFilter }
       });
       if (res.data?.code === 200 && res.data.data) {
-        setNotifications(res.data.data.list || []);
-        setTotal(res.data.data.total || 0);
+        setNotifications(res.data.data.notifications || []);
+        setTotal(res.data.data.pagination?.total || 0);
       } else {
         setError('获取通知失败');
       }
@@ -171,7 +173,7 @@ export default function NotificationCenter() {
           </div>
 
           <div className="flex gap-2">
-            {['all', 'appointment', 'resume', 'system', 'verify'].map(t => (
+            {['all', 'appointment', 'resume', 'system', 'approval'].map(t => (
               <button
                 key={t}
                 onClick={() => { setTypeFilter(t); setPage(1); }}
@@ -227,7 +229,10 @@ export default function NotificationCenter() {
                           variant={
                             notif.type === 'appointment' ? 'blue' :
                             notif.type === 'resume' ? 'green' :
-                            notif.type === 'system' ? 'primary' : 'yellow'
+                            notif.type === 'approval' ? 'yellow' :
+                            notif.type === 'review' ? 'primary' :
+                            notif.type === 'general' ? 'primary' :
+                            'primary'
                           }
                           size="xs"
                         >
