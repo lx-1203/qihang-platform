@@ -13,12 +13,13 @@
 
 import { Router } from 'express';
 import pool from '../db.js';
-import { authMiddleware } from '../middleware/auth.js';
+import { authMiddleware, requireCapability } from '../middleware/auth.js';
 
 const router = Router();
 
 // 所有通知路由都需要认证
 router.use(authMiddleware);
+router.use(requireCapability('canViewNotifications'));
 
 // ==================== 获取通知列表 ====================
 router.get('/', async (req, res) => {

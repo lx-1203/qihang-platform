@@ -45,7 +45,7 @@ const DEFAULT_STORIES: Story[] = [
     role: '后端开发工程师',
     company: '阿里巴巴',
     year: '2024届',
-    quote: '三次面试失败后，通过1v1辅导拿到了阿里P6 Offer。',
+    quote: '三次面试失败后，通过导师辅导拿到了阿里P6 Offer。',
     content: '连续三次终面被刷让我几乎放弃，是启航的导师帮我复盘了每次失败的原因——不是技术不行，而是表达逻辑有问题。针对性训练两周后，我一举通过阿里面试。',
     gradient: 'from-blue-500 to-primary-600',
     initial: '张',
@@ -220,10 +220,10 @@ export default function StudentStories() {
                     <p className="text-xs text-gray-500 mt-0.5">{story.company} · {story.year}</p>
                   </div>
                   <Link
-                    to="/guidance"
+                    to="/success-cases"
                     className="text-primary-600 text-sm font-medium flex items-center gap-1 hover:text-primary-700 transition-colors"
                   >
-                    了解更多
+                    查看案例
                     <ArrowRight className="w-3.5 h-3.5" />
                   </Link>
                 </div>

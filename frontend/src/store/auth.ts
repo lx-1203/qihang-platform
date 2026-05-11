@@ -2,25 +2,37 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { User, UserRole } from '../types';
 import { API_PREFIX } from '../api/http';
+import { buildAccessStatus, type FrontendAccessStatus } from '../lib/accessControl';
 
-// ====== 认证状态管理（Zustand + 持久化） ======
+type AccessStatus = FrontendAccessStatus;
+
+const DEFAULT_ACCESS_STATUS: AccessStatus = buildAccessStatus({
+  role: 'student',
+  identityStatus: 'unverified',
+  qualificationStatus: 'not_applicable',
+  onboardingStatus: 'pending',
+  routeAccessLevel: 'overview_only',
+  postRegisterPromptPending: false,
+});
 
 interface AuthState {
-  // 状态
   token: string | null;
   refreshToken: string | null;
   user: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-
-  // 操作
-  setAuth: (token: string, user: User, refreshToken?: string) => void;
+  accessStatus: AccessStatus;
+  setAuth: (token: string, user: User, refreshToken?: string, accessStatus?: Record<string, unknown>) => void;
   updateToken: (token: string, refreshToken?: string) => void;
   logout: () => void | Promise<void>;
   setUser: (user: User) => void;
+  hydrateSession: (user: User, status?: Partial<AccessStatus>) => void;
   setLoading: (loading: boolean) => void;
-
-  // 角色判断（RBAC 权限校验用）
+  setAccessStatus: (status: Partial<AccessStatus>) => void;
+  resetAccessStatus: () => void;
+  getAccessStatus: () => AccessStatus;
+  fetchAccessStatus: () => Promise<void>;
+  setPostRegisterPromptPending: (pending: boolean) => void;
   isAdmin: () => boolean;
   isCompany: () => boolean;
   isMentor: () => boolean;
@@ -31,52 +43,121 @@ interface AuthState {
 export const useAuthStore = create<AuthState>()(
   persist(
     (set, get) => ({
-      // 初始状态
       token: null,
       refreshToken: null,
       user: null,
       isAuthenticated: false,
       isLoading: false,
+      accessStatus: { ...DEFAULT_ACCESS_STATUS },
 
-      // 登录成功：设置 token 和用户信息
-      setAuth: (token, user, refreshToken) => {
-        set({ token, refreshToken: refreshToken || get().refreshToken, user, isAuthenticated: true });
+      setAuth: (token, user, refreshToken, accessStatus?) => {
+        set({
+          token,
+          refreshToken: refreshToken || get().refreshToken,
+          user,
+          isAuthenticated: true,
+          accessStatus: buildAccessStatus({
+            role: user.role,
+            ...(typeof accessStatus === 'object' && accessStatus !== null ? accessStatus : {}),
+          }),
+        });
       },
 
-      // 刷新 token（不改变用户信息）
       updateToken: (token, refreshToken) => {
         set({ token, refreshToken: refreshToken || get().refreshToken });
       },
 
-      // 登出：先调后端 API 使 refresh token 进入黑名单，再清除前端状态
-      // 注意：使用原生 fetch 而非 http 实例，避免 auth.ts ↔ http.ts 循环依赖
       logout: async () => {
         const token = get().token;
         const refreshToken = get().refreshToken;
+
         if (refreshToken) {
           try {
             await fetch(`${API_PREFIX}/auth/logout`, {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
-                ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+                ...(token ? { Authorization: `Bearer ${token}` } : {}),
               },
               body: JSON.stringify({ refreshToken }),
             });
           } catch {
-            // 网络失败也继续清除前端状态（不阻塞用户退出）
+            // ignore logout transport failures
           }
         }
-        set({ token: null, refreshToken: null, user: null, isAuthenticated: false });
+
+        set({
+          token: null,
+          refreshToken: null,
+          user: null,
+          isAuthenticated: false,
+          accessStatus: { ...DEFAULT_ACCESS_STATUS },
+        });
       },
 
-      // 更新用户信息（不影响 token）
       setUser: (user) => set({ user }),
-
-      // 设置加载状态
+      hydrateSession: (user, status) =>
+        set((state) => ({
+          user,
+          isAuthenticated: true,
+          accessStatus: buildAccessStatus({
+            ...state.accessStatus,
+            ...status,
+            role: (status?.role || user.role || state.accessStatus.role) as UserRole,
+          }),
+        })),
       setLoading: (loading) => set({ isLoading: loading }),
 
-      // RBAC 角色判断方法
+      setAccessStatus: (status) =>
+        set((state) => ({
+          accessStatus: buildAccessStatus({
+            ...state.accessStatus,
+            ...status,
+            role: (status.role || state.user?.role || state.accessStatus.role) as UserRole,
+          }),
+        })),
+
+      resetAccessStatus: () => set({ accessStatus: { ...DEFAULT_ACCESS_STATUS } }),
+      getAccessStatus: () => get().accessStatus,
+
+      // 从后端重新获取准入状态，用于登录后同步或身份状态变更后刷新
+      fetchAccessStatus: async () => {
+        const token = get().token;
+        if (!token) return;
+
+        try {
+          const res = await fetch(`${API_PREFIX}/auth/access-status`, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          if (res.ok) {
+            const data = await res.json();
+            if (data?.code === 200 && data.data) {
+              const user = get().user;
+              set((state) => ({
+                accessStatus: buildAccessStatus({
+                  role: (data.data.role || user?.role || state.accessStatus.role || 'student') as UserRole,
+                  identityStatus: data.data.identityStatus,
+                  qualificationStatus: data.data.qualificationStatus,
+                  onboardingStatus: data.data.onboardingStatus,
+                  routeAccessLevel: data.data.routeAccessLevel,
+                  capabilities: data.data.capabilities,
+                }),
+              }));
+            }
+          }
+        } catch (err) {
+          console.error('[authStore] fetchAccessStatus 失败:', err);
+        }
+      },
+
+      setPostRegisterPromptPending: (pending) =>
+        set((state) => ({
+          accessStatus: {
+            ...state.accessStatus,
+            postRegisterPromptPending: pending,
+          },
+        })),
+
       isAdmin: () => get().user?.role === 'admin',
       isCompany: () => get().user?.role === 'company',
       isMentor: () => get().user?.role === 'mentor',
@@ -87,12 +168,13 @@ export const useAuthStore = create<AuthState>()(
       },
     }),
     {
-      name: 'qihang-auth', // localStorage key
+      name: 'qihang-auth',
       partialize: (state) => ({
         token: state.token,
         refreshToken: state.refreshToken,
         user: state.user,
         isAuthenticated: state.isAuthenticated,
+        accessStatus: state.accessStatus,
       }),
     }
   )

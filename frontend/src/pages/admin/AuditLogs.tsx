@@ -59,7 +59,7 @@ const TARGET_ICONS: Record<string, typeof User> = {
 const ROLE_LABELS: Record<string, string> = {
   admin: '管理员',
   company: '企业',
-  mentor: '导师',
+  mentor: '咨询人员',
   student: '学生',
 };
 
@@ -171,9 +171,9 @@ export default function AdminAuditLogs() {
             <option value="">全部类型</option>
             <option value="user">用户</option>
             <option value="company">企业</option>
-            <option value="mentor">导师</option>
+            <option value="mentor">咨询人员</option>
             <option value="job">职位</option>
-            <option value="course">课程</option>
+            <option value="course">内容</option>
             <option value="article">文章</option>
           </select>
         </div>

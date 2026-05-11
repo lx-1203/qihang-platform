@@ -29,6 +29,7 @@ export default defineConfig(({ mode }) => {
     // API 代理：/api -> 后端服务（默认 localhost:3001，可通过 VITE_API_URL 配置）
     server: {
       port: 5173,
+      strictPort: true,
       proxy: {
         '/api': {
           target: env.VITE_API_URL || 'http://localhost:3001',
@@ -68,6 +69,25 @@ export default defineConfig(({ mode }) => {
       environment: 'jsdom',
       setupFiles: './src/test/setup.ts',
       css: false,
+      exclude: [
+        'tests/e2e/**',
+        'node_modules/**',
+      ],
+      coverage: {
+        provider: 'v8',
+        include: ['src/**/*.{ts,tsx}'],
+        exclude: [
+          'src/**/*.test.*',
+          'src/**/*.spec.*',
+          'src/__tests__/**',
+          'src/test/**',
+          'src/vite-env.d.ts',
+          'src/main.tsx',
+        ],
+        reporter: ['text', 'text-summary', 'html'],
+        reportsDirectory: './coverage',
+        reportOnFailure: true,
+      },
     },
   }
 })

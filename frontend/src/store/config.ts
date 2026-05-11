@@ -24,6 +24,9 @@ interface ConfigState {
   /** 拉取公开配置（首屏调用一次，forceRefresh 跳过 loading 守卫） */
   fetchConfigs: (forceRefresh?: boolean) => Promise<void>;
 
+  /** 支付后刷新用户VIP相关配置 */
+  refreshUserVip: () => Promise<void>;
+
   /** 通用读取：获取原始值 */
   get: (key: string, fallback?: unknown) => unknown;
   /** 读取字符串 */
@@ -84,6 +87,11 @@ export const useConfigStore = create<ConfigState>()((set, get) => ({
       // 接口失败，使用 localStorage 缓存兜底
       set({ loaded: true, loading: false, error: '配置加载失败，使用缓存数据' });
     }
+  },
+
+  refreshUserVip: async () => {
+    // 支付完成后强制刷新配置，确保VIP相关开关/定价刷新
+    await get().fetchConfigs(true);
   },
 
   get: (key, fallback) => {

@@ -281,12 +281,14 @@ export default function JobForm() {
               <Briefcase className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
               <input
                 type="text"
+                name="title"
+                id="title"
                 value={form.title}
                 onChange={e => updateField('title', e.target.value)}
                 className={`w-full pl-10 pr-4 py-2.5 border rounded-lg text-sm focus:ring-2 focus:ring-primary-500 outline-none ${
                   errors.title ? 'border-red-300 bg-red-50' : 'border-gray-200'
                 }`}
-                placeholder="如：前端开发工程师 (2026届校招)"
+                placeholder="请输入职位名称，例如：前端开发工程师"
               />
             </div>
             {errors.title && (

@@ -14,12 +14,12 @@ const ICON_MAP: Record<string, LucideIcon> = {
 
 const defaultSteps = [
   { icon: 'UserPlus', title: '注册账号', desc: '免费30秒快速注册', link: '/register' },
-  { icon: 'FileEdit', title: '完善资料', desc: 'AI智能诊断简历', link: '/student/profile' },
-  { icon: 'Search', title: '浏览岗位', desc: '智能推荐匹配职位', link: '/jobs' },
-  { icon: 'Send', title: '投递简历', desc: '一键投递多家企业', link: '/jobs' },
-  { icon: 'Mic', title: '面试辅导', desc: '1v1真实模拟面试', link: '/mentors' },
-  { icon: 'Award', title: '收获Offer', desc: '薪资谈判技巧指导', link: '/guidance' },
-  { icon: 'TrendingUp', title: '成长进阶', desc: '职场导师长期陪伴', link: '/courses' },
+  { icon: 'FileEdit', title: '完善资料', desc: '填写意向与背景信息', link: '/career-plan' },
+  { icon: 'Search', title: '浏览岗位', desc: '按方向筛选公开机会', link: '/job-recruitment' },
+  { icon: 'Send', title: '投递简历', desc: '聚焦目标岗位持续投递', link: '/job-recruitment' },
+  { icon: 'Mic', title: '面试准备', desc: '查看能力提升内容库', link: '/skill-enhancement' },
+  { icon: 'Award', title: '收获Offer', desc: '跟进招聘节奏与反馈', link: '/job-recruitment' },
+  { icon: 'TrendingUp', title: '成长进阶', desc: '回到能力提升继续补齐短板', link: '/skill-enhancement' },
 ];
 
 interface StepItem {

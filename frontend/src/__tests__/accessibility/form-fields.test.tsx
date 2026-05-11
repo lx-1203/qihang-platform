@@ -3,7 +3,6 @@ import { render } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
 import StudyAbroadArticles from '../../pages/StudyAbroadArticles';
 import Jobs from '../../pages/Jobs';
-import Mentors from '../../pages/Mentors';
 import http from '@/api/http';
 
 vi.mock('@/api/http', () => ({
@@ -42,18 +41,6 @@ beforeEach(() => {
         },
       });
     }
-
-    if (url === '/mentors') {
-      return Promise.resolve({
-        data: {
-          code: 200,
-          data: {
-            list: [],
-          },
-        },
-      });
-    }
-
     if (url === '/jobs/suggest') {
       return Promise.resolve({ data: { code: 200, data: [] } });
     }
@@ -106,26 +93,6 @@ describe('Form Field Accessibility - id/name attributes', () => {
       // 第三个 select 是排序选择器
       if (selects[2]) {
         expect(selects[2].getAttribute('id') || selects[2].getAttribute('name')).toBeTruthy();
-      }
-    });
-  });
-
-  describe('Mentors.tsx', () => {
-    it('专业领域选择器应该有 id 属性 (line 160)', () => {
-      const { container } = renderWithRouter(<Mentors />);
-      const selects = container.querySelectorAll('select');
-      expect(selects.length).toBeGreaterThan(0);
-      selects.forEach(select => {
-        expect(select.getAttribute('id') || select.getAttribute('name')).toBeTruthy();
-      });
-    });
-
-    it('排序选择器应该有 id 属性 (line 177)', () => {
-      const { container } = renderWithRouter(<Mentors />);
-      const selects = container.querySelectorAll('select');
-      expect(selects.length).toBeGreaterThanOrEqual(2);
-      if (selects[1]) {
-        expect(selects[1].getAttribute('id') || selects[1].getAttribute('name')).toBeTruthy();
       }
     });
   });

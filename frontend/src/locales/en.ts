@@ -4,8 +4,9 @@ export default {
       home: 'Home',
       jobs: 'Jobs',
       courses: 'Resources',
-      guidance: 'Guidance',
-      postgrad: 'Postgrad',
+      guidance: 'Skill Enhancement',
+      skillEnhancement: 'Skill Enhancement',
+      postgrad: 'Further Education',
       entrepreneurship: 'Startup',
     },
     search: {
@@ -101,7 +102,7 @@ export default {
     },
     footer: {
       logo_demo: 'LOGO Demo',
-      desc: 'Dedicated to providing a one-stop employment guidance platform for college students with professional career planning, skills training, and quality campus recruitment & internship opportunities.',
+      desc: 'A one-stop student growth platform covering career planning, skill building, further education, and campus recruiting opportunities.',
       about_company: 'About Company',
       user_service: 'User Service',
       legal_notice: 'Legal Notice',

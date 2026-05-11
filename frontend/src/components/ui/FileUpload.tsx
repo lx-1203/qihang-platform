@@ -2,6 +2,7 @@ import { useState, useRef, useCallback, useEffect } from 'react';
 import { Upload, X, FileText, Image, Loader2, CheckCircle2, AlertCircle, Clipboard, Film } from 'lucide-react';
 import http from '@/api/http';
 import { compressImage } from '@/utils/imageCompress';
+import { showToast } from './ToastContainer';
 
 // 上传文件类别
 type UploadCategory = 'avatar' | 'resume' | 'cover' | 'video' | 'general';
@@ -67,6 +68,55 @@ const formatSize = (bytes: number): string => {
 
 // 生成唯一 ID
 const generateId = () => Math.random().toString(36).substring(2, 10);
+
+/** Magic Bytes 校验规则：根据扩展名检查文件头 */
+const MAGIC_BYTES: Record<string, { bytes: number[]; label: string }> = {
+  'image/jpeg': { bytes: [0xFF, 0xD8, 0xFF], label: 'JPG' },
+  'image/png': { bytes: [0x89, 0x50, 0x4E, 0x47], label: 'PNG' },
+  'image/webp': { bytes: [0x52, 0x49, 0x46, 0x46], label: 'WebP' },
+  'image/gif': { bytes: [0x47, 0x49, 0x46, 0x38], label: 'GIF' },
+};
+
+/**
+ * 通过 FileReader.readAsArrayBuffer 读取文件前几个字节，
+ * 与预期 Magic Bytes 对比，校验文件类型是否真实匹配
+ */
+async function validateMagicBytes(file: File): Promise<boolean> {
+  // SVG 通过 MIME type = text/xml 或 image/svg+xml 来校验
+  if (file.type === 'image/svg+xml') return true;
+
+  const expected = MAGIC_BYTES[file.type];
+  if (!expected) return true; // 非图片文件跳过 Magic Bytes 校验
+
+  try {
+    const buffer = await new Promise<ArrayBuffer>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as ArrayBuffer);
+      reader.onerror = () => reject(new Error('读取文件失败'));
+      reader.readAsArrayBuffer(file.slice(0, expected.bytes.length));
+    });
+
+    const bytes = new Uint8Array(buffer);
+    const isValid = expected.bytes.every((b, i) => bytes[i] === b);
+    if (!isValid) {
+      showToast({
+        type: 'warning',
+        title: '文件校验失败',
+        message: `${file.name} 的文件头与 ${expected.label} 格式不一致，可能为伪造文件，已拒绝上传`,
+        duration: 5000,
+      });
+    }
+    return isValid;
+  } catch {
+    showToast({
+      type: 'warning',
+      title: '文件校验失败',
+      message: `无法读取 ${file.name} 的文件头，请确认文件完整性`,
+      duration: 5000,
+    });
+    return false;
+  }
+}
 
 export default function FileUpload({
   category = 'general',
@@ -161,8 +211,8 @@ export default function FileUpload({
     }
   }, [category, onSuccess, onError]);
 
-  // 处理文件选择
-  const handleFiles = useCallback((selectedFiles: FileList | null) => {
+  // 处理文件选择（含 Magic Bytes 校验）
+  const handleFiles = useCallback(async (selectedFiles: FileList | null) => {
     if (!selectedFiles || selectedFiles.length === 0) return;
 
     const newFiles: FileItem[] = [];
@@ -183,6 +233,10 @@ export default function FileUpload({
         errors.push(`最多上传 ${maxFiles} 个文件`);
         break;
       }
+
+      // Magic Bytes 校验：防止伪造文件类型
+      const isValid = await validateMagicBytes(file);
+      if (!isValid) continue;
 
       // 生成预览（图片类型）
       let preview: string | undefined;

@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import pool from '../db.js';
-import { authMiddleware, requireRole } from '../middleware/auth.js';
+import { authMiddleware, requireCapability, requireRole } from '../middleware/auth.js';
 import { NotificationTemplates } from '../utils/notification.js';
 import { idempotency } from '../middleware/idempotency.js';
 
@@ -55,6 +55,10 @@ router.post('/profile', async (req, res) => {
       phone,
       wechat,
       contact_email,
+      license_url,
+      org_code,
+      business_scope,
+      verify_documents,
     } = req.body;
 
     if (!company_name) {
@@ -63,19 +67,26 @@ router.post('/profile', async (req, res) => {
         .json({ code: 400, message: '企业名称不能为空' });
     }
 
-    // 检查是否已有企业资料
+    // 检查是否已有企业资料（含当前状态和资质文件信息）
     const [existing] = await pool.query(
-      'SELECT id FROM companies WHERE user_id = ?',
+      'SELECT id, verify_status, license_url FROM companies WHERE user_id = ?',
       [req.user.id]
     );
 
     if (existing.length > 0) {
-      // 更新
+      const currentStatus = existing[0].verify_status;
+      const hasLicenseNow = !!(license_url);
+      const hasLicenseBefore = !!(existing[0].license_url);
+
+      const shouldSubmit = currentStatus === 'draft' && hasLicenseNow;
+
       await pool.query(
         `UPDATE companies SET
           company_name = ?, industry = ?, scale = ?, description = ?,
           logo = ?, website = ?, address = ?,
-          phone = ?, wechat = ?, contact_email = ?
+          phone = ?, wechat = ?, contact_email = ?,
+          license_url = ?, org_code = ?, business_scope = ?, verify_documents = ?,
+          verify_status = CASE WHEN ? = 'draft' AND ? = 1 THEN 'pending' ELSE verify_status END
         WHERE user_id = ?`,
         [
           company_name,
@@ -88,13 +99,26 @@ router.post('/profile', async (req, res) => {
           phone || '',
           wechat || '',
           contact_email || '',
+          license_url || '',
+          org_code || '',
+          business_scope || '',
+          verify_documents ? JSON.stringify(verify_documents) : null,
+          currentStatus,
+          shouldSubmit ? 1 : 0,
           req.user.id,
         ]
       );
 
-      // 同步更新 users 表的头像
       if (logo !== undefined) {
         await pool.query('UPDATE users SET avatar = ? WHERE id = ?', [logo || '', req.user.id]);
+      }
+
+      if (shouldSubmit) {
+        try {
+          await NotificationTemplates.newCompanyApplication(company_name || '未知企业');
+        } catch (notifyErr) {
+          console.error('发送企业认证通知失败(不影响主流程):', notifyErr);
+        }
       }
 
       const [updated] = await pool.query(
@@ -104,11 +128,14 @@ router.post('/profile', async (req, res) => {
 
       res.json({ code: 200, message: '企业资料更新成功', data: { company: updated[0] } });
     } else {
-      // 创建
+      const hasLicense = !!(license_url);
+      const initialStatus = hasLicense ? 'pending' : 'draft';
+
       const [result] = await pool.query(
         `INSERT INTO companies
-          (user_id, company_name, industry, scale, description, logo, website, address, phone, wechat, contact_email)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          (user_id, company_name, industry, scale, description, logo, website, address, phone, wechat, contact_email,
+           license_url, org_code, business_scope, verify_documents, verify_status)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           req.user.id,
           company_name,
@@ -121,6 +148,11 @@ router.post('/profile', async (req, res) => {
           phone || '',
           wechat || '',
           contact_email || '',
+          license_url || '',
+          org_code || '',
+          business_scope || '',
+          verify_documents ? JSON.stringify(verify_documents) : null,
+          initialStatus,
         ]
       );
 
@@ -129,16 +161,16 @@ router.post('/profile', async (req, res) => {
         [result.insertId]
       );
 
-      // 同步更新 users 表的头像
       if (logo) {
         await pool.query('UPDATE users SET avatar = ? WHERE id = ?', [logo, req.user.id]);
       }
 
-      // 通知管理员有新企业认证申请
-      try {
-        await NotificationTemplates.newCompanyApplication(company_name || '未知企业');
-      } catch (notifyErr) {
-        console.error('发送企业认证通知失败(不影响主流程):', notifyErr);
+      if (hasLicense) {
+        try {
+          await NotificationTemplates.newCompanyApplication(company_name || '未知企业');
+        } catch (notifyErr) {
+          console.error('发送企业认证通知失败(不影响主流程):', notifyErr);
+        }
       }
 
       res
@@ -155,7 +187,7 @@ router.post('/profile', async (req, res) => {
 
 // 3.4 GET /api/company/jobs - 获取本企业发布的职位列表
 // 注：jobs 表使用 company_id（FK → companies.id），需先查 companies.id
-router.get('/jobs', async (req, res) => {
+router.get('/jobs', requireCapability('canCreateOrEditJobs'), async (req, res) => {
   try {
     const companyId = await getCompanyId(req.user.id);
     if (!companyId) {
@@ -165,35 +197,43 @@ router.get('/jobs', async (req, res) => {
     const { status, type, keyword, page = 1, pageSize = 10 } = req.query;
     const offset = (Number(page) - 1) * Number(pageSize);
 
-    let sql = 'SELECT * FROM jobs WHERE company_id = ? AND deleted_at IS NULL';
+    let whereClause = 'WHERE j.company_id = ? AND j.deleted_at IS NULL';
     const params = [companyId];
 
     if (status && status !== 'all') {
-      sql += ' AND status = ?';
+      whereClause += ' AND j.status = ?';
       params.push(status);
     }
 
     if (type && type !== 'all') {
-      sql += ' AND type = ?';
+      whereClause += ' AND j.type = ?';
       params.push(type);
     }
 
     if (keyword) {
-      sql += ' AND (title LIKE ? OR description LIKE ?)';
+      whereClause += ' AND (j.title LIKE ? OR j.description LIKE ?)';
       params.push(`%${keyword}%`, `%${keyword}%`);
     }
 
-    sql += ' ORDER BY created_at DESC';
-
     // 查询总数
-    const countSql = sql.replace('SELECT *', 'SELECT COUNT(*) as total');
-    const [countResult] = await pool.query(countSql, params);
+    const [countResult] = await pool.query(
+      `SELECT COUNT(*) as total FROM jobs j ${whereClause}`,
+      params
+    );
     const total = countResult[0].total;
 
-    // 分页查询
-    sql += ' LIMIT ? OFFSET ?';
-    params.push(Number(pageSize), offset);
-    const [rows] = await pool.query(sql, params);
+    // 分页查询（含 applications 投递计数）
+    const [rows] = await pool.query(
+      `SELECT j.id, j.title, j.company_id, j.company_name, j.logo, j.description,
+              j.requirements, j.location, j.type, j.category, j.tags,
+              j.salary, j.status, j.headcount, j.urgent, j.view_count,
+              j.created_at, j.updated_at,
+              COALESCE(app_counts.cnt, 0) AS applications
+       FROM jobs j
+       LEFT JOIN (SELECT job_id, COUNT(*) AS cnt FROM resumes GROUP BY job_id) AS app_counts ON j.id = app_counts.job_id
+       ${whereClause} ORDER BY j.created_at DESC LIMIT ? OFFSET ?`,
+      [...params, Number(pageSize), offset]
+    );
 
     res.json({
       code: 200,
@@ -212,7 +252,7 @@ router.get('/jobs', async (req, res) => {
 
 // 3.3 POST /api/company/jobs - 发布职位
 // jobs 表字段：title, company_id, company_name, logo, location, salary, type, category, tags, description, requirements, urgent
-router.post('/jobs', idempotency(), async (req, res) => {
+router.post('/jobs', requireCapability('canCreateOrEditJobs'), idempotency(), async (req, res) => {
   try {
     const {
       title,
@@ -290,7 +330,7 @@ router.post('/jobs', idempotency(), async (req, res) => {
 });
 
 // 3.5 PUT /api/company/jobs/:id - 编辑职位
-router.put('/jobs/:id', async (req, res) => {
+router.put('/jobs/:id', requireCapability('canCreateOrEditJobs'), async (req, res) => {
   try {
     const { id } = req.params;
     const companyId = await getCompanyId(req.user.id);
@@ -351,7 +391,7 @@ router.put('/jobs/:id', async (req, res) => {
 });
 
 // 3.6 DELETE /api/company/jobs/:id - 删除职位
-router.delete('/jobs/:id', async (req, res) => {
+router.delete('/jobs/:id', requireCapability('canCreateOrEditJobs'), async (req, res) => {
   try {
     const { id } = req.params;
     const companyId = await getCompanyId(req.user.id);
@@ -379,7 +419,7 @@ router.delete('/jobs/:id', async (req, res) => {
 });
 
 // 3.7 PUT /api/company/jobs/:id/status - 上架/下架职位
-router.put('/jobs/:id/status', async (req, res) => {
+router.put('/jobs/:id/status', requireCapability('canCreateOrEditJobs'), async (req, res) => {
   try {
     const { id } = req.params;
     const { status } = req.body; // 'active' | 'inactive'
@@ -418,7 +458,7 @@ router.put('/jobs/:id/status', async (req, res) => {
 
 // 3.8 GET /api/company/resumes - 收到的简历列表
 // resumes 表字段：student_id, job_id, status, resume_url, company_remark
-router.get('/resumes', async (req, res) => {
+router.get('/resumes', requireCapability('canManageResumes'), async (req, res) => {
   try {
     const companyId = await getCompanyId(req.user.id);
     if (!companyId) {
@@ -460,42 +500,15 @@ router.get('/resumes', async (req, res) => {
 
     // 分页查询
     const dataSql = `
-      SELECT r.*, j.title AS job_title,
-             u.nickname AS student_name, u.email AS student_email, u.avatar AS student_avatar,
-             s.school, s.major, s.grade
+      SELECT r.id, r.student_id, r.job_id, r.status, r.resume_url, r.company_remark, r.created_at, r.updated_at,
+             j.title AS job_title,
+             u.nickname AS student_name, u.email AS student_email, u.avatar AS student_avatar, u.phone,
+             s.school, s.major, s.grade, s.grade AS degree
       ${joins} ${where}
       ORDER BY r.created_at DESC
       LIMIT ? OFFSET ?
     `;
     const [rows] = await pool.query(dataSql, [...params, pageSizeNum, offset]);
-
-    // 自动将 pending 状态的简历标记为 viewed，并通知学生
-    try {
-      const [pendingResumes] = await pool.query(
-        `SELECT r.id, r.student_id, j.title AS job_title
-         FROM resumes r
-         JOIN jobs j ON r.job_id = j.id
-         WHERE j.company_id = ? AND r.status = 'pending'`,
-        [companyId]
-      );
-      if (pendingResumes.length > 0) {
-        const ids = pendingResumes.map(r => r.id);
-        await pool.query(
-          `UPDATE resumes SET status = 'viewed' WHERE id IN (${ids.map(() => '?').join(',')})`,
-          ids
-        );
-        // 逐条通知学生
-        for (const resume of pendingResumes) {
-          try {
-            await NotificationTemplates.resumeStatusChanged(resume.student_id, resume.job_title, 'viewed');
-          } catch (notifyErr) {
-            console.error('发送简历查看通知失败(不影响主流程):', notifyErr);
-          }
-        }
-      }
-    } catch (autoViewErr) {
-      console.error('自动标记简历已查看失败(不影响主流程):', autoViewErr);
-    }
 
     res.json({
       code: 200,
@@ -516,14 +529,17 @@ router.get('/resumes', async (req, res) => {
 });
 
 // 3.9 PUT /api/company/resumes/:id/status - 更新简历状态
-// resumes.status ENUM: 'pending', 'viewed', 'interview', 'offered', 'rejected'
-router.put('/resumes/:id/status', async (req, res) => {
+// 三状态流转：pending → passed / rejected, passed → rejected, rejected → passed
+// resumes.status 支持值：'pending', 'approved'(映射为passed), 'rejected'
+router.put('/resumes/:id/status', requireCapability('canManageResumes'), async (req, res) => {
   try {
     const { id } = req.params;
     const { status, remark } = req.body;
     const companyId = await getCompanyId(req.user.id);
 
-    const validStatuses = ['pending', 'viewed', 'interview', 'offered', 'rejected'];
+    // 前端三状态：pending / passed / rejected
+    // 后端存储映射：passed → approved, 其他保持不变
+    const validStatuses = ['pending', 'passed', 'rejected'];
     if (!validStatuses.includes(status)) {
       return res.status(400).json({
         code: 400,
@@ -531,9 +547,16 @@ router.put('/resumes/:id/status', async (req, res) => {
       });
     }
 
+    // 状态流转校验
+    const transitions = {
+      pending: ['passed', 'rejected'],
+      passed: ['rejected'],
+      rejected: ['passed'],
+    };
+
     // 验证简历归属 (简历关联的职位属于当前企业)
     const [existing] = await pool.query(
-      `SELECT r.id, r.student_id, j.title AS job_title FROM resumes r
+      `SELECT r.id, r.status AS current_status, r.student_id, j.title AS job_title FROM resumes r
        JOIN jobs j ON r.job_id = j.id
        WHERE r.id = ? AND j.company_id = ?`,
       [id, companyId]
@@ -544,8 +567,31 @@ router.put('/resumes/:id/status', async (req, res) => {
         .json({ code: 404, message: '简历不存在或无权操作' });
     }
 
+    // 将后端状态映射为前端三状态进行流转校验
+    const currentRawStatus = existing[0].current_status;
+    let currentMappedStatus = 'pending';
+    if (currentRawStatus === 'rejected') {
+      currentMappedStatus = 'rejected';
+    } else if (['interview', 'offered', 'approved'].includes(currentRawStatus)) {
+      currentMappedStatus = 'passed';
+    } else {
+      currentMappedStatus = 'pending';
+    }
+
+    // 校验流转是否合法
+    const allowedTransitions = transitions[currentMappedStatus] || [];
+    if (!allowedTransitions.includes(status)) {
+      return res.status(400).json({
+        code: 400,
+        message: `不允许从「${currentMappedStatus}」流转到「${status}」，合法流转：${allowedTransitions.join('、')}`,
+      });
+    }
+
+    // 前端 passed 映射为后端 approved
+    const dbStatus = status === 'passed' ? 'approved' : status;
+
     let updateSql = 'UPDATE resumes SET status = ?';
-    const params = [status];
+    const params = [dbStatus];
 
     if (remark !== undefined) {
       updateSql += ', company_remark = ?';
@@ -561,17 +607,15 @@ router.put('/resumes/:id/status', async (req, res) => {
     try {
       const studentUserId = existing[0].student_id;
       const jobTitle = existing[0].job_title;
-      await NotificationTemplates.resumeStatusChanged(studentUserId, jobTitle, status);
+      await NotificationTemplates.resumeStatusChanged(studentUserId, jobTitle, dbStatus);
     } catch (notifyErr) {
       console.error('发送简历状态通知失败(不影响主流程):', notifyErr);
     }
 
     const statusMap = {
       pending: '待筛选',
-      viewed: '已查看',
-      interview: '面试',
-      offered: '录用',
-      rejected: '拒绝',
+      passed: '通过',
+      rejected: '淘汰',
     };
 
     res.json({
@@ -594,7 +638,7 @@ router.get('/stats', async (req, res) => {
       return res.json({
         code: 200,
         data: {
-          jobs: { total_jobs: 0, active_jobs: 0, inactive_jobs: 0 },
+          jobs: { total_jobs: 0, active_jobs: 0, inactive_jobs: 0, total_view_count: 0 },
           resumes: { total_resumes: 0, pending_resumes: 0, viewed_resumes: 0, interview_resumes: 0, offered_resumes: 0, rejected_resumes: 0 },
           dailyResumes: [],
           jobRanking: [],
@@ -607,8 +651,9 @@ router.get('/stats', async (req, res) => {
       `SELECT
         COUNT(*) AS total_jobs,
         SUM(CASE WHEN status = 'active' THEN 1 ELSE 0 END) AS active_jobs,
-        SUM(CASE WHEN status = 'inactive' THEN 1 ELSE 0 END) AS inactive_jobs
-      FROM jobs WHERE company_id = ?`,
+        SUM(CASE WHEN status = 'inactive' THEN 1 ELSE 0 END) AS inactive_jobs,
+        COALESCE(SUM(view_count), 0) AS total_view_count
+      FROM jobs WHERE company_id = ? AND deleted_at IS NULL`,
       [companyId]
     );
 
@@ -669,7 +714,7 @@ router.get('/stats', async (req, res) => {
 
 // 3.11 GET /api/company/talent - 人才搜索
 // students 表字段：user_id, school, major, grade, skills(JSON), job_intention, resume_url, bio
-router.get('/talent', async (req, res) => {
+router.get('/talent', requireCapability('canSearchTalent'), async (req, res) => {
   try {
     const { keyword, school, major, page = 1, pageSize = 10 } = req.query;
     const offset = (Number(page) - 1) * Number(pageSize);
@@ -702,7 +747,8 @@ router.get('/talent', async (req, res) => {
 
     // 分页
     const dataSql = `
-      SELECT s.*, u.nickname, u.email, u.avatar, u.phone, u.created_at AS registered_at
+      SELECT s.user_id, s.school, s.major, s.grade, s.skills, s.job_intention, s.resume_url, s.bio, s.created_at, s.updated_at,
+             u.nickname, u.email, u.avatar, u.phone, u.created_at AS registered_at
       ${joins} ${where}
       ORDER BY s.updated_at DESC
       LIMIT ? OFFSET ?
@@ -730,7 +776,7 @@ router.get('/talent', async (req, res) => {
 // ==================== 3.12 联系学生 ====================
 
 // POST /api/company/contact - 企业主动联系学生
-router.post('/contact', async (req, res) => {
+router.post('/contact', requireCapability('canSearchTalent'), async (req, res) => {
   try {
     const { student_id, message } = req.body;
 

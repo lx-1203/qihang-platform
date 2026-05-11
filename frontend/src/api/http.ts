@@ -19,10 +19,18 @@ const http = axios.create({
 // 是否正在刷新 Token
 let isRefreshing = false;
 // 等待刷新的请求队列
-let refreshQueue: ((token: string) => void)[] = [];
+let refreshQueue: Array<{
+  resolve: (token: string) => void;
+  reject: (error: unknown) => void;
+}> = [];
 
 function onTokenRefreshed(newToken: string) {
-  refreshQueue.forEach((cb) => cb(newToken));
+  refreshQueue.forEach(({ resolve }) => resolve(newToken));
+  refreshQueue = [];
+}
+
+function onRefreshFailed(error: unknown) {
+  refreshQueue.forEach(({ reject }) => reject(error));
   refreshQueue = [];
 }
 
@@ -74,8 +82,8 @@ http.interceptors.response.use(
       if (refreshToken && !config.url?.includes('/auth/refresh') && !config.url?.includes('/auth/logout')) {
         if (isRefreshing) {
           // 等待刷新完成后重试
-          return new Promise<string>((resolve) => {
-            refreshQueue.push(resolve);
+          return new Promise<string>((resolve, reject) => {
+            refreshQueue.push({ resolve, reject });
           }).then((newToken) => {
             config.headers.Authorization = `Bearer ${newToken}`;
             config._retry = true;
@@ -100,9 +108,9 @@ http.interceptors.response.use(
             config.headers.Authorization = `Bearer ${newToken}`;
             return http(config);
           }
-        } catch {
+        } catch (refreshError) {
           isRefreshing = false;
-          refreshQueue = [];
+          onRefreshFailed(refreshError);
         }
       }
 

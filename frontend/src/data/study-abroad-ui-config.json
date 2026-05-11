@@ -216,7 +216,7 @@
     { "icon": "FileText", "label": "文书指导", "color": "text-green-500", "bg": "bg-green-50", "link": "/study-abroad/articles" },
     { "icon": "BookOpen", "label": "语言备考", "color": "text-sky-500", "bg": "bg-sky-50", "link": "/study-abroad/articles" },
     { "icon": "DollarSign", "label": "费用估算", "color": "text-amber-500", "bg": "bg-amber-50", "link": "/study-abroad/articles" },
-    { "icon": "Headphones", "label": "1v1 咨询", "color": "text-rose-500", "bg": "bg-rose-50", "link": "/study-abroad/background" }
+    { "icon": "Headphones", "label": "背景评估", "color": "text-rose-500", "bg": "bg-rose-50", "link": "/study-abroad/background" }
   ],
 
   "serviceColorMap": {

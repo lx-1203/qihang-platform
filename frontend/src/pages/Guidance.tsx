@@ -1,23 +1,24 @@
-import { Briefcase, Target, FileText, Users, ChevronRight, CheckCircle2, ArrowRight, Eye, Clock, Loader2 } from 'lucide-react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Briefcase, Target, FileText, Users, ChevronRight, CheckCircle2, Eye, Clock, Loader2 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import http from '@/api/http';
 import { useConfigStore } from '@/store/config';
+import Breadcrumb from '@/components/ui/Breadcrumb';
 
 // 图标映射表（用于从配置动态解析图标名）
 const ICON_MAP: Record<string, typeof FileText> = { FileText, Users, Target };
 
 // 服务卡片默认配置（当后端配置不可用时作为 fallback）
+// 注意：link 仅限板块内部路径，不允许跨板块跳转
 const DEFAULT_GUIDANCE_SERVICES = [
   {
     id: 1,
-    title: '1v1 简历精修',
+    title: '简历精修',
     desc: 'BAT大厂资深HR/业务主管亲自操刀，深挖个人亮点，打造高转化率简历。',
     icon: 'FileText',
     color: 'text-blue-500',
     bgColor: 'bg-blue-50',
     features: ['逐字逐句精修', '匹配目标岗位', '突出核心竞争力', '不限次修改直至满意'],
-    link: '/mentors',
+    link: '#service-resume',
   },
   {
     id: 2,
@@ -27,7 +28,7 @@ const DEFAULT_GUIDANCE_SERVICES = [
     color: 'text-primary-500',
     bgColor: 'bg-primary-50',
     features: ['真实题库抽取', '现场录像复盘', '深入点评弱项', '面试礼仪指导'],
-    link: '/mentors',
+    link: '#service-interview',
   },
   {
     id: 3,
@@ -37,7 +38,7 @@ const DEFAULT_GUIDANCE_SERVICES = [
     color: 'text-primary-500',
     bgColor: 'bg-primary-50',
     features: ['MBTI/霍兰德测评', '行业前景分析', '个人优劣势挖掘', '制定3-5年发展路径'],
-    link: '/courses',
+    link: '#service-career-plan',
   }
 ];
 
@@ -50,8 +51,6 @@ interface ArticleItem {
 }
 
 export default function Guidance() {
-  const navigate = useNavigate();
-
   // 从 config store 读取服务卡片配置，fallback 到默认值
   const services = useConfigStore().getJson('guidance_services_config') || DEFAULT_GUIDANCE_SERVICES;
 
@@ -78,7 +77,9 @@ export default function Guidance() {
   return (
     <div className="min-h-screen bg-gray-50 pt-8 pb-16">
       <div className="container-main">
-        
+        {/* 面包屑导航 */}
+        <Breadcrumb items={[{ label: '首页', path: '/' }, { label: '就业指导' }]} />
+
         {/* Header */}
         <div className="mb-12 text-center max-w-2xl mx-auto">
           <h1 className="text-[36px] font-bold text-gray-900 flex items-center justify-center gap-3 mb-4">
@@ -116,10 +117,14 @@ export default function Guidance() {
                 </ul>
                 
                 <button
-                  onClick={() => navigate(service.link)}
+                  onClick={() => {
+                    /* 板块内部锚点跳转，不跨板块 */
+                    const el = document.querySelector(`[id="${service.link.replace('#', '')}"]`);
+                    if (el) el.scrollIntoView({ behavior: 'smooth' });
+                  }}
                   className="w-full py-3.5 rounded-xl border-2 border-primary-500 text-primary-500 font-semibold text-[15px] group-hover:bg-primary-500 group-hover:text-white transition-colors"
                 >
-                  立即预约
+                  查看详情
                 </button>
               </div>
             );
@@ -133,12 +138,13 @@ export default function Guidance() {
               <FileText className="w-6 h-6 text-primary-600" />
               精选就业文章
             </h2>
-            <Link
-              to="/guidance/articles"
+            {/* 板块内部锚点，不跨板块跳转 */}
+            <a
+              href="#articles"
               className="text-sm text-primary-600 font-medium hover:underline flex items-center gap-1"
             >
-              查看更多 <ArrowRight className="w-4 h-4" />
-            </Link>
+              查看更多 <ChevronRight className="w-4 h-4" />
+            </a>
           </div>
 
           {articlesLoading ? (
@@ -148,11 +154,10 @@ export default function Guidance() {
           ) : articles.length === 0 ? (
             <p className="text-center text-gray-400 py-8">暂无文章</p>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+            <div id="articles" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
               {articles.map((article) => (
-                <Link
+                <div
                   key={article.id}
-                  to={`/guidance/articles/${article.id}`}
                   className="block bg-white rounded-xl overflow-hidden border border-gray-100 shadow-sm hover:shadow-md hover:border-primary-200 transition-all group"
                 >
                   {article.cover ? (
@@ -184,7 +189,7 @@ export default function Guidance() {
                       </span>
                     </div>
                   </div>
-                </Link>
+                </div>
               ))}
             </div>
           )}
@@ -200,12 +205,12 @@ export default function Guidance() {
                 完成专业的职业性格测试，只需 15 分钟，获取专属你的职业发展建议报告。
               </p>
             </div>
-            <button
-              onClick={() => navigate('/courses')}
+            <a
+              href="#service-career-plan"
               className="shrink-0 bg-primary-500 hover:bg-primary-700 text-white px-8 py-4 rounded-full font-bold text-[16px] transition-colors flex items-center gap-2"
             >
               开始免费测试 <ChevronRight className="w-5 h-5" />
-            </button>
+            </a>
           </div>
         </div>
 

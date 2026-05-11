@@ -35,13 +35,13 @@ const DEFAULT_SERVICES = [
     link: '/jobs',
   },
   {
-    title: '大咖1v1',
-    desc: '行业导师实时预约',
-    detail: '来自BAT/TMD一线大厂的行业导师，一对一深度辅导',
+    title: '大咖经验',
+    desc: '行业经验内容精选',
+    detail: '来自 BAT/TMD 一线从业者的经验分享、案例拆解与成长建议',
     icon: 'Users',
     gradient: 'from-primary-500 to-primary-700',
     bg: 'bg-primary-50',
-    link: '/mentors',
+    link: '/career-plan',
   },
   {
     title: '免费课程',
@@ -50,7 +50,7 @@ const DEFAULT_SERVICES = [
     icon: 'BookOpen',
     gradient: 'from-amber-400 to-orange-500',
     bg: 'bg-amber-50',
-    link: '/courses',
+    link: '/skill-enhancement',
   },
   {
     title: '简历精修',
@@ -59,16 +59,16 @@ const DEFAULT_SERVICES = [
     icon: 'FileEdit',
     gradient: 'from-rose-400 to-red-500',
     bg: 'bg-rose-50',
-    link: '/mentors',
+    link: '/skill-enhancement',
   },
   {
     title: '模拟面试',
     desc: '真实还原全流程复盘',
-    detail: '1v1模拟真实面试场景，录像复盘+逐题点评+话术优化',
+    detail: '模拟真实面试场景，录像复盘、逐题点评与话术优化',
     icon: 'Mic',
     gradient: 'from-cyan-400 to-primary-500',
     bg: 'bg-cyan-50',
-    link: '/mentors',
+    link: '/job-recruitment',
   },
   {
     title: '数据追踪',
@@ -77,7 +77,7 @@ const DEFAULT_SERVICES = [
     icon: 'BarChart3',
     gradient: 'from-emerald-400 to-green-500',
     bg: 'bg-emerald-50',
-    link: '/guidance',
+    link: '/job-recruitment',
   },
   {
     title: '成功案例',
@@ -86,7 +86,7 @@ const DEFAULT_SERVICES = [
     icon: 'Trophy',
     gradient: 'from-lime-400 to-yellow-500',
     bg: 'bg-lime-50',
-    link: '/guidance',
+    link: '/success-cases',
   },
 ];
 
@@ -147,10 +147,10 @@ export default function ServiceGrid() {
       {/* CTA 按钮 */}
       <div className="text-center mt-10">
         <Link
-          to="/guidance"
+          to="/job-recruitment"
           className="inline-flex items-center gap-2 rounded-full px-10 py-3.5 bg-gradient-to-r from-primary-600 to-primary-700 text-white font-bold hover:from-primary-500 hover:to-primary-600 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-xl hover:shadow-primary-500/30"
         >
-          了解全部平台服务与特色
+          查看公开业务入口
           <ArrowRight className="w-4 h-4" />
         </Link>
       </div>

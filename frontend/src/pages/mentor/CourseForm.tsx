@@ -7,11 +7,11 @@ import {
   Save, X, DollarSign,
 } from 'lucide-react';
 import http from '@/api/http';
-import { COURSE_CATEGORIES } from '@/constants';
+import { COURSE_CATEGORIES, DIFFICULTY_MAP } from '@/constants';
 import { showToast } from '@/components/ui/ToastContainer';
 import FileUpload from '@/components/ui/FileUpload';
 
-// ====== 导师端 - 课程创建/编辑全页面表单 ======
+// ====== 导师端 - 资源创建/编辑全页面表单 ======
 
 interface CourseFormData {
   title: string;
@@ -41,7 +41,7 @@ const CATEGORIES = COURSE_CATEGORIES;
 
 const LOCAL_DIFFICULTY_OPTIONS = [
   { value: 'beginner', label: '入门', desc: '适合零基础学员' },
-  { value: 'intermediate', label: '进阶', desc: '需要一定基础知识' },
+  { value: 'intermediate', label: DIFFICULTY_MAP.intermediate.label, desc: '需要一定基础知识' },
   { value: 'advanced', label: '高级', desc: '适合有经验的学员' },
 ] as const;
 
@@ -106,11 +106,11 @@ export default function CourseForm() {
           setForm(loaded);
           setInitialForm(loaded);
         } else {
-          showToast('课程数据加载失败', 'error');
+          showToast('资源数据加载失败', 'error');
           navigate('/mentor/courses', { replace: true });
         }
       } catch {
-        showToast('网络请求失败，无法加载课程数据', 'error');
+        showToast('网络请求失败，无法加载资源数据', 'error');
         navigate('/mentor/courses', { replace: true });
       } finally {
         setLoading(false);
@@ -170,11 +170,11 @@ export default function CourseForm() {
   // 表单校验
   function validate(): boolean {
     const newErrors: Partial<Record<keyof CourseFormData, string>> = {};
-    if (!form.title.trim()) newErrors.title = '请输入课程标题';
-    if (!form.description.trim()) newErrors.description = '请输入课程描述';
-    if (!form.category) newErrors.category = '请选择课程分类';
-    if (!form.price.trim()) newErrors.price = '请输入课程价格';
-    else if (Number.isNaN(Number(form.price)) || Number(form.price) < 0) newErrors.price = '课程价格必须为大于等于 0 的数字';
+    if (!form.title.trim()) newErrors.title = '请输入资源标题';
+    if (!form.description.trim()) newErrors.description = '请输入资源描述';
+    if (!form.category) newErrors.category = '请选择资源分类';
+    if (!form.price.trim()) newErrors.price = '请输入资源价格';
+    else if (Number.isNaN(Number(form.price)) || Number(form.price) < 0) newErrors.price = '资源价格必须为大于等于 0 的数字';
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   }
@@ -200,10 +200,10 @@ export default function CourseForm() {
 
       if (isEdit) {
         await http.put(`/mentor/courses/${id}`, payload);
-        showToast('课程已更新', 'success');
+        showToast('资源已更新', 'success');
       } else {
         await http.post('/mentor/courses', payload);
-        showToast('课程创建成功', 'success');
+        showToast('资源创建成功', 'success');
       }
       navigate('/mentor/courses');
     } catch {
@@ -247,10 +247,10 @@ export default function CourseForm() {
           </button>
           <div>
             <h1 className="text-2xl font-bold text-gray-900">
-              {isEdit ? '编辑课程' : '创建新课程'}
+              {isEdit ? '编辑资源' : '创建新资源'}
             </h1>
             <p className="text-gray-500 text-sm mt-0.5">
-              {isEdit ? '修改课程信息后保存' : '填写课程信息并发布'}
+              {isEdit ? '修改资源信息后保存' : '填写资源信息并发布'}
             </p>
           </div>
         </div>
@@ -268,19 +268,21 @@ export default function CourseForm() {
           基本信息
         </h2>
         <div className="space-y-5">
-          {/* 课程标题 */}
+          {/* 资源标题 */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1.5">
-              课程标题 <span className="text-red-500">*</span>
+              资源标题 <span className="text-red-500">*</span>
             </label>
             <input
               type="text"
+              name="title"
+              id="title"
               value={form.title}
               onChange={e => updateField('title', e.target.value)}
               className={`w-full px-4 py-2.5 border rounded-lg text-sm focus:ring-2 focus:ring-primary-500 outline-none ${
                 errors.title ? 'border-red-300 bg-red-50' : 'border-gray-200'
               }`}
-              placeholder="如：校招简历怎么写才能过海选？"
+              placeholder="请输入课程名称"
             />
             {errors.title && (
               <p className="mt-1 text-xs text-red-500 flex items-center gap-1">
@@ -289,11 +291,11 @@ export default function CourseForm() {
             )}
           </div>
 
-          {/* 课程描述 */}
+          {/* 资源描述 */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1.5">
               <FileText className="w-4 h-4 inline mr-1" />
-              课程描述 <span className="text-red-500">*</span>
+              资源描述 <span className="text-red-500">*</span>
             </label>
             <textarea
               value={form.description}
@@ -302,7 +304,7 @@ export default function CourseForm() {
               className={`w-full px-4 py-3 border rounded-lg text-sm focus:ring-2 focus:ring-primary-500 outline-none resize-none ${
                 errors.description ? 'border-red-300 bg-red-50' : 'border-gray-200'
               }`}
-              placeholder="介绍课程内容、适合人群、学习目标..."
+              placeholder="介绍资源内容、适合人群和使用价值..."
             />
             {errors.description && (
               <p className="mt-1 text-xs text-red-500 flex items-center gap-1">
@@ -312,10 +314,10 @@ export default function CourseForm() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-            {/* 课程分类 */}
+            {/* 资源分类 */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                课程分类 <span className="text-red-500">*</span>
+                资源分类 <span className="text-red-500">*</span>
               </label>
               <select
                 value={form.category}
@@ -409,7 +411,7 @@ export default function CourseForm() {
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1.5">
               <Video className="w-4 h-4 inline mr-1" />
-              课程视频
+              资源视频
             </label>
             {form.video_url ? (
               <div className="space-y-2">
@@ -448,11 +450,11 @@ export default function CourseForm() {
             )}
           </div>
 
-          {/* 课程价格 */}
+          {/* 资源价格 */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1.5">
               <DollarSign className="w-4 h-4 inline mr-1" />
-              课程价格（元） <span className="text-red-500">*</span>
+              资源价格（元） <span className="text-red-500">*</span>
             </label>
             <input
               type="number"
@@ -498,7 +500,7 @@ export default function CourseForm() {
       >
         <h2 className="text-lg font-semibold text-gray-900 mb-5 flex items-center gap-2">
           <Tag className="w-5 h-5 text-primary-500" />
-          课程标签
+          资源标签
           <span className="text-sm font-normal text-gray-400">({form.tags.length}/10)</span>
         </h2>
 
@@ -555,7 +557,7 @@ export default function CourseForm() {
           className="flex items-center gap-2 px-6 py-2.5 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
         >
           {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-          {submitting ? '保存中...' : isEdit ? '保存修改' : '创建课程'}
+          {submitting ? '保存中...' : isEdit ? '保存修改' : '创建资源'}
         </button>
       </motion.div>
     </div>

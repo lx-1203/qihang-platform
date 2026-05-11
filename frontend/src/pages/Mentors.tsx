@@ -9,19 +9,19 @@ import { CardSkeleton } from '../components/ui/Skeleton';
 import ErrorState from '../components/ui/ErrorState';
 import EmptyState from '../components/ui/EmptyState';
 import Tag from '@/components/ui/Tag';
-import mentorsConfig from '@/data/mentors-config.json';
+import { useConfigStore } from '@/store/config';
 import { DEFAULT_AVATAR } from '@/constants';
 
 // ====== 导师列表页 ======
-// 数据从 /api/mentors 获取，筛选选项和文案从 mentors-config.json 配置文件读取
+// 数据从 /api/mentors 获取，筛选选项和文案通过配置中心读取
 
-const {
-  pageMeta,
-  expertiseOptions,
-  emptyState: emptyStateConfig,
-  errorMessages,
-  ui,
-} = mentorsConfig;
+const DEFAULT_MENTORS_CONFIG = {
+  pageMeta: { title: "职业导师团队", subtitle: "来自各行各业的资深导师，一对一为你规划职业发展路径", searchPlaceholder: "搜索导师姓名、领域、关键词..." },
+  expertiseOptions: ["全部", "简历优化", "面试辅导", "前端开发", "快消行业", "金融行业", "Case Interview", "留学申请", "职业规划"],
+  emptyState: { title: "未找到匹配的导师", description: "试试调整筛选条件或更换搜索关键词", actionText: "清除所有筛选" },
+  errorMessages: { fetchFailed: "获取导师数据失败，服务器返回异常", networkError: "网络请求失败，请检查网络连接后重试" },
+  ui: { statsTemplate: "共 {count} 位导师", ratingTemplate: "平均评分 {rating}" },
+};
 
 interface MentorItem {
   id: number;
@@ -39,6 +39,9 @@ interface MentorItem {
 }
 
 export default function Mentors() {
+  const mentorsConfig = useConfigStore(s => s?.getJson?.('mentors_page_config', DEFAULT_MENTORS_CONFIG) ?? DEFAULT_MENTORS_CONFIG);
+  const { pageMeta, expertiseOptions, emptyState: emptyStateConfig, errorMessages, ui } = mentorsConfig;
+
   const [mentors, setMentors] = useState<MentorItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -302,7 +305,7 @@ export default function Mentors() {
                 </div>
                 <span className="flex items-center gap-1 text-sm font-bold bg-gradient-to-r from-primary-600 to-primary-600 bg-clip-text text-transparent group-hover:translate-x-1 transition-transform">
                   <MessageCircle className="w-4 h-4" />
-                  预约咨询
+                  查看详情
                 </span>
               </div>
             </Link>

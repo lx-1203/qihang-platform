@@ -46,7 +46,7 @@ const PRIORITY_MAP: Record<AnnouncementPriority, { label: string; color: string 
 const ROLE_LABELS: Record<string, string> = {
   student: '学生',
   company: '企业',
-  mentor: '导师',
+  mentor: '咨询人员',
   admin: '管理员',
 };
 
@@ -446,8 +446,8 @@ export default function AdminAnnouncements() {
                     value={form.content}
                     onChange={(e) => setForm(prev => ({ ...prev, content: e.target.value }))}
                     placeholder="输入公告内容..."
-                    rows={5}
-                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-400 resize-none"
+                    rows={10}
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-400 resize-y min-h-[200px]"
                   />
                 </div>
 

@@ -19,7 +19,7 @@ import { DEFAULT_AVATAR } from '../constants';
 
 const SIDEBAR_NAV = [
   { name: '工作台总览', href: '/mentor/dashboard', icon: LayoutDashboard },
-  { name: '我的课程', href: '/mentor/courses', icon: Video },
+  { name: '我的资源', href: '/mentor/courses', icon: Video },
   { name: '资料库', href: '/mentor/resources', icon: BookOpen },
   { name: '辅导预约', href: '/mentor/appointments', icon: Calendar },
   { name: '学员管理', href: '/mentor/students', icon: Users },
@@ -94,7 +94,7 @@ export default function MentorLayout() {
   );
 
   return (
-    <div className="min-h-screen bg-gray-50 flex">
+    <div className="min-h-screen bg-gray-50 flex overflow-x-hidden">
       {/* 桌面端侧边栏 */}
       <aside className="hidden md:flex w-64 bg-slate-900 border-r border-slate-800 fixed h-full flex-col z-20 text-slate-300">
         {sidebarContent}
@@ -161,7 +161,7 @@ export default function MentorLayout() {
         </header>
 
         {/* 路由占位符 */}
-        <div className="p-4 md:p-8 flex-1 overflow-auto bg-gray-50">
+        <div className="p-4 md:p-8 flex-1 overflow-y-auto overflow-x-hidden bg-gray-50">
           <Outlet />
         </div>
       </main>

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -14,6 +14,7 @@ import { useAuthStore } from '@/store/auth';
 import { DetailSkeleton } from '../../components/ui/Skeleton';
 import ErrorState from '../../components/ui/ErrorState';
 import FileUpload from '@/components/ui/FileUpload';
+import ConfirmDialog from '@/components/ui/ConfirmDialog';
 
 // ====== 学生个人资料页 ======
 // 支持查看/编辑模式切换，个人信息编辑、技能标签管理、简历上传
@@ -60,6 +61,9 @@ export default function Profile() {
   const [saveError, setSaveError] = useState<string | null>(null);
   const [newSkill, setNewSkill] = useState('');
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const avatarInputRef = useRef<HTMLInputElement>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   // Tab 切换
   const [activeTab, setActiveTab] = useState<'profile' | 'applications' | 'favorites' | 'chat'>('profile');
@@ -210,7 +214,6 @@ export default function Profile() {
 
   // 删除简历（将 resume_url 置空并保存）
   async function handleDeleteResume() {
-    if (!confirm('确定要删除已上传的简历吗？')) return;
     try {
       const base = profile || editData;
       const updated = { ...base, resumeUrl: '' };
@@ -443,21 +446,54 @@ export default function Profile() {
                 {/* 头像区域 */}
                 <div className="flex flex-col items-center mb-6">
                   <div className="relative group">
-                    {profile.avatar ? (
+                    {/* 隐藏的文件输入 */}
+                    <input
+                      ref={avatarInputRef}
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        // 本地预览
+                        const reader = new FileReader();
+                        reader.onload = (ev) => setAvatarPreview(ev.target?.result as string);
+                        reader.readAsDataURL(file);
+                        // 上传到服务器
+                        const formData = new FormData();
+                        formData.append('file', file);
+                        http.post('/upload?category=avatar', formData)
+                          .then(res => {
+                            if (res.data?.code === 200 && res.data.data?.url) {
+                              const url = res.data.data.url;
+                              setEditData(prev => ({ ...prev, avatar: url }));
+                              setAvatarPreview(null);
+                            }
+                          })
+                          .catch(() => {
+                            setAvatarPreview(null);
+                          });
+                      }}
+                    />
+                    {/* 显示当前头像或预览 */}
+                    {(avatarPreview || profile.avatar) ? (
                       <img
-                        src={profile.avatar}
+                        src={avatarPreview || profile.avatar}
                         alt="头像"
                         className="w-24 h-24 rounded-full object-cover border-2 border-primary-200"
                         onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
                       />
                     ) : null}
-                    <div className={`w-24 h-24 bg-gradient-to-br from-primary-400 to-primary-600 rounded-full flex items-center justify-center ${profile.avatar ? 'absolute inset-0 -z-10' : ''}`}>
+                    <div className={`w-24 h-24 bg-gradient-to-br from-primary-400 to-primary-600 rounded-full flex items-center justify-center ${(avatarPreview || profile.avatar) ? 'absolute inset-0 -z-10' : ''}`}>
                       <span className="text-3xl font-bold text-white">
                         {(profile.nickname || profile.email || '学')[0]}
                       </span>
                     </div>
                     {editMode && (
-                      <div className="absolute inset-0 rounded-full bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
+                      <div
+                        onClick={() => avatarInputRef.current?.click()}
+                        className="absolute inset-0 rounded-full bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                      >
                         <Camera className="w-6 h-6 text-white" />
                       </div>
                     )}
@@ -472,7 +508,7 @@ export default function Profile() {
                       <FileUpload
                         category="avatar"
                         accept="image/*"
-                        placeholder="上传头像（JPG/PNG，最大5MB）"
+                        placeholder="点击选择新头像（JPG/PNG，最大5MB）"
                         onSuccess={(result) => setEditData({ ...editData, avatar: result.url })}
                       />
                     </div>
@@ -795,7 +831,7 @@ export default function Profile() {
                             </a>
                             <div className="flex-1" />
                             <button
-                              onClick={handleDeleteResume}
+                              onClick={() => setShowDeleteConfirm(true)}
                               className="flex items-center gap-1.5 px-3 py-1.5 text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg text-sm transition-colors font-medium"
                             >
                               <Trash2 className="w-3.5 h-3.5" />
@@ -970,7 +1006,7 @@ export default function Profile() {
               <div className="text-center py-12">
                 <Heart className="w-12 h-12 text-gray-300 mx-auto mb-3" />
                 <p className="text-gray-500">暂无收藏</p>
-                <p className="text-sm text-gray-400 mt-1">浏览职位和课程时可以收藏感兴趣的内容</p>
+                <p className="text-sm text-gray-400 mt-1">发现感兴趣的内容后可以收藏，方便后续继续查看</p>
               </div>
             ) : (
               <div className="space-y-3">
@@ -993,7 +1029,7 @@ export default function Profile() {
                     </div>
                     {fav.target_id && (
                       <a
-                        href={fav.target_type === 'course' ? `/courses/${fav.target_id}` : fav.target_type === 'mentor' ? `/mentors/${fav.target_id}` : `/jobs/${fav.target_id}`}
+                        href={fav.target_type === 'course' ? '/skill-enhancement' : fav.target_type === 'mentor' ? '/chat' : `/jobs/${fav.target_id}`}
                         className="text-gray-400 hover:text-primary-500 transition-colors"
                       >
                         <ExternalLink className="w-4 h-4" />
@@ -1131,6 +1167,18 @@ export default function Profile() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      <ConfirmDialog
+        open={showDeleteConfirm}
+        title="删除简历"
+        description="确定要删除已上传的简历吗？此操作不可撤销。"
+        variant="danger"
+        onConfirm={async () => {
+          setShowDeleteConfirm(false);
+          await handleDeleteResume();
+        }}
+        onCancel={() => setShowDeleteConfirm(false)}
+      />
     </div>
   );
 }

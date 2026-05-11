@@ -19,13 +19,12 @@ test.describe('首页测试', () => {
   });
 
   test('应该显示主要导航链接', async ({ page }) => {
-    // 导航栏内的链接（实际 Navbar 使用 "首页"、"求职招聘"、"创新创业" 等标签）
     const navbar = page.locator('nav').first();
     await expect(navbar.getByRole('link', { name: /首页/i }).first()).toBeVisible();
+    await expect(navbar.getByRole('link', { name: /能力提升/i }).first()).toBeVisible();
+    await expect(navbar.getByRole('link', { name: /升学深造/i }).first()).toBeVisible();
     await expect(navbar.getByRole('link', { name: /求职招聘/i }).first()).toBeVisible();
-    // "职业发展" 和 "升学深造" 是下拉按钮，不是 link
-    await expect(navbar.getByRole('button', { name: /职业发展/i }).first()).toBeVisible();
-    await expect(navbar.getByRole('link', { name: /创新创业/i }).first()).toBeVisible();
+    await expect(navbar.getByRole('link', { name: /创业/i }).first()).toBeVisible();
   });
 
   test('应该没有控制台错误', async ({ page }) => {
@@ -103,17 +102,20 @@ test.describe('首页测试', () => {
     await page.waitForLoadState('networkidle');
     // 快捷入口通常是带图标的链接/按钮区域
     // 检查导航到各子页面的入口存在
-    const links = page.locator('a[href="/jobs"], a[href="/courses"], a[href="/mentors"]');
+    const links = page.locator(
+      'a[href="/skill-enhancement"], a[href="/further-education"], a[href="/job-recruitment"], a[href="/entrepreneurship"]'
+    );
     const count = await links.count();
-    expect(count).toBeGreaterThanOrEqual(1);
+    expect(count).toBeGreaterThanOrEqual(3);
   });
 
-  test('热门岗位/导师/课程区域应存在', async ({ page }) => {
+  test('首页应保持极简结构而非旧内容流', async ({ page }) => {
     await page.waitForLoadState('networkidle');
-    // 页面应包含多个 section 区域
+
     const sections = page.locator('section');
     const count = await sections.count();
-    expect(count).toBeGreaterThanOrEqual(2);
+    expect(count).toBeGreaterThanOrEqual(1);
+    await expect(page.getByText(/成功案例|导师预约|热门课程|热门导师/i)).toHaveCount(0);
   });
 
   test('API 失败时页面应降级显示默认内容', async ({ page }) => {

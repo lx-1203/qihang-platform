@@ -19,50 +19,66 @@ router.use(authMiddleware, requireRole('admin'));
 // ==================== 2.1 平台数据统计 ====================
 router.get('/stats', async (req, res) => {
   try {
+    // 辅助函数：安全执行单个查询，失败返回空结果
+    async function safeQuery(sql, fallback) {
+      try {
+        const [rows] = await pool.query(sql);
+        return rows;
+      } catch (err) {
+        console.error(`统计查询失败 (${sql.slice(0, 60)}...):`, err.message);
+        return fallback || [];
+      }
+    }
+
     // 所有统计查询互不依赖，并行执行提升性能
     const [
-      [totalRows], [roleRows], [statusRows], [monthlyRows],
-      [todayRows], [trendRows],
-      [jobsCountRows], [coursesCountRows], [approvedMentorsRows], [activeJobsRows],
+      totalRows,
+      roleRows,
+      statusRows,
+      monthlyRows,
+      todayRows,
+      trendRows,
+      jobsCountRows,
+      coursesCountRows,
+      approvedMentorsRows,
+      activeJobsRows,
     ] = await Promise.all([
-      pool.query('SELECT COUNT(*) AS total FROM users'),
-      pool.query('SELECT role, COUNT(*) AS count FROM users GROUP BY role'),
-      pool.query('SELECT status, COUNT(*) AS count FROM users GROUP BY status'),
-      pool.query(`SELECT COUNT(*) AS count FROM users
-       WHERE created_at >= DATE_FORMAT(CURDATE(), '%Y-%m-01')`),
-      pool.query('SELECT COUNT(*) AS count FROM users WHERE DATE(created_at) = CURDATE()'),
-      pool.query(`SELECT DATE(created_at) AS date, COUNT(*) AS count
+      safeQuery('SELECT COUNT(*) AS total FROM users', [{ total: 0 }]),
+      safeQuery('SELECT role, COUNT(*) AS count FROM users GROUP BY role', []),
+      safeQuery('SELECT status, COUNT(*) AS count FROM users GROUP BY status', []),
+      safeQuery(`SELECT COUNT(*) AS count FROM users
+       WHERE created_at >= DATE_FORMAT(CURDATE(), '%Y-%m-01')`, [{ count: 0 }]),
+      safeQuery('SELECT COUNT(*) AS count FROM users WHERE DATE(created_at) = CURDATE()', [{ count: 0 }]),
+      safeQuery(`SELECT DATE(created_at) AS date, COUNT(*) AS count
        FROM users
        WHERE created_at >= DATE_SUB(CURDATE(), INTERVAL 6 DAY)
        GROUP BY DATE(created_at)
-       ORDER BY date ASC`),
-      pool.query('SELECT COUNT(*) AS total FROM jobs'),
-      pool.query('SELECT COUNT(*) AS total FROM courses'),
-      pool.query("SELECT COUNT(*) AS total FROM mentor_profiles WHERE status = 'approved'"),
-      pool.query("SELECT COUNT(*) AS total FROM jobs WHERE status = 'active'"),
+       ORDER BY date ASC`, []),
+      safeQuery('SELECT COUNT(*) AS total FROM jobs', [{ total: 0 }]),
+      safeQuery('SELECT COUNT(*) AS total FROM courses', [{ total: 0 }]),
+      safeQuery("SELECT COUNT(*) AS total FROM mentor_profiles WHERE status = 'approved'", [{ total: 0 }]),
+      safeQuery("SELECT COUNT(*) AS total FROM jobs WHERE status = 'active'", [{ total: 0 }]),
     ]);
 
     // 角色分布转为 map
-    
     const colors = { student: 'bg-primary-500', company: 'bg-blue-500', mentor: 'bg-emerald-500', admin: 'bg-amber-500' };
     const labels = { student: '学生', company: '企业', mentor: '导师', admin: '管理员' };
+    const userTotal = totalRows[0]?.total || 0;
     const roleDistribution = roleRows.map(r => ({
       role: labels[r.role] || r.role,
       count: r.count,
-      pct: Math.round((r.count / totalRows[0].total) * 100),
+      pct: userTotal > 0 ? Math.round((r.count / userTotal) * 100) : 0,
       color: colors[r.role] || 'bg-gray-500'
     }));
 
+    // 状态分布 — 处理 status 可能为字符串或数字
+    const activeCount = statusRows.find(s => Number(s.status) === 1)?.count || 0;
+    const disabledCount = statusRows.find(s => Number(s.status) === 0)?.count || 0;
 
-    // 状态分布
-    
-    const activeCount = statusRows.find(s => s.status === 1)?.count || 0;
-    const disabledCount = statusRows.find(s => s.status === 0)?.count || 0;
-
-    const jobsCount = jobsCountRows[0].total;
-    const coursesCount = coursesCountRows[0].total;
-    const mentorsCount = approvedMentorsRows[0].total;
-    const activeJobsCount = activeJobsRows[0].total;
+    const jobsCount = jobsCountRows[0]?.total || 0;
+    const coursesCount = coursesCountRows[0]?.total || 0;
+    const mentorsCount = approvedMentorsRows[0]?.total || 0;
+    const activeJobsCount = activeJobsRows[0]?.total || 0;
 
     const trendMap = new Map(
       trendRows.map(row => {
@@ -77,29 +93,43 @@ router.get('/stats', async (req, res) => {
       return trendMap.get(key) || 0;
     });
 
-    // 获取额外的数据
-    const [[companiesCountRows], [pendingCompaniesRows], [pendingMentorsRows], [todayResumeRows], [totalAppointmentsRows]] = await Promise.all([
-      pool.query("SELECT COUNT(*) AS total FROM users WHERE role = 'company'"),
-      pool.query("SELECT COUNT(*) AS total FROM companies WHERE verify_status = 'pending'"),
-      pool.query("SELECT COUNT(*) AS total FROM mentor_profiles WHERE status = 'pending'"),
-      pool.query("SELECT COUNT(*) AS total FROM resumes WHERE DATE(created_at) = CURDATE()"),
-      pool.query("SELECT COUNT(*) AS total FROM appointments")
+    // 获取额外的数据（独立 try-catch）
+    const [extras] = await Promise.all([
+      (async () => {
+        try {
+          const [companiesRows] = await pool.query("SELECT COUNT(*) AS total FROM users WHERE role = 'company'");
+          const [pendingCompanies] = await pool.query("SELECT COUNT(*) AS total FROM companies WHERE verify_status = 'pending'");
+          const [pendingMentors] = await pool.query("SELECT COUNT(*) AS total FROM mentor_profiles WHERE status = 'pending'");
+          const [todayResume] = await pool.query("SELECT COUNT(*) AS total FROM resumes WHERE DATE(created_at) = CURDATE()");
+          const [totalAppointments] = await pool.query("SELECT COUNT(*) AS total FROM appointments");
+          return {
+            totalCompanies: companiesRows[0]?.total || 0,
+            pendingCompanies: pendingCompanies[0]?.total || 0,
+            pendingMentors: pendingMentors[0]?.total || 0,
+            todayResume: todayResume[0]?.total || 0,
+            totalAppointments: totalAppointments[0]?.total || 0,
+          };
+        } catch (err) {
+          console.error('统计数据查询失败:', err.message);
+          return { totalCompanies: 0, pendingCompanies: 0, pendingMentors: 0, todayResume: 0, totalAppointments: 0 };
+        }
+      })()
     ]);
 
     res.json({
       code: 200,
       data: {
-        totalUsers: totalRows[0].total,
+        totalUsers: userTotal,
         onlineJobs: activeJobsCount,
         totalCourses: coursesCount,
-        totalCompanies: companiesCountRows[0].total,
+        totalCompanies: extras.totalCompanies,
         certifiedMentors: mentorsCount,
-        totalAppointments: totalAppointmentsRows[0].total,
-        todayRegister: todayRows[0].count,
-        todayResume: todayResumeRows[0].total,
+        totalAppointments: extras.totalAppointments,
+        todayRegister: todayRows[0]?.count || 0,
+        todayResume: extras.todayResume,
         weekActive: activeCount,
-        pendingCompanies: pendingCompaniesRows[0].total,
-        pendingMentors: pendingMentorsRows[0].total,
+        pendingCompanies: extras.pendingCompanies,
+        pendingMentors: extras.pendingMentors,
         pendingReports: 0,
         roleDistribution: roleDistribution,
         regTrend,
@@ -107,7 +137,16 @@ router.get('/stats', async (req, res) => {
     });
   } catch (err) {
     console.error('获取平台统计失败:', err);
-    res.status(500).json({ code: 500, message: '服务器内部错误' });
+    // 返回部分数据而不是完全失败
+    res.json({
+      code: 200,
+      data: {
+        totalUsers: 0, onlineJobs: 0, totalCourses: 0, totalCompanies: 0,
+        certifiedMentors: 0, totalAppointments: 0, todayRegister: 0, todayResume: 0,
+        weekActive: 0, pendingCompanies: 0, pendingMentors: 0, pendingReports: 0,
+        roleDistribution: [], regTrend: [0, 0, 0, 0, 0, 0, 0],
+      },
+    });
   }
 });
 
@@ -120,6 +159,9 @@ router.get('/users', async (req, res) => {
       keyword = '',
       role = '',
       status = '',
+      realNameStatus = '',
+      careerPlanStatus = '',
+      developmentDirections = '',
     } = req.query;
 
     const offset = (Number(page) - 1) * Number(pageSize);
@@ -129,29 +171,34 @@ router.get('/users', async (req, res) => {
     const params = [];
 
     if (keyword) {
-      where += ' AND (email LIKE ? OR nickname LIKE ?)';
-      params.push(`%${keyword}%`, `%${keyword}%`);
+      where += ' AND (u.email LIKE ? OR u.nickname LIKE ? OR u.phone LIKE ?)';
+      params.push(`%${keyword}%`, `%${keyword}%`, `%${keyword}%`);
     }
     if (role && role !== 'all') {
-      where += ' AND role = ?';
+      where += ' AND u.role = ?';
       params.push(role);
     }
     if (status !== '' && status !== 'all') {
-      where += ' AND status = ?';
+      where += ' AND u.status = ?';
       params.push(Number(status));
     }
 
     // 总数
     const [countRows] = await pool.query(
-      `SELECT COUNT(*) AS total FROM users ${where}`,
+      `SELECT COUNT(*) AS total FROM users u
+       LEFT JOIN students s ON s.user_id = u.id
+       ${where}`,
       params
     );
     const total = countRows[0].total;
 
-    // 分页查询（不返回密码字段）
+    // 分页查询（含实名状态、生涯规划状态、发展方向）
     const [users] = await pool.query(
-      `SELECT id, email, nickname, role, avatar, phone, status, created_at, updated_at
-       FROM users ${where} ORDER BY created_at DESC LIMIT ? OFFSET ?`,
+      `SELECT u.id, u.email, u.nickname, u.role, u.avatar, u.phone, u.status, u.created_at, u.updated_at,
+              s.school, s.major, s.grade, s.skills, s.job_intention
+       FROM users u
+       LEFT JOIN students s ON s.user_id = u.id
+       ${where} ORDER BY u.created_at DESC LIMIT ? OFFSET ?`,
       [...params, limit, offset]
     );
 
@@ -182,29 +229,36 @@ router.get('/users/export', async (req, res) => {
     const params = [];
 
     if (keyword) {
-      where += ' AND (email LIKE ? OR nickname LIKE ?)';
-      params.push(`%${keyword}%`, `%${keyword}%`);
+      where += ' AND (u.email LIKE ? OR u.nickname LIKE ? OR u.phone LIKE ?)';
+      params.push(`%${keyword}%`, `%${keyword}%`, `%${keyword}%`);
     }
     if (role && role !== 'all') {
-      where += ' AND role = ?';
+      where += ' AND u.role = ?';
       params.push(role);
     }
     if (status !== '' && status !== 'all') {
-      where += ' AND status = ?';
+      where += ' AND u.status = ?';
       params.push(Number(status));
     }
 
     const [users] = await pool.query(
-      `SELECT id, nickname AS name, email, role, status, phone, created_at
-       FROM users ${where} ORDER BY created_at DESC`,
+      `SELECT u.id, u.nickname AS name, u.email, u.role, u.status, u.phone, u.created_at,
+              iv.status AS real_name_status,
+              s.school, s.major, s.grade,
+              cpp.graduation_year, cpp.target_industry, cpp.target_position,
+              cpp.development_directions
+       FROM users u
+       LEFT JOIN identity_verifications iv ON iv.user_id = u.id
+       LEFT JOIN students s ON s.user_id = u.id
+       LEFT JOIN career_plan_profiles cpp ON cpp.user_id = u.id
+       ${where.replace(/WHERE 1=1/, 'WHERE 1=1')} ORDER BY u.created_at DESC`,
       params
     );
 
-    // 生成 CSV 内容（UTF-8 BOM）
     const BOM = '\uFEFF';
-    const headers = 'id,name,email,role,status,phone,created_at\n';
+    const headers = 'id,name,email,role,status,phone,created_at,real_name_status,school,major,grade,graduation_year,target_industry,target_position,development_directions\n';
     const rows = users.map(u =>
-      `${u.id},"${sanitizeCsvField(u.name)}","${sanitizeCsvField(u.email)}","${sanitizeCsvField(u.role)}",${u.status},"${sanitizeCsvField(u.phone)}","${u.created_at}"`
+      `${u.id},"${sanitizeCsvField(u.name)}","${sanitizeCsvField(u.email)}","${sanitizeCsvField(u.role)}",${u.status},"${sanitizeCsvField(u.phone)}","${u.created_at}","${sanitizeCsvField(u.real_name_status)}","${sanitizeCsvField(u.school)}","${sanitizeCsvField(u.major)}","${sanitizeCsvField(u.grade)}","${sanitizeCsvField(u.graduation_year)}","${sanitizeCsvField(u.target_industry)}","${sanitizeCsvField(u.target_position)}","${sanitizeCsvField(u.development_directions)}"`
     ).join('\n');
     const csv = BOM + headers + rows;
 
@@ -217,7 +271,30 @@ router.get('/users/export', async (req, res) => {
   }
 });
 
-// ==================== 2.2.2 获取单个用户详情（含关联资料） ====================
+// ==================== 2.2.2 获取用户职业规划详情 ====================
+router.get('/users/:id/career-plan', async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const [cpRows] = await pool.query(
+      `SELECT id, user_id, status, development_directions, graduation_year,
+              target_city, target_industry, target_position, created_at, updated_at
+       FROM career_plan_profiles WHERE user_id = ?`,
+      [id]
+    );
+
+    if (cpRows.length === 0) {
+      return res.json({ code: 200, data: null, message: '该用户暂无职业规划数据' });
+    }
+
+    res.json({ code: 200, data: cpRows[0] });
+  } catch (err) {
+    console.error('获取用户职业规划失败:', err);
+    res.status(500).json({ code: 500, message: '服务器内部错误' });
+  }
+});
+
+// ==================== 2.2.3 获取单个用户详情（含关联资料） ====================
 router.get('/users/:id', async (req, res) => {
   try {
     const { id } = req.params;
@@ -234,17 +311,50 @@ router.get('/users/:id', async (req, res) => {
 
     const user = userRows[0];
     let profile = null;
+    let identityVerification = null;
+    let careerPlan = null;
 
     // 根据角色查询关联资料
     if (user.role === 'student') {
-      const [studentRows] = await pool.query('SELECT * FROM students WHERE user_id = ?', [id]);
+      const [studentRows] = await pool.query(
+        'SELECT id, user_id, school, major, grade, skills, job_intention, resume_url, bio, created_at, updated_at FROM students WHERE user_id = ?',
+        [id]
+      );
       profile = studentRows.length > 0 ? studentRows[0] : null;
     } else if (user.role === 'company') {
-      const [companyRows] = await pool.query('SELECT * FROM companies WHERE user_id = ?', [id]);
+      const [companyRows] = await pool.query(
+        'SELECT id, user_id, company_name, industry, scale, description, logo, website, address, phone, wechat, contact_email, verify_status, verify_remark, created_at, updated_at FROM companies WHERE user_id = ?',
+        [id]
+      );
       profile = companyRows.length > 0 ? companyRows[0] : null;
     } else if (user.role === 'mentor') {
-      const [mentorRows] = await pool.query('SELECT * FROM mentor_profiles WHERE user_id = ?', [id]);
+      const [mentorRows] = await pool.query(
+        'SELECT id, user_id, name, title, avatar, bio, expertise, tags, rating, rating_count, price, available_time, phone, wechat, contact_email, credential_url, credential_description, verified_badge, verify_status, verify_remark, status, created_at, updated_at FROM mentor_profiles WHERE user_id = ?',
+        [id]
+      );
       profile = mentorRows.length > 0 ? mentorRows[0] : null;
+    }
+
+    // 查询实名认证信息
+    try {
+      const [ivRows] = await pool.query(
+        'SELECT id, user_id, real_name, id_number, phone, document_url, status, reject_reason, created_at, updated_at FROM identity_verifications WHERE user_id = ?',
+        [id]
+      );
+      identityVerification = ivRows.length > 0 ? ivRows[0] : null;
+    } catch (e) {
+      // 表不存在时忽略
+    }
+
+    // 查询生涯规划信息
+    try {
+      const [cpRows] = await pool.query(
+        'SELECT id, user_id, full_name, school, major, graduation_year, target_city, target_industry, target_role, development_directions, self_summary, status, created_at, updated_at FROM career_plan_profiles WHERE user_id = ?',
+        [id]
+      );
+      careerPlan = cpRows.length > 0 ? cpRows[0] : null;
+    } catch (e) {
+      // 表不存在时忽略
     }
 
     res.json({
@@ -252,6 +362,8 @@ router.get('/users/:id', async (req, res) => {
       data: {
         user,
         profile,
+        identityVerification,
+        careerPlan,
       },
     });
   } catch (err) {
@@ -260,7 +372,102 @@ router.get('/users/:id', async (req, res) => {
   }
 });
 
-// ==================== 2.3 启用/禁用用户 ====================
+// ==================== 2.3 通用用户信息更新（is_active / role） ====================
+router.put('/users/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { is_active, role } = req.body;
+
+    if (is_active === undefined && role === undefined) {
+      return res.status(400).json({ code: 400, message: '请提供 is_active 或 role 参数' });
+    }
+
+    if (Number(id) === req.user.id) {
+      return res.status(400).json({ code: 400, message: '不能修改自己的账号' });
+    }
+
+    const [users] = await pool.query(
+      'SELECT id, nickname, role, status FROM users WHERE id = ?',
+      [id]
+    );
+
+    if (users.length === 0) {
+      return res.status(404).json({ code: 404, message: '用户不存在' });
+    }
+
+    const targetUser = users[0];
+
+    if (is_active !== undefined) {
+      if (![0, 1].includes(Number(is_active))) {
+        return res.status(400).json({ code: 400, message: 'is_active 必须为 0 或 1' });
+      }
+
+      if (targetUser.role === 'admin' && Number(is_active) === 0) {
+        return res.status(403).json({ code: 403, message: '不能禁用管理员账号' });
+      }
+
+      await pool.query('UPDATE users SET status = ? WHERE id = ?', [Number(is_active), id]);
+
+      const action = Number(is_active) === 0 ? 'disable_user' : 'enable_user';
+      try {
+        await pool.query(
+          `INSERT INTO audit_logs (admin_id, action, target_type, target_id, details, created_at)
+           VALUES (?, ?, 'user', ?, ?, NOW())`,
+          [
+            req.user.id,
+            action,
+            id,
+            JSON.stringify({
+              target_nickname: targetUser.nickname,
+              previous_status: targetUser.status,
+              new_status: Number(is_active),
+            }),
+          ]
+        );
+      } catch (logErr) {
+        console.warn('[admin] 审计日志写入失败:', logErr.message);
+      }
+
+      console.log(`[admin] ${req.user.nickname} ${Number(is_active) === 0 ? '禁用' : '启用'}了用户 ${targetUser.nickname}`);
+    }
+
+    if (role !== undefined) {
+      const allowedRoles = ['student', 'company', 'mentor', 'admin'];
+      if (!allowedRoles.includes(role)) {
+        return res.status(400).json({ code: 400, message: '无效的角色类型' });
+      }
+
+      await pool.query('UPDATE users SET role = ? WHERE id = ?', [role, id]);
+
+      try {
+        await pool.query(
+          `INSERT INTO audit_logs (admin_id, action, target_type, target_id, details, created_at)
+           VALUES (?, 'role_change', 'user', ?, ?, NOW())`,
+          [
+            req.user.id,
+            id,
+            JSON.stringify({
+              target_nickname: targetUser.nickname,
+              previous_role: targetUser.role,
+              new_role: role,
+            }),
+          ]
+        );
+      } catch (logErr) {
+        console.warn('[admin] 审计日志写入失败:', logErr.message);
+      }
+
+      console.log(`[admin] ${req.user.nickname} 将用户 ${targetUser.nickname} 的角色从 ${targetUser.role} 变更为 ${role}`);
+    }
+
+    res.json({ code: 200, message: '用户信息已更新' });
+  } catch (err) {
+    console.error('更新用户信息失败:', err);
+    res.status(500).json({ code: 500, message: '服务器内部错误' });
+  }
+});
+
+// ==================== 2.4 启用/禁用用户 ====================
 router.put('/users/:id/status', async (req, res) => {
   try {
     const { id } = req.params;
@@ -275,14 +482,51 @@ router.put('/users/:id/status', async (req, res) => {
       return res.status(400).json({ code: 400, message: '不能禁用自己的账号' });
     }
 
-    const [result] = await pool.query(
+    // 获取目标用户信息
+    const [users] = await pool.query(
+      'SELECT id, nickname, role, status FROM users WHERE id = ?',
+      [id]
+    );
+
+    if (users.length === 0) {
+      return res.status(404).json({ code: 404, message: '用户不存在' });
+    }
+
+    const targetUser = users[0];
+
+    // 不能禁用管理员账号
+    if (targetUser.role === 'admin' && Number(status) === 0) {
+      return res.status(403).json({ code: 403, message: '不能禁用管理员账号' });
+    }
+
+    await pool.query(
       'UPDATE users SET status = ? WHERE id = ?',
       [Number(status), id]
     );
 
-    if (result.affectedRows === 0) {
-      return res.status(404).json({ code: 404, message: '用户不存在' });
+    // 记录操作日志
+    const action = Number(status) === 0 ? 'disable_user' : 'enable_user';
+    try {
+      await pool.query(
+        `INSERT INTO audit_logs (admin_id, action, target_type, target_id, details, created_at)
+         VALUES (?, ?, 'user', ?, ?, NOW())`,
+        [
+          req.user.id,
+          action,
+          id,
+          JSON.stringify({
+            target_nickname: targetUser.nickname,
+            previous_status: targetUser.status,
+            new_status: Number(status),
+          }),
+        ]
+      );
+    } catch (logErr) {
+      // 日志写入失败不影响主流程
+      console.warn('[admin] 审计日志写入失败:', logErr.message);
     }
+
+    console.log(`[admin] ${req.user.nickname} ${Number(status) === 0 ? '禁用' : '启用'}了用户 ${targetUser.nickname}`);
 
     res.json({ code: 200, message: status === 1 ? '用户已启用' : '用户已禁用' });
   } catch (err) {
@@ -374,9 +618,9 @@ router.get('/companies', async (req, res) => {
     const total = countRows[0].total;
 
     const [companies] = await pool.query(
-      `SELECT u.id, u.email, u.nickname, u.avatar, u.phone, u.status AS user_status, u.created_at,
+      `SELECT u.id, u.id AS user_id, u.email, u.nickname, u.avatar, u.phone, u.status AS user_status, u.created_at,
               c.id AS company_id, c.company_name, c.industry, c.scale, c.description,
-              c.logo, c.website, c.address,
+              c.logo, c.website, c.address, c.phone AS company_phone, c.wechat, c.contact_email,
               COALESCE(c.verify_status, 'pending') AS verify_status,
               c.verify_remark
        FROM users u
@@ -437,8 +681,10 @@ router.put('/companies/:id/verify', async (req, res) => {
       );
     }
 
-    // 同步 users.status（approved → 1，rejected → 0）
-    await pool.query('UPDATE users SET status = ? WHERE id = ?', [status === 'approved' ? 1 : 0, id]);
+    // 仅 approved 时启用账号（驳回不冻结，企业仍可登录查看驳回原因）
+    if (status === 'approved') {
+      await pool.query('UPDATE users SET status = 1 WHERE id = ?', [id]);
+    }
 
     // 通知企业用户审核结果
     try {
@@ -485,7 +731,7 @@ router.get('/mentors', async (req, res) => {
     const total = countRows[0].total;
 
     const [mentors] = await pool.query(
-      `SELECT u.id, u.email, u.nickname, u.avatar, u.phone, u.status AS user_status, u.created_at,
+      `SELECT u.id, u.id AS user_id, u.email, u.nickname, u.avatar, u.phone, u.status AS user_status, u.created_at,
               mp.id AS profile_id, mp.name, mp.title, mp.bio, mp.expertise, mp.tags,
               mp.rating, mp.price, mp.available_time,
               COALESCE(mp.verify_status, 'pending') AS verify_status,
@@ -535,21 +781,39 @@ router.put('/mentors/:id/verify', async (req, res) => {
 
     // 同步更新 mentor_profiles 表的审核状态（approved/rejected）
     const verifyStatus = Number(status) === 1 ? 'approved' : 'rejected';
+    // 审核通过时自动颁发的认证标签
+    const badge = Number(status) === 1 ? (remark || '认证导师') : null;
     const [existing] = await pool.query('SELECT id FROM mentor_profiles WHERE user_id = ?', [id]);
     if (existing.length > 0) {
-      await pool.query(
-        'UPDATE mentor_profiles SET verify_status = ?, verify_remark = ? WHERE user_id = ?',
-        [verifyStatus, remark, id]
-      );
+      if (Number(status) === 1) {
+        // 审核通过：同时更新认证标签、verified_badge和认证时间
+        await pool.query(
+          'UPDATE mentor_profiles SET verify_status = ?, verify_remark = ?, cert_badge = COALESCE(NULLIF(cert_badge, \'\'), \'认证导师\'), verified_badge = ?, cert_verified_at = NOW() WHERE user_id = ?',
+          [verifyStatus, remark, badge, id]
+        );
+      } else {
+        await pool.query(
+          'UPDATE mentor_profiles SET verify_status = ?, verify_remark = ? WHERE user_id = ?',
+          [verifyStatus, remark, id]
+        );
+      }
     } else {
+      const insertFields = ['user_id', 'verify_status', 'verify_remark'];
+      const insertValues = [id, verifyStatus, remark];
+      if (Number(status) === 1) {
+        insertFields.push('cert_badge', 'verified_badge', 'cert_verified_at');
+        insertValues.push('认证导师', badge, null); // NOW() 在 MySQL 端处理
+      }
       await pool.query(
-        'INSERT INTO mentor_profiles (user_id, verify_status, verify_remark) VALUES (?, ?, ?)',
-        [id, verifyStatus, remark]
+        `INSERT INTO mentor_profiles (${insertFields.join(', ')}) VALUES (${insertFields.map(() => '?').join(', ')})`,
+        insertValues
       );
     }
 
-    // 同步 users.status（1 = 通过，0 = 拒绝）
-    await pool.query('UPDATE users SET status = ? WHERE id = ?', [Number(status), id]);
+    // 仅 approved 时启用账号（驳回不冻结，导师仍可登录查看驳回原因）
+    if (Number(status) === 1) {
+      await pool.query('UPDATE users SET status = 1 WHERE id = ?', [id]);
+    }
 
     // 通知导师用户审核结果
     try {
@@ -600,7 +864,7 @@ router.get('/jobs', async (req, res) => {
 
     // 分页查询（JOIN companies 获取 user_id 用于审核反馈通知）
     const [jobs] = await pool.query(
-      `SELECT j.*, c.user_id AS company_user_id FROM jobs j
+      `SELECT j.id, j.title, j.company_id, j.company_name, j.logo, j.location, j.salary, j.type, j.category, j.tags, j.description, j.requirements, j.urgent, j.status, j.view_count, j.created_at, c.user_id AS company_user_id FROM jobs j
        LEFT JOIN companies c ON j.company_id = c.id
        ${where} ORDER BY j.created_at DESC LIMIT ? OFFSET ?`,
       [...params, limit, offset]
@@ -682,7 +946,7 @@ router.get('/courses', async (req, res) => {
 
     // 分页查询（JOIN mentor_profiles 获取 user_id 用于审核反馈通知）
     const [courses] = await pool.query(
-      `SELECT co.*, mp.user_id AS mentor_user_id FROM courses co
+      `SELECT co.id, co.title, co.mentor_id, co.mentor_name, co.description, co.category, co.cover, co.video_url, co.duration, co.difficulty, co.price, co.tags, co.views, co.rating, co.rating_count, co.status, co.created_at, mp.user_id AS mentor_user_id FROM courses co
        LEFT JOIN mentor_profiles mp ON co.mentor_id = mp.id
        ${where} ORDER BY co.created_at DESC LIMIT ? OFFSET ?`,
       [...params, limit, offset]
@@ -794,7 +1058,100 @@ router.get('/appointments', async (req, res) => {
   }
 });
 
-// ==================== 2.15 操作审计日志 ====================
+// ==================== 2.15 审核中心 ====================
+router.get('/review-center', async (req, res) => {
+  try {
+    const { keyword = '', scope = 'all' } = req.query;
+    const params = [];
+    let where = 'WHERE u.role IN (?, ?)';
+    params.push('company', 'mentor');
+
+    if (keyword) {
+      where += ' AND (u.nickname LIKE ? OR u.email LIKE ? OR u.phone LIKE ?)';
+      const kw = `%${keyword}%`;
+      params.push(kw, kw, kw);
+    }
+
+    // 先从 users + companies + mentor_profiles 获取基础数据
+    let sql = `
+      SELECT u.id AS userId, u.role, u.nickname, u.email, u.phone,
+             u.created_at AS createdAt,
+             c.company_name AS companyName, c.id AS companyUserId, c.verify_status AS companyStatus,
+             mp.name AS mentorName, mp.user_id AS mentorUserId, mp.verify_status AS mentorStatus
+      FROM users u
+      LEFT JOIN companies c ON c.user_id = u.id
+      LEFT JOIN mentor_profiles mp ON mp.user_id = u.id
+      ${where}
+      ORDER BY u.created_at DESC
+    `;
+
+    const [rows] = await pool.query(sql, params);
+
+    // 尝试获取 identity_verifications 和 career_plan_profiles 数据（表可能不存在）
+    let ivMap = {};
+    let cpMap = {};
+    try {
+      const [ivRows] = await pool.query(
+        'SELECT user_id, id AS identityVerificationId, real_name AS identityRealName, status AS identityStatus FROM identity_verifications'
+      );
+      for (const iv of ivRows) {
+        ivMap[iv.user_id] = iv;
+      }
+    } catch (e) {
+      // identity_verifications 表不存在，使用空数据
+    }
+    try {
+      const [cpRows] = await pool.query(
+        'SELECT user_id, id AS careerPlanId, development_directions FROM career_plan_profiles'
+      );
+      for (const cp of cpRows) {
+        cpMap[cp.user_id] = cp;
+      }
+    } catch (e) {
+      // career_plan_profiles 表不存在，使用空数据
+    }
+
+    // 组装记录
+    const records = rows.map((row) => {
+      const iv = ivMap[row.userId] || {};
+      const cp = cpMap[row.userId] || {};
+      return {
+        userId: row.userId,
+        role: row.role,
+        nickname: row.nickname || '',
+        email: row.email || '',
+        phone: row.phone || '',
+        createdAt: row.createdAt || '',
+        identityVerificationId: iv.identityVerificationId || null,
+        identityStatus: iv.identityStatus || 'missing',
+        identityRealName: iv.identityRealName || '',
+        careerPlanId: cp.careerPlanId || null,
+        careerPlanName: '',
+        developmentDirections: cp.development_directions ? (typeof cp.development_directions === 'string' ? JSON.parse(cp.development_directions) : cp.development_directions) : [],
+        companyUserId: row.companyUserId || null,
+        companyName: row.companyName || '',
+        companyStatus: row.companyStatus || 'missing',
+        mentorUserId: row.mentorUserId || null,
+        mentorName: row.mentorName || '',
+        mentorStatus: row.mentorStatus || 'missing',
+      };
+    });
+
+    // scope 筛选（在前端按 tab 切换）
+    const filtered = scope === 'company'
+      ? records.filter((r) => r.role === 'company')
+      : scope === 'mentor'
+        ? records.filter((r) => r.role === 'mentor')
+        : records;
+
+    res.json({ code: 200, data: { records: filtered } });
+  } catch (err) {
+    console.error('获取审核中心数据失败:', err);
+    res.status(500).json({ code: 500, message: '服务器内部错误' });
+  }
+});
+
+// ==================== 2.16 操作审计日志 ====================
 router.get('/audit-logs', async (req, res) => {
   try {
     const {
@@ -820,7 +1177,7 @@ router.get('/audit-logs', async (req, res) => {
       params.push(target_type);
     }
     if (operator_id) {
-      where += ' AND operator_id = ?';
+      where += ' AND al.operator_id = ?';
       params.push(Number(operator_id));
     }
 
@@ -829,14 +1186,17 @@ router.get('/audit-logs', async (req, res) => {
     let logs = [];
     try {
       const [countRows] = await pool.query(
-        `SELECT COUNT(*) AS total FROM audit_logs ${where}`,
+        `SELECT COUNT(*) AS total FROM audit_logs al ${where}`,
         params
       );
       total = countRows[0].total;
 
       [logs] = await pool.query(
-        `SELECT * FROM audit_logs ${where}
-         ORDER BY created_at DESC
+        `SELECT al.*, u.nickname AS operator_nickname
+         FROM audit_logs al
+         LEFT JOIN users u ON al.operator_id = u.id
+         ${where}
+         ORDER BY al.created_at DESC
          LIMIT ? OFFSET ?`,
         [...params, limit, offset]
       );
@@ -900,7 +1260,7 @@ router.get('/articles', async (req, res) => {
     const total = countRows[0].total;
 
     const [articles] = await pool.query(
-      `SELECT * FROM articles ${where} ORDER BY created_at DESC LIMIT ? OFFSET ?`,
+      `SELECT id, title, summary, content, category, cover, author, view_count, status, created_at FROM articles ${where} ORDER BY created_at DESC LIMIT ? OFFSET ?`,
       [...params, limit, offset]
     );
 
@@ -926,7 +1286,7 @@ router.get('/articles', async (req, res) => {
 router.get('/articles/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const [rows] = await pool.query('SELECT * FROM articles WHERE id = ?', [id]);
+    const [rows] = await pool.query('SELECT id, title, summary, content, category, cover, author, view_count, status, created_at FROM articles WHERE id = ?', [id]);
     
     if (rows.length === 0) {
       return res.status(404).json({ code: 404, message: '文章不存在' });
@@ -1037,7 +1397,7 @@ router.get('/universities', async (req, res) => {
     const offset = (Math.max(1, Number(page)) - 1) * Number(pageSize);
 
     const [list] = await pool.query(
-      `SELECT u.*, (SELECT COUNT(*) FROM programs p WHERE p.university_id = u.id) AS program_count
+      `SELECT u.id, u.name_zh, u.name_en, u.region, u.country, u.city, u.logo, u.cover, u.qs_ranking, u.us_news_ranking, u.the_ranking, u.description, u.highlights, u.gpa_min, u.toefl_min, u.ielts_min, u.gre_required, u.gmat_required, u.tuition_min, u.tuition_max, u.website, u.apply_link, u.status, u.created_at, (SELECT COUNT(*) FROM programs p WHERE p.university_id = u.id) AS program_count
        FROM universities u WHERE ${where} ORDER BY u.qs_ranking IS NULL, u.qs_ranking ASC, u.id DESC LIMIT ? OFFSET ?`,
       [...params, Number(pageSize), offset]
     );
@@ -1052,7 +1412,7 @@ router.get('/universities', async (req, res) => {
 // 3.2 院校详情
 router.get('/universities/:id', async (req, res) => {
   try {
-    const [rows] = await pool.query('SELECT * FROM universities WHERE id = ?', [req.params.id]);
+    const [rows] = await pool.query('SELECT id, name_zh, name_en, region, country, city, logo, cover, qs_ranking, us_news_ranking, the_ranking, description, highlights, gpa_min, toefl_min, ielts_min, gre_required, gmat_required, tuition_min, tuition_max, website, apply_link, status, created_at FROM universities WHERE id = ?', [req.params.id]);
     if (rows.length === 0) return res.status(404).json({ code: 404, message: '院校不存在' });
     res.json({ code: 200, data: rows[0] });
   } catch (err) {
@@ -1661,7 +2021,7 @@ router.get('/jobs/:id', async (req, res) => {
   try {
     const { id } = req.params;
     const [rows] = await pool.query(
-      `SELECT j.*, c.user_id AS company_user_id
+      `SELECT j.id, j.title, j.company_id, j.company_name, j.logo, j.location, j.salary, j.type, j.category, j.tags, j.description, j.requirements, j.urgent, j.status, j.view_count, j.created_at, c.user_id AS company_user_id
        FROM jobs j LEFT JOIN companies c ON j.company_id = c.id
        WHERE j.id = ?`, [id]
     );
@@ -1682,7 +2042,7 @@ router.get('/courses/:id', async (req, res) => {
   try {
     const { id } = req.params;
     const [rows] = await pool.query(
-      `SELECT c.*, m.user_id AS mentor_user_id
+      `SELECT c.id, c.title, c.mentor_id, c.mentor_name, c.description, c.category, c.cover, c.video_url, c.duration, c.difficulty, c.price, c.tags, c.views, c.rating, c.rating_count, c.status, c.created_at, m.user_id AS mentor_user_id
        FROM courses c LEFT JOIN mentor_profiles m ON c.mentor_id = m.user_id
        WHERE c.id = ?`, [id]
     );
@@ -1744,7 +2104,7 @@ router.get('/competitions', async (req, res) => {
     const [countRows] = await pool.query(`SELECT COUNT(*) AS total FROM competitions ${where}`, params);
     const total = countRows[0].total;
     const offset = (Math.max(1, Number(page)) - 1) * Number(pageSize);
-    const [list] = await pool.query(`SELECT * FROM competitions ${where} ORDER BY created_at DESC LIMIT ? OFFSET ?`, [...params, Number(pageSize), offset]);
+    const [list] = await pool.query(`SELECT id, name, level, organizer, status, deadline, description, registration_url, tags, created_at FROM competitions ${where} ORDER BY created_at DESC LIMIT ? OFFSET ?`, [...params, Number(pageSize), offset]);
     res.json({ code: 200, data: { list, total, page: Number(page), pageSize: Number(pageSize) } });
   } catch (err) {
     console.error('获取竞赛列表失败:', err);
@@ -1760,7 +2120,7 @@ router.post('/competitions', async (req, res) => {
       'INSERT INTO competitions (name, level, organizer, status, deadline, description, registration_url, tags) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
       [name, level || '国家级', organizer || '', status || '报名中', deadline || null, description || '', registration_url || '', tags ? JSON.stringify(tags) : null]
     );
-    const [rows] = await pool.query('SELECT * FROM competitions WHERE id = ?', [result.insertId]);
+    const [rows] = await pool.query('SELECT id, name, level, organizer, status, deadline, description, registration_url, tags, created_at FROM competitions WHERE id = ?', [result.insertId]);
     res.json({ code: 200, message: '创建成功', data: rows[0] });
   } catch (err) {
     console.error('创建竞赛失败:', err);
@@ -1784,7 +2144,7 @@ router.put('/competitions/:id', async (req, res) => {
     if (!fields.length) return res.status(400).json({ code: 400, message: '无更新字段' });
     params.push(req.params.id);
     await pool.query(`UPDATE competitions SET ${fields.join(', ')} WHERE id = ?`, params);
-    const [rows] = await pool.query('SELECT * FROM competitions WHERE id = ?', [req.params.id]);
+    const [rows] = await pool.query('SELECT id, name, level, organizer, status, deadline, description, registration_url, tags, created_at FROM competitions WHERE id = ?', [req.params.id]);
     res.json({ code: 200, message: '更新成功', data: rows[0] });
   } catch (err) {
     console.error('更新竞赛失败:', err);
@@ -1798,6 +2158,471 @@ router.delete('/competitions/:id', async (req, res) => {
     res.json({ code: 200, message: '删除成功' });
   } catch (err) {
     console.error('删除竞赛失败:', err);
+    res.status(500).json({ code: 500, message: '服务器内部错误' });
+  }
+});
+
+// ==================== 资源库管理 ====================
+
+// 资源库列表（含所有状态）
+router.get('/resource-library', async (req, res) => {
+  try {
+    const { page = 1, pageSize = 20, keyword = '', status = '' } = req.query;
+    const offset = (Number(page) - 1) * Number(pageSize);
+    const limit = Number(pageSize);
+
+    let where = 'WHERE 1=1';
+    const params = [];
+
+    if (keyword) {
+      where += ' AND (title LIKE ? OR description LIKE ?)';
+      const kw = `%${keyword}%`;
+      params.push(kw, kw);
+    }
+    if (status && status !== 'all') {
+      where += ' AND status = ?';
+      params.push(status);
+    }
+
+    const [countRows] = await pool.query(
+      `SELECT COUNT(*) AS total FROM resource_library_items ${where}`,
+      params
+    );
+    const total = countRows[0].total;
+
+    const [items] = await pool.query(
+      `SELECT * FROM resource_library_items ${where} ORDER BY created_at DESC LIMIT ? OFFSET ?`,
+      [...params, limit, offset]
+    );
+
+    res.json({
+      code: 200,
+      data: {
+        list: items,
+        pagination: {
+          page: Number(page),
+          pageSize: limit,
+          total,
+          totalPages: Math.ceil(total / limit),
+        },
+      },
+    });
+  } catch (err) {
+    console.error('获取资源库列表失败:', err);
+    res.status(500).json({ code: 500, message: '服务器内部错误' });
+  }
+});
+
+// 更新资源状态（published/archived/draft）
+router.put('/resource-library/:id/status', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+
+    if (!['draft', 'published', 'archived'].includes(status)) {
+      return res.status(400).json({ code: 400, message: 'status 必须为 draft、published 或 archived' });
+    }
+
+    const [rows] = await pool.query('SELECT id FROM resource_library_items WHERE id = ?', [id]);
+    if (rows.length === 0) {
+      return res.status(404).json({ code: 404, message: '资源不存在' });
+    }
+
+    await pool.query('UPDATE resource_library_items SET status = ? WHERE id = ?', [status, id]);
+
+    res.json({
+      code: 200,
+      message: status === 'published' ? '资源已发布' : status === 'archived' ? '资源已归档' : '资源已设为草稿',
+    });
+  } catch (err) {
+    console.error('更新资源状态失败:', err);
+    res.status(500).json({ code: 500, message: '服务器内部错误' });
+  }
+});
+
+// 删除资源
+router.delete('/resource-library/:id', async (req, res) => {
+  try {
+    const [rows] = await pool.query('SELECT id FROM resource_library_items WHERE id = ?', [req.params.id]);
+    if (rows.length === 0) {
+      return res.status(404).json({ code: 404, message: '资源不存在' });
+    }
+
+    await pool.query('DELETE FROM resource_library_items WHERE id = ?', [req.params.id]);
+    res.json({ code: 200, message: '资源删除成功' });
+  } catch (err) {
+    console.error('删除资源失败:', err);
+    res.status(500).json({ code: 500, message: '服务器内部错误' });
+  }
+});
+
+// ==================== 招聘时间线管理 ====================
+
+// 招聘时间线列表
+router.get('/recruitment-timelines', async (req, res) => {
+  try {
+    const { page = 1, pageSize = 20, keyword = '', status = '', event_type = '' } = req.query;
+    const offset = (Number(page) - 1) * Number(pageSize);
+    const limit = Number(pageSize);
+
+    let where = 'WHERE 1=1';
+    const params = [];
+
+    if (keyword) {
+      where += ' AND (company_name LIKE ? OR title LIKE ?)';
+      const kw = `%${keyword}%`;
+      params.push(kw, kw);
+    }
+    if (status && status !== 'all') {
+      where += ' AND status = ?';
+      params.push(status);
+    }
+    if (event_type && event_type !== 'all') {
+      where += ' AND event_type = ?';
+      params.push(event_type);
+    }
+
+    const [countRows] = await pool.query(
+      `SELECT COUNT(*) AS total FROM recruitment_timeline_items ${where}`,
+      params
+    );
+    const total = countRows[0].total;
+
+    const [items] = await pool.query(
+      `SELECT * FROM recruitment_timeline_items ${where} ORDER BY sort_order ASC, start_date DESC LIMIT ? OFFSET ?`,
+      [...params, limit, offset]
+    );
+
+    res.json({
+      code: 200,
+      data: {
+        list: items,
+        pagination: {
+          page: Number(page),
+          pageSize: limit,
+          total,
+          totalPages: Math.ceil(total / limit),
+        },
+      },
+    });
+  } catch (err) {
+    console.error('获取招聘时间线列表失败:', err);
+    res.status(500).json({ code: 500, message: '服务器内部错误' });
+  }
+});
+
+// 创建招聘时间线事件
+router.post('/recruitment-timelines', async (req, res) => {
+  try {
+    const { company_name, event_type, title, description, start_date, end_date, apply_link, status, sort_order } = req.body;
+
+    if (!company_name || !event_type || !title) {
+      return res.status(400).json({ code: 400, message: '企业名称、事件类型、标题为必填' });
+    }
+
+    const [result] = await pool.query(
+      `INSERT INTO recruitment_timeline_items (company_name, event_type, title, description, start_date, end_date, apply_link, status, sort_order)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [company_name, event_type, title, description || '', start_date || null, end_date || null, apply_link || '', status || 'active', sort_order || 0]
+    );
+
+    res.json({
+      code: 200,
+      message: '招聘时间线事件创建成功',
+      data: { id: result.insertId },
+    });
+  } catch (err) {
+    console.error('创建招聘时间线事件失败:', err);
+    res.status(500).json({ code: 500, message: '服务器内部错误' });
+  }
+});
+
+// 更新招聘时间线事件
+router.put('/recruitment-timelines/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const [rows] = await pool.query('SELECT id FROM recruitment_timeline_items WHERE id = ?', [id]);
+    if (rows.length === 0) {
+      return res.status(404).json({ code: 404, message: '事件不存在' });
+    }
+
+    const { company_name, event_type, title, description, start_date, end_date, apply_link, status, sort_order } = req.body;
+
+    await pool.query(
+      `UPDATE recruitment_timeline_items SET
+        company_name = COALESCE(?, company_name),
+        event_type = COALESCE(?, event_type),
+        title = COALESCE(?, title),
+        description = COALESCE(?, description),
+        start_date = ?,
+        end_date = ?,
+        apply_link = COALESCE(?, apply_link),
+        status = COALESCE(?, status),
+        sort_order = COALESCE(?, sort_order)
+       WHERE id = ?`,
+      [company_name, event_type, title, description, start_date || null, end_date || null, apply_link, status, sort_order, id]
+    );
+
+    res.json({ code: 200, message: '招聘时间线事件更新成功' });
+  } catch (err) {
+    console.error('更新招聘时间线事件失败:', err);
+    res.status(500).json({ code: 500, message: '服务器内部错误' });
+  }
+});
+
+// 删除招聘时间线事件
+router.delete('/recruitment-timelines/:id', async (req, res) => {
+  try {
+    const [rows] = await pool.query('SELECT id FROM recruitment_timeline_items WHERE id = ?', [req.params.id]);
+    if (rows.length === 0) {
+      return res.status(404).json({ code: 404, message: '事件不存在' });
+    }
+
+    await pool.query('DELETE FROM recruitment_timeline_items WHERE id = ?', [req.params.id]);
+    res.json({ code: 200, message: '招聘时间线事件删除成功' });
+  } catch (err) {
+    console.error('删除招聘时间线事件失败:', err);
+    res.status(500).json({ code: 500, message: '服务器内部错误' });
+  }
+});
+
+// ==================== 校园时间线管理 ====================
+
+router.get('/campus-timelines', async (req, res) => {
+  try {
+    const { direction, keyword, page = 1, pageSize = 50 } = req.query;
+    const limit = Math.min(Number(pageSize) || 50, 100);
+    const offset = (Math.max(Number(page) || 1, 1) - 1) * limit;
+
+    let where = '';
+    const params = [];
+
+    if (direction && direction !== 'all') {
+      where += ' WHERE direction = ?';
+      params.push(String(direction));
+    }
+    if (keyword) {
+      where += where ? ' AND' : ' WHERE';
+      where += ' (title LIKE ? OR description LIKE ?)';
+      const kw = `%${keyword}%`;
+      params.push(kw, kw);
+    }
+
+    const [countRows] = await pool.query(
+      `SELECT COUNT(*) AS total FROM campus_timeline ${where}`,
+      params
+    );
+    const total = countRows[0].total;
+
+    const [items] = await pool.query(
+      `SELECT * FROM campus_timeline ${where} ORDER BY direction, sort_order ASC, id ASC LIMIT ? OFFSET ?`,
+      [...params, limit, offset]
+    );
+
+    res.json({ code: 200, data: { list: items, total, page: Number(page), pageSize: limit } });
+  } catch (err) {
+    console.error('获取校园时间线列表失败:', err);
+    res.status(500).json({ code: 500, message: '服务器内部错误' });
+  }
+});
+
+router.post('/campus-timelines', async (req, res) => {
+  try {
+    const { direction, title, description, date_range, sort_order, color } = req.body;
+    if (!title || !direction) {
+      return res.status(400).json({ code: 400, message: '方向和标题不能为空' });
+    }
+
+    const [result] = await pool.query(
+      `INSERT INTO campus_timeline (direction, title, description, date_range, sort_order, color)
+       VALUES (?, ?, ?, ?, ?, ?)`,
+      [direction, title, description || '', date_range || '', sort_order || 0, color || '#6366f1']
+    );
+
+    res.json({ code: 200, message: '校园时间线创建成功', data: { id: result.insertId } });
+  } catch (err) {
+    console.error('创建校园时间线失败:', err);
+    res.status(500).json({ code: 500, message: '创建失败' });
+  }
+});
+
+router.put('/campus-timelines/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { direction, title, description, date_range, sort_order, color } = req.body;
+
+    const [rows] = await pool.query('SELECT id FROM campus_timeline WHERE id = ?', [id]);
+    if (rows.length === 0) {
+      return res.status(404).json({ code: 404, message: '记录不存在' });
+    }
+
+    await pool.query(
+      `UPDATE campus_timeline SET direction = ?, title = ?, description = ?, date_range = ?, sort_order = ?, color = ? WHERE id = ?`,
+      [direction, title, description || '', date_range || '', sort_order || 0, color || '#6366f1', id]
+    );
+
+    res.json({ code: 200, message: '校园时间线更新成功' });
+  } catch (err) {
+    console.error('更新校园时间线失败:', err);
+    res.status(500).json({ code: 500, message: '更新失败' });
+  }
+});
+
+router.delete('/campus-timelines/:id', async (req, res) => {
+  try {
+    const [rows] = await pool.query('SELECT id FROM campus_timeline WHERE id = ?', [req.params.id]);
+    if (rows.length === 0) {
+      return res.status(404).json({ code: 404, message: '记录不存在' });
+    }
+    await pool.query('DELETE FROM campus_timeline WHERE id = ?', [req.params.id]);
+    res.json({ code: 200, message: '校园时间线删除成功' });
+  } catch (err) {
+    console.error('删除校园时间线失败:', err);
+    res.status(500).json({ code: 500, message: '删除失败' });
+  }
+});
+
+// ==================== 客服管理 ====================
+
+// 获取客服人员列表
+router.get('/customer-service', async (req, res) => {
+  try {
+    const [agents] = await pool.query(
+      'SELECT * FROM customer_service_agents ORDER BY sort_order ASC, id ASC'
+    );
+    res.json({ code: 200, data: { agents } });
+  } catch (err) {
+    console.error('获取客服人员列表失败:', err);
+    res.status(500).json({ code: 500, message: '服务器内部错误' });
+  }
+});
+
+// 创建客服人员
+router.post('/customer-service', async (req, res) => {
+  try {
+    const { name, avatar_url, is_online, phone, wechat, email, sort_order } = req.body;
+    if (!name) {
+      return res.status(400).json({ code: 400, message: '客服姓名不能为空' });
+    }
+    const [result] = await pool.query(
+      `INSERT INTO customer_service_agents (name, avatar_url, is_online, phone, wechat, email, sort_order)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      [name, avatar_url || '', is_online !== false ? 1 : 0, phone || '', wechat || '', email || '', sort_order || 0]
+    );
+    const [[agent]] = await pool.query('SELECT * FROM customer_service_agents WHERE id = ?', [result.insertId]);
+    res.json({ code: 200, message: '客服人员创建成功', data: { id: result.insertId, agent } });
+  } catch (err) {
+    console.error('创建客服人员失败:', err);
+    res.status(500).json({ code: 500, message: '服务器内部错误' });
+  }
+});
+
+// 更新客服人员
+router.put('/customer-service/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const [rows] = await pool.query('SELECT id FROM customer_service_agents WHERE id = ?', [id]);
+    if (rows.length === 0) {
+      return res.status(404).json({ code: 404, message: '客服人员不存在' });
+    }
+    const { name, avatar_url, is_online, phone, wechat, email, sort_order } = req.body;
+    const fields = [];
+    const params = [];
+    if (name !== undefined) { fields.push('name = ?'); params.push(name); }
+    if (avatar_url !== undefined) { fields.push('avatar_url = ?'); params.push(avatar_url); }
+    if (is_online !== undefined) { fields.push('is_online = ?'); params.push(is_online ? 1 : 0); }
+    if (phone !== undefined) { fields.push('phone = ?'); params.push(phone); }
+    if (wechat !== undefined) { fields.push('wechat = ?'); params.push(wechat); }
+    if (email !== undefined) { fields.push('email = ?'); params.push(email); }
+    if (sort_order !== undefined) { fields.push('sort_order = ?'); params.push(sort_order); }
+    if (fields.length === 0) {
+      return res.status(400).json({ code: 400, message: '无更新字段' });
+    }
+    params.push(id);
+    await pool.query(`UPDATE customer_service_agents SET ${fields.join(', ')}, updated_at = NOW() WHERE id = ?`, params);
+    const [[updated]] = await pool.query('SELECT * FROM customer_service_agents WHERE id = ?', [id]);
+    res.json({ code: 200, message: '客服人员更新成功', data: { agent: updated } });
+  } catch (err) {
+    console.error('更新客服人员失败:', err);
+    res.status(500).json({ code: 500, message: '服务器内部错误' });
+  }
+});
+
+// 删除客服人员
+router.delete('/customer-service/:id', async (req, res) => {
+  try {
+    const [rows] = await pool.query('SELECT id FROM customer_service_agents WHERE id = ?', [req.params.id]);
+    if (rows.length === 0) {
+      return res.status(404).json({ code: 404, message: '客服人员不存在' });
+    }
+    await pool.query('DELETE FROM customer_service_agents WHERE id = ?', [req.params.id]);
+    res.json({ code: 200, message: '客服人员删除成功' });
+  } catch (err) {
+    console.error('删除客服人员失败:', err);
+    res.status(500).json({ code: 500, message: '服务器内部错误' });
+  }
+});
+
+// 获取客服配置
+router.get('/customer-service/config', async (req, res) => {
+  try {
+    const [rows] = await pool.query('SELECT config_key, config_value FROM customer_service_config');
+    const config = {};
+    for (const row of rows) {
+      config[row.config_key] = row.config_value;
+    }
+    if (Object.keys(config).length === 0) {
+      const [fallbackRows] = await pool.query(
+        "SELECT config_key, config_value FROM site_configs WHERE config_key IN ('service_phone', 'service_wechat', 'contact_email', 'service_online_enabled')"
+      );
+      for (const row of fallbackRows) {
+        config[row.config_key] = row.config_value;
+      }
+    }
+    res.json({ code: 200, data: config });
+  } catch (err) {
+    // 表不存在时 fallback 到 site_config
+    try {
+      const [rows] = await pool.query(
+        "SELECT config_key, config_value FROM site_configs WHERE config_key IN ('service_phone', 'service_wechat', 'contact_email', 'service_online_enabled')"
+      );
+      const config = {};
+      for (const row of rows) {
+        config[row.config_key] = row.config_value;
+      }
+      res.json({ code: 200, data: config });
+    } catch (fallbackErr) {
+      console.error('获取客服配置失败:', fallbackErr);
+      res.status(500).json({ code: 500, message: '服务器内部错误' });
+    }
+  }
+});
+
+// 更新客服配置
+router.put('/customer-service/config', async (req, res) => {
+  try {
+    const entries = Object.entries(req.body);
+    if (entries.length === 0) {
+      return res.status(400).json({ code: 400, message: '无更新数据' });
+    }
+    for (const [key, value] of entries) {
+      await pool.query(
+        `INSERT INTO customer_service_config (config_key, config_value, updated_at)
+         VALUES (?, ?, NOW())
+         ON DUPLICATE KEY UPDATE config_value = VALUES(config_value), updated_at = NOW()`,
+        [key, String(value)]
+      );
+      // 同步更新 site_config
+      try {
+        await pool.query(
+          `UPDATE site_config SET config_value = ? WHERE config_key = ?`,
+          [String(value), key]
+        );
+      } catch { /* site_config update is optional */ }
+    }
+    res.json({ code: 200, message: '客服配置更新成功' });
+  } catch (err) {
+    console.error('更新客服配置失败:', err);
     res.status(500).json({ code: 500, message: '服务器内部错误' });
   }
 });

@@ -10,7 +10,7 @@ const router = Router();
 /**
  * GET /api/agent/stats — 客服个人统计
  */
-router.get('/stats', authMiddleware, requireRole('agent'), async (req, res) => {
+router.get('/stats', authMiddleware, requireRole('agent', 'admin'), async (req, res) => {
   try {
     const agentId = req.user.id;
     const defaultStats = { assigned: 0, active: 0, pending: 0, closedToday: 0, messagesToday: 0, avgResponseTime: 0 };
@@ -62,7 +62,7 @@ router.get('/stats', authMiddleware, requireRole('agent'), async (req, res) => {
 /**
  * GET /api/agent/conversations — 获取会话列表（仅自己的 + 待接入的）
  */
-router.get('/conversations', authMiddleware, requireRole('agent'), async (req, res) => {
+router.get('/conversations', authMiddleware, requireRole('agent', 'admin'), async (req, res) => {
   try {
     const agentId = req.user.id;
     const { status, page = 1, pageSize = 20 } = req.query;
@@ -124,7 +124,7 @@ router.get('/conversations', authMiddleware, requireRole('agent'), async (req, r
 /**
  * POST /api/agent/conversations/:id/assign — 接入会话（分配给自己）
  */
-router.post('/conversations/:id/assign', authMiddleware, requireRole('agent'), async (req, res) => {
+router.post('/conversations/:id/assign', authMiddleware, requireRole('agent', 'admin'), async (req, res) => {
   try {
     const agentId = req.user.id;
     const conversationId = parseInt(req.params.id);
@@ -170,7 +170,7 @@ router.post('/conversations/:id/assign', authMiddleware, requireRole('agent'), a
 /**
  * POST /api/agent/conversations/:id/messages — 发送消息
  */
-router.post('/conversations/:id/messages', authMiddleware, requireRole('agent'), async (req, res) => {
+router.post('/conversations/:id/messages', authMiddleware, requireRole('agent', 'admin'), async (req, res) => {
   try {
     const agentId = req.user.id;
     const conversationId = parseInt(req.params.id);
@@ -230,7 +230,7 @@ router.post('/conversations/:id/messages', authMiddleware, requireRole('agent'),
 /**
  * PUT /api/agent/conversations/:id/read — 标记已读
  */
-router.put('/conversations/:id/read', authMiddleware, requireRole('agent'), async (req, res) => {
+router.put('/conversations/:id/read', authMiddleware, requireRole('agent', 'admin'), async (req, res) => {
   try {
     const agentId = req.user.id;
     const conversationId = parseInt(req.params.id);
@@ -266,7 +266,7 @@ router.put('/conversations/:id/read', authMiddleware, requireRole('agent'), asyn
 /**
  * PUT /api/agent/conversations/:id/close — 关闭会话
  */
-router.put('/conversations/:id/close', authMiddleware, requireRole('agent'), async (req, res) => {
+router.put('/conversations/:id/close', authMiddleware, requireRole('agent', 'admin'), async (req, res) => {
   try {
     const agentId = req.user.id;
     const conversationId = parseInt(req.params.id);
@@ -300,7 +300,7 @@ router.put('/conversations/:id/close', authMiddleware, requireRole('agent'), asy
 /**
  * GET /api/agent/users/:id — 获取用户简要信息（仅姓名+头像）
  */
-router.get('/users/:id', authMiddleware, requireRole('agent'), async (req, res) => {
+router.get('/users/:id', authMiddleware, requireRole('agent', 'admin'), async (req, res) => {
   try {
     const userId = parseInt(req.params.id);
     if (isNaN(userId)) {

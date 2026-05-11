@@ -1,10 +1,12 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
+import React from 'react';
 import { motion } from 'framer-motion';
 import {
   Search, Filter, MoreVertical,
   Shield, Ban, CheckCircle, XCircle,
   ChevronLeft, ChevronRight, Download,
-  ArrowUpDown, ArrowUp, ArrowDown, Loader2, X
+  ArrowUpDown, ArrowUp, ArrowDown, Loader2, X,
+  UserCog
 } from 'lucide-react';
 import http from '@/api/http';
 import { TableSkeleton } from '../../components/ui/Skeleton';
@@ -25,17 +27,43 @@ interface UserRecord {
   phone: string;
   status: number;
   created_at: string;
+  realNameStatus?: 'pending' | 'approved' | 'rejected' | null;
+  careerPlanStatus?: 'pending' | 'completed' | null;
+  developmentDirections?: string[] | null;
+  // 学生注册信息（从列表 JOIN 查询返回）
+  school?: string;
+  major?: string;
+  grade?: string;
+  skills?: string | string[];
+  job_intention?: string;
+  // 职业规划数据（从列表 JOIN 查询返回）
+  graduation_year?: string;
+  target_city?: string;
+  target_industry?: string;
+  target_position?: string;
 }
 
 interface UserDetailData {
   user: UserRecord;
   profile: Record<string, unknown> | null;
+  identityVerification?: Record<string, unknown> | null;
+  careerPlan?: Record<string, unknown> | null;
 }
+
+// 发展方向选项
+const DEVELOPMENT_DIRECTIONS = [
+  { value: '求职就业', label: '求职就业' },
+  { value: '考研', label: '考研' },
+  { value: '保研', label: '保研' },
+  { value: '留学', label: '留学' },
+  { value: '创业', label: '创业' },
+  { value: '考公考编', label: '考公考编' },
+];
 
 const ROLE_MAP: Record<string, { label: string; color: string; tagVariant: 'blue' | 'green' | 'primary' | 'red' }> = {
   student: { label: '学生', color: 'bg-blue-100 text-blue-700', tagVariant: 'blue' },
   company: { label: '企业', color: 'bg-emerald-100 text-emerald-700', tagVariant: 'green' },
-  mentor: { label: '导师', color: 'bg-primary-100 text-primary-700', tagVariant: 'primary' },
+  mentor: { label: '咨询人员', color: 'bg-primary-100 text-primary-700', tagVariant: 'primary' },
   admin: { label: '管理员', color: 'bg-red-100 text-red-700', tagVariant: 'red' },
 };
 
@@ -46,6 +74,7 @@ export default function AdminUsers() {
   const [search, setSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [directionFilter, setDirectionFilter] = useState<string>('all');
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
   const pageSize = 10;
@@ -58,6 +87,9 @@ export default function AdminUsers() {
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const abortControllerRef = useRef<AbortController | null>(null);
   const [confirmDialog, setConfirmDialog] = useState<{ open: boolean; userId: number | null; action: string }>({ open: false, userId: null, action: '' });
+  const [roleChangeDialog, setRoleChangeDialog] = useState<{ open: boolean; userId: number | null; currentRole: string; nickname: string }>({ open: false, userId: null, currentRole: '', nickname: '' });
+  const [selectedRole, setSelectedRole] = useState('student');
+  const [roleSaving, setRoleSaving] = useState(false);
 
   // 排序状态
   const [sortField, setSortField] = useState<string>('created_at');
@@ -67,6 +99,26 @@ export default function AdminUsers() {
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const [batchAction, setBatchAction] = useState<{ open: boolean; action: string }>({ open: false, action: '' });
   const [batchLoading, setBatchLoading] = useState(false);
+
+  const [showAuditLog, setShowAuditLog] = useState(false);
+  const [auditLogs, setAuditLogs] = useState<AuditLogEntry[]>([]);
+  const [auditLogLoading, setAuditLogLoading] = useState(false);
+  const [auditLogError, setAuditLogError] = useState<string | null>(null);
+
+  const [expandedUserId, setExpandedUserId] = useState<number | null>(null);
+  const [expandedLoading, setExpandedLoading] = useState(false);
+  const [expandedCareerPlan, setExpandedCareerPlan] = useState<Record<string, unknown> | null>(null);
+
+  interface AuditLogEntry {
+    id: number;
+    admin_id: number;
+    admin_nickname: string;
+    action: string;
+    target_type: string;
+    target_id: number;
+    details: string;
+    created_at: string;
+  }
 
   // 搜索防抖：300ms 延迟
   useEffect(() => {
@@ -84,7 +136,7 @@ export default function AdminUsers() {
       abortControllerRef.current?.abort();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, roleFilter, statusFilter, debouncedSearch]);
+  }, [page, roleFilter, statusFilter, directionFilter, debouncedSearch]);
 
   async function fetchUsers() {
     // 取消上一次请求
@@ -95,7 +147,11 @@ export default function AdminUsers() {
     try {
       setLoading(true);
       const res = await http.get('/admin/users', {
-        params: { page, pageSize, role: roleFilter, status: statusFilter, keyword: debouncedSearch },
+        params: {
+          page, pageSize, role: roleFilter, status: statusFilter,
+          keyword: debouncedSearch,
+          developmentDirections: directionFilter !== 'all' ? directionFilter : '',
+        },
         signal: controller.signal,
       });
       if (res.data?.code === 200 && res.data.data) {
@@ -168,6 +224,8 @@ export default function AdminUsers() {
         setDetailUser({
           user: res.data.data.user as UserRecord,
           profile: (res.data.data.profile as Record<string, unknown> | null) || null,
+          identityVerification: (res.data.data.identityVerification as Record<string, unknown> | null) || null,
+          careerPlan: (res.data.data.careerPlan as Record<string, unknown> | null) || null,
         });
       } else {
         setDetailError('用户详情加载失败，请稍后重试');
@@ -204,6 +262,106 @@ export default function AdminUsers() {
     } finally {
       setConfirmDialog({ open: false, userId: null, action: '' });
       setActionMenu(null);
+    }
+  }
+
+  async function fetchAuditLogs() {
+    setAuditLogLoading(true);
+    setAuditLogError(null);
+    try {
+      const res = await http.get('/admin/audit-logs', {
+        params: { target_type: 'user', pageSize: 40 },
+      });
+      if (res.data?.code === 200) {
+        setAuditLogs(res.data.data?.list || []);
+      } else {
+        setAuditLogs([]);
+      }
+    } catch {
+      setAuditLogError('加载审计日志失败');
+      setAuditLogs([]);
+    } finally {
+      setAuditLogLoading(false);
+    }
+  }
+
+  function parseAuditLogDetails(details: string): Record<string, unknown> {
+    try {
+      return JSON.parse(details);
+    } catch {
+      return {};
+    }
+  }
+
+  const AUDIT_ACTION_LABELS: Record<string, { label: string; color: string }> = {
+    disable_user: { label: '禁用用户', color: 'text-red-600 bg-red-50' },
+    enable_user: { label: '启用用户', color: 'text-green-600 bg-green-50' },
+    role_change: { label: '变更角色', color: 'text-blue-600 bg-blue-50' },
+    delete_user: { label: '删除用户', color: 'text-orange-600 bg-orange-50' },
+  };
+
+  async function changeUserRole() {
+    const { userId } = roleChangeDialog;
+    if (!userId) return;
+    setRoleSaving(true);
+    try {
+      await http.put(`/admin/users/${userId}/role`, { role: selectedRole });
+      setUsers(prev => prev.map(user => (
+        user.id === userId ? { ...user, role: selectedRole as UserRecord['role'] } : user
+      )));
+      setDetailUser(prev => prev && prev.user.id === userId
+        ? { ...prev, user: { ...prev.user, role: selectedRole as UserRecord['role'] } }
+        : prev);
+      showToast({ type: 'success', title: `角色已变更为「${ROLE_MAP[selectedRole]?.label || selectedRole}」` });
+      setRoleChangeDialog({ open: false, userId: null, currentRole: '', nickname: '' });
+    } catch (err) {
+      if (import.meta.env.DEV) console.error('[DEV] Change role error:', err);
+      showToast({ type: 'error', title: '角色变更失败', message: '请稍后重试' });
+    } finally {
+      setRoleSaving(false);
+      setActionMenu(null);
+    }
+  }
+
+  async function toggleUserActive(userId: number, currentStatus: number) {
+    const nextStatus = currentStatus === 1 ? 0 : 1;
+    try {
+      await http.put(`/admin/users/${userId}`, { is_active: nextStatus });
+      setUsers(prev => prev.map(user => (
+        user.id === userId ? { ...user, status: nextStatus } : user
+      )));
+      showToast({
+        type: 'success',
+        title: nextStatus === 1 ? '已启用用户' : '已禁用用户',
+      });
+    } catch (err) {
+      if (import.meta.env.DEV) console.error('[DEV] Toggle user active error:', err);
+      showToast({
+        type: 'error',
+        title: '操作失败',
+        message: '请稍后重试',
+      });
+    }
+  }
+
+  async function toggleExpandRow(userId: number) {
+    if (expandedUserId === userId) {
+      setExpandedUserId(null);
+      setExpandedCareerPlan(null);
+      return;
+    }
+    setExpandedUserId(userId);
+    setExpandedLoading(true);
+    setExpandedCareerPlan(null);
+    try {
+      const res = await http.get(`/admin/users/${userId}/career-plan`);
+      if (res.data?.code === 200) {
+        setExpandedCareerPlan((res.data.data as Record<string, unknown>) || null);
+      }
+    } catch (err) {
+      if (import.meta.env.DEV) console.error('[DEV] Career plan fetch error:', err);
+    } finally {
+      setExpandedLoading(false);
     }
   }
 
@@ -261,12 +419,12 @@ export default function AdminUsers() {
       contact_phone: '联系电话',
       audit_status: '审核状态',
       verify_status: '认证状态',
-      title: '导师头衔',
+      title: '身份标签',
       expertise: '擅长领域',
       rating: '评分',
       price: '辅导价格',
       hourly_rate: '课时价格',
-      available_time: '可预约时间',
+      available_time: '可服务时间',
       experience_years: '从业年限',
       company: '所属机构',
     };
@@ -420,7 +578,7 @@ export default function AdminUsers() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
             <input
               type="text"
-              placeholder="搜索用户名、邮箱..."
+              placeholder="搜索姓名、邮箱、手机号..."
               value={search}
               onChange={e => setSearch(e.target.value)}
               className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none"
@@ -438,7 +596,7 @@ export default function AdminUsers() {
               <option value="all">全部角色</option>
               <option value="student">学生</option>
               <option value="company">企业</option>
-              <option value="mentor">导师</option>
+              <option value="mentor">咨询人员</option>
               <option value="admin">管理员</option>
             </select>
           </div>
@@ -452,6 +610,18 @@ export default function AdminUsers() {
             <option value="all">全部状态</option>
             <option value="1">正常</option>
             <option value="0">已禁用</option>
+          </select>
+
+          {/* 发展方向筛选 */}
+          <select
+            value={directionFilter}
+            onChange={e => { setDirectionFilter(e.target.value); setPage(1); }}
+            className="border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-primary-500 outline-none"
+          >
+            <option value="all">全部发展方向</option>
+            {DEVELOPMENT_DIRECTIONS.map(d => (
+              <option key={d.value} value={d.value}>{d.label}</option>
+            ))}
           </select>
         </div>
       </div>
@@ -517,6 +687,7 @@ export default function AdminUsers() {
                   </div>
                 </th>
                 <th className="text-left px-6 py-3.5 text-xs font-medium text-gray-500 uppercase tracking-wider">手机号</th>
+                <th className="text-left px-6 py-3.5 text-xs font-medium text-gray-500 uppercase tracking-wider">实名状态</th>
                 <th
                   className="text-left px-6 py-3.5 text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:text-gray-700 select-none"
                   onClick={() => handleSort('status')}
@@ -533,17 +704,23 @@ export default function AdminUsers() {
                     注册时间 <SortIcon field="created_at" />
                   </div>
                 </th>
+                <th className="text-center px-6 py-3.5 text-xs font-medium text-gray-500 uppercase tracking-wider">启用</th>
                 <th className="text-right px-6 py-3.5 text-xs font-medium text-gray-500 uppercase tracking-wider">操作</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
               {sortedUsers.map((user, i) => (
+                <React.Fragment key={user.id}>
                 <motion.tr
                   key={user.id}
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ delay: i * 0.03 }}
-                  className={`hover:bg-gray-50 transition-colors ${selectedIds.has(user.id) ? 'bg-primary-50/50' : ''}`}
+                  className={`hover:bg-gray-50 transition-colors cursor-pointer ${selectedIds.has(user.id) ? 'bg-primary-50/50' : ''} ${expandedUserId === user.id ? 'bg-blue-50/50' : ''}`}
+                  onClick={(e) => {
+                    if ((e.target as HTMLElement).closest('button, input, select')) return;
+                    toggleExpandRow(user.id);
+                  }}
                 >
                   <td className="px-6 py-4">
                     <input
@@ -572,6 +749,13 @@ export default function AdminUsers() {
                   </td>
                   <td className="px-6 py-4 text-sm text-gray-600">{user.phone || '-'}</td>
                   <td className="px-6 py-4">
+                    {user.realNameStatus === 'approved' ? (
+                      <Tag variant="green" size="md">已认证</Tag>
+                    ) : (
+                      <Tag variant="gray" size="md">未认证</Tag>
+                    )}
+                  </td>
+                  <td className="px-6 py-4">
                     <span className={`inline-flex items-center gap-1 text-xs font-medium ${
                       user.status === 1 ? 'text-green-600' : 'text-red-500'
                     }`}>
@@ -581,6 +765,26 @@ export default function AdminUsers() {
                   </td>
                   <td className="px-6 py-4 text-sm text-gray-500">
                     {new Date(user.created_at).toLocaleDateString('zh-CN')}
+                  </td>
+                  <td className="px-6 py-4 text-center">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (user.role === 'admin') {
+                          showToast({ type: 'warning', title: '不能禁用管理员账号' });
+                          return;
+                        }
+                        toggleUserActive(user.id, user.status);
+                      }}
+                      disabled={user.role === 'admin'}
+                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-1 ${
+                        user.role === 'admin' ? 'opacity-50 cursor-not-allowed' : ''
+                      } ${user.status === 1 ? 'bg-green-500' : 'bg-gray-300'}`}
+                    >
+                      <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform ${
+                        user.status === 1 ? 'translate-x-6' : 'translate-x-1'
+                      }`} />
+                    </button>
                   </td>
                   <td className="px-6 py-4 text-right relative">
                     <button
@@ -609,10 +813,72 @@ export default function AdminUsers() {
                             {user.status === 1 ? '禁用账号' : '解除禁用'}
                           </button>
                         )}
+                        {user.role !== 'admin' && (
+                          <button
+                            onClick={() => {
+                              setRoleChangeDialog({ open: true, userId: user.id, currentRole: user.role, nickname: user.nickname });
+                              setSelectedRole(user.role);
+                              setActionMenu(null);
+                            }}
+                            className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+                          >
+                            <UserCog className="w-4 h-4" />
+                            变更角色
+                          </button>
+                        )}
                       </div>
                     )}
                   </td>
                 </motion.tr>
+                {expandedUserId === user.id && (
+                  <tr key={`expanded-${user.id}`} className="bg-blue-50/30">
+                    <td colSpan={9} className="px-6 py-4">
+                      {expandedLoading ? (
+                        <div className="flex items-center justify-center py-4 text-gray-500 gap-2 text-sm">
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          加载职业规划数据...
+                        </div>
+                      ) : expandedCareerPlan && user.role === 'student' ? (
+                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 text-sm">
+                          <div>
+                            <p className="text-gray-500 mb-1">发展方向</p>
+                            <div className="flex flex-wrap gap-1">
+                              {user.developmentDirections && user.developmentDirections.length > 0
+                                ? user.developmentDirections.map((d) => (
+                                    <Tag key={d} variant="blue" size="sm">{d}</Tag>
+                                  ))
+                                : <span className="text-gray-400">-</span>
+                              }
+                            </div>
+                          </div>
+                          <div>
+                            <p className="text-gray-500 mb-1">学校</p>
+                            <p className="font-medium text-gray-900">{user.school || (expandedCareerPlan.school as string) || '-'}</p>
+                          </div>
+                          <div>
+                            <p className="text-gray-500 mb-1">专业</p>
+                            <p className="font-medium text-gray-900">{user.major || '-'}</p>
+                          </div>
+                          <div>
+                            <p className="text-gray-500 mb-1">毕业年份</p>
+                            <p className="font-medium text-gray-900">{user.grade || user.graduation_year || (expandedCareerPlan.graduation_year as string) || '-'}</p>
+                          </div>
+                          <div>
+                            <p className="text-gray-500 mb-1">毕业去向</p>
+                            <p className="font-medium text-gray-900">
+                              {[user.target_industry, user.target_position].filter(Boolean).join(' / ') || (expandedCareerPlan.target_industry as string) || '-'}
+                            </p>
+                          </div>
+                        </div>
+                      ) : (
+                        <p className="text-sm text-gray-500 py-2">
+                          {user.role !== 'student' ? '非学生用户，暂不显示职业规划数据' : '暂未填写职业规划'}
+                        </p>
+                      )}
+                    </td>
+                  </tr>
+                )}
+              </React.Fragment>
               ))}
             </tbody>
           </table>
@@ -705,20 +971,22 @@ export default function AdminUsers() {
                     <div>
                       <h4 className="text-xl font-bold text-gray-900">{detailUser.user.nickname || '未设置昵称'}</h4>
                       <p className="text-sm text-gray-500">{detailUser.user.email}</p>
+                      <div className="flex items-center gap-2 mt-1">
+                        <Tag variant={ROLE_MAP[detailUser.user.role]?.tagVariant || 'gray'} size="sm">
+                          {ROLE_MAP[detailUser.user.role]?.label || detailUser.user.role}
+                        </Tag>
+                        <span className={`inline-flex items-center gap-1 text-xs font-medium ${
+                          detailUser.user.status === 1 ? 'text-green-600' : 'text-red-500'
+                        }`}>
+                          {detailUser.user.status === 1 ? '正常' : '已禁用'}
+                        </span>
+                      </div>
                     </div>
                   </div>
                   <div className="grid grid-cols-2 gap-4 text-sm">
                     <div>
                       <p className="text-gray-500 mb-1">ID</p>
                       <p className="font-medium text-gray-900">{detailUser.user.id}</p>
-                    </div>
-                    <div>
-                      <p className="text-gray-500 mb-1">角色</p>
-                      <p className="font-medium text-gray-900">{ROLE_MAP[detailUser.user.role]?.label || detailUser.user.role}</p>
-                    </div>
-                    <div>
-                      <p className="text-gray-500 mb-1">状态</p>
-                      <p className="font-medium text-gray-900">{detailUser.user.status === 1 ? '正常' : '已禁用'}</p>
                     </div>
                     <div>
                       <p className="text-gray-500 mb-1">手机号</p>
@@ -730,6 +998,107 @@ export default function AdminUsers() {
                     </div>
                   </div>
 
+                  {/* 学生用户：完整注册信息 */}
+                  {detailUser.user.role === 'student' && (
+                    <div className="pt-4 border-t border-gray-100">
+                      <h5 className="text-sm font-bold text-gray-900 mb-3 flex items-center gap-1">
+                        <Shield className="w-4 h-4 text-blue-500" />
+                        学生注册信息
+                      </h5>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                        <div>
+                          <p className="text-gray-500 mb-1">姓名</p>
+                          <p className="font-medium text-gray-900">{(detailUser.profile as Record<string, unknown>)?.real_name as string || detailUser.user.nickname || '-'}</p>
+                        </div>
+                        <div>
+                          <p className="text-gray-500 mb-1">邮箱</p>
+                          <p className="font-medium text-gray-900">{detailUser.user.email || '-'}</p>
+                        </div>
+                        <div>
+                          <p className="text-gray-500 mb-1">手机号</p>
+                          <p className="font-medium text-gray-900">{detailUser.user.phone || '-'}</p>
+                        </div>
+                        <div>
+                          <p className="text-gray-500 mb-1">学校</p>
+                          <p className="font-medium text-gray-900">{(detailUser.profile as Record<string, unknown>)?.school as string || detailUser.user.school || '-'}</p>
+                        </div>
+                        <div>
+                          <p className="text-gray-500 mb-1">专业</p>
+                          <p className="font-medium text-gray-900">{(detailUser.profile as Record<string, unknown>)?.major as string || detailUser.user.major || '-'}</p>
+                        </div>
+                        <div>
+                          <p className="text-gray-500 mb-1">年级</p>
+                          <p className="font-medium text-gray-900">{(detailUser.profile as Record<string, unknown>)?.grade as string || detailUser.user.grade || '-'}</p>
+                        </div>
+                        <div>
+                          <p className="text-gray-500 mb-1">技能</p>
+                          <p className="font-medium text-gray-900">{formatProfileValue((detailUser.profile as Record<string, unknown>)?.skills ?? detailUser.user.skills)}</p>
+                        </div>
+                        <div>
+                          <p className="text-gray-500 mb-1">求职意向</p>
+                          <p className="font-medium text-gray-900">{(detailUser.profile as Record<string, unknown>)?.job_intention as string || detailUser.user.job_intention || '-'}</p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* 学生用户：职业规划数据 */}
+                  {detailUser.user.role === 'student' && (
+                    <div className="pt-4 border-t border-gray-100">
+                      <h5 className="text-sm font-bold text-gray-900 mb-3 flex items-center gap-1">
+                        <Shield className="w-4 h-4 text-green-500" />
+                        职业规划数据
+                      </h5>
+                      {detailUser.careerPlan ? (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                          <div>
+                            <p className="text-gray-500 mb-1">发展方向</p>
+                            <div className="flex flex-wrap gap-1">
+                              {(formatProfileValue(detailUser.careerPlan.development_directions) !== '-'
+                                ? (Array.isArray(detailUser.careerPlan.development_directions)
+                                  ? detailUser.careerPlan.development_directions as string[]
+                                  : String(detailUser.careerPlan.development_directions).split(','))
+                                : []).length > 0
+                                ? (Array.isArray(detailUser.careerPlan.development_directions)
+                                  ? detailUser.careerPlan.development_directions as string[]
+                                  : String(detailUser.careerPlan.development_directions).split(',')
+                                ).map((d: string) => (
+                                  <Tag key={d} variant="blue" size="sm">{d}</Tag>
+                                ))
+                                : <span className="text-gray-400">-</span>
+                              }
+                            </div>
+                          </div>
+                          <div>
+                            <p className="text-gray-500 mb-1">毕业年份</p>
+                            <p className="font-medium text-gray-900">{detailUser.careerPlan.graduation_year as string || detailUser.user.graduation_year || '-'}</p>
+                          </div>
+                          <div>
+                            <p className="text-gray-500 mb-1">目标城市</p>
+                            <p className="font-medium text-gray-900">{detailUser.careerPlan.target_city as string || detailUser.user.target_city || '-'}</p>
+                          </div>
+                          <div>
+                            <p className="text-gray-500 mb-1">目标行业</p>
+                            <p className="font-medium text-gray-900">{detailUser.careerPlan.target_industry as string || detailUser.user.target_industry || '-'}</p>
+                          </div>
+                          <div>
+                            <p className="text-gray-500 mb-1">目标岗位</p>
+                            <p className="font-medium text-gray-900">{detailUser.careerPlan.target_position as string || detailUser.user.target_position || '-'}</p>
+                          </div>
+                          <div>
+                            <p className="text-gray-500 mb-1">规划状态</p>
+                            <Tag variant={detailUser.careerPlan.status === 'completed' ? 'green' : 'yellow'} size="sm">
+                              {detailUser.careerPlan.status === 'completed' ? '已完成' : '待完成'}
+                            </Tag>
+                          </div>
+                        </div>
+                      ) : (
+                        <p className="text-sm text-gray-500">暂未填写职业规划</p>
+                      )}
+                    </div>
+                  )}
+
+                  {/* 关联资料（非学生用户或学生用户的补充信息） */}
                   <div className="pt-4 border-t border-gray-100">
                     <h5 className="text-sm font-bold text-gray-900 mb-3">关联资料</h5>
                     {getProfileEntries(detailUser.profile).length > 0 ? (
@@ -754,7 +1123,109 @@ export default function AdminUsers() {
           </div>
         </div>
       )}
+
+      {/* 角色变更弹窗 */}
+      {roleChangeDialog.open && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 p-4" onClick={() => setRoleChangeDialog({ open: false, userId: null, currentRole: '', nickname: '' })}>
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-sm overflow-hidden" onClick={e => e.stopPropagation()}>
+            <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+              <h3 className="text-lg font-bold text-gray-900">变更用户角色</h3>
+              <button onClick={() => setRoleChangeDialog({ open: false, userId: null, currentRole: '', nickname: '' })} className="text-gray-400 hover:text-gray-600"><X className="w-5 h-5" /></button>
+            </div>
+            <div className="p-6 space-y-4">
+              <p className="text-sm text-gray-600">
+                用户 <span className="font-medium text-gray-900">{roleChangeDialog.nickname}</span>，
+                当前角色：
+                <Tag variant={ROLE_MAP[roleChangeDialog.currentRole]?.tagVariant || 'gray'} size="sm" className="ml-1">
+                  {ROLE_MAP[roleChangeDialog.currentRole]?.label || roleChangeDialog.currentRole}
+                </Tag>
+              </p>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">变更为</label>
+                <select
+                  value={selectedRole}
+                  onChange={e => setSelectedRole(e.target.value)}
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-primary-500 outline-none"
+                >
+                  <option value="student">学生</option>
+                  <option value="company">企业</option>
+                  <option value="mentor">咨询人员</option>
+                </select>
+              </div>
+            </div>
+            <div className="px-6 py-4 border-t border-gray-100 bg-gray-50 flex justify-end gap-3">
+              <button onClick={() => setRoleChangeDialog({ open: false, userId: null, currentRole: '', nickname: '' })} className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors text-sm">取消</button>
+              <button
+                onClick={changeUserRole}
+                disabled={roleSaving || selectedRole === roleChangeDialog.currentRole}
+                className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-40 transition-colors text-sm font-medium flex items-center gap-1"
+              >
+                {roleSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <UserCog className="w-4 h-4" />}
+                确认变更
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 审计日志面板 */}
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+        <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+          <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+            <Shield className="w-5 h-5 text-primary-500" />
+            管理操作日志
+          </h3>
+          <button
+            onClick={() => {
+              setShowAuditLog(!showAuditLog);
+              if (!showAuditLog) fetchAuditLogs();
+            }}
+            className="text-sm text-primary-600 hover:text-primary-700 font-medium transition-colors"
+          >
+            {showAuditLog ? '收起' : '展开'}
+          </button>
+        </div>
+
+        {showAuditLog && (
+          <div className="px-6 py-4">
+            {auditLogLoading ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="w-6 h-6 animate-spin text-primary-500" />
+              </div>
+            ) : auditLogError ? (
+              <ErrorState message={auditLogError} onRetry={fetchAuditLogs} />
+            ) : auditLogs.length === 0 ? (
+              <div className="text-center py-8 text-gray-500 text-sm">
+                <Shield className="w-10 h-10 mx-auto text-gray-300 mb-2" />
+                暂无操作日志
+              </div>
+            ) : (
+              <div className="space-y-2 max-h-72 overflow-y-auto">
+                {auditLogs.map((log) => {
+                  const details = parseAuditLogDetails(log.details);
+                  const actionInfo = AUDIT_ACTION_LABELS[log.action] || { label: log.action, color: 'text-gray-600 bg-gray-50' };
+                  return (
+                    <div key={log.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg text-sm">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className="font-medium text-gray-700 shrink-0">{log.admin_nickname || `#${log.admin_id}`}</span>
+                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium shrink-0 ${actionInfo.color}`}>
+                          {actionInfo.label}
+                        </span>
+                        <span className="text-gray-600 truncate">
+                          {details.target_nickname ? details.target_nickname as string : `用户 #${log.target_id}`}
+                        </span>
+                      </div>
+                      <span className="text-xs text-gray-400 shrink-0 ml-3">
+                        {new Date(log.created_at).toLocaleString('zh-CN')}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
-

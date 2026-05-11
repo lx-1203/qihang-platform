@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import {
   TrendingUp,
   ChevronRight,
@@ -18,8 +18,6 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import OfferStoryCard from '../components/study-abroad/OfferStoryCard';
 import http from '../api/http';
-import { useAuthStore } from '@/store/auth';
-import { showToast } from '@/components/ui/ToastContainer';
 
 // ====== 类型定义 ======
 
@@ -124,8 +122,6 @@ function mapApiOffer(row: ApiOfferRow): OfferItem {
 // ====== 组件 ======
 
 export default function StudyAbroadOffers() {
-  const navigate = useNavigate();
-  const { user } = useAuthStore();
   const [offers, setOffers] = useState<OfferItem[]>([]);
   const [countries, setCountries] = useState<CountryItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -526,20 +522,15 @@ export default function StudyAbroadOffers() {
               <Sparkles className="w-5 h-5 text-primary-500" /> 分享你的 Offer，帮助更多同学
             </h3>
             <p className="text-[14px] text-gray-400">
-              提交你的录取数据，我们将保护你的隐私并帮助更多申请者了解录取趋势
+              继续查看项目库和申请文章，结合录取结果判断自己的准备节奏
             </p>
           </div>
-          <button
-            onClick={() => {
-              if (!user) { showToast('请先登录', 'warning'); navigate('/login'); return; }
-              http.post('/chat/conversations', { type: 'user_service', title: '提交录取Offer数据' })
-                .then(() => { showToast('已创建会话，请在聊天中提交您的Offer信息', 'success'); navigate('/chat'); })
-                .catch(() => showToast('创建会话失败，请重试', 'error'));
-            }}
+          <Link
+            to="/study-abroad/programs"
             className="bg-primary-500 text-white px-8 py-3.5 rounded-xl font-bold hover:bg-primary-700 transition-colors shadow-lg shadow-primary-500/20 flex items-center gap-2 shrink-0"
           >
-            <ThumbsUp className="w-4 h-4" /> 提交我的 Offer
-          </button>
+            <ThumbsUp className="w-4 h-4" /> 查看项目库
+          </Link>
         </div>
       </div>
     </div>

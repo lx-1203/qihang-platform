@@ -7,6 +7,9 @@ import { useConfigStore } from '@/store/config';
 import { Skeleton, CardSkeleton } from '@/components/ui/Skeleton';
 import { handleApiFailure } from '@/utils/connectionStatus';
 
+// ⚠️ 已废弃 — 已并入升学深造统一 IA，前台入口统一使用 /further-education
+// 此页面保留仅用于历史数据查看，不再从侧边栏导航
+
 // 默认配置
 const DEFAULT_BG_BOOST_CONFIG = {
   services: [
@@ -150,7 +153,7 @@ export default function BackgroundBoostConfig() {
               <p className="text-gray-500 text-sm mt-1">管理背景提升页面的服务项、流程和保障信息</p>
             </div>
             <div className="flex items-center gap-3">
-              <a href="/study-abroad/background" target="_blank" rel="noopener noreferrer"
+              <a href="/further-education" target="_blank" rel="noopener noreferrer"
                 className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors">
                 <Eye className="w-4 h-4" /> 预览页面
               </a>

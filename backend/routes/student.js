@@ -7,7 +7,7 @@
 
 import { Router } from 'express';
 import pool from '../db.js';
-import { authMiddleware, requireRole } from '../middleware/auth.js';
+import { authMiddleware, requireCapability, requireRole } from '../middleware/auth.js';
 import { createNotification, NotificationTemplates } from '../utils/notification.js';
 import { idempotency } from '../middleware/idempotency.js';
 
@@ -22,7 +22,7 @@ router.use(requireRole('student'));
 /**
  * POST /api/student/profile - 创建或更新学生档案
  */
-router.post('/profile', async (req, res) => {
+router.post('/profile', requireCapability('canUseStudentFeatures'), async (req, res) => {
   try {
     const userId = req.user.id;
     const { nickname, phone, school, major, grade, bio, skills, job_intention, resume_url, avatar } = req.body;
@@ -74,7 +74,7 @@ router.post('/profile', async (req, res) => {
 /**
  * GET /api/student/profile - 获取当前学生档案
  */
-router.get('/profile', async (req, res) => {
+router.get('/profile', requireCapability('canUseStudentFeatures'), async (req, res) => {
   try {
     const userId = req.user.id;
     const [rows] = await pool.query(
@@ -111,7 +111,7 @@ router.get('/profile', async (req, res) => {
 /**
  * POST /api/student/resumes - 投递简历到指定职位
  */
-router.post('/resumes', idempotency(), async (req, res) => {
+router.post('/resumes', requireCapability('canSubmitApplications'), idempotency(), async (req, res) => {
   try {
     const userId = req.user.id;
     const { job_id } = req.body;
@@ -181,7 +181,7 @@ router.post('/resumes', idempotency(), async (req, res) => {
 /**
  * GET /api/student/resumes - 我的投递记录
  */
-router.get('/resumes', async (req, res) => {
+router.get('/resumes', requireCapability('canUseStudentFeatures'), async (req, res) => {
   try {
     const userId = req.user.id;
     const { status } = req.query;
@@ -214,7 +214,7 @@ router.get('/resumes', async (req, res) => {
 /**
  * DELETE /api/student/resumes/:id - 撤回投递
  */
-router.delete('/resumes/:id', async (req, res) => {
+router.delete('/resumes/:id', requireCapability('canSubmitApplications'), async (req, res) => {
   try {
     const userId = req.user.id;
     const resumeId = parseInt(req.params.id);
@@ -296,7 +296,7 @@ router.delete('/resumes/:id', async (req, res) => {
 /**
  * POST /api/student/appointments - 预约导师 1v1 辅导
  */
-router.post('/appointments', idempotency(), async (req, res) => {
+router.post('/appointments', requireCapability('canUseStudentFeatures'), idempotency(), async (req, res) => {
   try {
     const userId = req.user.id;
     const { mentor_id, appointment_time, duration, note, fee, service_title } = req.body;
@@ -353,7 +353,7 @@ router.post('/appointments', idempotency(), async (req, res) => {
 /**
  * GET /api/student/appointments - 我的预约记录
  */
-router.get('/appointments', async (req, res) => {
+router.get('/appointments', requireCapability('canUseStudentFeatures'), async (req, res) => {
   try {
     const userId = req.user.id;
     const { status } = req.query;
@@ -384,7 +384,7 @@ router.get('/appointments', async (req, res) => {
 /**
  * PUT /api/student/appointments/:id/cancel - 取消预约
  */
-router.put('/appointments/:id/cancel', async (req, res) => {
+router.put('/appointments/:id/cancel', requireCapability('canUseStudentFeatures'), async (req, res) => {
   try {
     const userId = req.user.id;
     const appointmentId = req.params.id;
@@ -435,7 +435,7 @@ router.put('/appointments/:id/cancel', async (req, res) => {
 /**
  * POST /api/student/appointments/:id/review - 评价导师
  */
-router.post('/appointments/:id/review', idempotency(), async (req, res) => {
+router.post('/appointments/:id/review', requireCapability('canUseStudentFeatures'), idempotency(), async (req, res) => {
   try {
     const userId = req.user.id;
     const appointmentId = req.params.id;
@@ -492,7 +492,7 @@ router.post('/appointments/:id/review', idempotency(), async (req, res) => {
 /**
  * GET /api/student/portrait - 获取学生画像
  */
-router.get('/portrait', async (req, res) => {
+router.get('/portrait', requireCapability('canUseStudentFeatures'), async (req, res) => {
   try {
     const userId = req.user.id;
     const [rows] = await pool.query(
@@ -526,7 +526,7 @@ router.get('/portrait', async (req, res) => {
 /**
  * PUT /api/student/portrait - 创建或更新学生画像
  */
-router.put('/portrait', async (req, res) => {
+router.put('/portrait', requireCapability('canUseStudentFeatures'), async (req, res) => {
   try {
     const userId = req.user.id;
     const { skills, interests, industries, career_goals, self_intro, dimensions } = req.body;
@@ -572,7 +572,7 @@ router.put('/portrait', async (req, res) => {
 /**
  * GET /api/student/favorites - 收藏列表
  */
-router.get('/favorites', async (req, res) => {
+router.get('/favorites', requireCapability('canFavoriteContent'), async (req, res) => {
   try {
     const userId = req.user.id;
     const { type } = req.query; // job / course / mentor
@@ -596,14 +596,14 @@ router.get('/favorites', async (req, res) => {
         try {
           if (fav.target_type === 'job') {
             const [j] = await pool.query(
-              `SELECT title, company_name, location, salary, job_type, tags, logo,
+              `SELECT title, company_name, location, salary, type AS job_type, tags, logo,
                       created_at FROM jobs WHERE id = ?`,
               [fav.target_id]
             );
             detail = j[0] || {};
           } else if (fav.target_type === 'course' || fav.target_type === 'course_like') {
             const [c] = await pool.query(
-              `SELECT title, mentor_name, category, price, rating, student_count,
+              `SELECT title, mentor_name, category, price, rating, views AS student_count,
                       cover, created_at FROM courses WHERE id = ?`,
               [fav.target_id]
             );
@@ -633,7 +633,7 @@ router.get('/favorites', async (req, res) => {
 /**
  * POST /api/student/favorites - 添加收藏
  */
-router.post('/favorites', idempotency(), async (req, res) => {
+router.post('/favorites', requireCapability('canFavoriteContent'), idempotency(), async (req, res) => {
   try {
     const userId = req.user.id;
     const { target_type, target_id, remark } = req.body;
@@ -675,7 +675,7 @@ router.post('/favorites', idempotency(), async (req, res) => {
 /**
  * PUT /api/student/favorites/:id - 更新收藏备注
  */
-router.put('/favorites/:id', async (req, res) => {
+router.put('/favorites/:id', requireCapability('canFavoriteContent'), async (req, res) => {
   try {
     const userId = req.user.id;
     const favId = req.params.id;
@@ -700,7 +700,7 @@ router.put('/favorites/:id', async (req, res) => {
 /**
  * POST /api/student/favorites/batch - 批量取消收藏
  */
-router.post('/favorites/batch', async (req, res) => {
+router.post('/favorites/batch', requireCapability('canFavoriteContent'), async (req, res) => {
   try {
     const userId = req.user.id;
     const { ids } = req.body; // 数组
@@ -724,7 +724,7 @@ router.post('/favorites/batch', async (req, res) => {
 /**
  * DELETE /api/student/favorites/:id - 取消收藏
  */
-router.delete('/favorites/:id', async (req, res) => {
+router.delete('/favorites/:id', requireCapability('canFavoriteContent'), async (req, res) => {
   try {
     const userId = req.user.id;
     const favId = req.params.id;

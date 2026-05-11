@@ -1,6 +1,5 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { ImageOff } from 'lucide-react';
 
 /**
  * 图片变体预设（尺寸规范）
@@ -17,6 +16,15 @@ const VARIANT_STYLES: Record<ImageVariant, string> = {
   banner: 'rounded-none w-full',
   default: '',
 };
+
+/** 默认占位图路径 */
+const PLACEHOLDER_COVER = '/placeholder-cover.svg';
+
+/** 最大重试次数 */
+const MAX_RETRY = 1;
+
+/** 重试延迟（毫秒） */
+const RETRY_DELAY = 3000;
 
 interface LazyImageProps extends React.ImgHTMLAttributes<HTMLImageElement> {
   src: string;
@@ -36,7 +44,8 @@ interface LazyImageProps extends React.ImgHTMLAttributes<HTMLImageElement> {
  * 懒加载图片组件
  * 使用 IntersectionObserver 监听元素进入视口，再加载图片
  * 可降低初始页面加载带宽消耗 40-60%
- * 带有品牌色湖绿色骨架屏和错误占位图
+ * 带有灰色骨架屏和错误占位图
+ * 失败后自动重试一次（3秒延迟）
  */
 export default function LazyImage({
   src,
@@ -52,11 +61,16 @@ export default function LazyImage({
   const [imageSrc, setImageSrc] = useState<string | undefined>(undefined);
   const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState(false);
+  const [placeholderError, setPlaceholderError] = useState(false);
   const imgRef = useRef<HTMLImageElement>(null);
+  const retryCountRef = useRef(0);
+  const retryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // 兼容旧版 skeletonShape prop
   const isCircle = variant === 'avatar' || skeletonShape === 'circle';
   const variantClass = VARIANT_STYLES[variant];
+  const imageFitClass =
+    variant === 'avatar' ? 'object-cover object-center' : variant === 'cover' ? 'object-cover' : '';
 
   // 拼接 CDN URL
   const getFullUrl = (url: string): string => {
@@ -67,6 +81,31 @@ export default function LazyImage({
     const cleanUrl = url.startsWith('/') ? url.slice(1) : url;
     return `${cdnUrl.replace(/\/$/, '')}/${cleanUrl}`;
   };
+
+  /** 清除重试定时器并重置计数器 */
+  const clearRetryTimer = useCallback(() => {
+    if (retryTimerRef.current) {
+      clearTimeout(retryTimerRef.current);
+      retryTimerRef.current = null;
+    }
+    retryCountRef.current = 0;
+  }, []);
+
+  // src 变化时重置所有状态
+  useEffect(() => {
+    setError(false);
+    setLoaded(false);
+    setImageSrc(undefined);
+    setPlaceholderError(false);
+    clearRetryTimer();
+  }, [src, clearRetryTimer]);
+
+  // 组件卸载时清除定时器
+  useEffect(() => {
+    return () => {
+      if (retryTimerRef.current) clearTimeout(retryTimerRef.current);
+    };
+  }, []);
 
   useEffect(() => {
     if (!imgRef.current) return;
@@ -95,60 +134,71 @@ export default function LazyImage({
     return () => observer.disconnect();
   }, [src]);
 
+  /** 图片加载错误处理：触发重试或标记为永久错误 */
+  const handleError = useCallback(() => {
+    const done = () => {
+      setError(true);
+      props.onError?.({} as React.SyntheticEvent<HTMLImageElement, Event>);
+    };
+
+    if (retryCountRef.current >= MAX_RETRY) {
+      done();
+      return;
+    }
+
+    retryCountRef.current++;
+    retryTimerRef.current = setTimeout(() => {
+      // 通过修改 imageSrc 触发重新加载
+      const retryUrl = `${src}${src.includes('?') ? '&' : '?'}_retry=${retryCountRef.current}`;
+      setImageSrc(retryUrl);
+    }, RETRY_DELAY);
+  }, [src, props.onError]);
+
   const showPlaceholder = !loaded && !error;
 
   return (
     <div className={`relative overflow-hidden ${variantClass} ${containerClassName ?? ''}`}>
-      {/* 品牌色骨架屏 */}
+      {/* 灰色骨架屏 pulse 动画 */}
       {showPlaceholder && (
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className={`absolute inset-0 flex items-center justify-center ${
+          className={`absolute inset-0 bg-gray-200 ${
             isCircle ? 'rounded-full' : 'rounded-lg'
           }`}
           style={{
-            background: 'linear-gradient(90deg, rgb(var(--color-primary-100)) 0%, rgb(var(--color-primary-200)) 50%, rgb(var(--color-primary-100)) 100%)',
-            backgroundSize: '200% 100%',
-            animation: 'shimmer 1.5s ease-in-out infinite',
+            animation: 'pulse-bg 2s ease-in-out infinite',
           }}
         >
           {placeholder ? (
-            <img src={placeholder} alt="" className="w-8 h-8 opacity-50" />
-          ) : (
-            <div className={`w-8 h-8 bg-primary-300 ${isCircle ? 'rounded-full' : 'rounded'}`} />
-          )}
+            <img src={placeholder} alt="" className="w-8 h-8 opacity-40 m-auto absolute inset-0" />
+          ) : null}
         </motion.div>
       )}
 
-      {/* 品牌风格错误占位图 */}
-      {error && (
-        <motion.div
+      {/* 错误占位图：使用 placeholder-cover.svg */}
+      {error && !placeholderError && (
+        <motion.img
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
-          className={`absolute inset-0 bg-primary-50 flex flex-col items-center justify-center text-primary-600 ${
-            isCircle ? 'rounded-full' : ''
-          }`}
-        >
-          <ImageOff className="w-10 h-10 mb-2" />
-          <span className="text-sm font-medium">图片加载失败</span>
-        </motion.div>
+          src={PLACEHOLDER_COVER}
+          alt="图片加载失败"
+          className={`absolute inset-0 w-full h-full object-cover ${isCircle ? 'rounded-full' : ''}`}
+          onError={() => setPlaceholderError(true)}
+        />
       )}
 
       <motion.img
         ref={imgRef}
         src={imageSrc ? getFullUrl(imageSrc) : undefined}
         alt={alt}
-        className={`${loaded ? 'opacity-100' : 'opacity-0'} ${variantClass} ${className ?? ''}`}
+        className={`${loaded ? 'opacity-100' : 'opacity-0'} ${variantClass} ${imageFitClass} ${className ?? ''}`}
         initial={{ opacity: 0, scale: 1.05 }}
         animate={{ opacity: loaded ? 1 : 0, scale: loaded ? 1 : 1.05 }}
         transition={{ duration: 0.4, ease: 'easeOut' }}
         onLoad={() => setLoaded(true)}
-        onError={() => {
-          setError(true);
-          setLoaded(true);
-        }}
+        onError={handleError}
         {...props}
       />
     </div>

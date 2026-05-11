@@ -316,7 +316,7 @@ export default function Chat() {
     setTimeout(() => {
       const replies = [
         '你好！我是启小航 AI 助手 🤖\n很高兴为你服务！你可以问我关于求职、考研、课程等方面的问题。\n\n登录后可获得更完整的咨询体验哦~',
-        '这是一个很好的问题！启航平台提供丰富的求职和学习资源。\n\n📌 建议你登录后体验完整功能，包括：\n• 一对一导师咨询\n• 岗位精准推荐\n• 简历投递跟踪',
+        '这是一个很好的问题！启航平台提供丰富的求职和学习资源。\n\n📌 建议你登录后体验完整功能，包括：\n• VIP 专属资源库\n• 岗位精准推荐\n• 简历投递跟踪',
         '感谢你的使用！你已经体验了全部 3 条游客消息。\n\n🔐 登录后即可解锁：\n• 无限聊天对话\n• 专属客服通道\n• AI 智能求职助手\n\n期待你的加入！',
       ];
       const aiMsg: ChatMessage = {
@@ -469,7 +469,7 @@ export default function Chat() {
                     </div>
                     <div className="bg-gray-100 text-gray-800 px-4 py-2.5 rounded-2xl rounded-bl-md">
                       <p className="text-sm whitespace-pre-wrap break-words leading-relaxed">
-                        {'你好！👋 我是启小航 AI 助手。\n\n你可以试着问我问题，例如：\n• 如何找到适合我的岗位？\n• 平台有什么课程？\n• 如何预约导师？\n\n快试试吧！'}
+                        {'你好！👋 我是启小航 AI 助手。\n\n你可以试着问我问题，例如：\n• 如何找到适合我的岗位？\n• 平台有什么课程？\n• 如何投递简历？\n\n快试试吧！'}
                       </p>
                     </div>
                   </div>

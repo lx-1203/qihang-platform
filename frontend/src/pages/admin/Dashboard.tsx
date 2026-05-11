@@ -29,7 +29,6 @@ export default function AdminDashboard() {
   } | null>(null);
   const [statsError, setStatsError] = useState<string | null>(null);
   const [showGuide, setShowGuide] = useState(false);
-  const isFirstVisit = !localStorage.getItem('qihang_onboarding_admin');
 
   const today = new Date();
   const dateStr = `${today.getFullYear()}年${today.getMonth() + 1}月${today.getDate()}日`;
@@ -98,22 +97,22 @@ export default function AdminDashboard() {
   const roleData = stats?.roleDistribution || [
     { role: '学生', count: 0, pct: 0, color: 'bg-primary-500' },
     { role: '企业', count: 0, pct: 0, color: 'bg-blue-500' },
-    { role: '导师', count: 0, pct: 0, color: 'bg-emerald-500' },
+    { role: '咨询人员', count: 0, pct: 0, color: 'bg-emerald-500' },
     { role: '管理员', count: 0, pct: 0, color: 'bg-red-500' },
   ];
 
   const platformCards = [
     { label: '总注册用户', value: (stats?.totalUsers ?? 0).toLocaleString(), icon: Users, color: 'text-primary-600', bg: 'bg-primary-50', border: 'border-primary-100' },
     { label: '在线职位', value: String(stats?.onlineJobs ?? 0), icon: Briefcase, color: 'text-blue-600', bg: 'bg-blue-50', border: 'border-blue-100' },
-    { label: '课程总数', value: String(stats?.totalCourses ?? 0), icon: BookOpen, color: 'text-primary-600', bg: 'bg-primary-50', border: 'border-primary-100' },
+    { label: '内容总数', value: String(stats?.totalCourses ?? 0), icon: BookOpen, color: 'text-primary-600', bg: 'bg-primary-50', border: 'border-primary-100' },
     { label: '合作企业', value: String(stats?.totalCompanies ?? 0), icon: Building2, color: 'text-primary-600', bg: 'bg-primary-50', border: 'border-primary-100' },
-    { label: '认证导师', value: String(stats?.certifiedMentors ?? 0), icon: Award, color: 'text-emerald-600', bg: 'bg-emerald-50', border: 'border-emerald-100' },
-    { label: '预约辅导', value: (stats?.totalAppointments ?? 0).toLocaleString(), icon: Calendar, color: 'text-amber-600', bg: 'bg-amber-50', border: 'border-amber-100' },
+    { label: '已认证咨询人员', value: String(stats?.certifiedMentors ?? 0), icon: Award, color: 'text-emerald-600', bg: 'bg-emerald-50', border: 'border-emerald-100' },
+    { label: '咨询预约', value: (stats?.totalAppointments ?? 0).toLocaleString(), icon: Calendar, color: 'text-amber-600', bg: 'bg-amber-50', border: 'border-amber-100' },
   ];
 
   const pendingActions = [
     { label: '待审核企业', count: stats?.pendingCompanies ?? 0, link: '/admin/companies', icon: Building2, desc: '企业资质认证申请' },
-    { label: '待审核导师', count: stats?.pendingMentors ?? 0, link: '/admin/mentors', icon: ShieldCheck, desc: '导师入驻资质审核' },
+    { label: '待审核咨询人员', count: stats?.pendingMentors ?? 0, link: '/admin/mentors', icon: ShieldCheck, desc: '服务方入驻资质审核' },
     { label: '待处理举报', count: stats?.pendingReports ?? 0, link: '/admin/content', icon: AlertTriangle, desc: '用户举报内容处理' },
   ];
 
@@ -333,7 +332,7 @@ export default function AdminDashboard() {
           { label: '今日注册', value: stats?.todayRegister ?? 0, icon: Users, color: 'text-primary-600', bg: 'bg-primary-50' },
           { label: '今日投递', value: stats?.todayResume ?? 0, icon: Briefcase, color: 'text-blue-600', bg: 'bg-blue-50' },
           { label: '7日活跃', value: (stats?.weekActive ?? 0).toLocaleString(), icon: Activity, color: 'text-green-600', bg: 'bg-green-50' },
-          { label: '导师预约', value: stats?.totalAppointments ?? 0, icon: Calendar, color: 'text-amber-600', bg: 'bg-amber-50' },
+          { label: '咨询履约', value: stats?.totalAppointments ?? 0, icon: Calendar, color: 'text-amber-600', bg: 'bg-amber-50' },
         ].map((item, i) => (
           <motion.div key={i} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 + i * 0.05 }}
             className={`${item.bg} rounded-xl p-4 border border-gray-100 flex items-center gap-3`}
@@ -347,11 +346,11 @@ export default function AdminDashboard() {
         ))}
       </div>
 
-      {/* 引导组件 - 气泡模式 + 首次访问自动触发 */}
-      <OnboardingGuide role="admin" forceShow={isFirstVisit || showGuide} />
+      {/* 引导组件 - 使用内嵌卡片模式不遮挡界面 */}
+      <OnboardingGuide role="admin" inline forceShow={showGuide} />
 
-      {/* 引导触发按钮（非首次访问时显示） */}
-      {!isFirstVisit && (
+      {/* 引导触发按钮 */}
+      {!showGuide && (
         <motion.button
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}

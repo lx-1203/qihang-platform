@@ -13,8 +13,8 @@ import ErrorState from '../../components/ui/ErrorState';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
 import Tag from '@/components/ui/Tag';
 
-// ====== 导师预约管理页 ======
-// 预约列表、筛选标签、确认/拒绝/完成操作
+// ====== 导师咨询管理页 ======
+// 咨询记录列表、筛选标签、确认/拒绝/完成操作
 
 type AppointmentStatus = 'all' | 'pending' | 'confirmed' | 'completed' | 'cancelled';
 
@@ -179,7 +179,7 @@ export default function MentorAppointments() {
     }
   }
 
-  // 筛选预约
+  // 筛选咨询记录
   const filteredAppointments = appointments.filter(apt => {
     const matchTab = activeTab === 'all' || apt.status === activeTab;
     const matchSearch = !searchKeyword
@@ -198,7 +198,7 @@ export default function MentorAppointments() {
     cancelled: appointments.filter(a => a.status === 'cancelled').length,
   };
 
-  // 确认预约
+  // 确认咨询
   async function confirmAppointment(id: number) {
     setAppointments(prev =>
       prev.map(apt => apt.id === id ? { ...apt, status: 'confirmed' as const } : apt)
@@ -210,7 +210,7 @@ export default function MentorAppointments() {
     }
   }
 
-  // 拒绝预约
+  // 拒绝咨询
   async function rejectAppointment(id: number) {
     setAppointments(prev =>
       prev.map(apt => apt.id === id ? { ...apt, status: 'cancelled' as const } : apt)
@@ -222,7 +222,7 @@ export default function MentorAppointments() {
     }
   }
 
-  // 完成预约
+  // 完成咨询
   async function completeAppointment(id: number) {
     setAppointments(prev =>
       prev.map(apt => apt.id === id ? { ...apt, status: 'completed' as const } : apt)
@@ -286,8 +286,8 @@ export default function MentorAppointments() {
     <div className="space-y-6">
       {/* 页面标题 */}
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">预约管理</h1>
-        <p className="text-gray-500 mt-1">管理学生辅导预约，确认或调整预约安排</p>
+        <h1 className="text-2xl font-bold text-gray-900">咨询管理</h1>
+        <p className="text-gray-500 mt-1">管理学生咨询安排，确认或调整服务记录</p>
       </div>
 
       {/* 统计卡片 */}
@@ -338,7 +338,7 @@ export default function MentorAppointments() {
               <p className="text-xs text-gray-500">
                 {availableSlots.length > 0
                   ? `已设置 ${availableSlots.length} 个时间段`
-                  : '暂未设置时间段，学生将无法预约'}
+                  : '暂未设置时间段，学生将无法发起咨询'}
               </p>
             </div>
           </div>
@@ -445,14 +445,14 @@ export default function MentorAppointments() {
               type="text"
               value={searchKeyword}
               onChange={e => setSearchKeyword(e.target.value)}
-              placeholder="搜索学生/服务..."
-              className="pl-9 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 w-64"
+              placeholder="搜索学员姓名/服务/学校..."
+              className="pl-9 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 w-72"
             />
           </div>
         </div>
       </div>
 
-      {/* 预约列表 */}
+      {/* 咨询记录列表 */}
       <div className="space-y-4">
         {filteredAppointments.map((apt, i) => {
           const dateParts = parseDateParts(apt.date);
@@ -483,7 +483,7 @@ export default function MentorAppointments() {
                   </span>
                 </div>
 
-                {/* 预约详情 */}
+                {/* 咨询记录详情 */}
                 <div className="flex-1 p-5">
                   <div className="flex items-start justify-between">
                     <div className="flex items-start gap-4">
@@ -604,18 +604,18 @@ export default function MentorAppointments() {
             className="bg-white rounded-xl p-16 shadow-sm border border-gray-100 text-center"
           >
             <Calendar className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-            <h3 className="text-lg font-bold text-gray-500 mb-1">暂无预约</h3>
+            <h3 className="text-lg font-bold text-gray-500 mb-1">暂无咨询记录</h3>
             <p className="text-sm text-gray-400">
-              {activeTab === 'all' ? '还没有任何学生预约' : `没有${filterTabs.find(t => t.key === activeTab)?.label}的预约`}
+              {activeTab === 'all' ? '还没有任何学生咨询记录' : `没有${filterTabs.find(t => t.key === activeTab)?.label}的咨询记录`}
             </p>
           </motion.div>
         )}
       </div>
 
-      {/* 拒绝预约确认弹窗 */}
+      {/* 拒绝咨询确认弹窗 */}
       <ConfirmDialog
         open={rejectDialogOpen}
-        title="确定拒绝该预约？"
+        title="确定拒绝该咨询记录？"
         description="拒绝后学生将收到通知。"
         variant="warning"
         confirmText="确认拒绝"

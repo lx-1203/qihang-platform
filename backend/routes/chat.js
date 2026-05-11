@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import pool from '../db.js';
-import { authMiddleware, requireRole } from '../middleware/auth.js';
+import { authMiddleware, requireCapability, requireRole } from '../middleware/auth.js';
 import { sendAIMessage } from '../services/ai-service.js';
 
 const router = Router();
@@ -13,7 +13,7 @@ const router = Router();
 /**
  * POST /api/chat/conversations — 创建新会话
  */
-router.post('/conversations', authMiddleware, async (req, res) => {
+router.post('/conversations', authMiddleware, requireCapability('canUseChat'), async (req, res) => {
   try {
     const userId = req.user.id;
     const { type = 'user_service', title = '', target_user_id, company_id } = req.body;
@@ -147,7 +147,7 @@ router.post('/conversations', authMiddleware, async (req, res) => {
 /**
  * GET /api/chat/conversations — 获取用户会话列表
  */
-router.get('/conversations', authMiddleware, async (req, res) => {
+router.get('/conversations', authMiddleware, requireCapability('canUseChat'), async (req, res) => {
   try {
     const userId = req.user.id;
     const { status } = req.query;
@@ -198,7 +198,7 @@ router.get('/conversations', authMiddleware, async (req, res) => {
  * GET /api/chat/conversations/:id/messages — 增量拉取消息
  * ?after=0&limit=50  (after = 上次最后一条消息ID)
  */
-router.get('/conversations/:id/messages', authMiddleware, async (req, res) => {
+router.get('/conversations/:id/messages', authMiddleware, requireCapability('canUseChat'), async (req, res) => {
   try {
     const conversationId = parseInt(req.params.id);
     const userId = req.user.id;
@@ -254,7 +254,7 @@ router.get('/conversations/:id/messages', authMiddleware, async (req, res) => {
 /**
  * POST /api/chat/conversations/:id/messages — 发送消息
  */
-router.post('/conversations/:id/messages', authMiddleware, async (req, res) => {
+router.post('/conversations/:id/messages', authMiddleware, requireCapability('canUseChat'), async (req, res) => {
   try {
     const conversationId = parseInt(req.params.id);
     const userId = req.user.id;
@@ -368,7 +368,7 @@ router.post('/conversations/:id/messages', authMiddleware, async (req, res) => {
 /**
  * PUT /api/chat/conversations/:id/read — 标记会话已读（用户）
  */
-router.put('/conversations/:id/read', authMiddleware, async (req, res) => {
+router.put('/conversations/:id/read', authMiddleware, requireCapability('canUseChat'), async (req, res) => {
   try {
     const conversationId = parseInt(req.params.id);
     const userId = req.user.id;
@@ -426,7 +426,7 @@ router.put('/conversations/:id/read', authMiddleware, async (req, res) => {
 /**
  * PUT /api/chat/conversations/:id/close — 关闭会话
  */
-router.put('/conversations/:id/close', authMiddleware, async (req, res) => {
+router.put('/conversations/:id/close', authMiddleware, requireCapability('canUseChat'), async (req, res) => {
   try {
     const conversationId = parseInt(req.params.id);
     const userId = req.user.id;
@@ -467,7 +467,7 @@ router.put('/conversations/:id/close', authMiddleware, async (req, res) => {
 /**
  * POST /api/chat/conversations/:id/transfer-to-human — 转人工客服
  */
-router.post('/conversations/:id/transfer-to-human', authMiddleware, async (req, res) => {
+router.post('/conversations/:id/transfer-to-human', authMiddleware, requireCapability('canUseChat'), async (req, res) => {
   try {
     const conversationId = parseInt(req.params.id);
     const userId = req.user.id;

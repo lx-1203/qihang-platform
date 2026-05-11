@@ -587,10 +587,15 @@ export default function ChatManage() {
                 ))}
               </div>
             ) : conversations.length === 0 ? (
-              // 空状态
+              // 空状态（区分搜索无结果 vs 无会话）
               <div className="flex flex-col items-center justify-center py-16 text-gray-400">
                 <Inbox className="w-10 h-10 mb-3" />
-                <p className="text-sm">暂无会话</p>
+                <p className="text-sm">{keyword.trim() ? '未找到匹配的会话' : '暂无会话'}</p>
+                {keyword.trim() && (
+                  <button onClick={() => setKeyword('')} className="mt-2 text-xs text-primary-500 hover:underline">
+                    清除搜索条件
+                  </button>
+                )}
               </div>
             ) : (
               // 会话列表渲染

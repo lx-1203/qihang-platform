@@ -1,19 +1,20 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import {
-  User, Save, Shield, ShieldCheck, ShieldAlert,
+  User, Save, Shield, ShieldCheck, ShieldAlert, ShieldOff,
   Plus, X, Clock, Briefcase, Tag, DollarSign,
-  Image, FileText, CheckCircle, Loader2, MessageSquareText, Mail
+  Image, FileText, CheckCircle, Loader2, MessageSquareText, Mail,
+  Upload, AlertTriangle, Award
 } from 'lucide-react';
 import http from '@/api/http';
 import { useAuthStore } from '@/store/auth';
 import ErrorState from '@/components/ui/ErrorState';
 import { DEFAULT_AVATAR } from '@/constants';
 import FileUpload from '@/components/ui/FileUpload';
+import { showToast } from '@/components/ui/ToastContainer';
 
-// ====== 导师资料编辑页 ======
-// 个人信息编辑、专长标签、可用时间段管理
-
+// ====== 导师资料编辑页======
+// 个人信息编辑、专长标签、可用时间段管理、资质证明提交
 interface MentorProfile {
   name: string;
   title: string;
@@ -22,13 +23,16 @@ interface MentorProfile {
   expertise: string[];
   pricePerSession: number;
   availableSlots: string[];
-  verifyStatus: 'approved' | 'pending' | 'rejected';
+  verifyStatus: 'approved' | 'pending' | 'rejected' | 'draft';
   email: string;
   phone: string;
   wechat: string;
   contact_email: string;
   experience: string;
   education: string;
+  credential_url: string;
+  credential_description: string;
+  verified_badge: string;
 }
 
 // 默认空资料，用于新建导师
@@ -38,6 +42,7 @@ const emptyProfile: MentorProfile = {
   verifyStatus: 'pending', email: '', phone: '',
   wechat: '', contact_email: '',
   experience: '', education: '',
+  credential_url: '', credential_description: '', verified_badge: '',
 };
 
 export default function MentorProfile() {
@@ -49,6 +54,13 @@ export default function MentorProfile() {
   const [expertiseInput, setExpertiseInput] = useState('');
   const [slotInput, setSlotInput] = useState('');
   const { user: authUser, setUser } = useAuthStore();
+
+  // 资质证明相关状态
+  const [credentialSubmitting, setCredentialSubmitting] = useState(false);
+  const [credentialSaved, setCredentialSaved] = useState(false);
+
+  // 表单验证错误
+  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
     fetchProfile();
@@ -76,6 +88,9 @@ export default function MentorProfile() {
           contact_email: p.contact_email || '',
           experience: p.experience || '',
           education: p.education || '',
+          credential_url: p.credential_url || '',
+          credential_description: p.credential_description || '',
+          verified_badge: p.verified_badge || p.cert_badge || '',
         });
       }
     } catch (err) {
@@ -86,7 +101,40 @@ export default function MentorProfile() {
     }
   }
 
+  // 表单验证
+  function validateProfile(): boolean {
+    const errors: Record<string, string> = {};
+
+    if (!profile.name.trim()) {
+      errors.name = '姓名不能为空';
+    }
+    if (!profile.title.trim()) {
+      errors.title = '职称/头衔不能为空';
+    }
+    if (!profile.bio.trim()) {
+      errors.bio = '个人简介不能为空';
+    }
+    if (profile.bio.length > 500) {
+      errors.bio = '个人简介不能超过500字';
+    }
+    if (profile.pricePerSession < 0) {
+      errors.pricePerSession = '辅导价格不能为负数';
+    }
+    if (profile.contact_email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(profile.contact_email)) {
+      errors.contact_email = '联系邮箱格式不正确';
+    }
+
+    setValidationErrors(errors);
+    return Object.keys(errors).length === 0;
+  }
+
   async function handleSave() {
+    // 表单验证
+    if (!validateProfile()) {
+      showToast('请检查表单中的错误项', 'error');
+      return;
+    }
+
     try {
       setSaving(true);
       // 将前端字段名映射为后端字段名，确保 availableSlots 正确保存
@@ -96,6 +144,8 @@ export default function MentorProfile() {
         price: profile.pricePerSession,
         wechat: profile.wechat || '',
         contact_email: profile.contact_email || '',
+        credential_url: profile.credential_url || null,
+        credential_description: profile.credential_description || null,
       };
       await http.post('/mentor/profile', payload);
       // 同步更新 auth store 中的头像
@@ -106,19 +156,61 @@ export default function MentorProfile() {
         } as typeof authUser);
       }
       setSaved(true);
+      showToast('资料保存成功', 'success');
       setTimeout(() => setSaved(false), 2000);
     } catch (err) {
       // 保存失败时给出提示
       console.error('保存资料失败:', err);
       setError('保存失败，请稍后重试');
+      showToast('保存失败，请稍后重试', 'error');
       setTimeout(() => setError(null), 3000);
     } finally {
       setSaving(false);
     }
   }
 
+  // 单独提交资质证明
+  async function handleCredentialSubmit() {
+    if (!profile.credential_url && !profile.credential_description.trim()) {
+      showToast('请上传资质证书或填写资质说明', 'warning');
+      return;
+    }
+
+    try {
+      setCredentialSubmitting(true);
+      const payload = {
+        ...profile,
+        available_time: profile.availableSlots,
+        price: profile.pricePerSession,
+        wechat: profile.wechat || '',
+        contact_email: profile.contact_email || '',
+        credential_url: profile.credential_url || null,
+        credential_description: profile.credential_description || null,
+      };
+      await http.post('/mentor/profile', payload);
+      // 提交资质后状态变为 pending
+      setProfile(prev => ({ ...prev, verifyStatus: 'pending' }));
+      setCredentialSaved(true);
+      showToast('资质证明已提交，等待管理员审核', 'success');
+      setTimeout(() => setCredentialSaved(false), 3000);
+    } catch (err) {
+      console.error('提交资质证明失败:', err);
+      showToast('提交失败，请稍后重试', 'error');
+    } finally {
+      setCredentialSubmitting(false);
+    }
+  }
+
   function updateField(field: keyof MentorProfile, value: string | number) {
     setProfile(prev => ({ ...prev, [field]: value }));
+    // 清除对应字段的验证错误
+    if (validationErrors[field]) {
+      setValidationErrors(prev => {
+        const next = { ...prev };
+        delete next[field];
+        return next;
+      });
+    }
   }
 
   function addExpertise() {
@@ -156,14 +248,19 @@ export default function MentorProfile() {
     }));
   }
 
+  // 是否需要显示"请提交资质证明"提示
+  const needsCredential = !profile.verifyStatus || profile.verifyStatus === 'pending' || profile.verifyStatus === 'rejected';
+  const hasCredentialInfo = profile.credential_url || profile.credential_description;
+
   // 认证状态配置
   const verifyConfig = {
     approved: { label: '已认证', icon: ShieldCheck, color: 'text-green-600', bg: 'bg-green-50 border-green-200' },
     pending: { label: '审核中', icon: Shield, color: 'text-orange-600', bg: 'bg-orange-50 border-orange-200' },
     rejected: { label: '未通过', icon: ShieldAlert, color: 'text-red-600', bg: 'bg-red-50 border-red-200' },
+    draft: { label: '未提交', icon: ShieldOff, color: 'text-gray-500', bg: 'bg-gray-50 border-gray-200' },
   };
 
-  const verify = verifyConfig[profile.verifyStatus] || verifyConfig.pending;
+  const verify = verifyConfig[profile.verifyStatus] ?? verifyConfig.pending;
 
   if (loading) return (
     <div className="space-y-6">
@@ -213,6 +310,29 @@ export default function MentorProfile() {
         </button>
       </div>
 
+      {/* 首次登录/未认证提示 - 醒目横幅 */}
+      {needsCredential && !hasCredentialInfo && (
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="flex items-center gap-3 p-5 rounded-xl border-2 border-amber-300 bg-amber-50 shadow-sm"
+        >
+          <div className="w-12 h-12 rounded-full bg-amber-100 flex items-center justify-center flex-shrink-0">
+            <AlertTriangle className="w-6 h-6 text-amber-600" />
+          </div>
+          <div className="flex-1">
+            <h3 className="font-bold text-amber-800 text-base">请提交资质证明</h3>
+            <p className="text-sm text-amber-700 mt-1">
+              您尚未提交资质证明，请先完善下方资质信息并提交审核。审核通过后才能正常开展学生咨询服务。</p>
+          </div>
+          <a
+            href="#credential-section"
+            className="px-4 py-2 bg-amber-600 text-white rounded-lg text-sm font-medium hover:bg-amber-700 transition-colors flex-shrink-0"
+          >
+            去提交</a>
+        </motion.div>
+      )}
+
       {/* 认证状态横幅 */}
       <motion.div
         initial={{ opacity: 0, y: -10 }}
@@ -220,13 +340,19 @@ export default function MentorProfile() {
         className={`flex items-center gap-3 p-4 rounded-xl border ${verify.bg}`}
       >
         <verify.icon className={`w-6 h-6 ${verify.color}`} />
-        <div>
+        <div className="flex-1">
           <span className={`font-semibold ${verify.color}`}>认证状态：{verify.label}</span>
+          {profile.verifyStatus === 'approved' && profile.verified_badge && (
+            <p className="text-sm text-green-600 mt-0.5 flex items-center gap-1">
+              <Award className="w-4 h-4" />
+              认证标签：{profile.verified_badge}
+            </p>
+          )}
           {profile.verifyStatus === 'approved' && (
-            <p className="text-sm text-green-600 mt-0.5">您的导师资质已通过审核，可正常接受学生预约。</p>
+            <p className="text-sm text-green-600 mt-0.5">您的导师资质已通过审核，可正常开展学生咨询服务。</p>
           )}
           {profile.verifyStatus === 'pending' && (
-            <p className="text-sm text-orange-600 mt-0.5">您的资料正在审核中，审核通过后即可接受学生预约。</p>
+            <p className="text-sm text-orange-600 mt-0.5">您的资料正在审核中，审核通过后即可开展学生咨询服务。</p>
           )}
           {profile.verifyStatus === 'rejected' && (
             <p className="text-sm text-red-600 mt-0.5">您的资料审核未通过，请修改后重新提交。</p>
@@ -312,8 +438,7 @@ export default function MentorProfile() {
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   <MessageSquareText className="w-4 h-4 inline mr-1" />
-                  微信号
-                </label>
+                  微信号</label>
                 <input
                   type="text"
                   value={profile.wechat}
@@ -332,15 +457,20 @@ export default function MentorProfile() {
                   value={profile.contact_email}
                   onChange={e => updateField('contact_email', e.target.value)}
                   placeholder="选填，供学生咨询联系"
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                  className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 ${
+                    validationErrors.contact_email ? 'border-red-300 bg-red-50' : 'border-gray-300'
+                  }`}
                 />
+                {validationErrors.contact_email && (
+                  <p className="text-xs text-red-500 mt-1">{validationErrors.contact_email}</p>
+                )}
               </div>
             </div>
             <p className="text-xs text-gray-400 mt-3">联系方式将在导师详情页展示，方便学生与您取得联系</p>
           </motion.div>
         </div>
 
-        {/* 右侧：详细资料 */}
+        {/* 右侧：详细资料*/}
         <div className="lg:col-span-2 space-y-6">
           {/* 基本信息 */}
           <motion.div
@@ -354,27 +484,37 @@ export default function MentorProfile() {
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   <User className="w-4 h-4 inline mr-1" />
-                  姓名
+                  姓名 <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
                   value={profile.name}
                   onChange={e => updateField('name', e.target.value)}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                  className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 ${
+                    validationErrors.name ? 'border-red-300 bg-red-50' : 'border-gray-300'
+                  }`}
                 />
+                {validationErrors.name && (
+                  <p className="text-xs text-red-500 mt-1">{validationErrors.name}</p>
+                )}
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   <Briefcase className="w-4 h-4 inline mr-1" />
-                  职称/头衔
+                  职称/头衔 <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
                   value={profile.title}
                   onChange={e => updateField('title', e.target.value)}
                   placeholder="例如：资深HR总监"
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                  className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 ${
+                    validationErrors.title ? 'border-red-300 bg-red-50' : 'border-gray-300'
+                  }`}
                 />
+                {validationErrors.title && (
+                  <p className="text-xs text-red-500 mt-1">{validationErrors.title}</p>
+                )}
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">工作经验</label>
@@ -406,13 +546,18 @@ export default function MentorProfile() {
                   value={profile.pricePerSession}
                   onChange={e => updateField('pricePerSession', Number(e.target.value))}
                   min={0}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                  className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 ${
+                    validationErrors.pricePerSession ? 'border-red-300 bg-red-50' : 'border-gray-300'
+                  }`}
                 />
+                {validationErrors.pricePerSession && (
+                  <p className="text-xs text-red-500 mt-1">{validationErrors.pricePerSession}</p>
+                )}
               </div>
             </div>
           </motion.div>
 
-          {/* 个人简介 */}
+          {/* 个人简介*/}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -421,16 +566,24 @@ export default function MentorProfile() {
           >
             <h3 className="text-lg font-bold text-gray-900 mb-4">
               <FileText className="w-5 h-5 inline mr-1" />
-              个人简介
+              个人简介<span className="text-red-500 text-sm">*</span>
             </h3>
             <textarea
               value={profile.bio}
               onChange={e => updateField('bio', e.target.value)}
               rows={4}
               placeholder="介绍您的专业背景、擅长领域和辅导特色..."
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 resize-none"
+              className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 resize-none ${
+                validationErrors.bio ? 'border-red-300 bg-red-50' : 'border-gray-300'
+              }`}
             />
-            <p className="text-xs text-gray-400 mt-1">{(profile.bio || '').length}/500 字</p>
+            <div className="flex items-center justify-between mt-1">
+              <p className={`text-xs ${(profile.bio || '').length > 500 ? 'text-red-500' : 'text-gray-400'}`}>
+                {(profile.bio || '').length}/500 字              </p>
+              {validationErrors.bio && (
+                <p className="text-xs text-red-500">{validationErrors.bio}</p>
+              )}
+            </div>
           </motion.div>
 
           {/* 专长标签 */}
@@ -479,7 +632,7 @@ export default function MentorProfile() {
             </div>
           </motion.div>
 
-          {/* 可用时间段 */}
+          {/* 可用时间段*/}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -488,8 +641,7 @@ export default function MentorProfile() {
           >
             <h3 className="text-lg font-bold text-gray-900 mb-4">
               <Clock className="w-5 h-5 inline mr-1" />
-              可用时间段
-            </h3>
+              可用时间段            </h3>
             <div className="space-y-2 mb-4">
               {(profile.availableSlots || []).map((slot, i) => (
                 <div
@@ -515,7 +667,7 @@ export default function MentorProfile() {
                 value={slotInput}
                 onChange={e => setSlotInput(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addSlot())}
-                placeholder="例如：周六 09:00-12:00"
+                placeholder="例如：周一 09:00-12:00"
                 className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
               />
               <button
@@ -525,6 +677,102 @@ export default function MentorProfile() {
                 <Plus className="w-4 h-4" />
                 添加
               </button>
+            </div>
+          </motion.div>
+
+          {/* 资质证明提交区域 */}
+          <motion.div
+            id="credential-section"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.25 }}
+            className={`bg-white rounded-xl p-6 shadow-sm border ${
+              needsCredential && !hasCredentialInfo
+                ? 'border-amber-300 ring-2 ring-amber-100'
+                : 'border-gray-100'
+            }`}
+          >
+            <h3 className="text-lg font-bold text-gray-900 mb-2 flex items-center gap-2">
+              <Shield className="w-5 h-5 text-primary-500" />
+              资质证明
+            </h3>
+            <p className="text-sm text-gray-500 mb-4">
+              提交您的资质证书和说明，管理员审核通过后将颁发认证标签。审核通过后不可修改，如需更新请联系管理员。</p>
+
+            <div className="space-y-4">
+              {/* 资质证书上传 */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <Upload className="w-4 h-4 inline mr-1" />
+                  资质证书上传
+                </label>
+                <FileUpload
+                  category="credential"
+                  accept="image/*,.pdf"
+                  placeholder="点击或拖拽上传资质证书（支持 JPG/PNG/PDF，最大10MB）"
+                  onSuccess={(result) => updateField('credential_url', result.url)}
+                />
+                {profile.credential_url && (
+                  <div className="mt-2 flex items-center gap-2">
+                    <CheckCircle className="w-4 h-4 text-green-500" />
+                    <span className="text-sm text-green-600">已上传资质证书</span>
+                    <a
+                      href={profile.credential_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs text-primary-600 hover:underline"
+                    >
+                      查看文件
+                    </a>
+                  </div>
+                )}
+              </div>
+
+              {/* 资质说明 */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <FileText className="w-4 h-4 inline mr-1" />
+                  资质说明
+                </label>
+                <textarea
+                  value={profile.credential_description}
+                  onChange={e => updateField('credential_description', e.target.value)}
+                  rows={3}
+                  placeholder="请描述您的资质情况，例如：持有国家二级心理咨询师证书、10年互联网大厂HR经验..."
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 resize-none"
+                />
+              </div>
+
+              {/* 提交资质按钮 */}
+              {needsCredential && (
+                <div className="flex items-center gap-3 pt-2">
+                  <button
+                    onClick={handleCredentialSubmit}
+                    disabled={credentialSubmitting || profile.verifyStatus === 'approved'}
+                    className="flex items-center gap-2 px-5 py-2.5 bg-amber-600 hover:bg-amber-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50 shadow-sm"
+                  >
+                    {credentialSubmitting ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : credentialSaved ? (
+                      <CheckCircle className="w-4 h-4" />
+                    ) : (
+                      <Shield className="w-4 h-4" />
+                    )}
+                    {credentialSubmitting ? '提交中...' : credentialSaved ? '已提交' : '提交资质证明'}
+                  </button>
+                  {profile.verifyStatus === 'pending' && hasCredentialInfo && (
+                    <span className="text-sm text-orange-600 flex items-center gap-1">
+                      <Clock className="w-4 h-4" />
+                      资质审核中，请耐心等待
+                    </span>
+                  )}
+                  {profile.verifyStatus === 'rejected' && (
+                    <span className="text-sm text-red-600 flex items-center gap-1">
+                      <ShieldAlert className="w-4 h-4" />
+                      审核未通过，请修改后重新提交</span>
+                  )}
+                </div>
+              )}
             </div>
           </motion.div>
         </div>

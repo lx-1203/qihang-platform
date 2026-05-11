@@ -12,8 +12,8 @@ import ConfirmDialog from '@/components/ui/ConfirmDialog';
 import { TableSkeleton } from '../../components/ui/Skeleton';
 import ErrorState from '../../components/ui/ErrorState';
 
-// ====== 导师课程管理页 ======
-// 课程列表、状态切换、创建/编辑课程
+// ====== 导师资源管理页 ======
+// 资源列表、状态切换、创建/编辑资源
 
 interface Course {
   id: number;
@@ -31,14 +31,11 @@ interface Course {
 }
 
 const categories = COURSE_CATEGORIES;
-const difficultyMap: Record<string, { label: string; color: string }> = {
-  ...DIFFICULTY_MAP,
-  intermediate: { label: '进阶', color: DIFFICULTY_MAP.intermediate.color },
-};
+const difficultyMap = DIFFICULTY_MAP;
 const statusMap = {
-  active: { label: '已上线', color: 'bg-green-50 text-green-700' },
-  inactive: { label: '已下线', color: 'bg-gray-100 text-gray-600' },
-  review: { label: '审核中', color: 'bg-orange-50 text-orange-700' },
+  active: { label: '已发布', color: 'bg-green-50 text-green-700' },
+  inactive: { label: '草稿', color: 'bg-gray-100 text-gray-600' },
+  review: { label: '审核中', color: 'bg-yellow-50 text-yellow-700' },
 };
 
 export default function CourseManage() {
@@ -147,15 +144,15 @@ export default function CourseManage() {
       {/* 页面标题 */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">课程管理</h1>
-          <p className="text-gray-500 mt-1">管理您的所有课程内容</p>
+          <h1 className="text-2xl font-bold text-gray-900">资源管理</h1>
+          <p className="text-gray-500 mt-1">管理您的公开资源内容</p>
         </div>
         <button
           onClick={openCreate}
           className="flex items-center gap-2 bg-primary-600 hover:bg-primary-700 text-white px-5 py-2.5 rounded-lg font-medium transition-colors shadow-sm"
         >
           <Plus className="w-5 h-5" />
-          创建课程
+          创建资源
         </button>
       </div>
 
@@ -168,7 +165,7 @@ export default function CourseManage() {
               type="text"
               value={searchKeyword}
               onChange={e => setSearchKeyword(e.target.value)}
-              placeholder="搜索课程名称..."
+              placeholder="搜索资源名称..."
               className="w-full pl-9 pr-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
             />
           </div>
@@ -191,7 +188,7 @@ export default function CourseManage() {
       {/* 统计摘要 */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
-          { label: '全部课程', value: courses.length, icon: BookOpen, bg: 'bg-primary-50', color: 'text-primary-600' },
+          { label: '全部资源', value: courses.length, icon: BookOpen, bg: 'bg-primary-50', color: 'text-primary-600' },
           { label: '已上线', value: courses.filter(c => c.status === 'active').length, icon: ToggleRight, bg: 'bg-green-50', color: 'text-green-600' },
           { label: '总浏览量', value: formatViews(courses.reduce((a, c) => a + c.views, 0)), icon: Eye, bg: 'bg-blue-50', color: 'text-blue-600' },
           { label: '总学员数', value: courses.reduce((a, c) => a + (c.rating_count || 0), 0).toLocaleString(), icon: Users, bg: 'bg-primary-50', color: 'text-primary-600' },
@@ -216,13 +213,13 @@ export default function CourseManage() {
         ))}
       </div>
 
-      {/* 课程列表 */}
+      {/* 资源列表 */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
               <tr className="bg-gray-50 border-b border-gray-100">
-                <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">课程信息</th>
+                <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">资源信息</th>
                 <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">分类</th>
                 <th className="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">价格</th>
                 <th className="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">浏览量</th>
@@ -243,7 +240,7 @@ export default function CourseManage() {
                 >
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-3">
-                      {/* 课程封面 */}
+                      {/* 资源封面 */}
                       <div className="w-14 h-10 bg-gray-100 rounded-lg flex items-center justify-center shrink-0">
                         {course.cover ? (
                           <img src={course.cover} alt="" className="w-full h-full object-cover rounded-lg" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
@@ -292,7 +289,7 @@ export default function CourseManage() {
                       {course.status !== 'review' && (
                         <button
                           onClick={() => toggleStatus(course.id)}
-                          title={course.status === 'active' ? '下线课程' : '上线课程'}
+                          title={course.status === 'active' ? '下线资源' : '上线资源'}
                           className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors"
                         >
                           {course.status === 'active' ? (
@@ -326,7 +323,7 @@ export default function CourseManage() {
         {filteredCourses.length === 0 && (
           <div className="py-16 text-center">
             <BookOpen className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-            <p className="text-gray-500">暂无课程数据</p>
+            <p className="text-gray-500">暂无资源数据</p>
           </div>
         )}
       </div>
@@ -335,8 +332,8 @@ export default function CourseManage() {
       <ConfirmDialog
         open={!!deleteTarget}
         variant="danger"
-        title="确认删除课程"
-        description={`确定要删除课程「${deleteTarget?.name}」吗？删除后无法恢复。`}
+        title="确认删除资源"
+        description={`确定要删除资源「${deleteTarget?.name}」吗？删除后无法恢复。`}
         loading={deleteLoading}
         onConfirm={handleConfirmDelete}
         onCancel={() => setDeleteTarget(null)}

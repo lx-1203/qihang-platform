@@ -6,18 +6,18 @@ import ErrorState from '../components/ui/ErrorState';
 import EmptyState from '../components/ui/EmptyState';
 import { ListSkeleton } from '../components/ui/Skeleton';
 import Tag from '@/components/ui/Tag';
-import coursesConfig from '@/data/courses-config.json';
+import { useConfigStore } from '@/store/config';
 
 // ====== 课程列表页 ======
-// 数据从 /api/courses 获取，分类和文案从 courses-config.json 配置文件读取
+// 数据从 /api/courses 获取，分类和文案通过配置中心读取
 
-const {
-  categories: CATEGORIES,
-  pageMeta,
-  emptyState: emptyStateConfig,
-  errorMessages,
-  ui,
-} = coursesConfig;
+const DEFAULT_COURSES_CONFIG = {
+  categories: ["全部", "求职指导", "面试技巧", "简历制作", "行业解析", "考研保研", "体制内备考", "技能提升"],
+  pageMeta: { title: "干货资料库", subtitle: "海量免费干货视频，系统性提升你的求职硬实力", searchPlaceholder: "搜索干货资料..." },
+  emptyState: { title: "暂无课程", description: "尝试更换分类或搜索关键词", actionText: "清除筛选" },
+  errorMessages: { fetchFailed: "获取课程数据失败，服务器返回异常", networkError: "网络请求失败，请检查网络连接后重试" },
+  ui: { loadMoreText: "加载更多干货", totalTemplate: "共 {total} 门课程", pageSize: 20 },
+};
 
 interface CourseItem {
   id: number;
@@ -33,6 +33,9 @@ interface CourseItem {
 }
 
 export default function Courses() {
+  const coursesConfig = useConfigStore(s => s?.getJson?.('courses_page_config', DEFAULT_COURSES_CONFIG) ?? DEFAULT_COURSES_CONFIG);
+  const { categories: CATEGORIES, pageMeta, emptyState: emptyStateConfig, errorMessages, ui } = coursesConfig;
+
   const [activeCategory, setActiveCategory] = useState('全部');
   const [keyword, setKeyword] = useState('');
   const [searchInput, setSearchInput] = useState('');
@@ -41,7 +44,7 @@ export default function Courses() {
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const pageSize = ui.pageSize || 20;
+  const pageSize = ui?.pageSize || 20;
 
   const fetchCourses = useCallback(async () => {
     setLoading(true);

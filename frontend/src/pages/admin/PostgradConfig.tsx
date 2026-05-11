@@ -140,7 +140,7 @@ export default function PostgradConfig() {
               <p className="text-gray-500 text-sm mt-1">管理考研页面的时间线、标题和描述内容</p>
             </div>
             <div className="flex items-center gap-3">
-              <a href="/postgrad" target="_blank" rel="noopener noreferrer"
+              <a href="/further-education" target="_blank" rel="noopener noreferrer"
                 className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors">
                 <Eye className="w-4 h-4" /> 预览页面
               </a>

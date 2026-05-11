@@ -1,70 +1,90 @@
-# 开发模式设置指南
+# 开发模式说明
 
-## 快速启用开发模式
+## 本地启动建议
 
-### 1. 后端开发模式（已启用）
+优先使用根目录启动脚本：
 
-后端已配置 `DEV_MODE=true`，无需登录即可访问所有 API。
+Windows:
 
-### 2. 前端开发模式
+```bat
+start.bat
+```
 
-在浏览器控制台（F12）执行以下命令：
+macOS / Linux:
+
+```bash
+./start.sh
+```
+
+脚本会等待以下两个地址都可访问后再判定启动完成：
+
+- `http://localhost:3001/api/health`
+- `http://localhost:5173`
+
+如果前端没有成功监听 `5173`，脚本会直接报错退出。
+
+## `ws://localhost:5173` 连接失败是什么意思
+
+如果控制台出现：
+
+```text
+WebSocket connection to 'ws://localhost:5173/' failed: net::ERR_CONNECTION_REFUSED
+```
+
+优先结论：
+
+- 前端 Vite dev server 没有成功启动
+- 不是先看业务页面逻辑
+- 不是先看浏览器缓存
+
+先检查：
+
+```text
+http://localhost:5173
+http://localhost:3001/api/health
+```
+
+## 开发模式绕过
+
+后端 `.env` 中开启：
+
+```env
+DEV_MODE=true
+```
+
+前端浏览器控制台执行：
 
 ```javascript
 localStorage.setItem('DEV_MODE', 'true');
 location.reload();
 ```
 
-### 3. 验证开发模式
-
-刷新页面后，应该可以直接访问任何页面，无需登录。
-
-### 4. 关闭开发模式
+关闭前端开发绕过：
 
 ```javascript
 localStorage.removeItem('DEV_MODE');
 location.reload();
 ```
 
-## 开发模式功能
+## 5173 端口占用
 
-### 后端（backend/.env）
-- ✅ 跳过 JWT 认证
-- ✅ 跳过角色权限检查
-- ✅ 自动注入管理员身份
+项目已启用 `strictPort: true`。
 
-### 前端（localStorage.DEV_MODE）
-- ✅ 跳过路由守卫
-- ✅ 可访问所有角色页面
-- ✅ 无需登录
+含义：
 
-## ⚠️ 重要提示
+- `5173` 被占用时，Vite 不会自动切到 `5174`
+- 这能避免页面打开了，但 HMR WebSocket 指向错误端口
 
-**开发模式仅用于本地调试，生产环境必须关闭！**
+排查命令：
 
-### 生产环境检查清单
+Windows:
 
-- [ ] `backend/.env` 中删除或设置 `DEV_MODE=false`
-- [ ] 前端不会在生产构建中启用开发模式（仅在 `import.meta.env.DEV` 时生效）
-- [ ] 部署前测试正常登录流程
+```bat
+netstat -ano | findstr 5173
+```
 
-## 常见问题
+macOS / Linux:
 
-### Q: 为什么还是提示"权限不足"？
-
-A: 确保：
-1. 后端已重启（使 DEV_MODE 生效）
-2. 前端已执行 `localStorage.setItem('DEV_MODE', 'true')` 并刷新
-3. 浏览器控制台检查 `localStorage.getItem('DEV_MODE')` 返回 `"true"`
-
-### Q: 开发模式会影响生产环境吗？
-
-A: 不会。前端的开发模式检查包含 `import.meta.env.DEV` 条件，生产构建时会被移除。
-
-### Q: 如何快速切换角色测试？
-
-A: 开发模式下，可以直接访问任意角色的页面：
-- 管理员：http://localhost:5173/admin/dashboard
-- 企业：http://localhost:5173/company/dashboard
-- 导师：http://localhost:5173/mentor/dashboard
-- 学生：http://localhost:5173/student/profile
+```bash
+lsof -i tcp:5173
+```

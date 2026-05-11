@@ -11,9 +11,9 @@ interface Announcement {
 }
 
 const DEFAULT_ANNOUNCEMENTS: Announcement[] = [
-  { id: 1, title: '2026年校园招聘正式启动，覆盖全国48个城市！', link: '/jobs?type=校园招聘' },
-  { id: 2, title: '海外校招通道开放中，欢迎海外留学生投递简历', link: '/jobs?type=海外校招' },
-  { id: 3, title: '"顶尖人才"计划招募中，年薪50万+等你来挑战', link: '/jobs?type=顶尖人才' },
+  { id: 1, title: '2026年校园招聘正式启动，覆盖全国 48 个城市。', link: '/job-recruitment?type=校招' },
+  { id: 2, title: '海外求职通道持续开放，留学生岗位正在更新。', link: '/job-recruitment?keyword=海外' },
+  { id: 3, title: '高薪重点岗位持续上新，可按关键词快速筛选。', link: '/job-recruitment?keyword=高薪' },
 ];
 
 export default function AnnouncementBar() {
@@ -21,25 +21,26 @@ export default function AnnouncementBar() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [visible, setVisible] = useState(true);
 
-  // 从后端获取公告数据，失败则使用默认值
   useEffect(() => {
     http.get('/config/public')
-      .then(res => {
+      .then((res) => {
         const data = res.data?.data;
         if (data?.announcements && Array.isArray(data.announcements) && data.announcements.length > 0) {
           setAnnouncements(data.announcements);
         }
       })
       .catch(() => {
-        // API 失败，保留默认公告
+        // keep defaults when config is unavailable
       });
   }, []);
 
   useEffect(() => {
-    if (announcements.length <= 1 || !visible) return;
+    if (announcements.length <= 1 || !visible) return undefined;
+
     const timer = setInterval(() => {
-      setCurrentIndex(prev => (prev + 1) % announcements.length);
+      setCurrentIndex((prev) => (prev + 1) % announcements.length);
     }, 4000);
+
     return () => clearInterval(timer);
   }, [announcements.length, visible]);
 
@@ -76,8 +77,7 @@ export default function AnnouncementBar() {
         </div>
         <button
           onClick={() => setVisible(false)}
-          className="p-1 text-primary-400 hover:text-primary-600 transition-colors shrink-0
-            focus-visible:ring-2 focus-visible:ring-primary-400/50 focus-visible:outline-none"
+          className="p-1 text-primary-400 hover:text-primary-600 transition-colors shrink-0 focus-visible:ring-2 focus-visible:ring-primary-400/50 focus-visible:outline-none"
           aria-label="关闭公告"
         >
           <X className="w-3.5 h-3.5" />

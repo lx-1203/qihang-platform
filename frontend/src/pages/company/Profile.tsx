@@ -3,7 +3,8 @@ import { motion } from 'framer-motion';
 import {
   Building2, Globe, MapPin, Phone, Mail,
   Save, Loader2, CheckCircle, Shield,
-  Users, FileText, ExternalLink, MessageSquareText
+  Users, FileText, ExternalLink, MessageSquareText,
+  AlertTriangle, Upload
 } from 'lucide-react';
 import http from '@/api/http';
 import { useAuthStore } from '@/store/auth';
@@ -28,7 +29,9 @@ interface CompanyProfile {
   phone: string;
   wechat: string;
   contactEmail: string;
-  verifyStatus: 'pending' | 'verified' | 'rejected';
+  verifyStatus: 'pending' | 'verified' | 'rejected' | '';
+  licenseUrl: string;
+  orgCode: string;
   createdAt: string;
 }
 
@@ -46,7 +49,9 @@ function normalizeCompanyProfile(data: Record<string, unknown> | null | undefine
     phone: String(data.phone || ''),
     wechat: String(data.wechat || ''),
     contactEmail: String(data.contactEmail || data.contact_email || ''),
-    verifyStatus: (data.verifyStatus === 'verified' ? 'verified' : data.verify_status === 'approved' ? 'verified' : data.verifyStatus === 'rejected' || data.verify_status === 'rejected' ? 'rejected' : 'pending') as CompanyProfile['verifyStatus'],
+    verifyStatus: (data.verifyStatus === 'verified' ? 'verified' : data.verify_status === 'approved' ? 'verified' : data.verifyStatus === 'rejected' || data.verify_status === 'rejected' ? 'rejected' : data.verifyStatus === 'pending' || data.verify_status === 'pending' ? 'pending' : data.verifyStatus === 'draft' || data.verify_status === 'draft' ? '' : '') as CompanyProfile['verifyStatus'],
+    licenseUrl: String(data.licenseUrl || data.license_url || ''),
+    orgCode: String(data.orgCode || data.org_code || ''),
     createdAt: String(data.createdAt || data.created_at || ''),
   };
 }
@@ -63,6 +68,7 @@ const SCALE_OPTIONS = [
 ];
 
 const VERIFY_MAP: Record<string, { label: string; color: string; icon: typeof CheckCircle }> = {
+  '': { label: '未提交', color: 'bg-gray-50 text-gray-700 border-gray-200', icon: AlertTriangle },
   pending: { label: '审核中', color: 'bg-amber-50 text-amber-700 border-amber-200', icon: Shield },
   verified: { label: '已认证', color: 'bg-green-50 text-green-700 border-green-200', icon: CheckCircle },
   rejected: { label: '未通过', color: 'bg-red-50 text-red-700 border-red-200', icon: Shield },
@@ -113,6 +119,8 @@ export default function CompanyProfile() {
         phone: profile.phone || '',
         wechat: profile.wechat || '',
         contact_email: profile.contactEmail || '',
+        license_url: profile.licenseUrl || '',
+        org_code: profile.orgCode || '',
       };
       const res = await http.post('/company/profile', payload);
       setProfile(normalizeCompanyProfile((res.data?.data?.company || payload) as Record<string, unknown>));
@@ -161,6 +169,44 @@ export default function CompanyProfile() {
 
   return (
     <div className="space-y-6">
+      {/* 资质提交提示横幅 - 未提交或被拒绝时显示 */}
+      {(!profile.verifyStatus || profile.verifyStatus === 'rejected') && (
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-start gap-3"
+        >
+          <AlertTriangle className="w-5 h-5 text-amber-600 mt-0.5 shrink-0" />
+          <div className="flex-1">
+            <h3 className="text-sm font-bold text-amber-800">
+              请提交企业资质证明
+            </h3>
+            <p className="text-sm text-amber-700 mt-1">
+              {profile.verifyStatus === 'rejected'
+                ? '您的企业资质审核未通过，请修改后重新提交。请在下方"资质证明"区域上传营业执照并填写组织机构代码。'
+                : '您尚未提交企业资质证明，提交后管理员将进行审核。请在下方"资质证明"区域上传营业执照并填写组织机构代码。'}
+            </p>
+          </div>
+        </motion.div>
+      )}
+
+      {/* 审核中提示 */}
+      {profile.verifyStatus === 'pending' && (
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex items-start gap-3"
+        >
+          <Shield className="w-5 h-5 text-blue-600 mt-0.5 shrink-0" />
+          <div className="flex-1">
+            <h3 className="text-sm font-bold text-blue-800">资质审核中</h3>
+            <p className="text-sm text-blue-700 mt-1">
+              您的企业资质已提交，管理员正在审核中，请耐心等待。审核结果将以通知形式告知您。
+            </p>
+          </div>
+        </motion.div>
+      )}
+
       {/* 页面标题 */}
       <div className="flex items-center justify-between">
         <div>
@@ -410,6 +456,94 @@ export default function CompanyProfile() {
           </div>
         </div>
         <p className="mt-4 text-xs text-gray-400">联系方式将在职位详情页展示，方便求职者与您取得联系</p>
+      </motion.div>
+
+      {/* 资质证明 */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.3 }}
+        className="bg-white rounded-xl p-6 shadow-sm border border-gray-100"
+      >
+        <h3 className="text-lg font-bold text-gray-900 mb-6 flex items-center gap-2">
+          <Shield className="w-5 h-5 text-primary-500" />
+          资质证明
+          {profile.verifyStatus === 'verified' && (
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-green-50 text-green-700 rounded-full text-xs font-medium border border-green-200">
+              <CheckCircle className="w-3 h-3" /> 已认证
+            </span>
+          )}
+        </h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* 营业执照上传 */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">营业执照 <span className="text-red-500">*</span></label>
+            {profile.licenseUrl ? (
+              <div className="flex items-center gap-3">
+                <a
+                  href={profile.licenseUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-sm text-primary-600 hover:text-primary-700 flex items-center gap-1"
+                >
+                  <FileText className="w-4 h-4" />
+                  查看已上传的营业执照
+                </a>
+                <button
+                  type="button"
+                  onClick={() => updateField('licenseUrl', '')}
+                  className="text-xs text-red-500 hover:text-red-700"
+                >
+                  删除重传
+                </button>
+              </div>
+            ) : null}
+            <div className="mt-2">
+              <FileUpload
+                category="license"
+                accept="image/*,.pdf"
+                placeholder="点击或拖拽上传营业执照（JPG/PNG/PDF，最大10MB）"
+                onSuccess={(result) => updateField('licenseUrl', result.url)}
+              />
+            </div>
+            {!profile.licenseUrl && (
+              <p className="text-xs text-gray-400 mt-1">支持 JPG、PNG、PDF 格式</p>
+            )}
+          </div>
+
+          {/* 组织机构代码 */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">组织机构代码 <span className="text-red-500">*</span></label>
+            <input
+              type="text"
+              value={profile.orgCode}
+              onChange={e => updateField('orgCode', e.target.value)}
+              className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none"
+              placeholder="请输入组织机构代码（统一社会信用代码）"
+              maxLength={50}
+            />
+            <p className="text-xs text-gray-400 mt-1">18位统一社会信用代码</p>
+          </div>
+
+          {/* 企业简介（资质补充说明） */}
+          <div className="md:col-span-2">
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">企业简介补充</label>
+            <textarea
+              value={profile.description}
+              onChange={e => updateField('description', e.target.value)}
+              rows={3}
+              className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none resize-none"
+              placeholder="可补充企业经营范围、资质荣誉等信息，有助于加快审核"
+            />
+          </div>
+        </div>
+        {(!profile.verifyStatus || profile.verifyStatus === 'rejected') && (
+          <div className="mt-4 p-3 bg-amber-50 rounded-lg border border-amber-200">
+            <p className="text-xs text-amber-700">
+              提交资质后，管理员将在 1-3 个工作日内完成审核。审核通过后您将获得认证标识，提升企业可信度。
+            </p>
+          </div>
+        )}
       </motion.div>
 
       {/* 底部保存提示 */}

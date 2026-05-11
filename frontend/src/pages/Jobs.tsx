@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+﻿import { useState, useEffect, useCallback, useRef } from "react";
 import { Link, useSearchParams, useNavigate } from "react-router-dom";
 import {
   Search,
@@ -19,16 +19,18 @@ import Tag from "@/components/ui/Tag";
 import { CardSkeleton } from '@/components/ui/Skeleton';
 import EmployeeTestimonials from '@/components/EmployeeTestimonials';
 import AnnouncementBar from '@/components/AnnouncementBar';
-import jobsConfig from '@/data/jobs-config.json';
+import { useConfigStore } from '@/store/config';
 
 // ====== 岗位列表页 ======
-// 数据全部从 /api/jobs 获取，筛选项由接口返回，热门搜索和文案从 jobs-config.json 配置文件读取
+// 数据全部从 /api/jobs 获取，筛选项由接口返回，热门搜索和文案通过配置中心读取
 
-const {
-  hotSearchTags,
-  emptyState: emptyStateConfig,
-  errorMessages,
-} = jobsConfig;
+const DEFAULT_JOBS_CONFIG = {
+  hotSearchTags: ["产品经理", "Java", "数据分析", "运营实习", "校招"],
+  pageMeta: { title: "发现你的下一个心仪岗位", subtitle: "精选名企校招、高质量实习机会，开启职场新篇章。", searchPlaceholder: "搜索职位、公司或关键词", locationPlaceholder: "工作城市" },
+  emptyState: { title: "未找到匹配的职位", description: "尝试减少筛选条件或更换搜索关键词", actionText: "清除所有筛选条件" },
+  errorMessages: { fetchFailed: "职位数据加载失败，请稍后重试" },
+  ui: { searchButtonText: "搜索岗位", totalTemplate: "为您找到 {total} 个在招岗位", filterTitle: "全部职位 ({total})", clearFiltersText: "清除所有筛选条件" },
+};
 
 // 职能分类快捷导航（与后端 JOB_CATEGORIES 保持一致，API 返回失败时作为兜底）
 const CATEGORY_TAGS = [
@@ -66,6 +68,8 @@ interface JobItem {
 export default function Jobs() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const jobsConfig = useConfigStore(s => s?.getJson?.('jobs_page_config', DEFAULT_JOBS_CONFIG) ?? DEFAULT_JOBS_CONFIG);
+  const { hotSearchTags, emptyState: emptyStateConfig, errorMessages } = jobsConfig;
   const [activeCategory, setActiveCategory] = useState("全部");
   const [activeType, setActiveType] = useState("全部");
   const [activeLocation, setActiveLocation] = useState("全国");
@@ -92,6 +96,8 @@ export default function Jobs() {
   const [suggestions, setSuggestions] = useState<{ type: string; text: string; company?: string }[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const suggestTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const suggestRequestSeq = useRef(0);
+  const lastJobsFetchAtRef = useRef(0);
   const searchContainerRef = useRef<HTMLDivElement>(null);
 
   // 从 URL 参数读取 keyword（由 Navbar / Home 搜索跳转而来）
@@ -106,6 +112,8 @@ export default function Jobs() {
 
   // 搜索联想防抖（300ms）
   useEffect(() => {
+    let disposed = false;
+
     if (suggestTimer.current) clearTimeout(suggestTimer.current);
 
     if (!searchInput.trim()) {
@@ -115,18 +123,23 @@ export default function Jobs() {
     }
 
     suggestTimer.current = setTimeout(async () => {
+      const requestSeq = ++suggestRequestSeq.current;
       try {
         const res = await http.get('/jobs/suggest', { params: { keyword: searchInput.trim() } });
-        if (res.data?.code === 200 && Array.isArray(res.data.data)) {
+        if (!disposed && requestSeq === suggestRequestSeq.current && res.data?.code === 200 && Array.isArray(res.data.data)) {
           setSuggestions(res.data.data);
           setShowSuggestions(res.data.data.length > 0);
         }
       } catch {
-        setSuggestions([]);
+        if (!disposed && requestSeq === suggestRequestSeq.current) {
+          setSuggestions([]);
+          setShowSuggestions(false);
+        }
       }
     }, 300);
 
     return () => {
+      disposed = true;
       if (suggestTimer.current) clearTimeout(suggestTimer.current);
     };
   }, [searchInput]);
@@ -158,6 +171,7 @@ export default function Jobs() {
         const data = res.data.data;
         setJobs(data.jobs || []);
         setTotal(data.total || 0);
+        lastJobsFetchAtRef.current = Date.now();
         // 首次加载时初始化筛选选项（API 返回与硬编码合并，确保始终有完整选项）
         if (data.filters) {
           if (data.filters.categories) {
@@ -187,7 +201,12 @@ export default function Jobs() {
 
   // 页面重新可见时刷新（Profile 页改头像/Logo 后返回同步）
   useEffect(() => {
-    const handleFocus = () => fetchJobs();
+    const handleFocus = () => {
+      const now = Date.now();
+      if (now - lastJobsFetchAtRef.current >= 60000) {
+        fetchJobs();
+      }
+    };
     window.addEventListener('focus', handleFocus);
     return () => window.removeEventListener('focus', handleFocus);
   }, [fetchJobs]);
@@ -195,6 +214,8 @@ export default function Jobs() {
   // 搜索按钮
   const handleSearch = () => {
     setPage(1);
+    setActiveCategory('全部');
+    setActiveType('全部');
     setKeyword(searchInput);
     if (searchInput.trim()) {
       addSearchHistory(searchInput.trim());
@@ -567,13 +588,13 @@ export default function Jobs() {
                   <Sparkles className="w-4 h-4 text-primary-600" /> 简历诊断服务
                 </h4>
                 <p className="text-xs text-primary-700 mb-4 leading-relaxed">
-                  投递没回音？让资深HR为你1v1修改简历，提升面试邀约率。
+                  投递没回音？查看资深 HR 的简历优化建议，提升面试邀约率。
                 </p>
                 <Link
-                  to="/mentors"
+                  to="/jobs"
                   className="inline-block bg-primary-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-primary-700 transition-colors shadow-sm"
                 >
-                  立即预约
+                  查看详情
                 </Link>
               </div>
               <Sparkles className="absolute -bottom-4 -right-4 w-24 h-24 text-primary-200 opacity-50" />

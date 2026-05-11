@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import {
   BookOpen, ChevronRight, Search, Clock, Eye,
   TrendingUp, FileText, MessageCircle, Sparkles,
@@ -9,8 +9,6 @@ import TagComponent from '@/components/ui/Tag';
 import { motion } from 'framer-motion';
 import { useConfigStore } from '@/store/config';
 import http from '@/api/http';
-import { useAuthStore } from '@/store/auth';
-import { showToast } from '@/components/ui/ToastContainer';
 
 // 默认配置（当后端不可用时使用）
 const DEFAULT_STUDY_ABROAD_ARTICLES_CONFIG = {
@@ -51,8 +49,6 @@ const DEFAULT_STUDY_ABROAD_ARTICLES_CONFIG = {
 };
 
 export default function StudyAbroadArticles() {
-  const navigate = useNavigate();
-  const { user } = useAuthStore();
   const articlesConfig = useConfigStore().getJson('study_abroad_articles_config') || DEFAULT_STUDY_ABROAD_ARTICLES_CONFIG;
   const [apiArticles, setApiArticles] = useState<Array<{ id: number; title: string; category: string; cover: string; summary: string; author: string; view_count: number; created_at: string }>>([]);
   const [apiLoading, setApiLoading] = useState(true);
@@ -283,40 +279,30 @@ export default function StudyAbroadArticles() {
               </div>
             </div>
 
-            {/* 投稿 CTA */}
+            {/* 内容入口 */}
             <div className="bg-gradient-to-br from-primary-50 to-white rounded-2xl border border-primary-100 p-5 text-center">
               <FileText className="w-8 h-8 text-primary-500 mx-auto mb-3" />
-              <h3 className="text-[15px] font-bold text-gray-900 mb-2">分享你的经历</h3>
-              <p className="text-[12px] text-gray-500 mb-4">写下你的留学申请经验，帮助更多同学</p>
-              <button
-                onClick={() => {
-                  if (!user) { showToast('请先登录', 'warning'); navigate('/login'); return; }
-                  http.post('/chat/conversations', { type: 'user_service', title: '投稿分享留学经验' })
-                    .then(() => { showToast('已创建会话，请在聊天中分享您的经历', 'success'); navigate('/chat'); })
-                    .catch(() => showToast('创建会话失败，请重试', 'error'));
-                }}
-                className="w-full bg-primary-500 text-white py-2.5 rounded-xl text-[13px] font-bold hover:bg-primary-700 transition-colors"
+              <h3 className="text-[15px] font-bold text-gray-900 mb-2">继续浏览资料</h3>
+              <p className="text-[12px] text-gray-500 mb-4">按国家、专业与主题继续筛选留学文章与案例</p>
+              <Link
+                to="/study-abroad/programs"
+                className="block w-full bg-primary-500 text-white py-2.5 rounded-xl text-[13px] font-bold hover:bg-primary-700 transition-colors"
               >
-                我要投稿
-              </button>
+                查看项目库
+              </Link>
             </div>
 
-            {/* 咨询卡片 */}
+            {/* 补充阅读 */}
             <div className="bg-gray-900 rounded-2xl p-5 text-center">
               <MessageCircle className="w-8 h-8 text-primary-500 mx-auto mb-3" />
-              <h3 className="text-[15px] font-bold text-white mb-2">有疑问？</h3>
-              <p className="text-[12px] text-gray-400 mb-4">资深留学顾问在线答疑</p>
-              <button
-                onClick={() => {
-                  if (!user) { showToast('请先登录', 'warning'); navigate('/login'); return; }
-                  http.post('/chat/conversations', { type: 'user_service', title: '留学咨询' })
-                    .then(() => { showToast('已创建咨询会话', 'success'); navigate('/chat'); })
-                    .catch(() => showToast('创建会话失败，请重试', 'error'));
-                }}
-                className="w-full bg-primary-500 text-white py-2.5 rounded-xl text-[13px] font-bold hover:bg-primary-700 transition-colors"
+              <h3 className="text-[15px] font-bold text-white mb-2">继续阅读</h3>
+              <p className="text-[12px] text-gray-400 mb-4">查看更多录取案例、项目信息与申请节奏</p>
+              <Link
+                to="/study-abroad/offers"
+                className="block w-full bg-primary-500 text-white py-2.5 rounded-xl text-[13px] font-bold hover:bg-primary-700 transition-colors"
               >
-                免费咨询
-              </button>
+                浏览 Offer 榜
+              </Link>
             </div>
           </div>
         </div>

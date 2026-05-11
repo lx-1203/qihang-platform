@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import {
   Search, CheckCircle, XCircle, Clock, Eye,
-  Star, Award, ChevronLeft, ChevronRight, X, MessageSquare, Loader2
+  Star, Award, ChevronLeft, ChevronRight, X, MessageSquare, Loader2, FileEdit,
+  Square, CheckSquare
 } from 'lucide-react';
 import http from '@/api/http';
 import Tag from '@/components/ui/Tag';
@@ -11,7 +12,7 @@ import { TableSkeleton } from '../../components/ui/Skeleton';
 import ErrorState from '../../components/ui/ErrorState';
 import { showToast } from '@/components/ui/ToastContainer';
 
-// ====== 导师资质审核 ======
+// ====== 导师审核工作台 ======
 // 商业级要求：导师认证审核、资质验证
 
 interface MentorRecord {
@@ -24,12 +25,16 @@ interface MentorRecord {
   expertise: string[];
   rating: number;
   price: number;
-  verify_status: 'pending' | 'approved' | 'rejected';
+  verify_status: 'draft' | 'pending' | 'approved' | 'rejected';
   verify_remark: string;
+  credential_url: string;
+  credential_description: string;
+  verified_badge: string;
   created_at: string;
 }
 
 const STATUS_MAP = {
+  draft: { label: '草稿', color: 'bg-gray-100 text-gray-600', icon: FileEdit },
   pending: { label: '待审核', color: 'bg-amber-100 text-amber-700', icon: Clock },
   approved: { label: '已认证', color: 'bg-green-100 text-green-700', icon: CheckCircle },
   rejected: { label: '已驳回', color: 'bg-red-100 text-red-700', icon: XCircle },
@@ -44,11 +49,16 @@ export default function AdminMentors() {
   const pageSize = 10;
   const [reviewModal, setReviewModal] = useState<MentorRecord | null>(null);
   const [reviewRemark, setReviewRemark] = useState('');
+  const [reviewBadge, setReviewBadge] = useState('认证咨询导师');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [detailMentor, setDetailMentor] = useState<MentorRecord | null>(null);
   const [feedbackText, setFeedbackText] = useState('');
   const [feedbackSending, setFeedbackSending] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+  const [batchReviewing, setBatchReviewing] = useState(false);
+  // 审核模式：approve / reject
+  const [reviewMode, setReviewMode] = useState<'approve' | 'reject'>('approve');
 
   useEffect(() => {
     fetchMentors();
@@ -77,11 +87,11 @@ export default function AdminMentors() {
     try {
       await http.put(`/admin/mentors/${mentorUserId}/verify`, {
         status: status === 'approved' ? 1 : 0,
-        remark: reviewRemark,
+        remark: status === 'approved' ? reviewBadge : reviewRemark,
       });
       showToast({
         type: status === 'approved' ? 'success' : 'warning',
-        title: status === 'approved' ? '导师认证已通过' : '导师认证已驳回',
+        title: status === 'approved' ? `导师认证已通过，认证标签：${reviewBadge}` : '导师认证已驳回',
         message: reviewRemark ? `备注：${reviewRemark}` : undefined
       });
     } catch {
@@ -89,7 +99,47 @@ export default function AdminMentors() {
     }
     setReviewModal(null);
     setReviewRemark('');
+    setReviewBadge('认证咨询导师');
     fetchMentors();
+  }
+
+  function toggleSelect(id: number) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function toggleSelectAll() {
+    const pendingMentors = mentors.filter((m) => m.verify_status === 'pending' || m.verify_status === 'draft');
+    if (pendingMentors.length === 0) return;
+    if (selectedIds.size === pendingMentors.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(pendingMentors.map((m) => m.id)));
+    }
+  }
+
+  async function handleBatchReview(status: 'approved' | 'rejected') {
+    if (selectedIds.size === 0) return;
+    const action = status === 'approved' ? '通过' : '驳回';
+    if (!window.confirm(`确定要批量${action} ${selectedIds.size} 位导师的认证吗？`)) return;
+
+    setBatchReviewing(true);
+    try {
+      for (const id of selectedIds) {
+        await http.put(`/admin/mentors/${id}/verify`, { status: status === 'approved' ? 1 : 0 });
+      }
+      showToast(`已${action} ${selectedIds.size} 位导师的认证`, 'success');
+      setSelectedIds(new Set());
+      fetchMentors();
+    } catch {
+      showToast('部分导师认证操作失败', 'error');
+    } finally {
+      setBatchReviewing(false);
+    }
   }
 
   async function sendMentorFeedback() {
@@ -126,7 +176,7 @@ export default function AdminMentors() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">导师资质审核</h1>
+        <h1 className="text-2xl font-bold text-gray-900">导师审核工作台</h1>
         <p className="text-gray-500 mt-1">
           审核导师认证资质，保障辅导服务质量
           {pendingCount > 0 && (
@@ -138,8 +188,9 @@ export default function AdminMentors() {
       </div>
 
       {/* 状态统计 */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         {[
+          { label: '草稿', count: mentors.filter(m => m.verify_status === 'draft').length, color: 'text-gray-600', bg: 'bg-gray-50', icon: FileEdit },
           { label: '待审核', count: mentors.filter(m => m.verify_status === 'pending').length, color: 'text-amber-600', bg: 'bg-amber-50', icon: Clock },
           { label: '已认证', count: mentors.filter(m => m.verify_status === 'approved').length, color: 'text-green-600', bg: 'bg-green-50', icon: Award },
           { label: '已驳回', count: mentors.filter(m => m.verify_status === 'rejected').length, color: 'text-red-600', bg: 'bg-red-50', icon: XCircle },
@@ -171,7 +222,7 @@ export default function AdminMentors() {
           />
         </div>
         <div className="flex gap-2">
-          {['all', 'pending', 'approved', 'rejected'].map(s => (
+          {['all', 'draft', 'pending', 'approved', 'rejected'].map(s => (
             <button
               key={s}
               onClick={() => { setStatusFilter(s); setPage(1); }}
@@ -184,6 +235,53 @@ export default function AdminMentors() {
           ))}
         </div>
       </div>
+
+      {/* 批量操作栏 */}
+      {selectedIds.size > 0 && (
+        <div className="bg-primary-50 rounded-xl p-4 border border-primary-200 flex items-center justify-between">
+          <span className="text-sm font-medium text-primary-700">
+            已选择 {selectedIds.size} 位导师
+          </span>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setSelectedIds(new Set())}
+              className="text-sm text-gray-500 hover:text-gray-700 transition-colors"
+            >
+              取消选择
+            </button>
+            <button
+              onClick={() => handleBatchReview('approved')}
+              disabled={batchReviewing}
+              className="px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 disabled:opacity-50 transition-colors flex items-center gap-1.5"
+            >
+              {batchReviewing ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
+              批量通过
+            </button>
+            <button
+              onClick={() => handleBatchReview('rejected')}
+              disabled={batchReviewing}
+              className="px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 disabled:opacity-50 transition-colors flex items-center gap-1.5"
+            >
+              <XCircle className="w-4 h-4" />
+              批量驳回
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* 全选按钮 */}
+      {mentors.some((m) => m.verify_status === 'pending' || m.verify_status === 'draft') && (
+        <button
+          onClick={toggleSelectAll}
+          className="flex items-center gap-2 text-sm text-gray-500 hover:text-primary-600 transition-colors"
+        >
+          {selectedIds.size === mentors.filter((m) => m.verify_status === 'pending' || m.verify_status === 'draft').length
+            ? <CheckSquare className="w-4 h-4 text-primary-500" />
+            : <Square className="w-4 h-4" />
+          }
+          {selectedIds.size > 0 ? '取消全选' : '全选待审核导师'}
+        </button>
+      )}
 
       {/* 导师列表 */}
       <div className="space-y-4">
@@ -200,6 +298,17 @@ export default function AdminMentors() {
             >
               <div className="flex items-start justify-between">
                 <div className="flex items-start gap-4">
+                  {(mentor.verify_status === 'pending' || mentor.verify_status === 'draft') && (
+                    <button
+                      onClick={() => toggleSelect(mentor.id)}
+                      className="mt-1.5 text-gray-400 hover:text-primary-500 transition-colors"
+                    >
+                      {selectedIds.has(mentor.id)
+                        ? <CheckSquare className="w-5 h-5 text-primary-500" />
+                        : <Square className="w-5 h-5" />
+                      }
+                    </button>
+                  )}
                   {mentor.avatar ? (
                     <img src={mentor.avatar || DEFAULT_AVATAR} alt={mentor.name} className="w-14 h-14 rounded-xl object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
                   ) : (
@@ -245,18 +354,24 @@ export default function AdminMentors() {
                   {mentor.verify_status === 'pending' && (
                     <>
                       <button
-                        onClick={() => handleReview(mentor.user_id, 'approved')}
+                        onClick={() => { setReviewModal(mentor); setReviewMode('approve'); setReviewBadge('认证咨询导师'); setReviewRemark(''); }}
                         className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm font-medium flex items-center gap-1"
                       >
                         <CheckCircle className="w-4 h-4" /> 通过
                       </button>
                       <button
-                        onClick={() => setReviewModal(mentor)}
+                        onClick={() => { setReviewModal(mentor); setReviewMode('reject'); setReviewRemark(''); }}
                         className="px-4 py-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 text-sm font-medium flex items-center gap-1"
                       >
                         <XCircle className="w-4 h-4" /> 驳回
                       </button>
                     </>
+                  )}
+                  {mentor.verify_status === 'approved' && mentor.verified_badge && (
+                    <span className="px-3 py-1 bg-green-50 text-green-700 rounded-lg text-xs font-medium flex items-center gap-1">
+                      <Award className="w-3.5 h-3.5" />
+                      {mentor.verified_badge}
+                    </span>
                   )}
                   <button onClick={() => setDetailMentor(mentor)} className="p-2 rounded-lg hover:bg-gray-100" title="查看详情">
                     <Eye className="w-4 h-4 text-gray-400" />
@@ -342,6 +457,35 @@ export default function AdminMentors() {
                   驳回原因：{detailMentor.verify_remark}
                 </p>
               )}
+              {/* 资质证明信息 */}
+              {(detailMentor.credential_url || detailMentor.credential_description) && (
+                <div className="bg-blue-50 rounded-lg p-3 space-y-2">
+                  <p className="text-sm font-medium text-blue-700">资质证明信息</p>
+                  {detailMentor.credential_url && (
+                    <div className="flex items-center gap-2 text-sm text-blue-600">
+                      <span>资质证书：</span>
+                      <a href={detailMentor.credential_url} target="_blank" rel="noopener noreferrer" className="text-primary-600 hover:underline">
+                        查看证书文件
+                      </a>
+                    </div>
+                  )}
+                  {detailMentor.credential_description && (
+                    <div className="text-sm text-blue-700">
+                      <span className="font-medium">资质说明：</span>
+                      {detailMentor.credential_description}
+                    </div>
+                  )}
+                </div>
+              )}
+              {detailMentor.verified_badge && (
+                <div className="flex items-center gap-2 text-sm">
+                  <span className="text-gray-500">认证标签</span>
+                  <span className="px-3 py-1 bg-green-50 text-green-700 rounded-lg text-xs font-medium flex items-center gap-1">
+                    <Award className="w-3.5 h-3.5" />
+                    {detailMentor.verified_badge}
+                  </span>
+                </div>
+              )}
               <p className="text-xs text-gray-400">注册时间：{new Date(detailMentor.created_at).toLocaleString('zh-CN')}</p>
             </div>
             {/* 审核反馈 */}
@@ -372,7 +516,7 @@ export default function AdminMentors() {
         </div>
       )}
 
-      {/* 驳回弹窗 */}
+      {/* 审核（通过/驳回）弹窗 */}
       {reviewModal && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50" onClick={() => setReviewModal(null)}>
           <motion.div
@@ -381,27 +525,71 @@ export default function AdminMentors() {
             onClick={e => e.stopPropagation()}
             className="bg-white rounded-2xl p-6 w-full max-w-md shadow-2xl"
           >
-            <h3 className="text-lg font-bold text-gray-900 mb-2">驳回导师审核</h3>
-            <p className="text-sm text-gray-500 mb-4">驳回「{reviewModal.name}」的认证申请</p>
-            <textarea
-              id="mentor-reject-reason"
-              name="reject-reason"
-              value={reviewRemark}
-              onChange={e => setReviewRemark(e.target.value)}
-              placeholder="请输入驳回原因（必填）..."
-              rows={4}
-              className="w-full border border-gray-200 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-red-500 outline-none resize-none"
-            />
-            <div className="flex justify-end gap-3 mt-4">
-              <button onClick={() => setReviewModal(null)} className="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg">取消</button>
-              <button
-                onClick={() => handleReview(reviewModal.user_id, 'rejected')}
-                disabled={!reviewRemark.trim()}
-                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-40 text-sm font-medium"
-              >
-                确认驳回
-              </button>
-            </div>
+            {reviewMode === 'approve' ? (
+              <>
+                <h3 className="text-lg font-bold text-gray-900 mb-2">通过导师审核</h3>
+                <p className="text-sm text-gray-500 mb-4">通过「{reviewModal.name}」的认证申请</p>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">认证标签</label>
+                    <select
+                      value={reviewBadge}
+                      onChange={e => setReviewBadge(e.target.value)}
+                      className="w-full border border-gray-200 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-green-500 outline-none"
+                    >
+                      <option value="认证咨询导师">认证咨询导师</option>
+                      <option value="金牌导师">金牌导师</option>
+                      <option value="资深导师">资深导师</option>
+                      <option value="特邀导师">特邀导师</option>
+                    </select>
+                    <p className="text-xs text-gray-400 mt-1">审核通过后将自动颁发该认证标签</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">审核备注（选填）</label>
+                    <textarea
+                      value={reviewRemark}
+                      onChange={e => setReviewRemark(e.target.value)}
+                      placeholder="输入审核备注..."
+                      rows={3}
+                      className="w-full border border-gray-200 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-green-500 outline-none resize-none"
+                    />
+                  </div>
+                </div>
+                <div className="flex justify-end gap-3 mt-4">
+                  <button onClick={() => setReviewModal(null)} className="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg">取消</button>
+                  <button
+                    onClick={() => handleReview(reviewModal.user_id, 'approved')}
+                    className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm font-medium flex items-center gap-1"
+                  >
+                    <CheckCircle className="w-4 h-4" /> 确认通过
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                <h3 className="text-lg font-bold text-gray-900 mb-2">驳回导师审核</h3>
+                <p className="text-sm text-gray-500 mb-4">驳回「{reviewModal.name}」的认证申请</p>
+                <textarea
+                  id="mentor-reject-reason"
+                  name="reject-reason"
+                  value={reviewRemark}
+                  onChange={e => setReviewRemark(e.target.value)}
+                  placeholder="请输入驳回原因（必填）..."
+                  rows={4}
+                  className="w-full border border-gray-200 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-red-500 outline-none resize-none"
+                />
+                <div className="flex justify-end gap-3 mt-4">
+                  <button onClick={() => setReviewModal(null)} className="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg">取消</button>
+                  <button
+                    onClick={() => handleReview(reviewModal.user_id, 'rejected')}
+                    disabled={!reviewRemark.trim()}
+                    className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-40 text-sm font-medium"
+                  >
+                    确认驳回
+                  </button>
+                </div>
+              </>
+            )}
           </motion.div>
         </div>
       )}

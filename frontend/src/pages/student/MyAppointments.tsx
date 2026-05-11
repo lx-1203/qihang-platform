@@ -12,8 +12,8 @@ import { showToast } from '@/components/ui/ToastContainer';
 import Tag from '@/components/ui/Tag';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
 
-// ====== 我的预约（导师预约管理） ======
-// 预约列表、状态筛选、完成后评价（星级+文本）
+// ====== 我的咨询记录（导师咨询履约记录） ======
+// 咨询记录列表、状态筛选、完成后评价（星级+文本）
 
 type AppointmentStatus = 'upcoming' | 'completed' | 'cancelled';
 
@@ -145,7 +145,7 @@ export default function MyAppointments() {
     try {
       setCancelling(true);
       await http.put(`/student/appointments/${cancellingId}/cancel`);
-      showToast({ type: 'success', title: '取消成功', message: '预约已取消' });
+      showToast({ type: 'success', title: '取消成功', message: '咨询已取消' });
       await fetchAppointments();
     } catch (err) {
       showToast({ type: 'error', title: '取消失败', message: '请稍后重试' });
@@ -174,8 +174,8 @@ export default function MyAppointments() {
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">我的预约</h1>
-        <p className="text-gray-500 mt-1">管理你的导师预约和辅导记录</p>
+        <h1 className="text-2xl font-bold text-gray-900">我的咨询记录</h1>
+        <p className="text-gray-500 mt-1">查看你的导师咨询安排与服务记录</p>
       </div>
 
       <div className="bg-white rounded-xl p-2 shadow-sm border border-gray-100 flex gap-2">
@@ -206,7 +206,7 @@ export default function MyAppointments() {
         {filtered.length === 0 ? (
           <div className="bg-white rounded-xl p-12 shadow-sm border border-gray-100 text-center">
             <AlertCircle className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-            <p className="text-gray-500 text-sm">当前分类下暂无预约记录</p>
+            <p className="text-gray-500 text-sm">当前分类下暂无咨询记录</p>
           </div>
         ) : filtered.map((app, index) => {
           const status = statusConfig[app.status] || statusConfig.pending;
@@ -280,7 +280,7 @@ export default function MyAppointments() {
                         onClick={() => openCancelDialog(app.id)}
                         className="px-4 py-2 border border-red-200 text-red-600 rounded-lg hover:bg-red-50 transition-colors text-sm font-medium"
                       >
-                        取消预约
+                        取消咨询
                       </button>
                       <button
                         className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors text-sm font-medium flex items-center gap-2"
@@ -377,8 +377,8 @@ export default function MyAppointments() {
 
       <ConfirmDialog
         open={showCancelDialog}
-        title="确认取消预约？"
-        description="取消后需要重新预约，已提交的信息不会保留。"
+        title="确认取消咨询？"
+        description="取消后需要重新发起咨询，已提交的信息不会保留。"
         loading={cancelling}
         confirmText="确认取消"
         onConfirm={handleCancelAppointment}

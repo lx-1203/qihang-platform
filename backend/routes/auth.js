@@ -3,7 +3,7 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
 import pool from '../db.js';
-import { generateToken, authMiddleware, JWT_SECRET } from '../middleware/auth.js';
+import { generateToken, authMiddleware, getAccessSnapshot, JWT_SECRET } from '../middleware/auth.js';
 import { loginRateLimit } from '../middleware/loginRateLimit.js';
 import { createRateLimit } from '../middleware/rateLimit.js';
 
@@ -140,7 +140,7 @@ router.post('/login', loginRateLimit, async (req, res) => {
     }
 
     // 查询用户
-    const [users] = await pool.query('SELECT * FROM users WHERE email = ?', [email]);
+    const [users] = await pool.query('SELECT id, email, password, nickname, role, avatar, phone, status, created_at, updated_at FROM users WHERE email = ?', [email]);
     if (users.length === 0) {
       return res.status(401).json({ code: 401, message: '邮箱或密码错误' });
     }
@@ -165,10 +165,13 @@ router.post('/login', loginRateLimit, async (req, res) => {
     // 返回用户信息（不含密码）
     const { password: _, ...userInfo } = user;
 
+    // 获取准入状态
+    const accessStatus = await getAccessSnapshot(user.id, user.role);
+
     res.json({
       code: 200,
       message: '登录成功',
-      data: { token, refreshToken, user: userInfo }
+      data: { token, refreshToken, user: userInfo, accessStatus }
     });
   } catch (err) {
     console.error('登录失败:', err);
@@ -188,12 +191,51 @@ router.get('/me', authMiddleware, async (req, res) => {
       return res.status(404).json({ code: 404, message: '用户不存在' });
     }
 
+    const user = users[0];
+    const role = user.role;
+
+    const accessStatus = await getAccessSnapshot(user.id, role);
+
+    // ====== 查询 VIP 状态 ======
+    let isVip = false;
+    if (role === 'admin') {
+      isVip = true;
+    } else {
+      const [vipRows] = await pool.query(
+        `SELECT id FROM vip_subscriptions
+         WHERE user_id = ? AND status = 'active' AND end_date >= CURDATE()
+         LIMIT 1`,
+        [user.id]
+      );
+      isVip = vipRows.length > 0;
+    }
+
     res.json({
       code: 200,
-      data: { user: users[0] }
+      data: {
+        user: { ...user, is_vip: isVip },
+        isVip,
+        accessStatus,
+      }
     });
   } catch (err) {
     console.error('获取用户信息失败:', err);
+    res.status(500).json({ code: 500, message: '服务器内部错误' });
+  }
+});
+
+// ==================== 获取准入状态 ====================
+router.get('/access-status', authMiddleware, async (req, res) => {
+  try {
+    const snapshot = await getAccessSnapshot(req.user.id, req.user.role);
+
+    res.json({
+      code: 200,
+      message: '操作成功',
+      data: snapshot,
+    });
+  } catch (err) {
+    console.error('获取准入状态失败:', err);
     res.status(500).json({ code: 500, message: '服务器内部错误' });
   }
 });

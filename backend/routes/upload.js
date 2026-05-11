@@ -58,8 +58,9 @@ const RESUME_DIR = path.join(UPLOAD_DIR, 'resumes');
 const COVER_DIR = path.join(UPLOAD_DIR, 'covers');
 const VIDEO_DIR = path.join(UPLOAD_DIR, 'videos');
 const GENERAL_DIR = path.join(UPLOAD_DIR, 'general');
+const RESOURCE_DIR = path.join(UPLOAD_DIR, 'resources');
 
-[UPLOAD_DIR, AVATAR_DIR, RESUME_DIR, COVER_DIR, VIDEO_DIR, GENERAL_DIR].forEach(dir => {
+[UPLOAD_DIR, AVATAR_DIR, RESUME_DIR, COVER_DIR, VIDEO_DIR, GENERAL_DIR, RESOURCE_DIR].forEach(dir => {
   if (!fs.existsSync(dir)) {
     fs.mkdirSync(dir, { recursive: true });
   }
@@ -84,6 +85,7 @@ function getDestination(category) {
     case 'resume': return RESUME_DIR;
     case 'cover': return COVER_DIR;
     case 'video': return VIDEO_DIR;
+    case 'resource': return RESOURCE_DIR;
     default: return GENERAL_DIR;
   }
 }
@@ -189,7 +191,8 @@ router.post('/', authMiddleware, (req, res) => {
       category === 'avatar' ? 'avatars' :
       category === 'resume' ? 'resumes' :
       category === 'cover' ? 'covers' :
-      category === 'video' ? 'videos' : 'general'
+      category === 'video' ? 'videos' :
+      category === 'resource' ? 'resources' : 'general'
     }/${file.filename}`;
 
     console.log('[上传] 成功:', file.originalname, '→', urlPath);
@@ -233,7 +236,8 @@ router.post('/multiple', authMiddleware, (req, res) => {
     const subDir = category === 'avatar' ? 'avatars' :
                    category === 'resume' ? 'resumes' :
                    category === 'cover' ? 'covers' :
-                   category === 'video' ? 'videos' : 'general';
+                   category === 'video' ? 'videos' :
+                   category === 'resource' ? 'resources' : 'general';
 
     const files = [];
     for (const file of req.files) {

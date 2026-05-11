@@ -10,7 +10,7 @@ router.get('/', async (req, res) => {
     const pageLimit = Math.min(Number(limit) || Number(pageSizeParam) || 20, 50);
     const page = Number(pageParam) || 1;
 
-    let sql = 'SELECT * FROM mentor_profiles WHERE verify_status = "approved" AND status = 1';
+    let sql = 'SELECT id, user_id, name, title, avatar, bio, expertise, tags, rating, rating_count, price, verify_status, status, created_at, updated_at FROM mentor_profiles WHERE verify_status = "approved" AND status = 1';
     const params = [];
 
     if (keyword) {
@@ -87,7 +87,7 @@ router.get('/', async (req, res) => {
 router.get('/:id', async (req, res) => {
   try {
     const [rows] = await pool.query(
-      'SELECT * FROM mentor_profiles WHERE id = ?',
+      'SELECT id, user_id, name, title, avatar, bio, expertise, tags, rating, rating_count, price, available_time, education, experience, phone, wechat, contact_email, verify_status, status, created_at, updated_at FROM mentor_profiles WHERE id = ?',
       [req.params.id]
     );
     if (rows.length === 0) {
@@ -102,6 +102,17 @@ router.get('/:id', async (req, res) => {
     mentor.phone = mentor.phone || '';
     mentor.wechat = mentor.wechat || '';
     mentor.contact_email = mentor.contact_email || '';
+
+    const [resources] = await pool.query(
+      `SELECT id, title, description, cover_url, content_type, is_free, is_vip_only, view_count, created_at
+       FROM resources
+       WHERE author_id = (SELECT user_id FROM mentor_profiles WHERE id = ?)
+       AND status = 'published'
+       ORDER BY created_at DESC LIMIT 20`,
+      [req.params.id]
+    );
+
+    mentor.resources = resources;
 
     res.json({ code: 200, data: mentor });
   } catch (err) {

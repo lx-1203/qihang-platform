@@ -6,7 +6,7 @@ import {
   Search, Filter, Phone, Mail, Calendar,
   ChevronRight, GripVertical, User, GraduationCap,
   Briefcase, CheckCircle, XCircle,
-  MessageSquare, ArrowRight, RefreshCw
+  RefreshCw
 } from 'lucide-react';
 import http from '@/api/http';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
@@ -16,9 +16,9 @@ import ErrorState from '../../components/ui/ErrorState';
 import Tag from '@/components/ui/Tag';
 
 // ====== 企业端简历筛选池 (Kanban) ======
-// 商业级要求：五列看板、简历卡片、状态变更
+// 商业级要求：三列看板（待筛选/通过/淘汰）、简历卡片、状态变更
 
-type ResumeStatus = 'pending' | 'viewed' | 'interview' | 'offered' | 'rejected';
+type ResumeStatus = 'pending' | 'passed' | 'rejected';
 
 interface ResumeCard {
   id: number;
@@ -34,23 +34,19 @@ interface ResumeCard {
   avatar: string;
 }
 
-const STATUS_CONFIG: Record<ResumeStatus, { label: string; color: string; bgCard: string; borderColor: string; headerBg: string; count_bg: string; tagVariant: 'yellow' | 'blue' | 'primary' | 'green' | 'gray' }> = {
+const STATUS_CONFIG: Record<ResumeStatus, { label: string; color: string; bgCard: string; borderColor: string; headerBg: string; count_bg: string; tagVariant: 'yellow' | 'green' | 'gray' }> = {
   pending:    { label: '待筛选', color: 'text-amber-700',  bgCard: 'bg-amber-50/50',  borderColor: 'border-amber-200', headerBg: 'bg-amber-50', count_bg: 'bg-amber-100 text-amber-700', tagVariant: 'yellow' },
-  viewed:     { label: '已查看', color: 'text-blue-700',   bgCard: 'bg-blue-50/50',   borderColor: 'border-blue-200',  headerBg: 'bg-blue-50',  count_bg: 'bg-blue-100 text-blue-700', tagVariant: 'blue' },
-  interview:  { label: '面试中', color: 'text-primary-700', bgCard: 'bg-primary-50/50', borderColor: 'border-primary-200', headerBg: 'bg-primary-50', count_bg: 'bg-primary-100 text-primary-700', tagVariant: 'primary' },
-  offered:    { label: '已录用', color: 'text-green-700',  bgCard: 'bg-green-50/50',  borderColor: 'border-green-200', headerBg: 'bg-green-50', count_bg: 'bg-green-100 text-green-700', tagVariant: 'green' },
-  rejected:   { label: '已淘汰', color: 'text-gray-500',   bgCard: 'bg-gray-50/50',   borderColor: 'border-gray-200',  headerBg: 'bg-gray-50',  count_bg: 'bg-gray-200 text-gray-600', tagVariant: 'gray' },
+  passed:     { label: '通过',   color: 'text-green-700',  bgCard: 'bg-green-50/50',  borderColor: 'border-green-200', headerBg: 'bg-green-50', count_bg: 'bg-green-100 text-green-700', tagVariant: 'green' },
+  rejected:   { label: '淘汰',   color: 'text-gray-500',   bgCard: 'bg-gray-50/50',   borderColor: 'border-gray-200',  headerBg: 'bg-gray-50',  count_bg: 'bg-gray-200 text-gray-600', tagVariant: 'gray' },
 };
 
-const COLUMN_ORDER: ResumeStatus[] = ['pending', 'viewed', 'interview', 'offered', 'rejected'];
+const COLUMN_ORDER: ResumeStatus[] = ['pending', 'passed', 'rejected'];
 
 // 状态流转选项：每个状态可以流转到哪些状态
 const STATUS_TRANSITIONS: Record<ResumeStatus, ResumeStatus[]> = {
-  pending:   ['viewed', 'rejected'],
-  viewed:    ['interview', 'rejected'],
-  interview: ['offered', 'rejected'],
-  offered:   [],
-  rejected:  ['pending'],
+  pending:   ['passed', 'rejected'],
+  passed:    ['rejected'],
+  rejected:  ['passed'],
 };
 
 export default function CompanyResumePool() {
@@ -86,19 +82,32 @@ export default function CompanyResumePool() {
         return;
       }
 
-      const normalized = raw.map((r: Record<string, unknown>) => ({
-        id: Number(r.id || 0),
-        studentName: (r.student_name || r.studentName || '') as string,
-        university: (r.school || r.university || '') as string,
-        major: (r.major || '') as string,
-        degree: (r.degree === '硕士' || r.degree === '博士' ? r.degree : '本科') as ResumeCard['degree'],
-        jobTitle: (r.job_title || r.jobTitle || '') as string,
-        status: COLUMN_ORDER.includes(r.status as ResumeStatus) ? (r.status as ResumeStatus) : 'pending',
-        appliedAt: r.created_at ? String(r.created_at).slice(0, 16) : '',
-        phone: (r.phone || '') as string,
-        email: (r.student_email || r.email || '') as string,
-        avatar: (r.student_avatar || r.avatar || '') as string,
-      }));
+      const normalized = raw.map((r: Record<string, unknown>) => {
+        // 将后端多状态映射为三状态：pending/viewed → pending, interview/offered/approved → passed, rejected → rejected
+        const rawStatus = r.status as string;
+        let mappedStatus: ResumeStatus = 'pending';
+        if (rawStatus === 'rejected') {
+          mappedStatus = 'rejected';
+        } else if (['interview', 'offered', 'approved', 'passed'].includes(rawStatus)) {
+          mappedStatus = 'passed';
+        } else {
+          mappedStatus = 'pending'; // pending, viewed, 以及其他状态统一归为待筛选
+        }
+
+        return {
+          id: Number(r.id || 0),
+          studentName: (r.student_name || r.studentName || '') as string,
+          university: (r.school || r.university || '') as string,
+          major: (r.major || '') as string,
+          degree: (r.degree === '硕士' || r.degree === '博士' ? r.degree : '本科') as ResumeCard['degree'],
+          jobTitle: (r.job_title || r.jobTitle || '') as string,
+          status: mappedStatus,
+          appliedAt: r.created_at ? String(r.created_at).slice(0, 16) : '',
+          phone: (r.phone || '') as string,
+          email: (r.student_email || r.email || '') as string,
+          avatar: (r.student_avatar || r.avatar || '') as string,
+        };
+      });
 
       setResumes(normalized);
     } catch {
@@ -154,9 +163,7 @@ export default function CompanyResumePool() {
   // 按状态分组
   const columnData: Record<ResumeStatus, ResumeCard[]> = {
     pending: filteredResumes.filter(r => r.status === 'pending'),
-    viewed: filteredResumes.filter(r => r.status === 'viewed'),
-    interview: filteredResumes.filter(r => r.status === 'interview'),
-    offered: filteredResumes.filter(r => r.status === 'offered'),
+    passed: filteredResumes.filter(r => r.status === 'passed'),
     rejected: filteredResumes.filter(r => r.status === 'rejected'),
   };
 
@@ -230,8 +237,8 @@ export default function CompanyResumePool() {
 
       {/* 加载状态 */}
       {loading && (
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-          {Array.from({ length: 5 }).map((_, i) => (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {Array.from({ length: 3 }).map((_, i) => (
             <CardSkeleton key={i} />
           ))}
         </div>
@@ -258,7 +265,7 @@ export default function CompanyResumePool() {
                   <div
                     ref={provided.innerRef}
                     {...provided.droppableProps}
-                    className={`flex-shrink-0 w-[280px] flex flex-col ${snapshot.isDraggingOver ? 'ring-2 ring-primary-500 rounded-xl' : ''}`}
+                    className={`flex-shrink-0 w-[340px] flex flex-col ${snapshot.isDraggingOver ? 'ring-2 ring-primary-500 rounded-xl' : ''}`}
                   >
                     {/* 列标题 */}
                     <div className={`rounded-t-xl px-4 py-3 ${config.headerBg} border ${config.borderColor} border-b-0`}>
@@ -359,6 +366,7 @@ export default function CompanyResumePool() {
                                           const nextConfig = STATUS_CONFIG[nextStatus];
                                           const isReject = nextStatus === 'rejected';
                                           const isRestore = nextStatus === 'pending';
+                                          const isPass = nextStatus === 'passed';
                                           return (
                                             <button
                                               key={nextStatus}
@@ -366,16 +374,14 @@ export default function CompanyResumePool() {
                                               className={`flex items-center gap-1 px-2.5 py-1.5 rounded-md text-xs font-medium transition-colors ${
                                                 isReject
                                                   ? 'bg-red-50 text-red-600 hover:bg-red-100 border border-red-200'
-                                                  : isRestore
-                                                    ? 'bg-amber-50 text-amber-600 hover:bg-amber-100 border border-amber-200'
-                                                    : 'bg-primary-50 text-primary-700 hover:bg-primary-100 border border-primary-200'
+                                                  : isPass
+                                                    ? 'bg-green-50 text-green-600 hover:bg-green-100 border border-green-200'
+                                                    : 'bg-amber-50 text-amber-600 hover:bg-amber-100 border border-amber-200'
                                               }`}
                                             >
                                               {isReject ? <XCircle className="w-3 h-3" /> :
-                                               isRestore ? <RefreshCw className="w-3 h-3" /> :
-                                               nextStatus === 'interview' ? <MessageSquare className="w-3 h-3" /> :
-                                               nextStatus === 'offered' ? <CheckCircle className="w-3 h-3" /> :
-                                               <ArrowRight className="w-3 h-3" />}
+                                               isPass ? <CheckCircle className="w-3 h-3" /> :
+                                               <RefreshCw className="w-3 h-3" />}
                                               {isRestore ? '重新筛选' : `移至${nextConfig.label}`}
                                             </button>
                                           );
@@ -423,7 +429,7 @@ export default function CompanyResumePool() {
             <User className="w-4 h-4" />
             <span>通过率：</span>
             <span className="font-bold text-green-600">
-              {totalCount > 0 ? Math.round((columnData.offered.length / totalCount) * 100) : 0}%
+              {totalCount > 0 ? Math.round((columnData.passed.length / totalCount) * 100) : 0}%
             </span>
           </div>
         </div>

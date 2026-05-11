@@ -1,5 +1,10 @@
 @echo off
+setlocal enabledelayedexpansion
 title QiHang Platform - Launcher
+
+set ROOT=%~dp0
+set BACKEND_DIR=%ROOT%backend
+set FRONTEND_DIR=%ROOT%frontend
 
 echo =======================================================
 echo     QiHang Platform - One-Click Launcher
@@ -7,7 +12,6 @@ echo     Frontend (5173) + Backend (3001)
 echo =======================================================
 echo.
 
-:: Check Node.js
 where node >nul 2>&1
 if %errorlevel% neq 0 (
     echo [ERROR] Node.js not found. Please install Node.js first.
@@ -15,72 +19,101 @@ if %errorlevel% neq 0 (
     exit /b 1
 )
 
-:: Check backend .env
-if not exist "backend\.env" (
-    echo [WARN] backend\.env not found, copying from .env.example...
-    if exist "backend\.env.example" (
-        copy "backend\.env.example" "backend\.env" >nul
-        echo [INFO] backend\.env created. Please edit DB password and JWT secret.
-        echo.
+if not exist "%BACKEND_DIR%\.env" (
+    echo [WARN] backend\.env not found, copying from backend\.env.example...
+    if exist "%BACKEND_DIR%\.env.example" (
+        copy "%BACKEND_DIR%\.env.example" "%BACKEND_DIR%\.env" >nul
     ) else (
-        echo [ERROR] .env.example not found. Please create backend\.env manually.
+        echo [ERROR] backend\.env.example not found.
         pause
         exit /b 1
     )
 )
 
-:: Install backend deps
+for %%P in (5173) do (
+    netstat -ano | findstr /R /C:":%%P .*LISTENING" >nul
+    if !errorlevel! equ 0 (
+        echo [ERROR] Port %%P is already in use.
+        echo         Stop the existing process or free ws://localhost:5173 before starting.
+        pause
+        exit /b 1
+    )
+)
+
 echo [1/4] Installing backend dependencies...
-cd backend
+pushd "%BACKEND_DIR%"
 call npm install --silent
 if %errorlevel% neq 0 (
     echo [ERROR] Backend install failed.
-    cd ..
+    popd
     pause
     exit /b 1
 )
-cd ..
+popd
 echo       Done.
 echo.
 
-:: Install frontend deps
 echo [2/4] Installing frontend dependencies...
-cd frontend
+pushd "%FRONTEND_DIR%"
 call npm install --silent
 if %errorlevel% neq 0 (
     echo [ERROR] Frontend install failed.
-    cd ..
+    popd
     pause
     exit /b 1
 )
-cd ..
+popd
 echo       Done.
 echo.
 
-:: Start backend
-echo [3/4] Starting backend server (port 3001)...
-cd backend
-start "QiHang-Backend" cmd /k "node server.js"
-cd ..
-echo       Backend started.
+echo [3/5] Initializing database schema...
+pushd "%BACKEND_DIR%"
+call npm run init-db
+if %errorlevel% neq 0 (
+    echo [ERROR] Database initialization failed.
+    popd
+    pause
+    exit /b 1
+)
+popd
+echo       Done.
 echo.
 
-:: Wait for backend
-timeout /t 2 /nobreak >nul
+echo [4/5] Starting backend server...
+start "QiHang-Backend" cmd /k "cd /d %BACKEND_DIR% && npm run dev"
 
-:: Start frontend
-echo [4/4] Starting frontend server (port 5173)...
-cd frontend
-start "QiHang-Frontend" cmd /k "npx vite --open"
-cd ..
-echo       Frontend started.
+echo [5/5] Starting frontend server...
+start "QiHang-Frontend" cmd /k "cd /d %FRONTEND_DIR% && npm run dev"
 echo.
 
+set BACKEND_OK=0
+set FRONTEND_OK=0
+
+for /L %%I in (1,1,60) do (
+    powershell -NoProfile -Command "try { $r = Invoke-WebRequest -UseBasicParsing http://localhost:3001/api/health -TimeoutSec 2; if ($r.StatusCode -ge 200) { exit 0 } else { exit 1 } } catch { exit 1 }"
+    if !errorlevel! equ 0 set BACKEND_OK=1
+
+    powershell -NoProfile -Command "try { $r = Invoke-WebRequest -UseBasicParsing http://localhost:5173 -TimeoutSec 2; if ($r.StatusCode -ge 200) { exit 0 } else { exit 1 } } catch { exit 1 }"
+    if !errorlevel! equ 0 set FRONTEND_OK=1
+
+    if !BACKEND_OK! equ 1 if !FRONTEND_OK! equ 1 goto :ready
+
+    timeout /t 1 /nobreak >nul
+)
+
+echo [ERROR] Startup health check timed out.
+if %BACKEND_OK% neq 1 echo         Backend health endpoint did not become ready: http://localhost:3001/api/health
+if %FRONTEND_OK% neq 1 echo         Frontend dev server did not become ready on http://localhost:5173
+echo         If you see "WebSocket connection to ws://localhost:5173 failed", Vite did not start successfully.
+pause
+exit /b 1
+
+:ready
 echo =======================================================
-echo   All services started!
+echo   Startup complete
 echo   Frontend: http://localhost:5173
 echo   Backend:  http://localhost:3001
-echo   Admin:    admin@qihang.com / admin123
+echo   Health:   http://localhost:3001/api/health
 echo =======================================================
 echo.
 echo Close "QiHang-Backend" and "QiHang-Frontend" windows to stop.

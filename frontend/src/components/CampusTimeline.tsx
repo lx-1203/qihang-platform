@@ -40,7 +40,7 @@ const DEFAULT_TIMELINE = [
     description: 'HR教你打造满分简历，提升面试邀约率',
     type: 'live' as const,
     icon: 'BookOpen',
-    link: '/courses',
+    link: '/skill-enhancement',
   },
   {
     date: '3月15日',
@@ -56,7 +56,7 @@ const DEFAULT_TIMELINE = [
     description: '1v1模拟面试，真实还原大厂面试全流程',
     type: 'event' as const,
     icon: 'Users',
-    link: '/mentors',
+    link: '/skill-enhancement',
   },
   {
     date: '5月1日',

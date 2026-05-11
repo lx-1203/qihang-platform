@@ -101,15 +101,17 @@ function TagSelector({
       {selected.length > 0 && (
         <div className="flex flex-wrap gap-2">
           {selected.map(tag => (
-            <span
+            <motion.span
               key={tag}
-              className="inline-flex items-center gap-1 px-2.5 py-1 bg-primary-50 text-primary-700 text-xs font-medium rounded-full"
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="inline-flex items-center gap-1 px-2.5 py-1 bg-gradient-to-r from-primary-50 to-primary-100 text-primary-700 text-xs font-medium rounded-full border border-primary-200 shadow-sm"
             >
               {tag}
               <button onClick={() => toggleTag(tag)} className="hover:text-primary-900">
                 <X className="w-3 h-3" />
               </button>
-            </span>
+            </motion.span>
           ))}
         </div>
       )}
@@ -122,28 +124,31 @@ function TagSelector({
           onChange={(e) => setCustomInput(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addCustom())}
           placeholder="输入自定义标签，回车添加"
-          className="flex-1 px-3 py-1.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-400"
+          className="flex-1 px-3 py-1.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-400 transition-all"
         />
-        <button
+        <motion.button
           onClick={addCustom}
           disabled={!customInput.trim() || selected.length >= maxTags}
+          whileTap={customInput.trim() && selected.length < maxTags ? { scale: 0.95 } : undefined}
           className="px-3 py-1.5 bg-primary-500 text-white rounded-lg text-sm hover:bg-primary-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         >
           <Plus className="w-4 h-4" />
-        </button>
+        </motion.button>
       </div>
 
       {/* 预设标签 */}
       <div className="flex flex-wrap gap-1.5 max-h-32 overflow-y-auto">
         {presets.filter(p => !selected.includes(p)).map(tag => (
-          <button
+          <motion.button
             key={tag}
             onClick={() => toggleTag(tag)}
             disabled={selected.length >= maxTags}
-            className="px-2 py-1 text-xs text-gray-600 bg-gray-100 rounded-full hover:bg-primary-50 hover:text-primary-600 disabled:opacity-40 transition-colors"
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            className="px-2.5 py-1 text-xs text-gray-600 bg-gray-100 rounded-full hover:bg-gradient-to-r hover:from-primary-50 hover:to-primary-100 hover:text-primary-700 hover:border-primary-200 disabled:opacity-40 transition-all border border-transparent"
           >
             + {tag}
-          </button>
+          </motion.button>
         ))}
       </div>
     </div>
@@ -360,7 +365,7 @@ export default function StudentPortrait() {
             <Sparkles className="w-6 h-6 text-primary-500" />
             我的画像
           </h1>
-          <p className="text-gray-500 mt-1">完善你的个人画像，获得更精准的岗位和课程推荐</p>
+          <p className="text-gray-500 mt-1">完善你的个人画像，获得更精准的岗位和成长内容推荐</p>
         </div>
         <button
           onClick={handleSave}
@@ -370,6 +375,58 @@ export default function StudentPortrait() {
           <Save className="w-4 h-4" />
           {saving ? '保存中...' : '保存画像'}
         </button>
+      </motion.div>
+
+      {/* 步骤进度指示 */}
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.05 }}
+        className="bg-white rounded-xl border border-gray-200 p-4"
+      >
+        <div className="flex items-center justify-between mb-3">
+          <span className="text-xs font-medium text-gray-500">完善进度</span>
+          <span className="text-xs text-primary-600 font-medium">
+            {[careerGoals.length > 0, skills.length >= 3, interests.length >= 2, industries.length >= 1, selfIntro.length >= 10, true].filter(Boolean).length}/6
+          </span>
+        </div>
+        <div className="flex items-center gap-1">
+          {[
+            { label: '职业目标', done: careerGoals.length > 0 },
+            { label: '技能标签', done: skills.length >= 3 },
+            { label: '兴趣方向', done: interests.length >= 2 },
+            { label: '目标行业', done: industries.length >= 1 },
+            { label: '自我介绍', done: selfIntro.length >= 10 },
+            { label: '能力自评', done: true },
+          ].map((step, idx, arr) => (
+            <div key={step.label} className="flex items-center flex-1">
+              <div className="flex flex-col items-center flex-1 min-w-0">
+                <motion.div
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  transition={{ delay: idx * 0.05 }}
+                  className={`w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-bold shrink-0 ${
+                    step.done
+                      ? 'bg-primary-500 text-white shadow-sm shadow-primary-200'
+                      : 'bg-gray-100 text-gray-400'
+                  }`}
+                >
+                  {step.done ? '✓' : idx + 1}
+                </motion.div>
+                <span className={`text-[10px] mt-1 truncate max-w-full ${
+                  step.done ? 'text-primary-600 font-medium' : 'text-gray-400'
+                }`}>
+                  {step.label}
+                </span>
+              </div>
+              {idx < arr.length - 1 && (
+                <div className={`h-0.5 flex-1 mx-1 rounded ${
+                  step.done ? 'bg-primary-300' : 'bg-gray-200'
+                }`} />
+              )}
+            </div>
+          ))}
+        </div>
       </motion.div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -390,22 +447,36 @@ export default function StudentPortrait() {
               {CAREER_GOALS.map(goal => {
                 const isSelected = careerGoals.includes(goal.label);
                 return (
-                  <button
+                  <motion.button
                     key={goal.label}
                     onClick={() => toggleCareerGoal(goal.label)}
-                    className={`flex items-center gap-2 p-3 rounded-xl border-2 transition-all text-left ${
+                    whileHover={{ scale: 1.03 }}
+                    whileTap={{ scale: 0.97 }}
+                    className={`relative flex items-center gap-2 p-3 rounded-xl border-2 transition-all text-left overflow-hidden ${
                       isSelected
-                        ? 'border-primary-500 bg-primary-50'
-                        : 'border-gray-200 hover:border-gray-300'
+                        ? 'border-primary-500 bg-gradient-to-br from-primary-50 to-primary-100/70 shadow-md shadow-primary-100'
+                        : 'border-gray-200 hover:border-primary-200 hover:shadow-sm hover:bg-gray-50'
                     }`}
                   >
-                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${goal.bg}`}>
+                    {/* 选中勾选标识 */}
+                    {isSelected && (
+                      <motion.div
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        className="absolute top-1.5 right-1.5 w-4 h-4 bg-primary-500 rounded-full flex items-center justify-center"
+                      >
+                        <ChevronRight className="w-2.5 h-2.5 text-white rotate-45" style={{ transform: 'rotate(45deg)' }} />
+                      </motion.div>
+                    )}
+                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${goal.bg} ${
+                      isSelected ? 'ring-2 ring-primary-200' : ''
+                    }`}>
                       <goal.icon className={`w-4 h-4 ${goal.color}`} />
                     </div>
-                    <span className={`text-sm font-medium ${isSelected ? 'text-primary-700' : 'text-gray-700'}`}>
+                    <span className={`text-sm font-medium ${isSelected ? 'text-primary-800' : 'text-gray-700'}`}>
                       {goal.label}
                     </span>
-                  </button>
+                  </motion.button>
                 );
               })}
             </div>

@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import pool from '../db.js';
-import { authMiddleware, requireRole } from '../middleware/auth.js';
+import { authMiddleware, requireCapability, requireRole } from '../middleware/auth.js';
 import { NotificationTemplates } from '../utils/notification.js';
 import { idempotency } from '../middleware/idempotency.js';
 
@@ -15,22 +15,30 @@ router.use(authMiddleware, requireRole('mentor'));
 router.post('/profile', async (req, res) => {
   try {
     const userId = req.user.id;
-    const { name, title, bio, expertise, price, available_time, avatar, phone, wechat, contact_email } = req.body;
+    const { name, title, bio, expertise, price, available_time, avatar, phone, wechat, contact_email, cert_documents, credential_url, credential_description, education, experience } = req.body;
 
     if (!title || !bio) {
       return res.status(400).json({ code: 400, message: '头衔和简介不能为空' });
     }
 
     // 检查是否已有资料
-    const [existing] = await pool.query('SELECT id FROM mentor_profiles WHERE user_id = ?', [userId]);
+    const [existing] = await pool.query('SELECT id, verify_status FROM mentor_profiles WHERE user_id = ?', [userId]);
 
     if (existing.length > 0) {
-      // 更新导师资料（同时更新 mentor_profiles.avatar 和 users.avatar）
+      const currentStatus = existing[0].verify_status;
+      const hasCredentialNow = !!(credential_url || credential_description);
+      const shouldSubmit = currentStatus === 'draft' && hasCredentialNow;
+
       await pool.query(
         `UPDATE mentor_profiles SET name = ?, title = ?, bio = ?, expertise = ?, price = ?, available_time = ?, avatar = ?,
-         phone = ?, wechat = ?, contact_email = ? WHERE user_id = ?`,
+         phone = ?, wechat = ?, contact_email = ?, education = ?, experience = ?, cert_documents = ?,
+         credential_url = ?, credential_description = ?,
+         verify_status = CASE WHEN ? = 'draft' AND ? = 1 THEN 'pending' ELSE verify_status END
+         WHERE user_id = ?`,
         [name || '', title, bio, JSON.stringify(expertise || []), price || 0, JSON.stringify(available_time || []), avatar || '',
-         phone || '', wechat || '', contact_email || '', userId]
+         phone || '', wechat || '', contact_email || '', education || '', experience || '', cert_documents ? JSON.stringify(cert_documents) : null,
+         credential_url || null, credential_description || null,
+         currentStatus, shouldSubmit ? 1 : 0, userId]
       );
       // 同步更新 users 表的头像和手机号
       if (avatar !== undefined || phone !== undefined) {
@@ -41,6 +49,10 @@ router.post('/profile', async (req, res) => {
         userParams.push(userId);
         await pool.query(`UPDATE users SET ${userFields.join(', ')} WHERE id = ?`, userParams);
       }
+
+      if (shouldSubmit) {
+        try { await NotificationTemplates.newMentorApplication(name || '未知导师'); } catch (e) { console.error('通知管理员失败:', e); }
+      }
       const [rows] = await pool.query(
         `SELECT mp.*, u.nickname, u.avatar, u.email, u.phone
          FROM mentor_profiles mp JOIN users u ON mp.user_id = u.id
@@ -49,19 +61,20 @@ router.post('/profile', async (req, res) => {
       );
       res.json({ code: 200, message: '导师资料更新成功', data: { profile: rows[0] } });
     } else {
-      // 创建
+      const hasCredential = !!(credential_url || credential_description);
+      const initialStatus = hasCredential ? 'pending' : 'draft';
+
       await pool.query(
-        `INSERT INTO mentor_profiles (user_id, name, title, bio, expertise, price, available_time, phone, wechat, contact_email)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [userId, name || '', title, bio, JSON.stringify(expertise || []), price || 0, JSON.stringify(available_time || []),
-         phone || '', wechat || '', contact_email || '']
+        `INSERT INTO mentor_profiles (user_id, name, title, bio, expertise, price, available_time, avatar, phone, wechat, contact_email, education, experience, cert_documents, credential_url, credential_description, verify_status)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [userId, name || '', title, bio, JSON.stringify(expertise || []), price || 0, JSON.stringify(available_time || []), avatar || '',
+         phone || '', wechat || '', contact_email || '', education || '', experience || '', cert_documents ? JSON.stringify(cert_documents) : null,
+         credential_url || null, credential_description || null, initialStatus]
       );
 
-      // 通知管理员有新导师入驻申请
-      try {
-        await NotificationTemplates.newMentorApplication(name || title || '未知导师');
-      } catch (notifyErr) {
-        console.error('发送导师认证通知失败(不影响主流程):', notifyErr);
+      // 有资质材料时通知管理员
+      if (hasCredential) {
+        try { await NotificationTemplates.newMentorApplication(name || title || '未知导师'); } catch (e) { console.error('通知管理员失败:', e); }
       }
 
       const [rows] = await pool.query(
@@ -101,7 +114,7 @@ router.get('/profile', async (req, res) => {
 // 课程表为 courses（非 mentor_courses），字段：title, mentor_id, mentor_name, description, category, cover, video_url, duration(VARCHAR), difficulty, tags, views, rating, rating_count, status
 
 // POST /api/mentor/courses - 创建课程
-router.post('/courses', idempotency(), async (req, res) => {
+router.post('/courses', requireCapability('canManageCourses'), idempotency(), async (req, res) => {
   try {
     const userId = req.user.id;
     const { title, description, category, cover, video_url, duration, difficulty, tags, price } = req.body;
@@ -142,7 +155,7 @@ router.post('/courses', idempotency(), async (req, res) => {
 });
 
 // GET /api/mentor/courses - 获取本导师的课程列表
-router.get('/courses', async (req, res) => {
+router.get('/courses', requireCapability('canManageCourses'), async (req, res) => {
   try {
     const { status, keyword } = req.query;
 
@@ -175,7 +188,7 @@ router.get('/courses', async (req, res) => {
 });
 
 // PUT /api/mentor/courses/:id - 编辑课程
-router.put('/courses/:id', async (req, res) => {
+router.put('/courses/:id', requireCapability('canManageCourses'), async (req, res) => {
   try {
     const courseId = Number(req.params.id);
     const userId = req.user.id;
@@ -242,7 +255,7 @@ router.put('/courses/:id', async (req, res) => {
 });
 
 // DELETE /api/mentor/courses/:id - 删除课程
-router.delete('/courses/:id', async (req, res) => {
+router.delete('/courses/:id', requireCapability('canManageCourses'), async (req, res) => {
   try {
     const courseId = Number(req.params.id);
     const userId = req.user.id;
@@ -270,7 +283,7 @@ router.delete('/courses/:id', async (req, res) => {
 });
 
 // PUT /api/mentor/courses/:id/status - 快速切换课程上下架状态
-router.put('/courses/:id/status', async (req, res) => {
+router.put('/courses/:id/status', requireCapability('canManageCourses'), async (req, res) => {
   try {
     const courseId = Number(req.params.id);
     const userId = req.user.id;
@@ -306,7 +319,7 @@ router.put('/courses/:id/status', async (req, res) => {
 // appointments 表字段：student_id, mentor_id, appointment_time, duration, status, note, mentor_remark, service_title, fee, review_rating, review_content
 
 // GET /api/mentor/appointments - 预约列表
-router.get('/appointments', async (req, res) => {
+router.get('/appointments', requireCapability('canManageAppointments'), async (req, res) => {
   try {
     const { status } = req.query;
     let sql = `
@@ -334,7 +347,7 @@ router.get('/appointments', async (req, res) => {
 });
 
 // PUT /api/mentor/appointments/:id/status - 确认/拒绝/完成预约
-router.put('/appointments/:id/status', async (req, res) => {
+router.put('/appointments/:id/status', requireCapability('canManageAppointments'), async (req, res) => {
   try {
     const appointmentId = Number(req.params.id);
     const userId = req.user.id;
@@ -389,7 +402,7 @@ router.put('/appointments/:id/status', async (req, res) => {
 });
 
 // PUT /api/mentor/appointments/:id/meeting-link - 设置会议链接
-router.put('/appointments/:id/meeting-link', async (req, res) => {
+router.put('/appointments/:id/meeting-link', requireCapability('canManageAppointments'), async (req, res) => {
   try {
     const appointmentId = Number(req.params.id);
     const { meeting_link } = req.body;
@@ -402,7 +415,7 @@ router.put('/appointments/:id/meeting-link', async (req, res) => {
 });
 
 // PUT /api/mentor/appointments/:id/confirm - 确认预约（前端快捷路由）
-router.put('/appointments/:id/confirm', async (req, res) => {
+router.put('/appointments/:id/confirm', requireCapability('canManageAppointments'), async (req, res) => {
   try {
     const appointmentId = Number(req.params.id);
     await pool.query('UPDATE appointments SET status = ? WHERE id = ? AND mentor_id = ?', ['confirmed', appointmentId, req.user.id]);
@@ -414,7 +427,7 @@ router.put('/appointments/:id/confirm', async (req, res) => {
 });
 
 // PUT /api/mentor/appointments/:id/reject - 拒绝预约（前端快捷路由）
-router.put('/appointments/:id/reject', async (req, res) => {
+router.put('/appointments/:id/reject', requireCapability('canManageAppointments'), async (req, res) => {
   try {
     const appointmentId = Number(req.params.id);
     await pool.query('UPDATE appointments SET status = ? WHERE id = ? AND mentor_id = ?', ['rejected', appointmentId, req.user.id]);
@@ -426,7 +439,7 @@ router.put('/appointments/:id/reject', async (req, res) => {
 });
 
 // PUT /api/mentor/appointments/:id/complete - 完成预约（前端快捷路由）
-router.put('/appointments/:id/complete', async (req, res) => {
+router.put('/appointments/:id/complete', requireCapability('canManageAppointments'), async (req, res) => {
   try {
     const appointmentId = Number(req.params.id);
     await pool.query('UPDATE appointments SET status = ? WHERE id = ? AND mentor_id = ?', ['completed', appointmentId, req.user.id]);
@@ -440,7 +453,7 @@ router.put('/appointments/:id/complete', async (req, res) => {
 // ==================== 4.9 我的学生列表 ====================
 
 // GET /api/mentor/students - 有过预约的学生列表
-router.get('/students', async (req, res) => {
+router.get('/students', requireCapability('canManageAppointments'), async (req, res) => {
   try {
     const [rows] = await pool.query(
       `SELECT DISTINCT u.id, u.nickname, u.avatar, u.email, u.phone,
@@ -559,7 +572,7 @@ router.get('/stats/directions', async (req, res) => {
 // ==================== 资料库管理 ====================
 
 // POST /api/mentor/resources/check - 批量检查资料文件是否存在（供前端验证链接有效性）
-router.post('/resources/check', async (req, res) => {
+router.post('/resources/check', requireCapability('canUploadResources'), async (req, res) => {
   try {
     const { ids } = req.body;
     if (!Array.isArray(ids) || ids.length === 0) {
@@ -660,10 +673,10 @@ router.get('/resources', async (req, res) => {
 });
 
 // POST /api/mentor/resources - 新增资料记录
-router.post('/resources', async (req, res) => {
+router.post('/resources', requireCapability('canUploadResources'), async (req, res) => {
   try {
     const userId = req.user.id;
-    const { title, type, url, size_bytes, is_public } = req.body;
+    const { title, type, url, size_bytes, is_public, is_vip_only, content_type } = req.body;
 
     if (!title || !url) {
       return res.status(400).json({ code: 400, message: '标题和文件URL不能为空' });
@@ -674,10 +687,16 @@ router.post('/resources', async (req, res) => {
       return res.status(400).json({ code: 400, message: '资料类型不正确' });
     }
 
+    const allowedContentTypes = ['article', 'video_link', 'document', 'other'];
+    if (content_type && !allowedContentTypes.includes(content_type)) {
+      return res.status(400).json({ code: 400, message: '内容类型不正确，可选: article/video_link/document/other' });
+    }
+
     const [result] = await pool.query(
-      `INSERT INTO mentor_resources (mentor_id, title, type, url, size_bytes, is_public)
-       VALUES (?, ?, ?, ?, ?, ?)`,
-      [userId, title, type || 'other', url, size_bytes || 0, is_public !== undefined ? is_public : 1]
+      `INSERT INTO mentor_resources (mentor_id, title, type, url, size_bytes, is_public, is_vip_only, content_type)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [userId, title, type || 'other', url, size_bytes || 0, is_public !== undefined ? is_public : 1,
+       is_vip_only !== undefined ? is_vip_only : 0, content_type || 'other']
     );
 
     const [rows] = await pool.query('SELECT * FROM mentor_resources WHERE id = ?', [result.insertId]);
@@ -689,7 +708,7 @@ router.post('/resources', async (req, res) => {
 });
 
 // PUT /api/mentor/resources/:id - 更新资料（标题/是否公开）
-router.put('/resources/:id', async (req, res) => {
+router.put('/resources/:id', requireCapability('canUploadResources'), async (req, res) => {
   try {
     const resourceId = Number(req.params.id);
     const userId = req.user.id;
@@ -728,7 +747,7 @@ router.put('/resources/:id', async (req, res) => {
 });
 
 // DELETE /api/mentor/resources/:id - 删除资料
-router.delete('/resources/:id', async (req, res) => {
+router.delete('/resources/:id', requireCapability('canUploadResources'), async (req, res) => {
   try {
     const resourceId = Number(req.params.id);
     const userId = req.user.id;

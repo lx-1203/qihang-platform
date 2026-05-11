@@ -39,6 +39,9 @@ describe('AdminMentors', () => {
               price: 199,
               verify_status: 'pending',
               verify_remark: '',
+              credential_url: '',
+              credential_description: '',
+              verified_badge: '',
               created_at: '2026-04-01',
             },
           ],
@@ -63,12 +66,16 @@ describe('AdminMentors', () => {
       expect(screen.getByText('张导师')).toBeInTheDocument();
     });
 
-    await userEvent.click(screen.getByRole('button', { name: /通过/ }));
+    const approveButton = screen.getByRole('button', { name: '通过' });
+    await userEvent.click(approveButton);
+
+    const confirmButton = screen.getByRole('button', { name: '确认通过' });
+    await userEvent.click(confirmButton);
 
     await waitFor(() => {
       expect(http.put).toHaveBeenCalledWith('/admin/mentors/12/verify', {
         status: 1,
-        remark: '',
+        remark: '认证咨询导师',
       });
     });
   });

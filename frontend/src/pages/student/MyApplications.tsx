@@ -9,6 +9,8 @@ import {
 import http from '@/api/http';
 import { ListSkeleton } from '../../components/ui/Skeleton';
 import ErrorState from '../../components/ui/ErrorState';
+import { showToast } from '@/components/ui/ToastContainer';
+import ConfirmDialog from '@/components/ui/ConfirmDialog';
 
 // ====== 我的投递（求职申请列表） ======
 // 按状态筛选、进度追踪、查看岗位详情
@@ -57,6 +59,7 @@ export default function MyApplications() {
   const [searchKeyword, setSearchKeyword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [withdrawTarget, setWithdrawTarget] = useState<number | null>(null);
 
   const fetchApplications = useCallback(async (showLoading = true) => {
     try {
@@ -84,7 +87,7 @@ export default function MyApplications() {
           jobId: r.job_id || r.jobId || 0,
           appliedAt: r.created_at || r.appliedAt || '',
           statusUpdatedAt: r.updated_at || r.statusUpdatedAt || '',
-          status: r.status || 'pending',
+          status: (['pending', 'viewed', 'interview', 'offered', 'rejected'].includes(r.status as ApplicationStatus) ? r.status as ApplicationStatus : 'pending'),
         }));
         setApplications(normalized);
       } else {
@@ -100,16 +103,16 @@ export default function MyApplications() {
 
   // 撤回投递
   const handleWithdraw = async (id: number) => {
-    if (!confirm('确定要撤回该投递吗？')) return;
     try {
       const res = await http.delete(`/student/resumes/${id}`);
       if (res.data?.code === 200) {
         setApplications(prev => prev.filter(app => app.id !== id));
+        showToast('投递已撤回', 'success');
       } else {
-        alert(res.data?.message || '撤回失败');
+        showToast(res.data?.message || '撤回失败', 'error');
       }
     } catch {
-      alert('撤回失败，请稍后重试');
+      showToast('撤回失败，请稍后重试', 'error');
     }
   };
 
@@ -243,7 +246,7 @@ export default function MyApplications() {
           </motion.div>
         ) : (
           filtered.map((app, i) => {
-            const config = statusConfig[app.status as Exclude<ApplicationStatus, 'all'>];
+            const config = statusConfig[app.status as Exclude<ApplicationStatus, 'all'>] ?? { label: '未知', color: 'text-gray-500', bg: 'bg-gray-100', icon: Clock };
             const currentStep = statusToStep[app.status];
 
             return (
@@ -342,7 +345,7 @@ export default function MyApplications() {
                     </Link>
                     {!['offered', 'interview'].includes(app.status) && (
                       <button
-                        onClick={() => handleWithdraw(app.id)}
+                        onClick={() => setWithdrawTarget(app.id)}
                         className="text-xs text-gray-400 hover:text-red-500 transition-colors"
                         title="撤回投递"
                       >
@@ -363,6 +366,19 @@ export default function MyApplications() {
           共 {filtered.length} 条投递记录
         </div>
       )}
+
+      <ConfirmDialog
+        open={withdrawTarget !== null}
+        title="撤回投递"
+        description="确定要撤回该投递吗？"
+        variant="warning"
+        onConfirm={async () => {
+          const id = withdrawTarget;
+          setWithdrawTarget(null);
+          if (id) await handleWithdraw(id);
+        }}
+        onCancel={() => setWithdrawTarget(null)}
+      />
     </div>
   );
 }

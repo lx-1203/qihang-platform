@@ -28,6 +28,15 @@ import platformFeaturesRouter from './routes/platformFeatures.js';
 import campusTimelineRouter from './routes/campusTimeline.js';
 import partnersRouter from './routes/partners.js';
 import agentRouter from './routes/agent.js';
+import navRouter from './routes/nav.js';
+import resourceLibraryRouter from './routes/resource-library.js';
+import careerGuidanceLinksRouter from './routes/career-guidance-links.js';
+import identityRouter from './routes/identity.js';
+import careerPlanRouter from './routes/career-plan.js';
+import recruitmentTimelinesRouter from './routes/recruitment-timelines.js';
+import vipRouter from './routes/vip.js';
+import furtherEducationRouter from './routes/further-education.js';
+import devModeRouter from './routes/dev-mode.js';
 import { testConnection } from './db.js';
 import pool from './db.js';
 import { sqlInjectionGuard } from './middleware/sqlInjectionGuard.js';
@@ -197,6 +206,15 @@ app.use('/api/platform-features', platformFeaturesRouter);
 app.use('/api/campus-timeline', campusTimelineRouter);
 app.use('/api/partners', partnersRouter);
 app.use('/api/agent', agentRouter);
+app.use('/api/nav', navRouter);
+app.use('/api/resource-library', resourceLibraryRouter);
+app.use('/api/career-guidance-links', careerGuidanceLinksRouter);
+app.use('/api/identity', identityRouter);
+app.use('/api/career-plan', careerPlanRouter);
+app.use('/api/further-education', furtherEducationRouter);
+app.use('/api/recruitment-timelines', recruitmentTimelinesRouter);
+app.use('/api/vip', vipRouter);
+app.use('/api/admin', devModeRouter);
 
 // ====== 健康检查（SEC-006：深度检查，含数据库连接验证）======
 app.get('/api/health', async (_req, res) => {

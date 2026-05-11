@@ -4,7 +4,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Bug, X, Home, Briefcase, BookOpen, Users, Globe,
   Shield, Building2, GraduationCap, Bell, User,
-  LayoutDashboard, ChevronRight, Loader2
+  LayoutDashboard, ChevronRight, Loader2,
+  Terminal, Activity, Zap, Eye, ToggleLeft
 } from 'lucide-react';
 import { useAuthStore } from '@/store/auth';
 import http from '@/api/http';
@@ -29,10 +30,9 @@ const QUICK_LINKS: { group: string; color: string; links: QuickLink[] }[] = [
     color: 'text-primary-600',
     links: [
       { path: '/', label: '首页', icon: Home, color: 'text-primary-600' },
-      { path: '/jobs', label: '求职招聘', icon: Briefcase, color: 'text-primary-600' },
-      { path: '/courses', label: '干货资料', icon: BookOpen, color: 'text-primary-600' },
-      { path: '/mentors', label: '导师列表', icon: Users, color: 'text-primary-600' },
-      { path: '/study-abroad', label: '留学申请', icon: Globe, color: 'text-primary-600' },
+      { path: '/job-recruitment', label: '求职招聘', icon: Briefcase, color: 'text-primary-600' },
+      { path: '/skill-enhancement', label: '能力提升', icon: BookOpen, color: 'text-primary-600' },
+      { path: '/further-education', label: '升学深造', icon: Globe, color: 'text-primary-600' },
       { path: '/notifications', label: '消息中心', icon: Bell, color: 'text-primary-600' },
     ],
   },
@@ -42,7 +42,7 @@ const QUICK_LINKS: { group: string; color: string; links: QuickLink[] }[] = [
     links: [
       { path: '/student/profile', label: '个人资料', icon: User, color: 'text-primary-600' },
       { path: '/student/applications', label: '我的投递', icon: Briefcase, color: 'text-primary-600' },
-      { path: '/student/appointments', label: '我的预约', icon: GraduationCap, color: 'text-primary-600' },
+      { path: '/skill-enhancement', label: '能力提升', icon: GraduationCap, color: 'text-primary-600' },
     ],
   },
   {
@@ -211,6 +211,43 @@ export default function DevFloatButton() {
 
               {/* 快捷链接 */}
               <div className="flex-1 overflow-y-auto px-3 py-3 space-y-2">
+                {/* 🔧 调试工具分组 */}
+                <div>
+                  <p className="text-[10px] font-bold text-purple-600 px-2 mb-1 uppercase tracking-wider">
+                    🔧 调试工具
+                  </p>
+                  <div className="space-y-0.5">
+                    {([
+                      { path: '/admin/dev-tools/console', label: '调试控制台', icon: Terminal },
+                      { path: '/admin/dev-tools/network', label: '网络监控', icon: Activity },
+                      { path: '/admin/dev-tools/performance', label: '性能分析', icon: Zap },
+                      { path: '/admin/dev-tools/state', label: '状态监控', icon: Eye },
+                      { path: '/admin/dev-tools/feature-flags', label: '功能开关', icon: ToggleLeft },
+                    ]).map(link => {
+                      const isActive = location.pathname === link.path;
+                      return (
+                        <Link
+                          key={link.path}
+                          to={link.path}
+                          onClick={() => setOpen(false)}
+                          className={`flex items-center gap-2.5 px-2 py-1.5 rounded-lg text-[13px] transition-colors group ${
+                            isActive
+                              ? 'bg-purple-50 text-purple-700 font-bold'
+                              : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                          }`}
+                        >
+                          <link.icon className={`w-3.5 h-3.5 ${isActive ? 'text-purple-600' : 'text-gray-400'}`} />
+                          <span className="flex-1">{link.label}</span>
+                          <code className="text-[9px] text-gray-400 font-mono hidden group-hover:inline">
+                            {link.path}
+                          </code>
+                          <ChevronRight className="w-3 h-3 text-gray-300 group-hover:text-gray-500" />
+                        </Link>
+                      );
+                    })}
+                  </div>
+                </div>
+
                 {QUICK_LINKS.map(group => (
                   <div key={group.group}>
                     <p className={`text-[10px] font-bold ${group.color} px-2 mb-1 uppercase tracking-wider`}>

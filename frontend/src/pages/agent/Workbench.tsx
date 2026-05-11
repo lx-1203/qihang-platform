@@ -55,6 +55,7 @@ export default function AgentWorkbench() {
   const [filter, setFilter] = useState<'all' | 'pending' | 'active'>('all');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const messagesRequestInFlightRef = useRef(false);
 
   // 获取统计
   const fetchStats = useCallback(async () => {
@@ -82,13 +83,19 @@ export default function AgentWorkbench() {
 
   // 获取消息
   const fetchMessages = useCallback(async (convId: number) => {
+    if (messagesRequestInFlightRef.current) {
+      return;
+    }
+
     try {
+      messagesRequestInFlightRef.current = true;
       setMessagesLoading(true);
       const res = await http.get(`/chat/conversations/${convId}/messages`);
       if (res.data?.code === 200) {
         setMessages(res.data.data?.messages || res.data.data || []);
       }
     } catch {} finally {
+      messagesRequestInFlightRef.current = false;
       setMessagesLoading(false);
     }
   }, []);
@@ -115,9 +122,14 @@ export default function AgentWorkbench() {
   // 轮询新消息
   useEffect(() => {
     if (selectedConv) {
-      pollingRef.current = setInterval(() => {
-        fetchMessages(selectedConv.id);
-      }, 3000);
+      const pollMessages = () => {
+        if (!document.hidden) {
+          fetchMessages(selectedConv.id);
+        }
+      };
+
+      pollMessages();
+      pollingRef.current = setInterval(pollMessages, 5000);
     }
     return () => {
       if (pollingRef.current) clearInterval(pollingRef.current);

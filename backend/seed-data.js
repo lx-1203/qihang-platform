@@ -620,6 +620,43 @@ async function seedBaseData() {
     );
   }
 
+  // --- 身份认证种子数据（预批准，便于测试）---
+  log(tag, '创建身份认证（预批准）...');
+  const identitySeeds = [
+    // 企业用户
+    { email: 'hr@bytedance.com', realName: '张磊', idNumber: '110101199001011234' },
+    { email: 'hr@tencent.com', realName: '李鹏', idNumber: '110101199002021235' },
+    { email: 'hr@baidu.com', realName: '王强', idNumber: '110101199003031236' },
+    { email: 'hr@mihoyo.com', realName: '陈雪', idNumber: '110101199004041237' },
+    { email: 'hr@xiaohongshu.com', realName: '赵敏', idNumber: '110101199005051238' },
+    { email: 'hr@unilever.com', realName: '刘洋', idNumber: '110101199006061239' },
+    // 导师用户
+    { email: 'chen@mentor.com', realName: '陈建国', idNumber: '320101197503151234' },
+    { email: 'zhang@mentor.com', realName: '张明远', idNumber: '320101198008201235' },
+    { email: 'wang@mentor.com', realName: '王宏宇', idNumber: '320101198512121236' },
+    { email: 'li@mentor.com', realName: '李芳华', idNumber: '320101199002281237' },
+    { email: 'zhao@mentor.com', realName: '赵雅文', idNumber: '320101199107011238' },
+    // 学生用户
+    { email: 'student1@example.com', realName: '王小明', idNumber: '440101200101011234' },
+    { email: 'student2@example.com', realName: '李思琪', idNumber: '440101200202021235' },
+    { email: 'student3@example.com', realName: '张伟', idNumber: '440101200303031236' },
+    { email: 'student4@example.com', realName: '刘洋', idNumber: '440101200404041237' },
+    { email: 'student5@example.com', realName: '陈晨', idNumber: '440101200505051238' },
+  ];
+  for (const { email, realName, idNumber } of identitySeeds) {
+    const [users] = await pool.query('SELECT id FROM users WHERE email = ?', [email]);
+    if (users.length === 0) continue;
+    const [existing] = await pool.query(
+      'SELECT id FROM identity_verifications WHERE user_id = ?', [users[0].id]
+    );
+    if (existing.length > 0) continue;
+    await pool.query(
+      `INSERT INTO identity_verifications (user_id, real_name, id_number, phone, document_url, status)
+       VALUES (?, ?, ?, ?, ?, 'approved')`,
+      [users[0].id, realName, idNumber, `138${randInt(10000000, 99999999)}`, '']
+    );
+  }
+
   // --- 4b. 课程 ---
   log(tag, '创建课程...');
   const courseData = [
@@ -759,7 +796,7 @@ async function seedBaseData() {
   const notifTemplates = {
     student: [
       { type:'system', title:'欢迎使用启航平台', content:'完善个人资料可提高求职匹配率' },
-      { type:'appointment', title:'预约已确认', content:'你的导师预约已确认，请查看日程' },
+      { type:'appointment', title:'服务安排已确认', content:'你的咨询安排已确认，请查看日程' },
       { type:'job', title:'新职位推荐', content:'根据你的意向，为你推荐了匹配职位' },
       { type:'course', title:'课程更新', content:'你关注的课程有新内容更新' },
       { type:'system', title:'简历完善提醒', content:'完善简历可以提高投递成功率' },
@@ -770,7 +807,7 @@ async function seedBaseData() {
     ],
     mentor: [
       { type:'system', title:'导师账号已激活', content:'可以开始管理课程和预约' },
-      { type:'appointment', title:'新的预约请求', content:'有学生提交了辅导预约' },
+      { type:'appointment', title:'新的咨询请求', content:'有学生提交了咨询安排' },
       { type:'course', title:'课程审核通过', content:'你提交的课程已上线' },
       { type:'system', title:'收到学生评价', content:'有学生对你的辅导给出了评价' },
     ],

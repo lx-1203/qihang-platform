@@ -1,57 +1,47 @@
 import { test, expect } from '@playwright/test';
 
-/**
- * 学生个人中心测试
- * 测试学生登录后的个人中心功能
- * 注意：需要后端服务运行
- * 登录态由 auth.setup.ts 统一提供（storageState），无需每个测试单独登录
- */
-test.describe('学生个人中心测试', () => {
-  test('学生应该能访问个人资料页面', async ({ page }) => {
+test.describe('student center smoke', () => {
+  test('student can visit profile page', async ({ page }) => {
     await page.goto('/student/profile');
     await page.waitForLoadState('networkidle');
 
-    // 检查个人资料页面元素
-    const profileHeading = page.locator('h1, h2').filter({ hasText: /个人资料|profile/i }).first();
+    const profileHeading = page.locator('h1, h2').filter({ hasText: /profile|个人资料/i }).first();
     if (await profileHeading.isVisible()) {
       await expect(profileHeading).toBeVisible();
     }
   });
 
-  test('学生应该能访问我的投递页面', async ({ page }) => {
+  test('student can visit applications page', async ({ page }) => {
     await page.goto('/student/applications');
     await page.waitForLoadState('networkidle');
 
-    // 检查投递记录页面
-    const heading = page.locator('h1, h2').filter({ hasText: /投递|申请|application/i }).first();
+    const heading = page.locator('h1, h2').filter({ hasText: /application|投递|申请/i }).first();
     if (await heading.isVisible()) {
       await expect(heading).toBeVisible();
     }
   });
 
-  test('学生应该能访问我的预约页面', async ({ page }) => {
+  test('student can visit consultation history page', async ({ page }) => {
     await page.goto('/student/appointments');
     await page.waitForLoadState('networkidle');
 
-    // 检查预约记录页面
-    const heading = page.locator('h1, h2').filter({ hasText: /预约|appointment/i }).first();
+    const heading = page.locator('h1, h2').filter({ hasText: /appointment|咨询/i }).first();
     if (await heading.isVisible()) {
       await expect(heading).toBeVisible();
     }
   });
 
-  test('学生应该能访问我的收藏页面', async ({ page }) => {
+  test('student can visit favorites page', async ({ page }) => {
     await page.goto('/student/favorites');
     await page.waitForLoadState('networkidle');
 
-    // 检查收藏页面
-    const heading = page.locator('h1, h2').filter({ hasText: /收藏|favorite/i }).first();
+    const heading = page.locator('h1, h2').filter({ hasText: /favorite|收藏/i }).first();
     if (await heading.isVisible()) {
       await expect(heading).toBeVisible();
     }
   });
 
-  test('学生个人中心不应该有控制台错误', async ({ page }) => {
+  test('student center has no critical console errors', async ({ page }) => {
     const errors: string[] = [];
 
     page.on('console', msg => {

@@ -180,7 +180,7 @@ export default function AdminStudyAbroad() {
       {/* 页头 */}
       <div>
         <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-          <Globe className="w-7 h-7 text-primary-500" /> 留学数据管理
+          <Globe className="w-7 h-7 text-primary-500" /> 升学数据管理
         </h1>
         <p className="text-sm text-gray-500 mt-1">管理院校、项目、录取案例、时间线和顾问数据</p>
       </div>
@@ -622,7 +622,7 @@ function getFormFields(tab: TabKey, universityOptions: { id: number; name: strin
         { key: 'category', label: '分类', placeholder: '如：英国、综合' },
         { key: 'icon', label: '图标Emoji', placeholder: '如：🇬🇧' },
         { key: 'color', label: '颜色', placeholder: '如：red/purple/amber/green' },
-        { key: 'link', label: '链接', placeholder: '/study-abroad/...' },
+        { key: 'link', label: '链接', placeholder: '/further-education 或外部链接' },
         { key: 'tags_text', label: '标签', placeholder: '逗号分隔' },
       ];
     case 'consultants':

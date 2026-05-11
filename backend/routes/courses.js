@@ -198,4 +198,26 @@ function formatViews(num) {
   return String(num);
 }
 
+router.post('/', async (req, res) => {
+  try {
+    const { title, category, difficulty, mentor_name, mentor_id, description, cover_url, tags, price, is_free, is_vip_only, content_url, duration, status } = req.body;
+
+    if (!title || !category || !mentor_id) {
+      return res.status(400).json({ code: 400, message: '缺少必填字段: title, category, mentor_id' });
+    }
+
+    const tagsJson = Array.isArray(tags) ? JSON.stringify(tags) : (tags || null);
+
+    const [result] = await pool.query(
+      'INSERT INTO courses (title, category, difficulty, mentor_name, mentor_id, description, cover, tags, price, video_url, duration, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      [title, category, difficulty || null, mentor_name || null, mentor_id, description || null, cover_url || null, tagsJson, price || 0, content_url || null, duration || null, status || 'active']
+    );
+
+    res.status(201).json({ code: 201, message: '课程创建成功', data: { id: result.insertId } });
+  } catch (err) {
+    console.error('创建课程失败:', err);
+    res.status(500).json({ code: 500, message: '服务器内部错误' });
+  }
+});
+
 export default router;

@@ -16,7 +16,7 @@ import ErrorState from '../../components/ui/ErrorState';
 import Tag from '@/components/ui/Tag';
 
 // ====== 我的收藏 ======
-// 分 Tab 查看收藏的职位/课程/导师，支持取消收藏
+// 分 Tab 查看收藏的职位/成长内容/咨询对象，支持取消收藏
 
 type FavoriteTab = 'jobs' | 'courses' | 'mentors';
 
@@ -64,8 +64,8 @@ interface FavoriteMentor {
 
 const tabItems: { key: FavoriteTab; label: string; icon: React.ElementType }[] = [
   { key: 'jobs', label: '职位', icon: Briefcase },
-  { key: 'courses', label: '课程', icon: BookOpen },
-  { key: 'mentors', label: '导师', icon: User },
+  { key: 'courses', label: '成长内容', icon: BookOpen },
+  { key: 'mentors', label: '咨询对象', icon: User },
 ];
 
 function normalizeStringArray(value: unknown) {
@@ -307,8 +307,8 @@ export default function Favorites() {
   function EmptyState({ type, isSearchResult = false }: { type: FavoriteTab; isSearchResult?: boolean }) {
     const messages: Record<FavoriteTab, { text: string; link: string; linkText: string }> = {
       jobs: { text: '暂无收藏的职位', link: '/jobs', linkText: '去浏览职位' },
-      courses: { text: '暂无收藏的课程', link: '/courses', linkText: '去浏览课程' },
-      mentors: { text: '暂无收藏的导师', link: '/mentors', linkText: '去浏览导师' },
+      courses: { text: '暂无收藏的成长内容', link: '/skill-enhancement', linkText: '去看能力提升内容' },
+      mentors: { text: '暂无收藏的咨询对象', link: '/chat', linkText: '去聊天咨询' },
     };
     const msg = messages[type];
     return (
@@ -445,7 +445,7 @@ export default function Favorites() {
               value={searchKeyword}
               onChange={e => setSearchKeyword(e.target.value)}
               className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none text-sm"
-              placeholder={`搜索收藏的${activeTab === 'jobs' ? '职位' : activeTab === 'courses' ? '课程' : '导师'}...`}
+              placeholder={`搜索收藏的${activeTab === 'jobs' ? '职位' : activeTab === 'courses' ? '成长内容' : '咨询对象'}...`}
             />
           </div>
         </div>
@@ -551,7 +551,7 @@ export default function Favorites() {
           </motion.div>
         )}
 
-        {/* ===== 课程收藏 ===== */}
+        {/* ===== 成长内容收藏 ===== */}
         {activeTab === 'courses' && (
           <motion.div
             key="courses"
@@ -609,7 +609,7 @@ export default function Favorites() {
                       </div>
                     </div>
                     <div className="p-4">
-                      <Link to={`/courses/${course.id}`}>
+                      <Link to="/skill-enhancement">
                         <h3 className="text-sm font-bold text-gray-900 group-hover:text-primary-600 transition-colors line-clamp-2">
                           {course.title}
                         </h3>
@@ -643,7 +643,7 @@ export default function Favorites() {
           </motion.div>
         )}
 
-        {/* ===== 导师收藏 ===== */}
+        {/* ===== 咨询对象收藏 ===== */}
         {activeTab === 'mentors' && (
           <motion.div
             key="mentors"
@@ -677,13 +677,13 @@ export default function Favorites() {
                           <Square className="w-5 h-5 text-gray-300 hover:text-gray-400" />
                         )}
                       </button>
-                      {/* 导师头像 */}
+                      {/* 咨询对象头像 */}
                       <div className="w-14 h-14 bg-gradient-to-br from-primary-400 to-primary-600 rounded-xl flex items-center justify-center flex-shrink-0">
                         <span className="text-xl font-bold text-white">{mentor.name.charAt(0)}</span>
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-start justify-between">
-                          <Link to={`/mentors/${mentor.id}`}>
+                          <Link to="/chat">
                             <h3 className="text-base font-bold text-gray-900 group-hover:text-primary-600 transition-colors">
                               {mentor.name}
                             </h3>

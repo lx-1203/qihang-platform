@@ -286,10 +286,10 @@ export default function SuccessCases() {
                   <ArrowRight className="w-4 h-4" />
                 </Link>
                 <Link
-                  to="/mentors"
+                  to="/skill-enhancement"
                   className="inline-flex items-center justify-center gap-2 bg-white/10 backdrop-blur-md text-white border border-white/20 px-8 py-3.5 rounded-xl font-bold hover:bg-white/20 hover:-translate-y-0.5 hover:shadow-xl active:scale-[0.98] transition-all duration-200 focus-visible:ring-2 focus-visible:ring-white/30 focus-visible:outline-none"
                 >
-                  浏览导师团队
+                  浏览能力提升
                 </Link>
               </div>
             </motion.div>

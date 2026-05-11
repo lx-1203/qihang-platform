@@ -25,6 +25,8 @@ interface Resource {
   size_bytes: number;
   download_count: number;
   is_public: number;
+  is_vip_only: number;
+  content_type: string;
   created_at: string;
 }
 
@@ -84,6 +86,8 @@ export default function MentorResources() {
     title: '',
     type: 'pdf' as ResourceType,
     is_public: 1,
+    is_vip_only: 0,
+    content_type: 'document' as 'article' | 'video_link' | 'document' | 'other',
   });
   // 文件上传结果
   const [uploadedFile, setUploadedFile] = useState<{ url: string; size: number } | null>(null);
@@ -149,11 +153,13 @@ export default function MentorResources() {
         url: uploadedFile.url,
         size_bytes: uploadedFile.size,
         is_public: uploadForm.is_public,
+        is_vip_only: uploadForm.is_vip_only,
+        content_type: uploadForm.content_type,
       });
       if (res.data?.code === 201) {
-        toast.success('资料上传成功', '学生可以在你的主页查看该资料');
+        toast.success('资料上传成功', uploadForm.content_type !== 'other' ? '内容已同步到能力提升板块资源库' : '学生可以在你的主页查看该资料');
         setShowUploadModal(false);
-        setUploadForm({ title: '', type: 'pdf', is_public: 1 });
+        setUploadForm({ title: '', type: 'pdf', is_public: 1, is_vip_only: 0, content_type: 'document' });
         setUploadedFile(null);
         fetchResources();
       }
@@ -317,6 +323,14 @@ export default function MentorResources() {
                       <Tag variant={colors.tagVariant} size="sm">
                         {resource.type.toUpperCase()}
                       </Tag>
+                      {resource.is_vip_only === 1 && (
+                        <Tag variant="orange" size="sm">VIP专属</Tag>
+                      )}
+                      {resource.content_type && resource.content_type !== 'other' && (
+                        <Tag variant="primary" size="sm">
+                          {resource.content_type === 'article' ? '文章' : resource.content_type === 'video_link' ? '视频链接' : resource.content_type === 'document' ? '文档' : resource.content_type}
+                        </Tag>
+                      )}
                       {resource.size_bytes > 0 && (
                         <span className="flex items-center gap-1">
                           <File className="w-3 h-3" />
@@ -384,7 +398,7 @@ export default function MentorResources() {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">类型</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">文件类型</label>
                     <select
                       value={uploadForm.type}
                       onChange={(e) => setUploadForm(prev => ({ ...prev, type: e.target.value as ResourceType }))}
@@ -408,6 +422,42 @@ export default function MentorResources() {
                       <option value={0}>私密</option>
                     </select>
                   </div>
+                </div>
+
+                {/* 上传到能力提升板块 */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <BookOpen className="w-4 h-4 inline mr-1" />
+                    上传到能力提升板块
+                  </label>
+                  <select
+                    value={uploadForm.content_type}
+                    onChange={(e) => setUploadForm(prev => ({ ...prev, content_type: e.target.value as 'article' | 'video_link' | 'document' | 'other' }))}
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-400"
+                  >
+                    <option value="document">文档资料（同步到能力提升板块）</option>
+                    <option value="article">文章（同步到能力提升板块）</option>
+                    <option value="video_link">视频链接（同步到能力提升板块）</option>
+                    <option value="other">仅资料库（不同步到能力提升板块）</option>
+                  </select>
+                  <p className="text-xs text-gray-400 mt-1">
+                    选择非"仅资料库"选项时，内容将自动出现在能力提升板块的资源库中
+                  </p>
+                </div>
+
+                {/* VIP专属标记 */}
+                <div className="flex items-center gap-3 p-3 bg-amber-50 rounded-lg border border-amber-100">
+                  <input
+                    type="checkbox"
+                    id="is_vip_only"
+                    checked={uploadForm.is_vip_only === 1}
+                    onChange={(e) => setUploadForm(prev => ({ ...prev, is_vip_only: e.target.checked ? 1 : 0 }))}
+                    className="w-4 h-4 text-amber-600 border-amber-300 rounded focus:ring-amber-500"
+                  />
+                  <label htmlFor="is_vip_only" className="text-sm text-amber-800 font-medium cursor-pointer">
+                    设为VIP专属内容
+                  </label>
+                  <span className="text-xs text-amber-600 ml-auto">仅VIP会员可查看</span>
                 </div>
 
                 <div>

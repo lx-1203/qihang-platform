@@ -6,6 +6,7 @@ const CompanyLayout = lazy(() => import('../layouts/CompanyLayout'));
 const AdminLayout = lazy(() => import('../layouts/AdminLayout'));
 const AgentLayout = lazy(() => import('../layouts/AgentLayout'));
 import ProtectedRoute from '../components/ProtectedRoute';
+import AccessGate from '../components/AccessGate';
 
 // 通用页面（立即加载）
 import NotFound from '../pages/NotFound';
@@ -14,30 +15,34 @@ import Login from '../pages/Login';
 import Home from '../pages/Home';
 
 // 开发调试页（仅开发环境加载）
-const DevNav = import.meta.env.DEV ? lazy(() => import('../pages/DevNav')) : () => null;
+const DevNav = import.meta.env.DEV ? lazy(() => import('../pages/DevNav')) : () => null
+
+// 开发者工具布局与页面组件（仅开发环境加载）
+const DevToolsLayout = import.meta.env.DEV ? lazy(() => import('@/components/dev/DevToolsLayout')) : () => null
+const DevConsole = import.meta.env.DEV ? lazy(() => import('@/pages/admin/dev-tools/Console')) : () => null
+const DevNetwork = import.meta.env.DEV ? lazy(() => import('@/pages/admin/dev-tools/Network')) : () => null
+const DevPerformance = import.meta.env.DEV ? lazy(() => import('@/pages/admin/dev-tools/Performance')) : () => null
+const DevState = import.meta.env.DEV ? lazy(() => import('@/pages/admin/dev-tools/State')) : () => null
+const FeatureFlags = import.meta.env.DEV ? lazy(() => import('@/pages/admin/dev-tools/FeatureFlags')) : () => null
+
+// 懒加载页面 - 准入流程
+const VerifyIdentity = lazy(() => import('../pages/VerifyIdentity'));
+const CareerPlan = lazy(() => import('../pages/CareerPlan'));
 
 // 懒加载页面 - 主布局下的页面（按访问频率排序）
-const Mentors = lazy(() => import('../pages/Mentors'));
-const MentorDetail = lazy(() => import('../pages/MentorDetail'));
-const Courses = lazy(() => import('../pages/Courses'));
-const CourseDetail = lazy(() => import('../pages/CourseDetail'));
 const Jobs = lazy(() => import('../pages/Jobs'));
 const JobDetail = lazy(() => import('../pages/JobDetail'));
-const Guidance = lazy(() => import('../pages/Guidance'));
-const GuidanceArticles = lazy(() => import('../pages/GuidanceArticles'));
-const GuidanceArticleDetail = lazy(() => import('../pages/GuidanceArticleDetail'));
-const Postgrad = lazy(() => import('../pages/Postgrad'));
+const FurtherEducation = lazy(() => import('../pages/FurtherEducation'));
 const Entrepreneurship = lazy(() => import('../pages/Entrepreneurship'));
 const Partners = lazy(() => import('../pages/Partners'));
 const PartnerDetail = lazy(() => import('../pages/PartnerDetail'));
-const StudyAbroad = lazy(() => import('../pages/StudyAbroad'));
-const StudyAbroadPrograms = lazy(() => import('../pages/StudyAbroadPrograms'));
-const StudyAbroadDetail = lazy(() => import('../pages/StudyAbroadDetail'));
-const StudyAbroadOffers = lazy(() => import('../pages/StudyAbroadOffers'));
-const StudyAbroadArticles = lazy(() => import('../pages/StudyAbroadArticles'));
-const BackgroundBoost = lazy(() => import('../pages/BackgroundBoost'));
+// BackgroundBoost — 已合并到 further-education，无独立路由
 const NotificationCenter = lazy(() => import('../pages/NotificationCenter'));
 const Chat = lazy(() => import('../pages/Chat'));
+const SkillEnhancement = lazy(() => import('../pages/SkillEnhancement'));
+const SkillEnhancementResourceDetail = lazy(() => import('../pages/SkillEnhancementResourceDetail'));
+const VipSubscription = lazy(() => import('../pages/VipSubscription'));
+const JobRecruitment = lazy(() => import('../pages/JobRecruitment'));
 const SuccessCases = lazy(() => import('../pages/SuccessCases'));
 const StudentProfile = lazy(() => import('../pages/student/Profile'));
 const StudentMyApplications = lazy(() => import('../pages/student/MyApplications'));
@@ -63,7 +68,10 @@ const SuccessCasesConfig = lazy(() => import('../pages/admin/SuccessCasesConfig'
 const AdminThemeConfig = lazy(() => import('../pages/admin/ThemeConfig'));
 const AdminAnnouncements = lazy(() => import('../pages/admin/Announcements'));
 const AdminChatManage = lazy(() => import('../pages/admin/ChatManage'));
+const AdminCustomerService = lazy(() => import('../pages/admin/CustomerService'));
 const AdminAuditLogs = lazy(() => import('../pages/admin/AuditLogs'));
+const AdminReviewCenter = lazy(() => import('../pages/admin/ReviewCenter'));
+const AdminNavItems = lazy(() => import('../pages/admin/NavItems'));
 
 // 懒加载页面 - 企业端
 const CompanyDashboardPage = lazy(() => import('../pages/company/Dashboard'));
@@ -72,6 +80,7 @@ const CompanyJobManage = lazy(() => import('../pages/company/JobManage'));
 const CompanyResumePool = lazy(() => import('../pages/company/ResumePool'));
 const CompanyTalentSearch = lazy(() => import('../pages/company/TalentSearch'));
 const CompanyJobForm = lazy(() => import('../pages/company/JobForm'));
+const CompanyVipSubscription = lazy(() => import('../pages/company/VipSubscription'));
 
 // 懒加载页面 - 导师端
 const MentorDashboardPage = lazy(() => import('../pages/mentor/Dashboard'));
@@ -96,7 +105,7 @@ const LoadingFallback = () => (
 export const router = createBrowserRouter([
   {
     path: '/',
-    element: <MainLayout />,
+    element: <AccessGate><MainLayout /></AccessGate>,
     children: [
       {
         index: true,
@@ -104,23 +113,23 @@ export const router = createBrowserRouter([
       },
       {
         path: 'mentors',
-        element: <Suspense fallback={<LoadingFallback />}><Mentors /></Suspense>
+        element: <Navigate to="/skill-enhancement" replace />
       },
       {
         path: 'mentors/:id',
-        element: <Suspense fallback={<LoadingFallback />}><MentorDetail /></Suspense>
+        element: <Navigate to="/skill-enhancement" replace />
       },
       {
         path: 'courses',
-        element: <Suspense fallback={<LoadingFallback />}><Courses /></Suspense>
+        element: <Navigate to="/skill-enhancement" replace />
       },
       {
         path: 'courses/:id',
-        element: <Suspense fallback={<LoadingFallback />}><CourseDetail /></Suspense>
+        element: <Navigate to="/skill-enhancement" replace />
       },
       {
         path: 'jobs',
-        element: <Suspense fallback={<LoadingFallback />}><Jobs /></Suspense>
+        element: <Navigate to="/job-recruitment" replace />
       },
       {
         path: 'jobs/:id',
@@ -128,19 +137,23 @@ export const router = createBrowserRouter([
       },
       {
         path: 'guidance',
-        element: <Suspense fallback={<LoadingFallback />}><Guidance /></Suspense>
+        element: <Navigate to="/skill-enhancement" replace />
       },
       {
         path: 'guidance/articles',
-        element: <Suspense fallback={<LoadingFallback />}><GuidanceArticles /></Suspense>
+        element: <Navigate to="/skill-enhancement" replace />
       },
       {
         path: 'guidance/articles/:id',
-        element: <Suspense fallback={<LoadingFallback />}><GuidanceArticleDetail /></Suspense>
+        element: <Navigate to="/skill-enhancement" replace />
       },
       {
         path: 'postgrad',
-        element: <Suspense fallback={<LoadingFallback />}><Postgrad /></Suspense>
+        element: <Navigate to="/further-education" replace />
+      },
+      {
+        path: 'further-education',
+        element: <Suspense fallback={<LoadingFallback />}><FurtherEducation /></Suspense>
       },
       {
         path: 'entrepreneurship',
@@ -156,31 +169,31 @@ export const router = createBrowserRouter([
       },
       {
         path: 'study-abroad',
-        element: <Suspense fallback={<LoadingFallback />}><StudyAbroad /></Suspense>
+        element: <Navigate to="/further-education" replace />
       },
       {
         path: 'study-abroad/programs',
-        element: <Suspense fallback={<LoadingFallback />}><StudyAbroadPrograms /></Suspense>
+        element: <Navigate to="/further-education" replace />
       },
       {
         path: 'study-abroad/programs/:id',
-        element: <Suspense fallback={<LoadingFallback />}><StudyAbroadDetail /></Suspense>
+        element: <Navigate to="/further-education" replace />
       },
       {
         path: 'study-abroad/offers',
-        element: <Suspense fallback={<LoadingFallback />}><StudyAbroadOffers /></Suspense>
+        element: <Navigate to="/further-education" replace />
       },
       {
         path: 'study-abroad/articles',
-        element: <Suspense fallback={<LoadingFallback />}><StudyAbroadArticles /></Suspense>
+        element: <Navigate to="/further-education" replace />
       },
       {
         path: 'study-abroad/articles/:id',
-        element: <Suspense fallback={<LoadingFallback />}><GuidanceArticleDetail /></Suspense>
+        element: <Navigate to="/further-education" replace />
       },
       {
         path: 'study-abroad/background',
-        element: <Suspense fallback={<LoadingFallback />}><BackgroundBoost /></Suspense>
+        element: <Navigate to="/further-education" replace />
       },
       {
         path: 'notifications',
@@ -189,6 +202,22 @@ export const router = createBrowserRouter([
       {
         path: 'chat',
         element: <Suspense fallback={<LoadingFallback />}><Chat /></Suspense>
+      },
+      {
+        path: 'skill-enhancement',
+        element: <Suspense fallback={<LoadingFallback />}><SkillEnhancement /></Suspense>
+      },
+      {
+        path: 'skill-enhancement/resource/:slug',
+        element: <Suspense fallback={<LoadingFallback />}><SkillEnhancementResourceDetail /></Suspense>
+      },
+      {
+        path: 'vip',
+        element: <Suspense fallback={<LoadingFallback />}><VipSubscription /></Suspense>
+      },
+      {
+        path: 'job-recruitment',
+        element: <Suspense fallback={<LoadingFallback />}><JobRecruitment /></Suspense>
       },
       {
         path: 'success-cases',
@@ -220,11 +249,13 @@ export const router = createBrowserRouter([
   {
     path: '/mentor',
     element: (
-      <ProtectedRoute allowedRoles={['mentor']}>
-        <Suspense fallback={<LoadingFallback />}>
-          <MentorLayout />
-        </Suspense>
-      </ProtectedRoute>
+      <AccessGate>
+        <ProtectedRoute allowedRoles={['mentor']}>
+          <Suspense fallback={<LoadingFallback />}>
+            <MentorLayout />
+          </Suspense>
+        </ProtectedRoute>
+      </AccessGate>
     ),
     children: [
       {
@@ -233,23 +264,23 @@ export const router = createBrowserRouter([
       },
       {
         path: 'courses',
-        element: <Suspense fallback={<LoadingFallback />}><MentorCourseManage /></Suspense>
+        element: <ProtectedRoute allowedRoles={['mentor']}><Suspense fallback={<LoadingFallback />}><MentorCourseManage /></Suspense></ProtectedRoute>
       },
       {
         path: 'courses/new',
-        element: <Suspense fallback={<LoadingFallback />}><MentorCourseForm /></Suspense>
+        element: <ProtectedRoute allowedRoles={['mentor']}><Suspense fallback={<LoadingFallback />}><MentorCourseForm /></Suspense></ProtectedRoute>
       },
       {
         path: 'courses/:id/edit',
-        element: <Suspense fallback={<LoadingFallback />}><MentorCourseForm /></Suspense>
+        element: <ProtectedRoute allowedRoles={['mentor']}><Suspense fallback={<LoadingFallback />}><MentorCourseForm /></Suspense></ProtectedRoute>
       },
       {
         path: 'appointments',
-        element: <Suspense fallback={<LoadingFallback />}><MentorAppointments /></Suspense>
+        element: <ProtectedRoute allowedRoles={['mentor']}><Suspense fallback={<LoadingFallback />}><MentorAppointments /></Suspense></ProtectedRoute>
       },
       {
         path: 'students',
-        element: <Suspense fallback={<LoadingFallback />}><MentorStudents /></Suspense>
+        element: <ProtectedRoute allowedRoles={['mentor']}><Suspense fallback={<LoadingFallback />}><MentorStudents /></Suspense></ProtectedRoute>
       },
       {
         path: 'profile',
@@ -268,11 +299,13 @@ export const router = createBrowserRouter([
   {
     path: '/company',
     element: (
-      <ProtectedRoute allowedRoles={['company']}>
-        <Suspense fallback={<LoadingFallback />}>
-          <CompanyLayout />
-        </Suspense>
-      </ProtectedRoute>
+      <AccessGate>
+        <ProtectedRoute allowedRoles={['company']}>
+          <Suspense fallback={<LoadingFallback />}>
+            <CompanyLayout />
+          </Suspense>
+        </ProtectedRoute>
+      </AccessGate>
     ),
     children: [
       {
@@ -281,27 +314,31 @@ export const router = createBrowserRouter([
       },
       {
         path: 'jobs',
-        element: <Suspense fallback={<LoadingFallback />}><CompanyJobManage /></Suspense>
+        element: <ProtectedRoute allowedRoles={['company']}><Suspense fallback={<LoadingFallback />}><CompanyJobManage /></Suspense></ProtectedRoute>
       },
       {
         path: 'jobs/new',
-        element: <Suspense fallback={<LoadingFallback />}><CompanyJobForm /></Suspense>
+        element: <ProtectedRoute allowedRoles={['company']}><Suspense fallback={<LoadingFallback />}><CompanyJobForm /></Suspense></ProtectedRoute>
       },
       {
         path: 'jobs/:id/edit',
-        element: <Suspense fallback={<LoadingFallback />}><CompanyJobForm /></Suspense>
+        element: <ProtectedRoute allowedRoles={['company']}><Suspense fallback={<LoadingFallback />}><CompanyJobForm /></Suspense></ProtectedRoute>
       },
       {
         path: 'resumes',
-        element: <Suspense fallback={<LoadingFallback />}><CompanyResumePool /></Suspense>
+        element: <ProtectedRoute allowedRoles={['company']}><Suspense fallback={<LoadingFallback />}><CompanyResumePool /></Suspense></ProtectedRoute>
       },
       {
         path: 'talent',
-        element: <Suspense fallback={<LoadingFallback />}><CompanyTalentSearch /></Suspense>
+        element: <ProtectedRoute allowedRoles={['company']}><Suspense fallback={<LoadingFallback />}><CompanyTalentSearch /></Suspense></ProtectedRoute>
       },
       {
         path: 'profile',
         element: <Suspense fallback={<LoadingFallback />}><CompanyProfile /></Suspense>
+      },
+      {
+        path: 'vip',
+        element: <Suspense fallback={<LoadingFallback />}><CompanyVipSubscription /></Suspense>
       },
       {
         path: '',
@@ -312,11 +349,13 @@ export const router = createBrowserRouter([
   {
     path: '/admin',
     element: (
-      <ProtectedRoute allowedRoles={['admin']}>
-        <Suspense fallback={<LoadingFallback />}>
-          <AdminLayout />
-        </Suspense>
-      </ProtectedRoute>
+      <AccessGate>
+        <ProtectedRoute allowedRoles={['admin']}>
+          <Suspense fallback={<LoadingFallback />}>
+            <AdminLayout />
+          </Suspense>
+        </ProtectedRoute>
+      </AccessGate>
     ),
     children: [
       {
@@ -368,10 +407,6 @@ export const router = createBrowserRouter([
         element: <Suspense fallback={<LoadingFallback />}><EntrepreneurshipConfig /></Suspense>
       },
       {
-        path: 'backgroundboost-config',
-        element: <Suspense fallback={<LoadingFallback />}><BackgroundBoostConfig /></Suspense>
-      },
-      {
         path: 'successcases-config',
         element: <Suspense fallback={<LoadingFallback />}><SuccessCasesConfig /></Suspense>
       },
@@ -383,14 +418,26 @@ export const router = createBrowserRouter([
         path: 'announcements',
         element: <Suspense fallback={<LoadingFallback />}><AdminAnnouncements /></Suspense>
       },
+      { path: 'chat', element: <Suspense fallback={<LoadingFallback />}><AdminChatManage /></Suspense> },
+      { path: 'customer-service', element: <Suspense fallback={<LoadingFallback />}><AdminCustomerService /></Suspense> },
+      { path: 'nav-items', element: <Suspense fallback={<LoadingFallback />}><AdminNavItems /></Suspense> },
+      { path: 'audit-logs', element: <Suspense fallback={<LoadingFallback />}><AdminAuditLogs /></Suspense> },
       {
-        path: 'chat',
-        element: <Suspense fallback={<LoadingFallback />}><AdminChatManage /></Suspense>
+        path: 'review-center',
+        element: <Suspense fallback={<LoadingFallback />}><AdminReviewCenter /></Suspense>
       },
-      {
-        path: 'audit-logs',
-        element: <Suspense fallback={<LoadingFallback />}><AdminAuditLogs /></Suspense>
-      },
+      // ====== 开发者工具（仅开发环境注册）======
+      ...(import.meta.env.DEV ? [{
+        path: 'dev-tools',
+        element: <Suspense fallback={<LoadingFallback />}><DevToolsLayout /></Suspense>,
+        children: [
+          { path: 'console', element: <Suspense fallback={<LoadingFallback />}><DevConsole /></Suspense> },
+          { path: 'network', element: <Suspense fallback={<LoadingFallback />}><DevNetwork /></Suspense> },
+          { path: 'performance', element: <Suspense fallback={<LoadingFallback />}><DevPerformance /></Suspense> },
+          { path: 'state', element: <Suspense fallback={<LoadingFallback />}><DevState /></Suspense> },
+          { path: 'feature-flags', element: <Suspense fallback={<LoadingFallback />}><FeatureFlags /></Suspense> },
+        ],
+      }] : []),
       {
         path: '',
         element: <Navigate to="dashboard" replace />
@@ -416,6 +463,15 @@ export const router = createBrowserRouter([
         element: <Navigate to="workbench" replace />
       }
     ]
+  },
+  // ====== 准入流程页面（受 AccessGate 控制）======
+  {
+    path: '/verify-identity',
+    element: <AccessGate><Suspense fallback={<LoadingFallback />}><VerifyIdentity /></Suspense></AccessGate>
+  },
+  {
+    path: '/career-plan',
+    element: <AccessGate><Suspense fallback={<LoadingFallback />}><CareerPlan /></Suspense></AccessGate>
   },
   {
     path: '/login',

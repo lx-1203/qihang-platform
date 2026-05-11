@@ -20,6 +20,13 @@ import { useConfigStore } from "@/store/config";
 import http from "@/api/http";
 import { showToast } from "@/components/ui/ToastContainer";
 import { DEFAULT_AVATAR } from "@/constants";
+import {
+  buildAccessStatus,
+  canAccessPath,
+  getAccessRedirectPath,
+  getDefaultRouteForRole,
+  type FrontendAccessStatus,
+} from "@/lib/accessControl";
 
 // 🔴 安全校验：仅允许本站相对路径，禁止跨站跳转（防开放重定向攻击）
 function isValidReturnUrl(url: string): boolean {
@@ -50,14 +57,6 @@ function getPasswordStrength(pwd: string): { level: number; label: string; color
   return { level: 3, label: '强', color: 'bg-green-500' };
 }
 
-// 角色默认跳转路径
-const roleDefaultPath: Record<string, string> = {
-  admin: '/admin/dashboard',
-  company: '/company/dashboard',
-  mentor: '/mentor/dashboard',
-  student: '/',
-};
-
 export default function Login() {
   const [isLogin, setIsLogin] = useState(true);
   const [role, setRole] = useState<"student" | "mentor" | "company">("student");
@@ -72,7 +71,70 @@ export default function Login() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
-  const { setAuth } = useAuthStore();
+  const { setAuth, setAccessStatus, setPostRegisterPromptPending } = useAuthStore();
+
+  async function postLoginRedirect(user: { role: "student" | "mentor" | "company" | "admin" | "agent" }) {
+    try {
+      const statusRes = await http.get('/auth/access-status');
+      if (statusRes.data?.code === 200 && statusRes.data.data) {
+        const frontendStatus: FrontendAccessStatus = buildAccessStatus({
+          role: (statusRes.data.data.role || user.role),
+          identityStatus: statusRes.data.data.identityStatus,
+          qualificationStatus: statusRes.data.data.qualificationStatus,
+          onboardingStatus: statusRes.data.data.onboardingStatus,
+          routeAccessLevel: statusRes.data.data.routeAccessLevel,
+          capabilities: statusRes.data.data.capabilities,
+        });
+
+        setAccessStatus(frontendStatus);
+
+        if (returnUrl && isValidReturnUrl(returnUrl) && canAccessPath(returnUrl, frontendStatus)) {
+          navigate(returnUrl, { replace: true });
+          return;
+        }
+
+        navigate(getAccessRedirectPath(frontendStatus), { replace: true });
+      } else {
+        navigate(getDefaultRouteForRole(user.role), { replace: true });
+      }
+    } catch {
+      // /auth/access-status 失败时，回退到 /api/identity/status 获取正确的实名状态
+      try {
+        const identityRes = await http.get('/identity/status');
+        if (identityRes.data?.code === 200 && identityRes.data.data) {
+          const identityStatus = identityRes.data.data.status;
+          // 根据实名状态构造前端准入状态，避免用户被错误重定向到 /verify-identity
+          const frontendStatus: FrontendAccessStatus = buildAccessStatus({
+            role: user.role,
+            identityStatus:
+              identityStatus === 'approved' ? 'approved' :
+              identityStatus === 'pending' || identityStatus === 'submitted' ? 'pending' :
+              identityStatus === 'rejected' ? 'rejected' :
+              'unverified',
+            qualificationStatus: user.role === 'student' ? 'not_applicable' : 'pending',
+            onboardingStatus: 'completed',
+            routeAccessLevel:
+              identityStatus === 'approved' ? 'full' :
+              user.role === 'student' ? 'overview_only' : 'workspace_limited',
+          });
+
+          setAccessStatus(frontendStatus);
+
+          if (returnUrl && isValidReturnUrl(returnUrl) && canAccessPath(returnUrl, frontendStatus)) {
+            navigate(returnUrl, { replace: true });
+            return;
+          }
+
+          navigate(getAccessRedirectPath(frontendStatus), { replace: true });
+          return;
+        }
+      } catch {
+        // identity/status 也失败，回退到基于角色的默认路由
+        console.warn('[postLoginRedirect] access-status 和 identity/status 均失败，使用默认路由');
+      }
+      navigate(getDefaultRouteForRole(user.role), { replace: true });
+    }
+  }
   // 🔧 开发模式快速登录账号（整个声明在 DEV 条件下，生产构建被 tree-shake 移除）
   const DEV_ACCOUNTS = import.meta.env.DEV ? [
     { label: '管理员', email: 'admin@qihang.com', password: 'admin123', color: 'bg-red-100 text-red-700 border-red-200' },
@@ -87,13 +149,9 @@ export default function Login() {
     try {
       const res = await http.post('/auth/login', { email: accountEmail, password: accountPassword });
       if (res.data?.code === 200 && res.data.data) {
-        const { token, user, refreshToken } = res.data.data;
-        setAuth(token, user, refreshToken);
-        if (returnUrl && isValidReturnUrl(returnUrl)) {
-          navigate(returnUrl);
-        } else {
-          navigate(roleDefaultPath[user.role] || '/');
-        }
+        const { token, user, refreshToken, accessStatus } = res.data.data;
+        setAuth(token, user, refreshToken, accessStatus);
+        await postLoginRedirect(user);
       } else {
         setError(res.data?.message || '快速登录失败');
       }
@@ -177,14 +235,10 @@ export default function Login() {
         // 登录
         const res = await http.post("/auth/login", { email, password });
         if (res.data?.code === 200 && res.data.data) {
-          const { token, user, refreshToken } = res.data.data;
-          setAuth(token, user, refreshToken);
-          // 🔴 优先跳转 returnUrl（含安全校验），否则走角色默认路径
-          if (returnUrl && isValidReturnUrl(returnUrl)) {
-            navigate(returnUrl);
-          } else {
-            navigate(roleDefaultPath[user.role] || '/');
-          }
+          const { token, user, refreshToken, accessStatus } = res.data.data;
+          setAuth(token, user, refreshToken, accessStatus);
+          // 🔴 优先跳转 returnUrl（含安全校验），否则获取准入状态后跳转
+          await postLoginRedirect(user);
         } else {
           setError(res.data?.message || "登录失败");
         }
@@ -199,11 +253,25 @@ export default function Login() {
         if ((res.data?.code === 201 || res.data?.code === 200) && res.data.data) {
           const { token, user, refreshToken } = res.data.data;
           setAuth(token, user, refreshToken);
-          // 注册后也支持 returnUrl
-          if (returnUrl && isValidReturnUrl(returnUrl)) {
-            navigate(returnUrl);
+          if (user.role === 'student') {
+            setAccessStatus(buildAccessStatus({
+              role: 'student',
+              identityStatus: 'unverified',
+              qualificationStatus: 'not_applicable',
+              onboardingStatus: 'pending',
+              routeAccessLevel: 'public',
+            }));
+            setPostRegisterPromptPending(false);
+            navigate('/verify-identity', { replace: true });
           } else {
-            navigate(roleDefaultPath[user.role] || '/');
+            setAccessStatus(buildAccessStatus({
+              role: user.role,
+              identityStatus: 'unverified',
+              qualificationStatus: 'pending',
+              onboardingStatus: 'completed',
+              routeAccessLevel: 'workspace_limited',
+            }));
+            navigate('/verify-identity', { replace: true });
           }
         } else {
           setError(res.data?.message || "注册失败");
@@ -281,7 +349,7 @@ export default function Login() {
               </h1>
               <p className="text-primary-100 text-lg lg:text-xl max-w-md leading-relaxed">
                 {isLogin
-                  ? "汇聚海量真实校招/实习岗位，1v1大咖导师指导，让你的每一份努力都被看见。"
+                  ? "汇聚海量真实校招/实习岗位与成长资源，让你的每一份努力都被看见。"
                   : "创建属于你的专业档案，定制个性化求职路线，获取精准岗位推荐。"}
               </p>
             </motion.div>
@@ -341,7 +409,7 @@ export default function Login() {
             <h2 className="text-3xl font-bold tracking-tight text-gray-900 mb-2">
               {isLogin ? "登录账号" : "注册账号"}
             </h2>
-            <p className="text-sm text-gray-500 mb-8">
+            <p className="text-sm text-gray-500 mb-6">
               {isLogin ? "没有账号？" : "已有账号？"}{" "}
               <button
                 onClick={handleToggleMode}
@@ -350,6 +418,35 @@ export default function Login() {
                 {isLogin ? "立即注册" : "返回登录"}
               </button>
             </p>
+
+            {/* 登录角色切换标签 */}
+            {isLogin && (
+              <div className="flex gap-3 mb-8">
+                {[
+                  { key: 'student' as const, label: '学生登录', icon: GraduationCap },
+                  { key: 'company' as const, label: '企业登录', icon: Briefcase },
+                  { key: 'mentor' as const, label: '导师登录', icon: User },
+                ].map(tab => {
+                  const Icon = tab.icon;
+                  const isActive = role === tab.key;
+                  return (
+                    <button
+                      key={tab.key}
+                      type="button"
+                      onClick={() => setRole(tab.key)}
+                      className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                        isActive
+                          ? 'bg-primary-50 text-primary-700 border border-primary-200 shadow-sm'
+                          : 'bg-gray-50 text-gray-500 border border-gray-200 hover:bg-gray-100 hover:text-gray-700'
+                      }`}
+                    >
+                      <Icon size={16} />
+                      {tab.label}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
 
             <AnimatePresence mode="wait">
               {!isLogin && (
@@ -611,10 +708,8 @@ export default function Login() {
                   disabled={loading}
                   className="flex w-full justify-center items-center gap-2 rounded-lg bg-primary-600 px-3 py-3 text-sm font-semibold text-white shadow-sm hover:bg-primary-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {loading ? (
-                    <Loader2 size={18} className="animate-spin" />
-                  ) : null}
-                  {isLogin ? "登录" : "创建账号"}
+                  {loading && <Loader2 size={18} className="animate-spin" />}
+                  {loading ? (isLogin ? "登录中..." : "创建中...") : (isLogin ? "登录" : "创建账号")}
                   {!loading && <ArrowRight size={18} />}
                 </button>
               </div>

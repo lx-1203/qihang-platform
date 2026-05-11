@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import http from '@/api/http';
 import OnboardingGuide from '@/components/OnboardingGuide';
+import CapabilityGate from '@/components/CapabilityGate';
 import { FeatureOverlay } from '@/components/FeatureStatus';
 import { showToast } from '@/components/ui/ToastContainer';
 import { useAuthStore } from '@/store/auth';
@@ -21,9 +22,12 @@ import { CardSkeleton, ListSkeleton } from '@/components/ui/Skeleton';
 // 与管理员（深色权威）和企业（蓝色招聘）完全不同
 
 export default function MentorDashboardPage() {
-  const { user } = useAuthStore();
+  const { user, accessStatus } = useAuthStore();
   const displayName = user?.nickname || user?.email || '导师';
   const displayInitial = displayName.charAt(0);
+  const mentorApproved = accessStatus?.identityStatus === 'approved' && accessStatus?.qualificationStatus === 'approved';
+  const canManageAppointments = accessStatus?.capabilities?.canManageAppointments ?? false;
+  const canManageCourses = accessStatus?.capabilities?.canManageCourses ?? false;
 
   const [stats, setStats] = useState({
     totalCourses: 0, totalAppointments: 0, totalStudents: 0, rating: 0,
@@ -38,28 +42,26 @@ export default function MentorDashboardPage() {
   const [courses, setCourses] = useState<Array<{
     title: string; students: number; rating: number; status: 'active' | 'draft';
   }>>([]);
-  const [mentorProfileId, setMentorProfileId] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     fetchDashboardData();
-  }, []);
+  }, [canManageAppointments, canManageCourses]);
 
   async function fetchDashboardData() {
     try {
       setLoading(true);
       setError(null);
-      const [statsRes, appointmentsRes, coursesRes, profileRes] = await Promise.all([
+      const [statsRes, appointmentsRes, coursesRes] = await Promise.all([
         http.get('/mentor/stats'),
-        http.get('/mentor/appointments', { params: { status: 'pending', pageSize: 5 } }),
-        http.get('/mentor/courses', { params: { pageSize: 5 } }),
-        http.get('/mentor/profile'),
+        canManageAppointments
+          ? http.get('/mentor/appointments', { params: { status: 'pending', pageSize: 5 } })
+          : Promise.resolve({ data: { code: 200, data: { appointments: [] } } }),
+        canManageCourses
+          ? http.get('/mentor/courses', { params: { pageSize: 5 } })
+          : Promise.resolve({ data: { code: 200, data: { courses: [] } } }),
       ]);
-
-      if (profileRes.data?.code === 200 && profileRes.data.data?.profile?.id) {
-        setMentorProfileId(Number(profileRes.data.data.profile.id));
-      }
 
       // 解析统计数据
       if (statsRes.data?.code === 200 && statsRes.data.data) {
@@ -82,7 +84,7 @@ export default function MentorDashboardPage() {
         });
       }
 
-      // 解析今日日程（待确认预约）
+      // 解析今日日程（待确认咨询)
       if (appointmentsRes.data?.code === 200 && appointmentsRes.data.data) {
         const rawData = appointmentsRes.data.data;
         const list = Array.isArray(rawData.list)
@@ -118,7 +120,7 @@ export default function MentorDashboardPage() {
         setTodaySchedule(mapped);
       }
 
-      // 解析我的课程
+      // 解析我的资源
       if (coursesRes.data?.code === 200 && coursesRes.data.data) {
         const rawData = coursesRes.data.data;
         const list = Array.isArray(rawData.courses)
@@ -129,7 +131,7 @@ export default function MentorDashboardPage() {
               ? rawData
               : [];
         const mapped = list.map((c: Record<string, unknown>) => ({
-          title: (c.title as string) || '未命名课程',
+          title: (c.title as string) || '未命名资源',
           students: (c.rating_count as number) || (c.student_count as number) || 0,
           rating: (c.rating as number) || 0,
           status: (c.status === 'active' ? 'active' : 'draft') as 'active' | 'draft',
@@ -185,25 +187,23 @@ export default function MentorDashboardPage() {
               <div>
                 <div className="flex items-center gap-2">
                   <h1 className="text-xl font-bold">{displayName}，欢迎回到工作台！</h1>
-                  <Tag variant="green" size="xs" className="bg-white/20 border-white/30 text-white">
-                    <CheckCircle2 className="w-3 h-3 inline mr-0.5" />已认证
+                  <Tag variant={mentorApproved ? 'green' : 'yellow'} size="xs" className="bg-white/20 border-white/30 text-white">
+                    <CheckCircle2 className="w-3 h-3 inline mr-0.5" />{mentorApproved ? '已认证' : '待认证'}
                   </Tag>
                 </div>
                 <p className="text-sm text-emerald-100 mt-1">
                   评分 <b className="text-white">{stats.rating || '-'}</b> <Star className="w-3 h-3 inline text-amber-300 fill-amber-300" /> ·
-                  辅导 <b className="text-white">{stats.totalStudents}</b> 名学员 ·
-                  课程 <b className="text-white">{stats.totalCourses}</b> 门
-                </p>
+                  辅导 <b className="text-white">{stats.totalStudents}</b> 名学员·
+                  资源 <b className="text-white">{stats.totalCourses}</b> 个                </p>
               </div>
             </div>
             <div className="flex flex-col items-end gap-1">
-              <Link to={mentorProfileId ? `/mentors/${mentorProfileId}` : '/mentor/profile'} className="text-xs bg-white/20 hover:bg-white/30 px-3 py-1.5 rounded-lg transition-colors">
-                查看我的主页 →
-              </Link>
+              <Link to="/mentor/profile" className="text-xs bg-white/20 hover:bg-white/30 px-3 py-1.5 rounded-lg transition-colors">
+                管理个人资料               </Link>
               <p className="text-xs text-emerald-200 mt-1">
                 {stats.pendingAppts > 0
-                  ? `当前有 ${stats.pendingAppts} 个待确认预约`
-                  : '暂无待处理预约'}
+                  ? `当前有 ${stats.pendingAppts} 个待确认咨询`
+                  : '暂无待处理咨询'}
               </p>
             </div>
           </div>
@@ -214,7 +214,7 @@ export default function MentorDashboardPage() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
           { label: '本月辅导', value: stats.monthSessions, unit: '次', icon: Calendar, color: 'text-emerald-600', bg: 'bg-emerald-50', border: 'border-emerald-100' },
-          { label: '待确认预约', value: stats.pendingAppts, unit: '个', icon: AlertCircle, color: 'text-amber-600', bg: 'bg-amber-50', border: 'border-amber-100' },
+          { label: '待确认咨询', value: stats.pendingAppts, unit: '个', icon: AlertCircle, color: 'text-amber-600', bg: 'bg-amber-50', border: 'border-amber-100' },
           { label: '本月收入', value: `¥${stats.monthRevenue.toLocaleString()}`, unit: '', icon: DollarSign, color: 'text-blue-600', bg: 'bg-blue-50', border: 'border-blue-100' },
           { label: '综合评分', value: stats.rating > 0 ? stats.rating.toFixed(1) : '-', unit: '/ 5.0', icon: Star, color: 'text-primary-600', bg: 'bg-primary-50', border: 'border-primary-100' },
         ].map((card, i) => (
@@ -234,19 +234,23 @@ export default function MentorDashboardPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* ====== 今日日程（导师端独有） ====== */}
+        {/* ====== 今日日程（导师端独有)====== */}
         <div className="lg:col-span-2 bg-white rounded-xl p-5 border border-gray-100">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-sm font-bold text-gray-900 flex items-center gap-2">
-              <Clock className="w-4 h-4 text-emerald-600" /> 待确认预约
-            </h3>
-            <Link to="/mentor/appointments" className="text-xs text-emerald-600 hover:underline flex items-center gap-1">
-              全部预约 <ArrowRight className="w-3 h-3" />
-            </Link>
+              <Clock className="w-4 h-4 text-emerald-600" /> 待确认咨询            </h3>
+            <CapabilityGate
+              capability="canManageAppointments"
+              fallback={<span className="text-xs text-amber-600">完成认证后解锁</span>}
+            >
+              <Link to="/mentor/appointments" className="text-xs text-emerald-600 hover:underline flex items-center gap-1">
+                咨询管理 <ArrowRight className="w-3 h-3" />
+              </Link>
+            </CapabilityGate>
           </div>
           {todaySchedule.length > 0 ? (
             <div className="relative">
-              {/* 时间线 */}
+              {/* 时间线*/}
               <div className="absolute left-[52px] top-0 bottom-0 w-px bg-gray-200" />
               <div className="space-y-4">
                 {todaySchedule.map((item, i) => (
@@ -293,7 +297,7 @@ export default function MentorDashboardPage() {
                           onClick={async () => {
                             try {
                               await http.put(`/mentor/appointments/${item.id}/confirm`);
-                              showToast({ type: 'success', title: '确认成功', message: '预约已确认' });
+                              showToast({ type: 'success', title: '确认成功', message: '咨询已确认' });
                               fetchDashboardData();
                             } catch (err) {
                               if (import.meta.env.DEV) console.error('[DEV] Confirm appointment error:', err);
@@ -301,7 +305,7 @@ export default function MentorDashboardPage() {
                           }}
                           className="text-xs bg-blue-600 text-white px-3 py-1.5 rounded-lg font-medium hover:bg-blue-700 transition-colors"
                         >
-                          确认预约
+                          确认咨询
                         </button>
                       )}
                     </div>
@@ -334,14 +338,14 @@ export default function MentorDashboardPage() {
         </div>
       </div>
 
-      {/* 我的课程 + 辅导统计 */}
+      {/* 我的资源 + 辅导统计 */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="bg-white rounded-xl p-5 border border-gray-100">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-sm font-bold text-gray-900 flex items-center gap-2">
-              <Video className="w-4 h-4 text-primary-600" /> 我的课程
+              <Video className="w-4 h-4 text-primary-600" /> 我的资源
             </h3>
-            <Link to="/mentor/courses" className="text-xs text-emerald-600 hover:underline">管理课程</Link>
+            <Link to="/mentor/courses" className="text-xs text-emerald-600 hover:underline">管理资源</Link>
           </div>
           {courses.length > 0 ? (
             <div className="grid grid-cols-2 gap-3">
@@ -367,12 +371,12 @@ export default function MentorDashboardPage() {
           ) : (
             <div className="flex flex-col items-center justify-center py-10 text-center">
               <Video className="w-10 h-10 text-gray-200 mb-3" />
-              <p className="text-sm text-gray-400">暂无课程，点击"管理课程"创建</p>
+              <p className="text-sm text-gray-400">暂无资源，点击"管理资源"创建</p>
             </div>
           )}
         </div>
 
-        {/* TODO: 热门辅导方向 - 需要后端提供辅导方向统计API后对接 */}
+        {/* TODO: 热门辅导方向 - 需要后端提供辅导方向统计API后对接*/}
         <div className="bg-white rounded-xl p-5 border border-gray-100">
           <h3 className="text-sm font-bold text-gray-900 mb-4 flex items-center gap-2">
             <Award className="w-4 h-4 text-amber-500" /> 辅导统计
@@ -380,7 +384,7 @@ export default function MentorDashboardPage() {
           <div className="grid grid-cols-2 gap-4 mb-6">
             <div className="bg-emerald-50 rounded-xl p-4 text-center">
               <p className="text-2xl font-bold text-emerald-700">{stats.totalCourses}</p>
-              <p className="text-xs text-gray-500 mt-1">在线课程</p>
+              <p className="text-xs text-gray-500 mt-1">公开资源</p>
             </div>
             <div className="bg-primary-50 rounded-xl p-4 text-center">
               <p className="text-2xl font-bold text-primary-700">{stats.totalStudents}</p>

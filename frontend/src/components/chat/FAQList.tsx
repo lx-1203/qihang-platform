@@ -1,22 +1,80 @@
 import { useState } from 'react';
-import { ChevronDown, HelpCircle, Briefcase, GraduationCap, Users, BookOpen, Shield } from 'lucide-react';
+import { ChevronDown, HelpCircle, Briefcase, GraduationCap, BookOpen, Shield } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useConfigStore } from '@/store/config';
 
-const FAQ_ITEMS = [
-  { q: '启航平台是什么？', a: '启航平台是一站式大学生综合发展与就业指导平台，融合求职招聘、职业辅导、考研考公、创新创业四大核心场景。', icon: HelpCircle, category: 'general' },
-  { q: '如何搜索和投递岗位？', a: '点击顶部导航「找工作」进入岗位列表页，支持按关键词、城市、岗位类型筛选。找到心仪岗位后点击「投递简历」即可。', icon: Briefcase, category: 'job' },
-  { q: '如何预约导师咨询？', a: '进入「导师」页面浏览导师列表，选择心仪导师后点击「预约咨询」，选择时间段即可完成预约。', icon: Users, category: 'mentor' },
-  { q: '平台课程收费吗？', a: '平台提供丰富的免费课程，涵盖面试技巧、简历指导、行业分析等。部分高级定制课程可能需要付费。', icon: BookOpen, category: 'course' },
-  { q: '考研/考公有什么资源？', a: '平台提供完整的考研考公资讯、经验分享和备考课程，访问「考研」或「考公」频道获取更多信息。', icon: GraduationCap, category: 'postgrad' },
-  { q: '我的个人信息安全吗？', a: '我们采用银行级加密技术保护你的数据，企业和导师均经过严格资质审核。查看我们的隐私政策了解更多。', icon: Shield, category: 'account' },
-  { q: '如何修改个人资料？', a: '登录后进入「个人中心」→「我的资料」即可编辑姓名、头像、教育背景、求职意向等信息。', icon: HelpCircle, category: 'account' },
-  { q: '投递的简历状态怎么查看？', a: '登录后进入「个人中心」→「我的投递」可查看所有投递记录和状态（已投递/已查看/面试邀请/已拒绝）。', icon: Briefcase, category: 'job' },
-  { q: '如何联系客服？', a: '你可以直接在本聊天窗口发送消息联系在线客服，或点击右下角的「启小航」悬浮按钮发起对话。', icon: HelpCircle, category: 'general' },
-  { q: '平台支持哪些浏览器？', a: '启航平台支持 Chrome、Firefox、Safari、Edge 等主流浏览器的最新版本，建议使用 Chrome 获得最佳体验。', icon: HelpCircle, category: 'general' },
+const ICON_MAP: Record<string, LucideIcon> = {
+  HelpCircle, Briefcase, GraduationCap, BookOpen, Shield,
+};
+
+interface FAQItem {
+  q: string;
+  a: string;
+  icon: string;
+  category: string;
+}
+
+const DEFAULT_FAQ_ITEMS: FAQItem[] = [
+  {
+    q: '启航平台是什么？',
+    a: '启航平台是一站式大学生成长平台，当前公开端聚焦职业规划、能力提升、升学深造、求职招聘与创业等核心板块。',
+    icon: 'HelpCircle',
+    category: 'general',
+  },
+  {
+    q: '如何搜索和投递岗位？',
+    a: '点击顶部导航中的「求职招聘」进入岗位列表页，支持按关键词、城市、岗位类型筛选。找到目标岗位后即可投递简历。',
+    icon: 'Briefcase',
+    category: 'job',
+  },
+  {
+    q: '能力提升板块有什么？',
+    a: '能力提升板块整合了职业指导外链、图文资源库和成功案例内容。免费资源可直接访问，VIP 资源会明确标识。',
+    icon: 'BookOpen',
+    category: 'resource',
+  },
+  {
+    q: '升学相关资源在哪里看？',
+    a: '考研、保研、留学等内容已统一归入「升学深造」板块，可按目标方向查看时间线、案例和准备建议。',
+    icon: 'GraduationCap',
+    category: 'postgrad',
+  },
+  {
+    q: '我的个人信息安全吗？',
+    a: '平台会对身份信息和业务数据做严格保护，企业和导师账号也需要经过资质审核后才能开放完整能力。',
+    icon: 'Shield',
+    category: 'account',
+  },
+  {
+    q: '如何修改个人资料？',
+    a: '登录后进入「个人中心」中的资料页，即可编辑姓名、头像、教育背景、求职意向等信息。',
+    icon: 'HelpCircle',
+    category: 'account',
+  },
+  {
+    q: '投递的简历状态怎么查看？',
+    a: '登录后进入「个人中心」中的投递记录页可查看所有投递记录和状态更新。企业简历池按待筛选、通过、淘汰三状态流转。',
+    icon: 'Briefcase',
+    category: 'job',
+  },
+  {
+    q: '如何联系客服？',
+    a: '你可以直接在当前聊天窗口发送消息联系在线客服，或点击右下角悬浮入口发起对话。',
+    icon: 'HelpCircle',
+    category: 'general',
+  },
+  {
+    q: '平台支持哪些浏览器？',
+    a: '启航平台支持 Chrome、Firefox、Safari、Edge 等主流浏览器的最新版本，建议优先使用 Chrome。',
+    icon: 'HelpCircle',
+    category: 'general',
+  },
 ];
 
 export default function FAQList() {
   const [openIndex, setOpenIndex] = useState<number | null>(null);
+  const items: FAQItem[] = useConfigStore.getState().getJson?.('faq_items') || DEFAULT_FAQ_ITEMS;
 
   return (
     <div className="space-y-2">
@@ -24,8 +82,8 @@ export default function FAQList() {
         <HelpCircle className="w-5 h-5 text-primary-500" />
         <h3 className="font-semibold text-gray-900">常见问题</h3>
       </div>
-      {FAQ_ITEMS.map((item, i) => {
-        const Icon = item.icon;
+      {items.map((item, i) => {
+        const Icon = ICON_MAP[item.icon] || HelpCircle;
         const isOpen = openIndex === i;
         return (
           <div key={i} className="border border-gray-100 rounded-xl overflow-hidden">

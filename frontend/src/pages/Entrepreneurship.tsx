@@ -1,17 +1,23 @@
-import { useState, useEffect } from 'react';
-import { Lightbulb, Rocket, Trophy, Users, Zap, ExternalLink, ChevronRight, Loader2, Megaphone } from 'lucide-react';
-import { Link, useNavigate } from 'react-router-dom';
-import Tag from '@/components/ui/Tag';
-import { useConfigStore } from '@/store/config';
-import http from '@/api/http';
+import { Rocket, Lightbulb, Users, Trophy } from 'lucide-react';
+import Breadcrumb from '@/components/ui/Breadcrumb';
 
-// 默认文案配置（从配置中心读取，不含动态数据）
-const DEFAULT_ENTREPRENEURSHIP_CONFIG = {
-  heroTitle: '点燃你的创业梦',
-  heroDesc: '寻找志同道合的合伙人，获取专业的创业指导，参与顶级赛事，对接天使投资。让每一个疯狂的想法都有机会改变世界。'
-};
+/**
+ * 创新创业板块 - 占位页面
+ *
+ * 当前为占位状态，未来扩展功能包括：
+ * - 竞赛列表（热门赛事推荐）
+ * - 组队大厅（合伙人招募）
+ * - 创业资料库
+ * - 创业指导与资源对接
+ *
+ * 数据结构预留：
+ * - Competition: 竞赛信息（id, title, level, status, deadline, tags, registration_url, image, link）
+ * - Resource: 创业资料（id, title, description）
+ * - TeamRecruitment: 组队招募信息
+ */
 
-interface Competition {
+// 未来扩展时使用的接口定义（预留）
+export interface Competition {
   id: number;
   title?: string;
   name?: string;
@@ -24,219 +30,100 @@ interface Competition {
   link?: string;
 }
 
-interface Resource {
+export interface Resource {
   id: number;
   title: string;
   description: string;
 }
 
+export interface TeamRecruitment {
+  id: number;
+  title: string;
+  description: string;
+  author: string;
+  tags?: string[];
+}
+
+/** 即将上线的功能模块 */
+const UPCOMING_FEATURES = [
+  {
+    icon: Trophy,
+    title: '热门赛事',
+    desc: '汇聚各类创新创业大赛，从校级到国家级，一站式获取赛事信息与报名入口',
+  },
+  {
+    icon: Users,
+    title: '组队大厅',
+    desc: '寻找志同道合的创业伙伴，快速组建你的初创团队',
+  },
+  {
+    icon: Lightbulb,
+    title: '创业资料库',
+    desc: '商业计划书模板、融资指南、政策解读等实用资料一应俱全',
+  },
+  {
+    icon: Rocket,
+    title: '创业指导',
+    desc: '对接行业导师与天使投资，让每一个好想法都有机会落地',
+  },
+];
+
 export default function Entrepreneurship() {
-  const navigate = useNavigate();
-  const entrepreneurshipConfig = useConfigStore(s => s.getJson('entrepreneurship_page_config', DEFAULT_ENTREPRENEURSHIP_CONFIG));
-  const heroTitle = entrepreneurshipConfig.heroTitle || DEFAULT_ENTREPRENEURSHIP_CONFIG.heroTitle;
-  const heroDesc = entrepreneurshipConfig.heroDesc || DEFAULT_ENTREPRENEURSHIP_CONFIG.heroDesc;
-
-  // API 数据状态
-  const [competitions, setCompetitions] = useState<Competition[]>([]);
-  const [competitionsTotal, setCompetitionsTotal] = useState(0);
-  const [competitionsLoading, setCompetitionsLoading] = useState(true);
-  const [competitionsError, setCompetitionsError] = useState(false);
-
-  const [resources, setResources] = useState<Resource[]>([]);
-  const [resourcesLoading, setResourcesLoading] = useState(true);
-  const [resourcesError, setResourcesError] = useState(false);
-
-  // 加载竞赛列表（API 优先，无数据时回退到配置中心）
-  const configCompetitions = entrepreneurshipConfig.competitions || [];
-  useEffect(() => {
-    http.get('/competitions', { params: { status: '报名中', pageSize: 4 } })
-      .then(res => {
-        if (res.data?.code === 200) {
-          const list = res.data.data.list || [];
-          if (list.length > 0) {
-            setCompetitions(list);
-            setCompetitionsTotal(res.data.data.total || 0);
-          } else {
-            // API 无数据，使用配置中心的竞赛列表
-            setCompetitions(configCompetitions.slice(0, 4));
-            setCompetitionsTotal(configCompetitions.length);
-          }
-        } else {
-          setCompetitionsError(true);
-        }
-      })
-      .catch(() => setCompetitionsError(true))
-      .finally(() => setCompetitionsLoading(false));
-  }, [configCompetitions]);
-
-  // 加载创业资料
-  useEffect(() => {
-    http.get('/resources', { params: { pageSize: 5 } })
-      .then(res => {
-        if (res.data?.code === 200) {
-          setResources(res.data.data.list || []);
-        } else {
-          setResourcesError(true);
-        }
-      })
-      .catch(() => setResourcesError(true))
-      .finally(() => setResourcesLoading(false));
-  }, []);
-
   return (
     <div className="min-h-screen bg-gray-50 pt-8 pb-16">
       <div className="container-main">
+        {/* 面包屑导航 */}
+        <Breadcrumb items={[{ label: '首页', path: '/' }, { label: '创业' }]} />
 
-        {/* Hero Section */}
-        <div className="bg-gray-900 rounded-[24px] overflow-hidden relative mb-12">
-          <div className="absolute inset-0 opacity-20 bg-gradient-to-br from-slate-700 via-slate-800 to-slate-900 mix-blend-luminosity"></div>
-          <div className="absolute inset-0 bg-gradient-to-r from-black/80 to-transparent"></div>
+        {/* 页面标题区域 */}
+        <div className="text-center mb-12">
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-orange-50 text-orange-600 border border-orange-100 text-sm font-medium mb-6">
+            <Rocket className="w-4 h-4" />
+            创业板块
+          </div>
+          <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
+            创业
+          </h1>
+          <p className="text-lg text-gray-500 max-w-2xl mx-auto leading-relaxed">
+            创新创业板块正在建设中，敬请期待更多功能。我们将为你提供赛事资讯、团队组建、创业资源等全方位支持。
+          </p>
+        </div>
 
-          <div className="relative z-10 p-10 md:p-16 flex flex-col items-start max-w-2xl">
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/20 backdrop-blur-md text-white border border-white/20 text-[14px] font-medium mb-6">
-              <Rocket className="w-4 h-4 text-primary-500" /> 激发无限潜能
-            </div>
-            <h1 className="text-[36px] md:text-[48px] font-bold text-white mb-4 leading-tight">
-              {heroTitle}
-            </h1>
-            <p className="text-[16px] md:text-[18px] text-gray-300 leading-relaxed mb-8">
-              {heroDesc}
-            </p>
-            <div className="flex flex-wrap gap-4">
-              <button
-                onClick={() => navigate('/partners')}
-                className="bg-primary-500 text-white px-10 py-4 rounded-xl font-bold text-[16px] hover:bg-primary-600 transition-all shadow-xl shadow-primary-500/30 hover:shadow-primary-500/40 hover:scale-[1.03] active:scale-[0.98] flex items-center gap-2"
+        {/* 功能预告卡片 */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+          {UPCOMING_FEATURES.map((feature) => {
+            const Icon = feature.icon;
+            return (
+              <div
+                key={feature.title}
+                className="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm hover:shadow-md hover:border-orange-500/30 transition-all"
               >
-                <Megaphone className="w-5 h-5" />
-                发布招募信息
-              </button>
-              <button onClick={() => navigate('/partners')} className="bg-white/90 backdrop-blur text-primary-600 border-2 border-primary-400 px-10 py-4 rounded-xl font-bold text-[16px] hover:bg-primary-50 hover:border-primary-500 transition-all shadow-lg flex items-center gap-2">
-                <Users className="w-5 h-5" />
-                寻找合伙人
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Main Content: Competitions */}
-          <div className="lg:col-span-2">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-[24px] font-bold text-gray-900 flex items-center gap-2">
-                <Trophy className="w-6 h-6 text-primary-500" /> 热门赛事推荐
-              </h2>
-              <Link to="/guidance/articles" className="text-gray-500 hover:text-gray-900 text-[14px] font-medium flex items-center transition-colors">
-                全部赛事 <ChevronRight className="w-4 h-4 ml-1" />
-              </Link>
-            </div>
-
-            {competitionsLoading ? (
-              <div className="flex justify-center py-12">
-                <Loader2 className="w-6 h-6 text-primary-500 animate-spin" />
-              </div>
-            ) : competitionsError ? (
-              <div className="text-center py-12 text-gray-400">
-                <p>加载竞赛数据失败</p>
-                <button onClick={() => window.location.reload()} className="text-primary-500 text-sm mt-2 hover:underline">点击重试</button>
-              </div>
-            ) : competitions.length === 0 ? (
-              <p className="text-center text-gray-400 py-8">暂无报名中的赛事</p>
-            ) : (
-              <div className="space-y-4">
-                {competitions.map((comp) => (
-                  <div key={comp.id} className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md hover:border-primary-500/30 transition-all flex flex-col md:flex-row gap-4">
-                    {comp.image && (
-                      <img src={comp.image} alt={comp.title || comp.name || ''} className="w-full md:w-40 h-28 object-cover rounded-xl border border-gray-100 shrink-0" />
-                    )}
-                    <div className="flex-grow">
-                      <div className="flex items-center gap-2 mb-2">
-                        <Tag variant="red" size="sm">
-                          {comp.level}
-                        </Tag>
-                        {comp.status === '报名中' && (
-                          <span className="flex items-center gap-1 text-primary-500 text-[12px] font-medium">
-                            <span className="w-1.5 h-1.5 rounded-full bg-primary-500 animate-pulse"></span>
-                            报名中
-                          </span>
-                        )}
-                      </div>
-                      <h3 className="text-[18px] font-bold text-gray-900 mb-2">{comp.title || comp.name}</h3>
-                      <div className="flex flex-wrap items-center gap-3 text-[13px] text-gray-500">
-                        <span>截止日期: {comp.deadline}</span>
-                        <span className="w-1 h-1 rounded-full bg-gray-300"></span>
-                        <div className="flex gap-2">
-                          {(comp.tags || []).map(tag => <span key={tag} className="text-gray-500">#{tag}</span>)}
-                        </div>
-                      </div>
-                    </div>
-                    <button
-                      onClick={() => {
-                        const url = comp.link || comp.registration_url;
-                        if (url) {
-                          window.open(url, '_blank', 'noopener,noreferrer');
-                        } else {
-                          navigate('/guidance/articles');
-                        }
-                      }}
-                      className="shrink-0 md:w-auto w-full py-2.5 px-6 rounded-xl border border-gray-200 text-gray-600 font-medium hover:bg-gray-50 hover:text-gray-900 transition-colors flex justify-center items-center gap-2"
-                    >
-                      {(comp.link || comp.registration_url) ? '前往报名' : '查看详情'} <ExternalLink className="w-4 h-4" />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Sidebar */}
-          <div className="space-y-8">
-            {/* Team up */}
-            <div className="bg-gradient-to-b from-primary-50 to-white p-6 rounded-2xl border border-primary-100">
-              <div className="w-12 h-12 bg-primary-500 rounded-xl flex items-center justify-center mb-4 text-white shadow-lg shadow-primary-500/20">
-                <Users className="w-6 h-6" />
-              </div>
-              <h3 className="text-[20px] font-bold text-gray-900 mb-2">组队大厅</h3>
-              <p className="text-[14px] text-gray-500 mb-6">
-                缺技术？缺运营？在这里发布招募贴，快速集结你的梦幻初创团队。{competitionsTotal > 0 && (<>目前已有 <span className="text-primary-500 font-bold">{competitionsTotal.toLocaleString()}</span> 个赛事可参与。</>)}
-              </p>
-              <button onClick={() => navigate('/partners')} className="w-full bg-primary-500 border border-primary-500 text-white py-3 rounded-xl font-bold hover:bg-primary-600 transition-all shadow-lg shadow-primary-500/20 flex items-center justify-center gap-2">
-                <Megaphone className="w-4 h-4" />
-                发布招募信息
-              </button>
-            </div>
-
-            {/* Resources */}
-            <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
-              <h3 className="text-[18px] font-bold text-gray-900 mb-4 flex items-center gap-2">
-                <Lightbulb className="w-5 h-5 text-yellow-500" /> 创业资料库
-              </h3>
-              {resourcesLoading ? (
-                <div className="flex justify-center py-4">
-                  <Loader2 className="w-5 h-5 text-gray-400 animate-spin" />
+                <div className="w-12 h-12 bg-orange-50 rounded-xl flex items-center justify-center mb-4">
+                  <Icon className="w-6 h-6 text-orange-500" />
                 </div>
-              ) : resourcesError ? (
-                <p className="text-sm text-gray-400 py-2">加载失败</p>
-              ) : resources.length === 0 ? (
-                <p className="text-sm text-gray-400 py-2">暂无资料</p>
-              ) : (
-                <ul className="space-y-4">
-                  {resources.map((resource) => (
-                    <li key={resource.id} className="flex gap-3 group">
-                      <div className="w-10 h-10 rounded bg-gray-50 border border-gray-100 flex items-center justify-center shrink-0 group-hover:bg-primary-500 group-hover:border-primary-500 transition-colors">
-                        <Zap className="w-5 h-5 text-gray-400 group-hover:text-white transition-colors" />
-                      </div>
-                      <div>
-                        <h4 className="text-[14px] font-medium text-gray-900 group-hover:text-primary-500 transition-colors mb-0.5">{resource.title}</h4>
-                        <p className="text-[12px] text-gray-500">{resource.description}</p>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-          </div>
+                <h3 className="text-lg font-bold text-gray-900 mb-2">
+                  {feature.title}
+                </h3>
+                <p className="text-sm text-gray-500 leading-relaxed">
+                  {feature.desc}
+                </p>
+              </div>
+            );
+          })}
         </div>
 
+        {/* 建设中提示 */}
+        <div className="bg-gradient-to-b from-orange-50 to-white rounded-2xl border border-orange-100 p-8 text-center">
+          <div className="w-16 h-16 bg-orange-500 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-orange-500/20">
+            <Rocket className="w-8 h-8 text-white" />
+          </div>
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">
+            正在建设中
+          </h2>
+          <p className="text-gray-500 max-w-lg mx-auto">
+            我们正在精心打造创新创业板块，未来将为你带来更丰富的创业资源与更便捷的团队组建体验。敬请期待！
+          </p>
+        </div>
       </div>
     </div>
   );

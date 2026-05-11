@@ -172,7 +172,7 @@ export default function NotificationCenter() {
             ))}
           </div>
 
-          <div className="flex gap-2">
+          <div className="flex gap-2 overflow-x-auto scrollbar-hide flex-shrink-0">
             {['all', 'appointment', 'resume', 'system', 'approval'].map(t => (
               <button
                 key={t}
@@ -190,7 +190,7 @@ export default function NotificationCenter() {
         </div>
 
         {/* 通知列表 */}
-        <div className="space-y-3">
+        <div className="space-y-3 overflow-x-hidden">
           {loading && <ListSkeleton count={5} />}
           {error && !loading && (
             <ErrorState title="加载失败" message={error} onRetry={fetchNotifications} />

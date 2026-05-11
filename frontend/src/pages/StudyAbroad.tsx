@@ -112,7 +112,7 @@ const DEFAULT_TEXT_RESOURCES = {
     servedStudents: '0',
     satisfactionRate: '0%',
     btnText: '立即咨询',
-    floatingCta: '免费咨询',
+    floatingCta: '查看规划',
     floatingSubtitle: '专业顾问在线',
   },
 };
@@ -686,7 +686,7 @@ export default function StudyAbroad() {
                     </Link>
                   ))}
                 </div>
-                <Link to="/mentors" className="w-full mt-4 bg-primary-500 text-white py-3 rounded-xl font-bold text-[13px] hover:bg-primary-700 transition-all flex items-center justify-center gap-2 shadow-lg shadow-primary-500/25 hover:-translate-y-0.5 hover:shadow-xl hover:shadow-primary-500/30 active:translate-y-0">
+                <Link to="/chat" className="w-full mt-4 bg-primary-500 text-white py-3 rounded-xl font-bold text-[13px] hover:bg-primary-700 transition-all flex items-center justify-center gap-2 shadow-lg shadow-primary-500/25 hover:-translate-y-0.5 hover:shadow-xl hover:shadow-primary-500/30 active:translate-y-0">
                   <MessageCircle className="w-4 h-4" /> {TEXT_RESOURCES.sidebar.consultantCta}
                 </Link>
                 <p className="text-center text-[10px] text-gray-400 mt-2">已有 <span className="text-primary-500 font-bold">{TEXT_RESOURCES.sidebar.evaluatedCount}</span> 名同学获得了免费评估</p>
@@ -948,7 +948,7 @@ export default function StudyAbroad() {
             className="fixed bottom-6 right-6 z-50 hidden md:block"
           >
             <Link
-              to="/mentors"
+              to="/chat"
               className="group flex items-center gap-3 bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-400 hover:to-primary-500 text-white pl-6 pr-7 py-4 rounded-full font-bold text-[14px] shadow-2xl shadow-primary-500/30 hover:shadow-primary-500/40 transition-all hover:-translate-y-0.5 active:translate-y-0"
             >
               <span className="w-9 h-9 rounded-full bg-white/20 flex items-center justify-center shrink-0">
@@ -974,7 +974,7 @@ export default function StudyAbroad() {
             className="fixed bottom-0 left-0 right-0 z-40 md:hidden bg-white/95 backdrop-blur-md border-t border-gray-200 px-4 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))]"
           >
             <Link
-              to="/mentors"
+              to="/chat"
               className="flex items-center justify-center gap-2 w-full bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-400 hover:to-primary-500 text-white py-3.5 rounded-xl font-bold text-[14px]
                 shadow-xl shadow-primary-500/30 transition-all
                 hover:shadow-2xl hover:shadow-primary-500/40 active:scale-[0.98]

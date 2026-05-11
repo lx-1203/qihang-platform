@@ -1,6 +1,7 @@
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { User } from 'lucide-react';
-import LazyImage from './LazyImage';
+import LazyImage from './ui/LazyImage';
 
 type AvatarSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl' | 'company' | 'mentor';
 
@@ -23,6 +24,9 @@ const sizeMap: Record<AvatarSize, number> = {
   mentor: 300,
 };
 
+/** 默认头像占位 SVG 路径 */
+const DEFAULT_AVATAR = '/default-avatar.svg';
+
 export default function Avatar({
   src,
   alt,
@@ -32,6 +36,14 @@ export default function Avatar({
   useCDN = true,
 }: AvatarProps) {
   const dimension = sizeMap[size];
+
+  /** 追踪图片加载是否失败，src 变化时重置错误状态 */
+  const [hasError, setHasError] = useState(false);
+  const [defaultAvatarFailed, setDefaultAvatarFailed] = useState(false);
+  useEffect(() => {
+    setHasError(false);
+    setDefaultAvatarFailed(false);
+  }, [src]);
 
   const getInitials = (name: string) => {
     return name
@@ -50,14 +62,22 @@ export default function Avatar({
       className={`relative inline-flex items-center justify-center overflow-hidden bg-primary-100 rounded-full ${className}`}
       style={{ width: dimension, height: dimension }}
     >
-      {src ? (
+      {src && !hasError ? (
         <LazyImage
           src={src}
           alt={alt}
           useCDN={useCDN}
           skeletonShape="circle"
-          className="w-full h-full object-cover rounded-full"
+          className="w-full h-full object-cover object-center rounded-full"
           containerClassName="w-full h-full"
+          onError={() => setHasError(true)}
+        />
+      ) : src && hasError && !defaultAvatarFailed ? (
+        <img
+          src={DEFAULT_AVATAR}
+          alt={alt}
+          className="w-full h-full object-cover object-center rounded-full"
+          onError={() => setDefaultAvatarFailed(true)}
         />
       ) : fallbackInitials || alt ? (
         <span className="text-primary-700 font-semibold" style={{ fontSize: Math.max(dimension * 0.35, 12) }}>

@@ -4,7 +4,7 @@ import {
   Search, Filter, Users, GraduationCap, Briefcase,
   Mail, FileText, ChevronLeft, ChevronRight,
   Loader2, User, X, Building2, BookOpen, Star, Tag, TrendingUp,
-  MessageSquare, Calendar, Download
+  MessageSquare, Calendar, Download, Crown, Lock
 } from 'lucide-react';
 import http from '@/api/http';
 import { showToast } from '@/components/ui/ToastContainer';
@@ -73,6 +73,10 @@ export default function TalentSearch() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // VIP 状态
+  const [isVip, setIsVip] = useState(false);
+  const [vipLoading, setVipLoading] = useState(true);
+
   // 搜索条件
   const [keyword, setKeyword] = useState('');
   const [school, setSchool] = useState('');
@@ -94,6 +98,25 @@ export default function TalentSearch() {
   useEffect(() => {
     localStorage.setItem('qihang_talent_tags', JSON.stringify(talentTags));
   }, [talentTags]);
+
+  // 获取 VIP 状态
+  useEffect(() => {
+    async function fetchVipStatus() {
+      try {
+        setVipLoading(true);
+        const res = await http.get('/vip/status');
+        if (res.data?.code === 200 && res.data.data) {
+          setIsVip(res.data.data.isVip === true);
+        }
+      } catch {
+        // VIP 状态获取失败不影响主流程，默认为非 VIP
+        setIsVip(false);
+      } finally {
+        setVipLoading(false);
+      }
+    }
+    fetchVipStatus();
+  }, []);
 
   const addTag = (talentId: number) => {
     const text = (tagInput[talentId] || '').trim();
@@ -190,6 +213,19 @@ export default function TalentSearch() {
     return [];
   };
 
+  // 脱敏工具函数
+  const maskPhone = (phone: string): string => {
+    if (!phone) return '';
+    return phone.replace(/(\d{3})\d{4}(\d{4})/, '$1****$2');
+  };
+
+  const maskEmail = (email: string): string => {
+    if (!email) return '';
+    const [local, domain] = email.split('@');
+    if (!domain) return email;
+    return local.charAt(0) + '***@' + domain;
+  };
+
   return (
     <div className="space-y-6">
       {/* 页面标题 */}
@@ -198,9 +234,26 @@ export default function TalentSearch() {
           <h1 className="text-2xl font-bold text-gray-900">人才搜索</h1>
           <p className="text-sm text-gray-500 mt-1">搜索平台上的优质学生人才，精准匹配岗位需求</p>
         </div>
-        <div className="flex items-center gap-2 text-sm text-gray-500">
-          <Users size={16} />
-          <span>共 {pagination.total} 位人才</span>
+        <div className="flex items-center gap-3">
+          {!vipLoading && !isVip && (
+            <a
+              href="/company/vip"
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 text-amber-700 rounded-lg text-xs font-medium hover:bg-amber-100 transition-colors border border-amber-200"
+            >
+              <Crown className="w-3.5 h-3.5" />
+              升级VIP查看完整信息
+            </a>
+          )}
+          {!vipLoading && isVip && (
+            <span className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 text-amber-700 rounded-lg text-xs font-bold border border-amber-200">
+              <Crown className="w-3.5 h-3.5" />
+              VIP 会员
+            </span>
+          )}
+          <div className="flex items-center gap-2 text-sm text-gray-500">
+            <Users size={16} />
+            <span>共 {pagination.total} 位人才</span>
+          </div>
         </div>
       </div>
 
@@ -210,10 +263,10 @@ export default function TalentSearch() {
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
             <input
-              id="talent-search"
-              name="talent-search"
               type="text"
-              placeholder="搜索姓名、求职意向..."
+              name="keyword"
+              id="keyword"
+              placeholder="搜索技能、求职意向..."
               value={keyword}
               onChange={(e) => setKeyword(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
@@ -250,6 +303,8 @@ export default function TalentSearch() {
                 <GraduationCap className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                 <input
                   type="text"
+                  name="school"
+                  id="school"
                   placeholder="输入学校名称"
                   value={school}
                   onChange={(e) => setSchool(e.target.value)}
@@ -263,6 +318,8 @@ export default function TalentSearch() {
                 <BookOpen className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                 <input
                   type="text"
+                  name="major"
+                  id="major"
                   placeholder="输入专业名称"
                   value={major}
                   onChange={(e) => setMajor(e.target.value)}
@@ -417,18 +474,30 @@ export default function TalentSearch() {
                       {talent.email && (
                         <span className="flex items-center gap-1">
                           <Mail size={12} />
-                          {talent.email}
+                          {isVip ? talent.email : maskEmail(talent.email)}
+                          {!isVip && <Lock size={10} className="text-amber-500" />}
                         </span>
                       )}
                       {talent.phone && (
                         <span className="flex items-center gap-1">
                           <Building2 size={12} />
-                          {talent.phone}
+                          {isVip ? talent.phone : maskPhone(talent.phone)}
+                          {!isVip && <Lock size={10} className="text-amber-500" />}
                         </span>
                       )}
                     </div>
                     <div className="flex gap-2">
-                      {talent.resume_url && (
+                      {!isVip && (
+                        <a
+                          href="/company/vip"
+                          className="flex items-center gap-1 px-3 py-1.5 bg-amber-50 text-amber-700 rounded-lg text-xs font-medium hover:bg-amber-100 transition-colors"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <Crown size={12} />
+                          VIP查看
+                        </a>
+                      )}
+                      {isVip && talent.resume_url && (
                         <a
                           href={talent.resume_url}
                           target="_blank"
@@ -620,17 +689,29 @@ export default function TalentSearch() {
                 <p className="text-sm font-medium text-gray-700 flex items-center gap-1.5">
                   <Mail size={14} className="text-gray-500" />
                   联系方式
+                  {!isVip && (
+                    <a href="/company/vip" className="ml-auto flex items-center gap-1 text-xs text-amber-600 hover:text-amber-700">
+                      <Crown size={12} />
+                      升级VIP查看完整信息
+                    </a>
+                  )}
                 </p>
                 {detailStudent.email && (
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-gray-500">邮箱</span>
-                    <span className="text-gray-900">{detailStudent.email}</span>
+                    <span className="text-gray-900">
+                      {isVip ? detailStudent.email : maskEmail(detailStudent.email)}
+                      {!isVip && <Lock size={10} className="inline ml-1 text-amber-500" />}
+                    </span>
                   </div>
                 )}
                 {detailStudent.phone && (
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-gray-500">手机号</span>
-                    <span className="text-gray-900">{detailStudent.phone}</span>
+                    <span className="text-gray-900">
+                      {isVip ? detailStudent.phone : maskPhone(detailStudent.phone)}
+                      {!isVip && <Lock size={10} className="inline ml-1 text-amber-500" />}
+                    </span>
                   </div>
                 )}
                 {!detailStudent.email && !detailStudent.phone && (

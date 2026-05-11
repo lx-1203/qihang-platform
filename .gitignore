@@ -55,6 +55,32 @@ logs
 overnight-logs/
 frontend/test-results/
 frontend/test-output.txt
+frontend/test-output.json
+frontend/test-results.txt
+frontend/test-results2.txt
 
 # uploads
 backend/uploads/
+
+# coverage
+backend/coverage/
+frontend/coverage/
+
+# audit scripts & reports
+audit_*.py
+audit_*.cjs
+audit_*.mjs
+audit_*.png
+audit_screenshots/
+frontend/audit-report.md
+frontend/docs/
+frontend/audit_*.cjs
+frontend/audit-*.mjs
+网站模块全面审查评估报告.md
+
+# dev tooling
+.superpowers/
+.worktrees/
+docs/superpowers/
+*.corrupted-backup
+backend/init-db.js.corrupted-backup

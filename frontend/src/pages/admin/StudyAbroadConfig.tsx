@@ -9,6 +9,8 @@ import { handleApiFailure } from '@/utils/connectionStatus';
 import FileUpload from '@/components/ui/FileUpload';
 import uiConfig from '../../data/study-abroad-ui-config.json';
 
+// 已并入升学深造统一 IA，前台入口统一使用 /further-education
+
 type HeroSlide = typeof uiConfig.heroSlides[0];
 type ServiceCard = typeof uiConfig.serviceCards[0];
 type StudentStory = typeof uiConfig.studentStories[0];
@@ -159,7 +161,7 @@ export default function StudyAbroadConfig() {
             </div>
             <div className="flex items-center gap-3">
               <button
-                onClick={() => window.open('/study-abroad', '_blank')}
+                onClick={() => window.open('/further-education', '_blank')}
                 className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
               >
                 <Eye className="w-4 h-4" /> 预览页面

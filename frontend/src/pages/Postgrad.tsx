@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
-import { GraduationCap, Globe, Clock, ChevronRight, Award, Loader2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { GraduationCap, Globe, Clock, ChevronRight, Award, Loader2 } from 'lucide-react';
 import { useConfigStore } from '@/store/config';
 import http from '@/api/http';
+import Breadcrumb from '@/components/ui/Breadcrumb';
 
 // 默认文案配置（从配置中心读取，不含动态数据）
 const DEFAULT_POSTGRAD_CONFIG = {
@@ -23,7 +24,7 @@ interface ArticleItem {
 }
 
 export default function Postgrad() {
-  const postgradConfig = useConfigStore(s => s.getJson('postgrad_page_config', DEFAULT_POSTGRAD_CONFIG));
+  const postgradConfig = useConfigStore(s => s?.getJson?.('postgrad_page_config', DEFAULT_POSTGRAD_CONFIG) ?? DEFAULT_POSTGRAD_CONFIG);
   const TIMELINES = postgradConfig.timelines || DEFAULT_POSTGRAD_CONFIG.timelines;
   const heroTitle = postgradConfig.heroTitle || DEFAULT_POSTGRAD_CONFIG.heroTitle;
   const heroDesc = postgradConfig.heroDesc || DEFAULT_POSTGRAD_CONFIG.heroDesc;
@@ -60,22 +61,23 @@ export default function Postgrad() {
     <div className="min-h-screen bg-gray-50 pt-8 pb-16">
       <div className="container-main">
 
+        {/* 面包屑导航 */}
+        <Breadcrumb items={[{ label: '首页', path: '/' }, { label: '升学深造' }]} />
+
         {/* Header */}
         <div className="flex flex-col md:flex-row items-center justify-between bg-white rounded-[24px] p-8 md:p-12 mb-12 shadow-sm border border-gray-100">
           <div className="max-w-xl mb-8 md:mb-0">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary-50 text-primary-500 text-[14px] font-medium mb-4 border border-primary-100">
-              <GraduationCap className="w-4 h-4" /> 升学深造指南
-            </div>
+              <GraduationCap className="w-4 h-4" /> 升学深造指南            </div>
             <h1 className="text-[36px] font-bold text-gray-900 mb-4">{heroTitle}</h1>
             <p className="text-[16px] text-gray-600 leading-relaxed mb-6">
               {heroDesc}
             </p>
             <div className="flex flex-wrap gap-4">
-              <Link to="/guidance/articles" className="bg-primary-500 text-white px-6 py-3 rounded-xl font-medium hover:bg-primary-700 transition-colors inline-block text-center">
-                获取备考资料
-              </Link>
-              <Link to="/mentors" className="bg-white text-gray-900 border border-gray-200 px-6 py-3 rounded-xl font-medium hover:bg-gray-50 transition-colors inline-block text-center">
-                咨询上岸学长
+              <Link to="/skill-enhancement" className="bg-primary-500 text-white px-6 py-3 rounded-xl font-medium hover:bg-primary-700 transition-colors inline-block text-center">
+                获取备考资料              </Link>
+              <Link to="/success-cases" className="bg-white text-gray-900 border border-gray-200 px-6 py-3 rounded-xl font-medium hover:bg-gray-50 transition-colors inline-block text-center">
+                查看上岸案例
               </Link>
             </div>
           </div>
@@ -92,15 +94,14 @@ export default function Postgrad() {
         {/* Section: Timeline */}
         <div className="mb-16">
           <h2 className="text-[24px] font-bold text-gray-900 mb-8 flex items-center gap-2">
-            <Clock className="w-6 h-6 text-primary-500" /> 2025考研全年规划时间轴
-          </h2>
+            <Clock className="w-6 h-6 text-violet-500" /> 2025考研全年规划时间表          </h2>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             {TIMELINES.map((item, idx) => (
-              <div key={idx} className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm relative overflow-hidden group hover:border-primary-500 transition-colors">
-                <div className="text-[14px] font-bold text-primary-500 mb-2">{item.month}</div>
+              <div key={idx} className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm relative overflow-hidden group hover:border-violet-500 transition-colors">
+                <div className="text-[14px] font-bold text-violet-500 mb-2">{item.month}</div>
                 <h3 className="text-[18px] font-bold text-gray-900 mb-3">{item.title}</h3>
                 <p className="text-[14px] text-gray-500 leading-relaxed">{item.desc}</p>
-                <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-bl from-primary-500/10 to-transparent rounded-bl-3xl"></div>
+                <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-bl from-violet-500/10 to-transparent rounded-bl-3xl"></div>
               </div>
             ))}
           </div>
@@ -109,32 +110,31 @@ export default function Postgrad() {
         {/* Section: Channels */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Baoyan */}
-          <div className="bg-gradient-to-br from-primary-50 to-white p-8 rounded-[24px] border border-primary-100 relative">
-            <Award className="w-10 h-10 text-primary-500 mb-4" />
+          <div className="bg-gradient-to-br from-violet-50 to-white p-8 rounded-[24px] border border-violet-100 relative">
+            <Award className="w-10 h-10 text-violet-500 mb-4" />
             <h3 className="text-[24px] font-bold text-gray-900 mb-2">保研专区 (推免)</h3>
             <p className="text-gray-600 mb-6">夏令营通知、九推捡漏、导师套磁信模板、专业笔面试面经汇总。</p>
             <ul className="space-y-3 mb-8">
               {postgradLoading ? (
                 <li className="flex items-center justify-center py-2">
-                  <Loader2 className="w-4 h-4 text-primary-500 animate-spin" />
+                  <Loader2 className="w-4 h-4 text-violet-500 animate-spin" />
                 </li>
               ) : postgradArticles.length === 0 ? (
                 <li className="text-[14px] text-gray-400">暂无相关文章</li>
               ) : (
                 postgradArticles.map(article => (
                   <li key={article.id}>
-                    <Link
-                      to={`/guidance/articles/${article.id}`}
-                      className="flex items-center text-[14px] text-gray-600 hover:text-primary-600 cursor-pointer"
+                    <span
+                      className="flex items-center text-[14px] text-gray-600 cursor-default"
                     >
                       <ChevronRight className="w-4 h-4 mr-1" /> {article.title}
-                    </Link>
+                    </span>
                   </li>
                 ))
               )}
             </ul>
-            <Link to="/guidance/articles" className="text-primary-600 font-medium text-[15px] flex items-center gap-1 hover:gap-2 transition-all">
-              进入保研社区 <ChevronRight className="w-5 h-5" />
+            <Link to="/further-education" className="text-violet-600 font-medium text-[15px] flex items-center gap-1 hover:gap-2 transition-all">
+              查看更多保研资讯 <ChevronRight className="w-5 h-5" />
             </Link>
           </div>
 
@@ -153,18 +153,17 @@ export default function Postgrad() {
               ) : (
                 abroadArticles.map(article => (
                   <li key={article.id}>
-                    <Link
-                      to={`/guidance/articles/${article.id}`}
-                      className="flex items-center text-[14px] text-gray-600 hover:text-sky-600 cursor-pointer"
+                    <span
+                      className="flex items-center text-[14px] text-gray-600 cursor-default"
                     >
                       <ChevronRight className="w-4 h-4 mr-1" /> {article.title}
-                    </Link>
+                    </span>
                   </li>
                 ))
               )}
             </ul>
-            <Link to="/study-abroad" className="text-sky-600 font-medium text-[15px] flex items-center gap-1 hover:gap-2 transition-all">
-              进入留学社区 <ChevronRight className="w-5 h-5" />
+            <Link to="/further-education" className="text-sky-600 font-medium text-[15px] flex items-center gap-1 hover:gap-2 transition-all">
+              了解更多留学信息 <ChevronRight className="w-5 h-5" />
             </Link>
           </div>
         </div>

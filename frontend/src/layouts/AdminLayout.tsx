@@ -20,7 +20,13 @@ import {
   Rocket,
   TrendingUp,
   Award,
-  Headphones
+  Headphones,
+  Terminal,
+  Activity,
+  Zap,
+  Eye,
+  ToggleLeft,
+  Navigation
 } from 'lucide-react';
 import DevFloatButton from '../components/DevFloatButton';
 import { useReducedMotion } from '../hooks/useReducedMotion';
@@ -40,18 +46,19 @@ const SIDEBAR_SECTIONS: NavSection[] = [
     label: '用户与审核',
     items: [
       { name: '用户管理', href: '/admin/users', icon: Users },
+      { name: '审核中心', href: '/admin/review-center', icon: ShieldCheck },
       { name: '企业资质审核', href: '/admin/companies', icon: Building2 },
-      { name: '导师资质审核', href: '/admin/mentors', icon: ShieldCheck },
+      { name: '导师审核工作台', href: '/admin/mentors', icon: ShieldCheck },
     ],
   },
   {
     label: '内容管理',
     items: [
       { name: '文章管理', href: '/admin/articles', icon: FileText },
-      { name: '客服管理', href: '/admin/chat', icon: MessageSquare },
+      { name: '客服管理', href: '/admin/customer-service', icon: MessageSquare },
       { name: '客服工作台', href: '/agent/workbench', icon: Headphones },
-      { name: '课程与内容管理', href: '/admin/content', icon: Video },
-      { name: '留学数据管理', href: '/admin/study-abroad', icon: Globe },
+      { name: '内容资源管理', href: '/admin/content', icon: Video },
+      { name: '升学数据管理', href: '/admin/study-abroad', icon: Globe },
       { name: '公告管理', href: '/admin/announcements', icon: Megaphone },
     ],
   },
@@ -61,9 +68,9 @@ const SIDEBAR_SECTIONS: NavSection[] = [
       { name: '首页配置', href: '/admin/home-config', icon: Home },
       { name: '考研配置', href: '/admin/postgrad-config', icon: BookOpen },
       { name: '创业配置', href: '/admin/entrepreneurship-config', icon: Rocket },
-      { name: '创业招募', href: '/admin/entrepreneurship-config', icon: Megaphone },
-      { name: '背景提升配置', href: '/admin/backgroundboost-config', icon: TrendingUp },
+      // { name: '背景提升配置', href: '/admin/backgroundboost-config', icon: TrendingUp }, // 已废弃
       { name: '案例配置', href: '/admin/successcases-config', icon: Award },
+      { name: '导航管理', href: '/admin/nav-items', icon: Navigation },
     ],
   },
   {
@@ -71,6 +78,16 @@ const SIDEBAR_SECTIONS: NavSection[] = [
     items: [
       { name: '系统设置', href: '/admin/settings', icon: Settings },
       { name: '审计日志', href: '/admin/audit-logs', icon: FileText },
+    ],
+  },
+  {
+    label: '开发者工具',
+    items: [
+      { name: '调试控制台', href: '/admin/dev-tools/console', icon: Terminal },
+      { name: '网络监控', href: '/admin/dev-tools/network', icon: Activity },
+      { name: '性能分析', href: '/admin/dev-tools/performance', icon: Zap },
+      { name: '状态监控', href: '/admin/dev-tools/state', icon: Eye },
+      { name: '功能开关', href: '/admin/dev-tools/feature-flags', icon: ToggleLeft },
     ],
   },
 ];
@@ -123,7 +140,9 @@ export default function AdminLayout() {
       </div>
 
       <nav className="flex-1 py-4 px-4 space-y-4 overflow-y-auto" role="navigation" aria-label="管理后台导航">
-        {SIDEBAR_SECTIONS.map((section) => (
+        {SIDEBAR_SECTIONS
+          .filter((section) => section.label !== '开发者工具' || import.meta.env.DEV)
+          .map((section) => (
           <div key={section.label}>
             <div className="px-3 mb-1.5 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
               {section.label}
@@ -162,7 +181,7 @@ export default function AdminLayout() {
   );
 
   return (
-    <div className="min-h-screen bg-gray-50 flex">
+    <div className="min-h-screen bg-gray-50 flex overflow-x-hidden">
       {/* 桌面端侧边栏 */}
       <aside className="hidden md:flex w-64 bg-slate-900 border-r border-slate-800 fixed h-full flex-col z-20 text-slate-300">
         {sidebarContent}
@@ -228,7 +247,7 @@ export default function AdminLayout() {
         </header>
 
         {/* 路由占位符 */}
-        <div className="p-4 md:p-8 flex-1 overflow-auto bg-gray-50">
+        <div className="p-4 md:p-8 flex-1 overflow-y-auto overflow-x-hidden bg-gray-50">
           <Outlet />
         </div>
       </main>

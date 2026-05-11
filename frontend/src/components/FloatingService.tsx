@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence, useMotionValue, type PanInfo } from 'framer-motion';
-import { MessageCircle, X, Send, HelpCircle, Calendar, Briefcase, Maximize2 } from 'lucide-react';
-import { Link, useNavigate } from 'react-router-dom';
+import { MessageCircle, X, Send, HelpCircle, Briefcase, Maximize2 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '@/store/auth';
+import { useConfigStore } from '@/store/config';
 
 // ====== 悬浮客服按钮 "启小航" ======
 // 支持自由拖拽 + 位置持久化 + 边界约束 + 边缘吸附
@@ -12,10 +13,9 @@ const DRAG_THRESHOLD = 5; // 拖拽阈值(px)，低于此值视为点击
 const EDGE_PADDING = 16; // 边缘吸附时距屏幕边缘的距离(px)
 const BUTTON_SIZE = 56; // 按钮尺寸(px)
 
-const quickQuestions = [
-  { text: '如何投递简历？', icon: Briefcase, link: '/jobs' },
-  { text: '怎么预约导师？', icon: Calendar, link: '/mentors' },
-  { text: '找不到合适岗位？', icon: HelpCircle, link: '/guidance' },
+const DEFAULT_QUICK_QUESTIONS = [
+  { text: '如何投递简历？', icon: 'Briefcase', link: '/jobs' },
+  { text: '找不到合适岗位？', icon: 'HelpCircle', link: '/job-recruitment' },
 ];
 
 // 从 localStorage 读取保存的位置
@@ -226,16 +226,21 @@ export default function FloatingService() {
 
             {/* 快捷问题 */}
             <div className="px-5 py-3 space-y-2">
-              {quickQuestions.map((q) => (
-                <Link
+              {(useConfigStore.getState().getJson?.('floating_quick_questions') || DEFAULT_QUICK_QUESTIONS).map((q: typeof DEFAULT_QUICK_QUESTIONS[0]) => {
+                const Icon = { Briefcase, HelpCircle }[q.icon] || HelpCircle;
+                return (
+                <button
                   key={q.text}
-                  to={q.link}
-                  onClick={() => setIsOpen(false)}
+                  type="button"
+                  onClick={() => {
+                    setIsOpen(false);
+                    navigate(q.link);
+                  }}
                   className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-primary-50 transition-colors group"
                 >
-                  <q.icon className="w-4 h-4 text-gray-400 group-hover:text-primary-600 transition-colors" />
+                  <Icon className="w-4 h-4 text-gray-400 group-hover:text-primary-600 transition-colors" />
                   <span className="text-sm text-gray-700 group-hover:text-primary-700 transition-colors">{q.text}</span>
-                </Link>
+                </button>
               ))}
             </div>
 

@@ -8,9 +8,12 @@ export interface User {
   id: number;
   email: string;
   name: string;
+  nickname?: string;
   role: UserRole;
   avatar?: string;
   phone?: string;
+  is_vip?: boolean;
+  status?: number;
   created_at: string;
   updated_at?: string;
 }

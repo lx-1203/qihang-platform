@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import http from '@/api/http';
 import { useAuthStore } from '@/store/auth';
+import CapabilityGate from '@/components/CapabilityGate';
 import OnboardingGuide from '@/components/OnboardingGuide';
 import FeatureStatus, { FeatureOverlay } from '@/components/FeatureStatus';
 import Tag from '@/components/ui/Tag';
@@ -20,10 +21,11 @@ import { CardSkeleton } from '@/components/ui/Skeleton';
 // 与管理员（深色权威）和导师（绿色温暖）完全不同
 
 export default function CompanyDashboardPage() {
-  const { user } = useAuthStore();
+  const { user, accessStatus } = useAuthStore();
+  const canManageResumes = accessStatus.capabilities.canManageResumes;
   const [stats, setStats] = useState<{
     activeJobs?: number; totalResumes?: number; pendingResumes?: number; interviews?: number;
-    todayResumes?: number; passRate?: string; avgCycle?: string;
+    todayResumes?: number; passRate?: string; avgCycle?: string; totalViewCount?: number;
     funnel?: Array<{ stage: string; count: number; color: string; width: string }>;
   } | null>(null);
   const [recentResumes, setRecentResumes] = useState<Array<{
@@ -36,7 +38,7 @@ export default function CompanyDashboardPage() {
 
   useEffect(() => {
     fetchDashboard();
-  }, []);
+  }, [canManageResumes]);
 
   function buildFunnel(data: {
     pendingResumes: number;
@@ -63,7 +65,9 @@ export default function CompanyDashboardPage() {
       setError(null);
       const [statsRes, resumesRes] = await Promise.all([
         http.get('/company/stats'),
-        http.get('/company/resumes?pageSize=5'),
+        canManageResumes
+          ? http.get('/company/resumes?pageSize=5')
+          : Promise.resolve({ data: { code: 200, data: { resumes: [] } } }),
       ]);
       if (statsRes.data?.code === 200 && statsRes.data.data) {
         const jobs = statsRes.data.data.jobs || {};
@@ -87,6 +91,7 @@ export default function CompanyDashboardPage() {
           todayResumes,
           passRate,
           avgCycle,
+          totalViewCount: Number(jobs.total_view_count || 0),
           funnel: buildFunnel({ pendingResumes, viewedResumes, interviewResumes, offeredResumes }),
         });
         setJobRanking(rankingRows.map((item: Record<string, unknown>) => ({
@@ -121,6 +126,7 @@ export default function CompanyDashboardPage() {
 
   const hotMax = jobRanking.length > 0 ? jobRanking[0].count : 1;
   const trendMax = dailyResumes.length > 0 ? Math.max(...dailyResumes) : 1;
+  const companyApproved = accessStatus.identityStatus === 'approved' && accessStatus.qualificationStatus === 'approved';
 
   if (loading) {
     return (
@@ -154,27 +160,37 @@ export default function CompanyDashboardPage() {
               <div>
                 <div className="flex items-center gap-2">
                   <h1 className="text-xl font-bold">{user?.nickname || user?.email || '企业用户'} 的招聘工作台</h1>
-                  <span className="bg-green-400/20 text-green-300 text-[10px] font-bold px-2 py-0.5 rounded-full border border-green-400/30">已认证</span>
+                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${companyApproved ? 'bg-green-400/20 text-green-300 border-green-400/30' : 'bg-amber-400/20 text-amber-200 border-amber-300/30'}`}>{companyApproved ? '已认证' : '待认证'}</span>
                 </div>
                 <p className="text-sm text-blue-200 mt-1">
                   已发布 <b className="text-white">{stats?.activeJobs ?? 0}</b> 个岗位 · 收到 <b className="text-white">{stats?.totalResumes ?? 0}</b> 份简历 · 本周面试 <b className="text-white">{stats?.interviews ?? 0}</b> 场
                 </p>
               </div>
             </div>
-            <Link to="/company/jobs"
-              className="flex items-center gap-2 bg-white text-blue-700 px-5 py-2.5 rounded-xl font-bold hover:bg-blue-50 transition-colors shadow-lg"
+            <CapabilityGate
+              capability="canCreateOrEditJobs"
+              fallback={
+                <span className="flex items-center gap-2 bg-white/15 text-white/80 px-5 py-2.5 rounded-xl font-bold border border-white/20">
+                  <Plus className="w-4 h-4" /> 发布新职位
+                </span>
+              }
             >
-              <Plus className="w-4 h-4" /> 发布新职位
-            </Link>
+              <Link to="/company/jobs"
+                className="flex items-center gap-2 bg-white text-blue-700 px-5 py-2.5 rounded-xl font-bold hover:bg-blue-50 transition-colors shadow-lg"
+              >
+                <Plus className="w-4 h-4" /> 发布新职位
+              </Link>
+            </CapabilityGate>
           </div>
         </div>
       </motion.div>
 
       {/* ====== 招聘数据卡 ====== */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
         {[
           { label: '在招岗位', value: stats?.activeJobs ?? 0, change: '', up: true, icon: Briefcase, color: 'text-blue-600', bg: 'bg-blue-50', border: 'border-blue-100' },
           { label: '今日新投递', value: stats?.todayResumes ?? 0, change: '', up: true, icon: FileText, color: 'text-green-600', bg: 'bg-green-50', border: 'border-green-100' },
+          { label: '总浏览量', value: (stats?.totalViewCount ?? 0).toLocaleString(), change: '', up: true, icon: BarChart3, color: 'text-purple-600', bg: 'bg-purple-50', border: 'border-purple-100' },
           { label: '简历通过率', value: stats?.passRate ?? '-', change: '', up: true, icon: UserCheck, color: 'text-primary-600', bg: 'bg-primary-50', border: 'border-primary-100' },
           { label: '平均招聘周期', value: stats?.avgCycle ?? '-', change: '', up: true, icon: Calendar, color: 'text-amber-600', bg: 'bg-amber-50', border: 'border-amber-100' },
         ].map((card, i) => (
@@ -337,7 +353,7 @@ export default function CompanyDashboardPage() {
             <Search className="w-4 h-4 text-primary-500" /> AI 人才智能推荐
           </h3>
           <div className="grid grid-cols-3 gap-4">
-            {['林小明 · 南大CS · 匹配度 92%', '张晓华 · 复旦 · 匹配度 87%', '王思远 · 浙大 · 匹配度 83%'].map((t, i) => (
+            {['候选人 · 待AI匹配', '候选人 · 待AI匹配', '候选人 · 待AI匹配'].map((t, i) => (
               <div key={i} className="bg-gray-50 rounded-xl p-4 text-center">
                 <div className="w-12 h-12 bg-primary-100 rounded-full mx-auto mb-2 flex items-center justify-center text-sm font-bold text-primary-700">
                   {t[0]}

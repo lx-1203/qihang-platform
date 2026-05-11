@@ -50,7 +50,11 @@ const CREATE_COMPANIES_TABLE = `
     phone           VARCHAR(20)  DEFAULT '' COMMENT '联系电话',
     wechat          VARCHAR(100) DEFAULT '' COMMENT '微信号',
     contact_email   VARCHAR(255) DEFAULT '' COMMENT '联系邮箱',
-    verify_status   ENUM('pending', 'approved', 'rejected') NOT NULL DEFAULT 'pending' COMMENT '认证状态',
+    license_url     VARCHAR(500) DEFAULT '' COMMENT '营业执照URL',
+    org_code        VARCHAR(50)  DEFAULT '' COMMENT '统一社会信用代码',
+    business_scope  TEXT COMMENT '经营范围',
+    verify_documents TEXT COMMENT '认证文件（JSON数组）',
+    verify_status   ENUM('draft', 'pending', 'approved', 'rejected') NOT NULL DEFAULT 'draft' COMMENT '认证状态: draft=未提交, pending=审核中, approved=已通过, rejected=已拒绝',
     verify_remark   VARCHAR(500) DEFAULT '' COMMENT '审核备注',
     created_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -102,10 +106,15 @@ const CREATE_MENTOR_PROFILES_TABLE = `
     rating_count    INT NOT NULL DEFAULT 0 COMMENT '评价人数',
     price           DECIMAL(10,2) DEFAULT 0.00 COMMENT '每次辅导价格',
     available_time  JSON COMMENT '可用时间段',
+    education       VARCHAR(255) DEFAULT '' COMMENT '教育背景',
+    experience      TEXT COMMENT '工作经历',
     phone           VARCHAR(20)  DEFAULT '' COMMENT '联系电话',
     wechat          VARCHAR(100) DEFAULT '' COMMENT '微信号',
     contact_email   VARCHAR(255) DEFAULT '' COMMENT '联系邮箱',
-    verify_status   ENUM('pending', 'approved', 'rejected') NOT NULL DEFAULT 'pending' COMMENT '审核状态',
+    cert_documents  TEXT COMMENT '认证文件（JSON数组）',
+    cert_badge      VARCHAR(100) DEFAULT '' COMMENT '认证徽章',
+    cert_verified_at TIMESTAMP NULL DEFAULT NULL COMMENT '认证时间',
+    verify_status   ENUM('draft', 'pending', 'approved', 'rejected') NOT NULL DEFAULT 'draft' COMMENT '审核状态: draft=未提交, pending=审核中, approved=已通过, rejected=已拒绝',
     verify_remark   VARCHAR(500) DEFAULT '' COMMENT '审核备注',
     status          TINYINT NOT NULL DEFAULT 1 COMMENT '1=在线, 0=离线',
     created_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -657,6 +666,8 @@ const CREATE_CAMPUS_TIMELINE_TABLE = `
     month       VARCHAR(20)  NOT NULL COMMENT '月份标识（如 3月-5月）',
     title       VARCHAR(200) NOT NULL COMMENT '阶段标题',
     description TEXT COMMENT '阶段描述',
+    direction   VARCHAR(50)  DEFAULT '' COMMENT '方向标识（如: campus/graduate等）',
+    date_range  VARCHAR(100) DEFAULT '' COMMENT '日期范围',
     icon        VARCHAR(50)  DEFAULT '' COMMENT '图标名称',
     color       VARCHAR(50)  DEFAULT '' COMMENT '颜色标识',
     sort_order  INT NOT NULL DEFAULT 0 COMMENT '排序权重（越小越前）',
@@ -712,6 +723,71 @@ const CREATE_PARTNER_APPLICATIONS_TABLE = `
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='合伙人申请表'
 `;
 
+const CREATE_RESOURCE_LIBRARY_ITEMS_TABLE = `
+  CREATE TABLE IF NOT EXISTS resource_library_items (
+    id          INT AUTO_INCREMENT PRIMARY KEY,
+    title       VARCHAR(200) NOT NULL,
+    slug        VARCHAR(200) NOT NULL UNIQUE,
+    description TEXT,
+    content     TEXT,
+    cover_url   VARCHAR(500) DEFAULT '',
+    content_type VARCHAR(50) DEFAULT 'article',
+    is_vip_only TINYINT NOT NULL DEFAULT 0,
+    is_free     TINYINT NOT NULL DEFAULT 0,
+    external_url VARCHAR(500) DEFAULT '',
+    tags        JSON COMMENT '标签数组',
+    author_id   INT DEFAULT NULL,
+    author_name VARCHAR(100) DEFAULT '',
+    author_type ENUM('admin','mentor','system') NOT NULL DEFAULT 'admin',
+    view_count  INT NOT NULL DEFAULT 0,
+    review_status ENUM('draft','pending','approved','rejected') NOT NULL DEFAULT 'approved',
+    status      ENUM('draft','published','archived') NOT NULL DEFAULT 'published',
+    deleted_at  TIMESTAMP NULL DEFAULT NULL COMMENT '软删除时间',
+    created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_slug (slug),
+    INDEX idx_content_type (content_type),
+    INDEX idx_status_deleted (status, deleted_at)
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='资源库项目表'
+`;
+
+const CREATE_RECRUITMENT_TIMELINE_ITEMS_TABLE = `
+  CREATE TABLE IF NOT EXISTS recruitment_timeline_items (
+    id          INT AUTO_INCREMENT PRIMARY KEY,
+    company_name VARCHAR(200) NOT NULL COMMENT '企业名称',
+    event_type  VARCHAR(50) NOT NULL COMMENT '事件类型（秋招/春招/实习等）',
+    title       VARCHAR(200) NOT NULL COMMENT '标题',
+    description TEXT COMMENT '描述',
+    start_date  DATE DEFAULT NULL COMMENT '开始日期',
+    end_date    DATE DEFAULT NULL COMMENT '结束日期',
+    apply_link  VARCHAR(500) DEFAULT '' COMMENT '申请链接',
+    status      ENUM('active', 'inactive') NOT NULL DEFAULT 'active' COMMENT '状态',
+    sort_order  INT DEFAULT 0 COMMENT '排序',
+    created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_status (status),
+    INDEX idx_event_type (event_type),
+    INDEX idx_sort_order (sort_order)
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='招聘时间线表'
+`;
+
+const CREATE_CUSTOMER_SERVICE_AGENTS_TABLE = `
+  CREATE TABLE IF NOT EXISTS customer_service_agents (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    name VARCHAR(100) NOT NULL COMMENT '客服姓名',
+    avatar_url VARCHAR(500) DEFAULT '' COMMENT '头像URL',
+    is_online TINYINT DEFAULT 1 COMMENT '在线状态 1在线 0离线',
+    phone VARCHAR(30) DEFAULT '' COMMENT '电话',
+    wechat VARCHAR(100) DEFAULT '' COMMENT '微信号',
+    email VARCHAR(200) DEFAULT '' COMMENT '邮箱',
+    sort_order INT DEFAULT 0 COMMENT '排序',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    INDEX idx_online (is_online),
+    INDEX idx_sort (sort_order)
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='客服人员表'
+`;
+
 // ========== 按依赖关系排列的建表顺序 ==========
 const TABLE_DEFINITIONS = [
   { name: 'users',           sql: CREATE_USERS_TABLE },
@@ -746,6 +822,70 @@ const TABLE_DEFINITIONS = [
   { name: 'campus_timeline',        sql: CREATE_CAMPUS_TIMELINE_TABLE },
   { name: 'partner_posts',          sql: CREATE_PARTNER_POSTS_TABLE },
   { name: 'partner_applications',   sql: CREATE_PARTNER_APPLICATIONS_TABLE },
+  { name: 'resource_library_items', sql: CREATE_RESOURCE_LIBRARY_ITEMS_TABLE },
+  { name: 'recruitment_timeline_items', sql: CREATE_RECRUITMENT_TIMELINE_ITEMS_TABLE },
+  { name: 'customer_service_agents', sql: CREATE_CUSTOMER_SERVICE_AGENTS_TABLE },
+  {
+    name: 'customer_service_config',
+    sql: `CREATE TABLE IF NOT EXISTS customer_service_config (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      config_key VARCHAR(100) NOT NULL UNIQUE COMMENT '配置键名',
+      config_value TEXT COMMENT '配置值',
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+      INDEX idx_config_key (config_key)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='客服系统配置表'`,
+  },
+  {
+    name: 'feature_flags',
+    sql: `CREATE TABLE IF NOT EXISTS feature_flags (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      flag_key VARCHAR(64) NOT NULL UNIQUE COMMENT '功能开关标识',
+      flag_value BOOLEAN NOT NULL DEFAULT TRUE COMMENT '开关值',
+      description VARCHAR(255) DEFAULT NULL COMMENT '描述',
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='功能开关配置表'`,
+  },
+  {
+    name: 'identity_verifications',
+    sql: `CREATE TABLE IF NOT EXISTS identity_verifications (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      user_id INT NOT NULL COMMENT '关联用户ID',
+      real_name VARCHAR(100) NOT NULL COMMENT '真实姓名',
+      id_number VARCHAR(50) NOT NULL COMMENT '身份证号',
+      phone VARCHAR(20) DEFAULT '' COMMENT '联系电话',
+      document_url VARCHAR(500) DEFAULT '' COMMENT '证件照片URL',
+      status ENUM('pending','approved','rejected') DEFAULT 'pending' COMMENT '审核状态',
+      reject_reason VARCHAR(500) DEFAULT '' COMMENT '驳回原因',
+      reviewer_id INT DEFAULT NULL COMMENT '审核人ID',
+      reviewed_at TIMESTAMP NULL COMMENT '审核时间',
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      FOREIGN KEY (user_id) REFERENCES users(id),
+      INDEX idx_user_id (user_id),
+      INDEX idx_status (status)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='实名认证信息表'`,
+  },
+  {
+    name: 'career_plan_profiles',
+    sql: `CREATE TABLE IF NOT EXISTS career_plan_profiles (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      user_id INT NOT NULL COMMENT '关联用户ID',
+      full_name VARCHAR(100) DEFAULT '' COMMENT '姓名',
+      school VARCHAR(200) DEFAULT '' COMMENT '学校',
+      major VARCHAR(200) DEFAULT '' COMMENT '专业',
+      graduation_year VARCHAR(20) DEFAULT '' COMMENT '毕业年份',
+      target_city VARCHAR(100) DEFAULT '' COMMENT '目标城市',
+      target_industry VARCHAR(100) DEFAULT '' COMMENT '目标行业',
+      target_role VARCHAR(100) DEFAULT '' COMMENT '目标岗位',
+      development_directions JSON COMMENT '发展方向',
+      self_summary TEXT COMMENT '自我评价',
+      status ENUM('draft','submitted','approved','rejected') DEFAULT 'draft' COMMENT '状态',
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      FOREIGN KEY (user_id) REFERENCES users(id),
+      INDEX idx_user_id (user_id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='职业规划信息表'`,
+  },
 ];
 
 // ========== 种子数据 ==========
@@ -2377,8 +2517,39 @@ async function seedPrograms(conn) {
  * 商业级要求：前端所有展示内容100%后台可视化配置
  */
 async function seedSiteConfigs(conn) {
+  const minimalHomeUiConfig = {
+    hero: {
+      title: '启航平台',
+      subtitle: '能力提升、升学深造、求职招聘与创业支持的统一入口。',
+      ctaLabel: '进入平台',
+      ctaLink: '/',
+    },
+    primarySections: [
+      { title: '能力提升', link: '/skill-enhancement', icon: 'Sparkles' },
+      { title: '升学深造', link: '/further-education', icon: 'GraduationCap' },
+      { title: '求职招聘', link: '/job-recruitment', icon: 'Briefcase' },
+      { title: '创业', link: '/entrepreneurship', icon: 'Rocket' },
+    ],
+    textResources: {
+      sections: {
+        valueProposition: {
+          title: '一个平台，统一准入和服务闭环',
+          subtitle: '面向学生、企业、导师与管理员的分层能力体系。',
+        },
+      },
+    },
+  };
+
   const [existing] = await conn.query('SELECT COUNT(*) as count FROM site_configs');
-  if (existing[0].count > 0) return;
+  if (existing[0].count > 0) {
+    await conn.query(
+      `INSERT INTO site_configs (config_key, config_value, config_type, config_group, is_public, is_editable, sort_order)
+       VALUES (?, ?, ?, ?, ?, ?, ?)
+       ON DUPLICATE KEY UPDATE config_value = VALUES(config_value)`,
+      ['home_ui_config', JSON.stringify(minimalHomeUiConfig), 'json', 'homepage', 1, 1, 18]
+    );
+    return;
+  }
 
   const configs = [
     // ===== 品牌 =====
@@ -2392,56 +2563,7 @@ async function seedSiteConfigs(conn) {
     { key: 'home_hero_title', value: '你的职业发展，从启航开始', type: 'string', group: 'homepage', label: '首页主标题', desc: 'Hero区域大标题', sort: 10 },
     { key: 'home_hero_subtitle', value: '连接梦想与机遇，助力每一位大学生迈向理想职业', type: 'string', group: 'homepage', label: '首页副标题', desc: 'Hero区域副标题', sort: 11 },
     { key: 'home_hero_image', value: '', type: 'image', group: 'homepage', label: '首页背景图', desc: 'Hero区域背景图URL', sort: 12 },
-    { key: 'home_hero_slides', value: JSON.stringify([
-      { id: 'slide-1', title: '你的职业发展，\n从启航开始', subtitle: '连接梦想与机遇，助力每一位大学生迈向理想职业', gradient: 'from-primary-600 via-primary-700 to-primary-800', cta: '开始探索', ctaLink: '/jobs' },
-      { id: 'slide-2', title: '大咖导师\n1对1辅导', subtitle: '简历精修、模拟面试、职业规划，帮你拿到心仪Offer', gradient: 'from-teal-500 via-emerald-600 to-cyan-800', cta: '找导师', ctaLink: '/mentors' },
-      { id: 'slide-3', title: '留学 · 考研 · 创业\n一站全覆盖', subtitle: '无论你选择哪条路，我们都为你保驾护航', gradient: 'from-cyan-500 via-teal-600 to-slate-800', cta: '了解更多', ctaLink: '/study-abroad' }
-    ]), type: 'json', group: 'homepage', label: '首页Hero轮播配置', desc: '首页Hero区域轮播图配置（标题/副标题/渐变色/CTA）', sort: 12 },
-    { key: 'home_process_steps', value: JSON.stringify([
-      { icon: 'UserPlus', title: '注册账号', desc: '免费30秒快速注册', link: '/register' },
-      { icon: 'FileEdit', title: '完善资料', desc: 'AI智能诊断简历', link: '/student/profile' },
-      { icon: 'Search', title: '浏览岗位', desc: '智能推荐匹配职位', link: '/jobs' },
-      { icon: 'Send', title: '投递简历', desc: '一键投递多家企业', link: '/jobs' },
-      { icon: 'Mic', title: '面试辅导', desc: '1v1真实模拟面试', link: '/mentors' },
-      { icon: 'Award', title: '收获Offer', desc: '薪资谈判技巧指导', link: '/guidance' },
-      { icon: 'TrendingUp', title: '成长进阶', desc: '职场导师长期陪伴', link: '/courses' }
-    ]), type: 'json', group: 'homepage', label: '首页求职流程步骤', desc: '首页求职流程7步配置（图标/标题/描述/链接）', sort: 12 },
-    { key: 'home_stats_jobs', value: '0', type: 'string', group: 'homepage', label: '职位总数展示', desc: '首页统计-职位数（由 /stats/public API 动态返回真实数据）', sort: 13 },
-    { key: 'home_stats_companies', value: '0', type: 'string', group: 'homepage', label: '合作企业展示', desc: '首页统计-企业数（由 /stats/public API 动态返回真实数据）', sort: 14 },
-    { key: 'home_stats_mentors', value: '0', type: 'string', group: 'homepage', label: '导师总数展示', desc: '首页统计-导师数（由 /stats/public API 动态返回真实数据）', sort: 15 },
-    { key: 'home_stats_students', value: '0', type: 'string', group: 'homepage', label: '服务学生展示', desc: '首页统计-服务学生数（由 /stats/public API 动态返回真实数据）', sort: 16 },
-    { key: 'home_features', value: JSON.stringify([
-      { title: '精准求职', desc: '海量校招/实习岗位，智能推荐匹配', icon: 'Briefcase' },
-      { title: '1v1辅导', desc: '行业资深导师，一对一职业规划', icon: 'Users' },
-      { title: '考研考公', desc: '一站式备考资讯与经验分享', icon: 'GraduationCap' },
-      { title: '留学申请', desc: '海外院校库+背景提升+选校评估', icon: 'Globe' }
-    ]), type: 'json', group: 'homepage', label: '首页功能模块', desc: '首页四大核心功能卡片', sort: 17 },
-    { key: 'home_ui_config', value: JSON.stringify({
-      heroSlides: [
-        { id: 'slide-1', title: '你的职业发展，\n从启航开始', subtitle: '连接梦想与机遇，助力每一位大学生迈向理想职业', gradient: 'from-primary-600 via-primary-700 to-primary-800', cta: '开始探索', ctaLink: '/jobs', image: '' },
-        { id: 'slide-2', title: '大咖导师\n1对1辅导', subtitle: '简历精修、模拟面试、职业规划，帮你拿到心仪Offer', gradient: 'from-teal-500 via-emerald-600 to-cyan-800', cta: '找导师', ctaLink: '/mentors', image: '' },
-        { id: 'slide-3', title: '留学 · 考研 · 创业\n一站全覆盖', subtitle: '无论你选择哪条路，我们都为你保驾护航', gradient: 'from-cyan-500 via-teal-600 to-slate-800', cta: '了解更多', ctaLink: '/study-abroad', image: '' }
-      ],
-      quickEntries: [
-        { label: '校招直通车', desc: '名企实习/校招', icon: 'Briefcase', link: '/jobs', color: 'text-primary-600', bg: 'bg-gradient-to-br from-primary-50 to-primary-100/70' },
-        { label: '大咖1v1', desc: '导师辅导预约', icon: 'MessageCircle', link: '/mentors', color: 'text-primary-600', bg: 'bg-gradient-to-br from-teal-50 to-primary-100/70' },
-        { label: '干货资料库', desc: '免费课程学习', icon: 'BookOpen', link: '/courses', color: 'text-amber-500', bg: 'bg-gradient-to-br from-amber-50 to-orange-100/70' },
-        { label: '留学申请', desc: '院校评估/文书', icon: 'Globe', link: '/study-abroad', color: 'text-fuchsia-600', bg: 'bg-gradient-to-br from-fuchsia-50 to-pink-100/70', badge: 'new' },
-        { label: '考研保研', desc: '择校/备考策略', icon: 'GraduationCap', link: '/postgrad', color: 'text-rose-500', bg: 'bg-gradient-to-br from-rose-50 to-red-100/70' }
-      ],
-      courseColors: [
-        'from-primary-400 to-primary-500',
-        'from-blue-400 to-blue-500',
-        'from-fuchsia-400 to-pink-500',
-        'from-amber-400 to-orange-500'
-      ],
-      valueSections: [
-        { role: '对学生', icon: 'GraduationCap', color: 'text-primary-600', bg: 'bg-primary-50', border: 'border-primary-100', gradientFrom: 'from-primary-400', gradientTo: 'to-primary-600', points: ['一站搜索校招/实习/社招岗位', '1v1预约行业大咖导师辅导', '免费学习简历、面试、职业规划课程', '获取考研/留学/创业全方位资讯'] },
-        { role: '对企业', icon: 'Building2', color: 'text-blue-600', bg: 'bg-blue-50', border: 'border-blue-100', gradientFrom: 'from-blue-400', gradientTo: 'to-blue-600', points: ['零门槛发布招聘岗位', 'Kanban式简历筛选管理', '精准人才搜索与推荐', '数据化招聘效果分析'] },
-        { role: '对导师', icon: 'Award', color: 'text-emerald-600', bg: 'bg-emerald-50', border: 'border-emerald-100', gradientFrom: 'from-emerald-400', gradientTo: 'to-emerald-600', points: ['自主管理课程与辅导档期', '获取学生真实评价反馈', '平台推广增加个人影响力', '数据化运营提升辅导质量'] }
-      ],
-      _meta: { version: '1.0', lastUpdated: '2026-04-25', description: '首页 UI 配置 — 管理员可通过后台配置页修改，无需改代码' }
-    }), type: 'json', group: 'homepage', label: '首页UI可视化配置', desc: '首页轮播/入口/配色/价值板块等可视化配置（由管理员后台编辑）', sort: 18 },
+    { key: 'home_ui_config', value: JSON.stringify(minimalHomeUiConfig), type: 'json', group: 'homepage', label: '首页UI可视化配置', desc: '首页极简广告区与主板块入口配置', sort: 18 },
 
     // ===== 联系方式 =====
     { key: 'contact_email', value: 'support@qihang.com', type: 'string', group: 'contact', label: '客服邮箱', desc: '页脚和联系页面展示', sort: 20 },
@@ -3563,14 +3685,10 @@ async function seedPlatformFeatures(conn) {
   if (existing[0].count > 0) return;
 
   const features = [
-    { title: '精准匹配', description: 'AI智能推荐算法，根据你的专业、技能和意向精准匹配岗位', icon: 'Target', gradient: 'from-teal-500 to-emerald-500', link: '/jobs', sort_order: 1 },
-    { title: '名企直招', description: '500+知名企业入驻，校招/实习岗位直达，无中间商', icon: 'Building2', gradient: 'from-blue-500 to-indigo-500', link: '/jobs', sort_order: 2 },
-    { title: '导师1v1', description: '行业资深导师一对一辅导，简历精修+模拟面试+职业规划', icon: 'Users', gradient: 'from-purple-500 to-pink-500', link: '/mentors', sort_order: 3 },
-    { title: '考研保研', description: '全网最全的升学资讯与院校分析，学长学姐真实经验分享', icon: 'GraduationCap', gradient: 'from-orange-500 to-red-500', link: '/postgrad', sort_order: 4 },
-    { title: '留学申请', description: '覆盖全球Top100院校库，背景评估+选校方案+文书指导', icon: 'Globe', gradient: 'from-cyan-500 to-blue-500', link: '/study-abroad', sort_order: 5 },
-    { title: '创业孵化', description: '商业计划书模板、创业大赛信息、项目路演和投资对接', icon: 'Rocket', gradient: 'from-amber-500 to-orange-500', link: '/entrepreneurship', sort_order: 6 },
-    { title: '技能课程', description: '涵盖技术/产品/设计/金融等方向的实战课程和面经分享', icon: 'BookOpen', gradient: 'from-green-500 to-teal-500', link: '/courses', sort_order: 7 },
-    { title: '全程护航', description: '从职业规划到入职辅导，覆盖求职全生命周期的贴心服务', icon: 'Shield', gradient: 'from-rose-500 to-pink-500', link: '/guidance', sort_order: 8 },
+    { title: '能力提升', description: '聚合职业指导外链、图文资源与成功案例入口，按免费与 VIP 资源分层开放。', icon: 'Sparkles', gradient: 'from-teal-500 to-emerald-500', link: '/skill-enhancement', sort_order: 1 },
+    { title: '升学深造', description: '统一承载考研、保研、留学三类内容，以独立 Tab、时间线与案例组织。', icon: 'GraduationCap', gradient: 'from-blue-500 to-indigo-500', link: '/further-education', sort_order: 2 },
+    { title: '求职招聘', description: '聚焦招聘时间线、岗位筛选与职位浏览，保持与其他板块解耦。', icon: 'Briefcase', gradient: 'from-orange-500 to-amber-500', link: '/job-recruitment', sort_order: 3 },
+    { title: '创业', description: '保留导航入口与占位说明，为后续独立扩展预留容器。', icon: 'Rocket', gradient: 'from-fuchsia-500 to-pink-500', link: '/entrepreneurship', sort_order: 4 },
   ];
 
   for (const f of features) {
